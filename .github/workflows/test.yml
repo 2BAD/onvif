@@ -1,0 +1,61 @@
+name: Test
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+  schedule:
+    - cron: 0 20 * * *
+
+jobs:
+  test:
+    name: test on ${{ matrix.os-release }} node@${{ matrix.node-version }}
+    runs-on: ${{ matrix.os-release }}
+
+    strategy:
+      matrix:
+        node-version:
+          - 20
+          - 21
+        os-release:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm ci
+      - run: npm run test
+
+  coverage:
+    name: collect coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
+        with:
+          node-version-file: package.json
+
+      - run: npm ci
+
+      - run: npm run test:unit
+      - uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unit
+
+      # - run: rm -rf coverage
+
+      # - run: npm run test:integration
+      # - uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     flags: integration
