@@ -1,19 +1,17 @@
 {
-  "name": "@2bad/ts-lib-starter",
+  "name": "@2bad/onvif",
   "version": "1.0.0",
   "description": "",
   "keywords": [
-    "template",
-    "typescript",
-    "starter"
+    "onvif"
   ],
-  "homepage": "https://github.com/2BAD/ts-lib-starter#readme",
+  "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {
-    "url": "https://github.com/2BAD/ts-lib-starter/issues"
+    "url": "https://github.com/2BAD/onvif/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/2BAD/ts-lib-starter.git"
+    "url": "https://github.com/2BAD/onvif.git"
   },
   "license": "MIT",
   "author": "2BAD (https://github.com/2BAD)",
