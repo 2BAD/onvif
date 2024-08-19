@@ -57,8 +57,8 @@
   "devDependencies": {
     "@2bad/tsconfig": "3.0.1",
     "@swc/cli": "0.4.0",
-    "@swc/core": "1.7.10",
-    "@types/node": "20.14.15",
+    "@swc/core": "1.7.12",
+    "@types/node": "20.16.1",
     "@vitest/coverage-v8": "2.0.5",
     "eslint-config-love": "46.0.0",
     "eslint-config-prettier": "9.1.0",
