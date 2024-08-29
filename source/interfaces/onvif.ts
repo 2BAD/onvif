@@ -208,7 +208,7 @@ export type Profile = {
   /** A value of true signals that the profile cannot be deleted. Default is false. */
   fixed?: boolean
   /** User readable name of the profile. */
-  name?: Name
+  name?: Name | undefined
   /** Optional configuration of the Video input. */
   videoSourceConfiguration?: VideoSourceConfiguration
   /** Optional configuration of the Audio input. */
@@ -228,9 +228,9 @@ export type Profile = {
 }
 export type ProfileExtension = {
   /** Optional configuration of the Audio output. */
-  audioOutputConfiguration?: AudioOutputConfiguration
+  audioOutputConfiguration?: AudioOutputConfiguration | undefined
   /** Optional configuration of the Audio decoder. */
-  audioDecoderConfiguration?: AudioDecoderConfiguration
+  audioDecoderConfiguration?: AudioDecoderConfiguration | undefined
   extension?: ProfileExtension2
 }
 export type ProfileExtension2 = Record<string, unknown>

@@ -1,7 +1,5 @@
-import url from 'url'
-import { Onvif, OnvifServices, SetSystemDateAndTimeOptions } from './onvif.ts'
-import { linerase } from './utils.ts'
-import {
+import url from 'node:url'
+import type {
   DeviceServiceCapabilities,
   GetCapabilities,
   GetCapabilitiesResponse,
@@ -11,16 +9,18 @@ import {
   GetServicesResponse,
   Service,
   SetNTP
-} from './interfaces/devicemgmt.ts'
-import {
+} from './interfaces/deviceManagement.ts'
+import type {
   Capabilities,
   CapabilitiesExtension,
   DNSInformation,
   HostnameInformation,
-  NetworkInterface,
   NTPInformation,
+  NetworkInterface,
   Scope
 } from './interfaces/onvif.ts'
+import type { Onvif, OnvifServices, SetSystemDateAndTimeOptions } from './onvif.ts'
+import { linerase } from './utils.ts'
 
 /**
  * Device methods
@@ -28,28 +28,28 @@ import {
 export class Device {
   private readonly onvif: Onvif
   #services: Service[] = []
-  get services() {
+  get services(): Service[] {
     return this.#services
   }
   public media2Support = false
   #scopes: Scope[] = []
-  get scopes() {
+  get scopes(): Scope[] {
     return this.#scopes
   }
   #serviceCapabilities: DeviceServiceCapabilities = {}
-  get serviceCapabilities() {
+  get serviceCapabilities(): DeviceServiceCapabilities {
     return this.#serviceCapabilities
   }
   #NTP?: NTPInformation
-  get NTP() {
+  get NTP(): NTPInformation | undefined {
     return this.#NTP
   }
   #DNS?: DNSInformation
-  get DNS() {
+  get DNS(): DNSInformation | undefined {
     return this.#NTP
   }
   #networkInterfaces?: NetworkInterface[]
-  get newtworkInterfaces() {
+  get networkInterfaces(): NetworkInterface[] | undefined {
     return this.#networkInterfaces
   }
 
@@ -57,29 +57,33 @@ export class Device {
     this.onvif = onvif
   }
 
-  getSystemDateAndTime() {
+  getSystemDateAndTime(): Promise<Date> {
     return this.onvif.getSystemDateAndTime()
   }
 
-  setSystemDateAndTime(options: SetSystemDateAndTimeOptions) {
-    return this.onvif.setSystemDateAndTime(options)
+  async setSystemDateAndTime(options: SetSystemDateAndTimeOptions): Promise<void> {
+    await this.onvif.setSystemDateAndTime(options)
   }
 
   /**
    * Returns information about services of the device.
+   *
+   * @param root0
    */
   async getServices({ includeCapability }: GetServices = { includeCapability: true }): Promise<GetServicesResponse> {
     const [data] = await this.onvif.request({
-      body:
-        '<GetServices xmlns="http://www.onvif.org/ver10/device/wsdl">' +
-        `<IncludeCapability>${includeCapability}</IncludeCapability>` +
-        '</GetServices>'
+      body: `
+        <GetServices xmlns="http://www.onvif.org/ver10/device/wsdl">
+          <IncludeCapability>${includeCapability}</IncludeCapability>
+        </GetServices>
+      `.trim()
     })
+    // @ts-expect-error TODO: probably should cast to type
     const result = linerase(data).getServicesResponse
     this.#services = result.service
     // ONVIF Profile T introduced Media2 (ver20) so cameras from around 2020/2021 will have
     // two media entries in the ServicesResponse, one for Media (ver10/media) and one for Media2 (ver20/media)
-    // This is so that existing VMS software can still access the video via the orignal ONVIF Media API
+    // This is so that existing VMS software can still access the video via the original ONVIF Media API
     // fill Cam#uri property
     this.#services.forEach((service) => {
       // Look for services with namespaces and XAddr values
@@ -112,37 +116,46 @@ export class Device {
   /**
    * This method has been replaced by the more generic {@link Device.getServices | GetServices} method.
    * For capabilities of individual services refer to the GetServiceCapabilities methods.
+   *
+   * @param options
    */
-  async getCapabilities(options?: GetCapabilities): Promise<GetCapabilitiesResponse> {
-    if (!options || !options.category) {
-      options = { category: ['All'] }
-    }
+  async getCapabilities(options?: Partial<GetCapabilities>): Promise<GetCapabilitiesResponse> {
+    const category = options?.category ?? ['All']
+
     const [data] = await this.onvif.request({
-      body: `<GetCapabilities xmlns="http://www.onvif.org/ver10/device/wsdl">${options
-        .category!.map((category) => `<Category>${category}</Category>`)
-        .join('')}</GetCapabilities>`
+      body: `
+    <GetCapabilities xmlns="http://www.onvif.org/ver10/device/wsdl">
+      ${category.map((cat) => `<Category>${cat}</Category>`).join('')}
+    </GetCapabilities>`
     })
-    this.onvif.capabilities = linerase(data[0].getCapabilitiesResponse[0].capabilities[0])
-    ;['PTZ', 'media', 'imaging', 'events', 'device', 'analytics'].forEach((name) => {
-      const capabilityName = name as keyof Capabilities
-      if ('XAddr' in this.onvif.capabilities[capabilityName]!) {
-        this.onvif.uri[name as keyof OnvifServices] = this.onvif.parseUrl(
-          this.onvif.capabilities[capabilityName]!.XAddr as string
-        )
+
+    // @ts-expect-error TODO: this request client sucks big time...
+    if (!data?.[0]?.getCapabilitiesResponse?.[0]?.capabilities?.[0]) {
+      throw new Error('Invalid response structure')
+    }
+
+    // @ts-expect-error TODO: this request client sucks big time...
+    this.onvif.capabilities = linerase(data[0].getCapabilitiesResponse[0].capabilities[0]) as Capabilities
+
+    const serviceNames = ['PTZ', 'media', 'imaging', 'events', 'device', 'analytics'] as const
+    type ServiceName = (typeof serviceNames)[number]
+
+    serviceNames.forEach((name) => {
+      // @ts-expect-error goddammit
+      const capability = this.onvif.capabilities[name.toLowerCase() as Lowercase<ServiceName>]
+      if (capability && 'XAddr' in capability && typeof capability.XAddr === 'string') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        this.onvif.uri[name] = this.onvif.parseUrl(capability.XAddr)
       }
     })
-    // extensions, eg. deviceIO
+
     if (this.onvif.capabilities.extension) {
-      Object.keys(this.onvif.capabilities.extension).forEach((ext) => {
-        const extensionName = ext as keyof CapabilitiesExtension
-        // TODO think about complex extensions like `telexCapabilities` and `scdlCapabilities`
-        if (
-          'XAddr' in this.onvif.capabilities.extension![extensionName]! &&
-          this.onvif.capabilities.extension![extensionName]!.XAddr
-        ) {
-          this.onvif.uri[extensionName] = new URL(this.onvif.capabilities.extension![extensionName]!.XAddr as string)
+      Object.entries(this.onvif.capabilities.extension).forEach(([ext, value]) => {
+        if (value && typeof value === 'object' && 'XAddr' in value && typeof value.XAddr === 'string') {
+          this.onvif.uri[ext as keyof CapabilitiesExtension] = new URL(value.XAddr)
         }
       })
+
       // HACK for a Profile G NVR that has 'replay' but did not have 'recording' in GetCapabilities
       if (this.onvif.uri.replay && !this.onvif.uri.recording) {
         const tempRecorderXaddr = this.onvif.uri.replay.href.replace('replay', 'recording')
@@ -150,6 +163,7 @@ export class Device {
         this.onvif.uri.recording = new URL(tempRecorderXaddr)
       }
     }
+
     return { capabilities: this.onvif.capabilities }
   }
 
@@ -160,8 +174,13 @@ export class Device {
     const [data] = await this.onvif.request({
       body: '<GetDeviceInformation xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
-    this.onvif.deviceInformation = linerase(data).getDeviceInformationResponse
-    return this.onvif.deviceInformation!
+    // @ts-expect-error TODO improve later
+    this.onvif.deviceInformation = linerase(data).getDeviceInformationResponse as getDeviceInformationResponse
+    if (!this.onvif.deviceInformation) {
+      throw new Error('Invalid response structure')
+    }
+
+    return this.onvif.deviceInformation
   }
 
   /**
@@ -171,6 +190,7 @@ export class Device {
     const [data] = await this.onvif.request({
       body: '<GetHostname xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
+    // @ts-expect-error TODO improve later
     return linerase(data).getHostnameResponse.hostnameInformation
   }
 
@@ -181,6 +201,7 @@ export class Device {
     const [data] = await this.onvif.request({
       body: '<GetScopes xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
+    // @ts-expect-error TODO improve later
     this.#scopes = linerase(data).getScopesResponse.scopes
     if (this.#scopes === undefined) {
       this.#scopes = []
@@ -192,19 +213,21 @@ export class Device {
 
   /**
    * Set the scope parameters of a device
-   * @param scopes Array of scope's uris
+   *
+   * @param scopes - Array of scope's uris
    */
-  async setScopes(scopes: string[]) {
+  async setScopes(scopes: string[]): Promise<Scope[]> {
     const [data] = await this.onvif.request({
       body: `<SetScopes xmlns="http://www.onvif.org/ver10/device/wsdl">${scopes
         .map((uri) => `<Scopes>${uri}</Scopes>`)
         .join('')}</SetScopes>`
     })
+    // @ts-expect-error TODO improve later
     if (linerase(data).setScopesResponse !== '') {
       throw new Error('Wrong `SetScopes` response')
     }
     // get new scopes from device
-    return this.getScopes()
+    return await this.getScopes()
   }
 
   /**
@@ -214,10 +237,11 @@ export class Device {
     const [data] = await this.onvif.request({
       body: '<GetServiceCapabilities xmlns="http://www.onvif.org/ver10/device/wsdl" />'
     })
+    // @ts-expect-error TODO improve later
     const capabilitiesResponse = linerase(data).getServiceCapabilitiesResponse
     this.#serviceCapabilities = capabilitiesResponse.capabilities
-    if (capabilitiesResponse.getServiceCapabilitiesResponse.capabilities.misc) {
-      this.#serviceCapabilities.misc!.auxiliaryCommands =
+    if (this.#serviceCapabilities.misc && capabilitiesResponse.getServiceCapabilitiesResponse.capabilities.misc) {
+      this.#serviceCapabilities.misc.auxiliaryCommands =
         capabilitiesResponse.getServiceCapabilitiesResponse.capabilities.misc.auxiliaryCommands.split(' ')
     }
     return capabilitiesResponse
@@ -227,11 +251,12 @@ export class Device {
    * This operation reboots the device
    */
   async systemReboot(): Promise<string> {
-    return this.onvif
+    return await this.onvif
       .request({
         service: 'device', // or 'deviceIO' ?
         body: '<SystemReboot xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
       })
+      // @ts-expect-error TODO: improve later
       .then(([data]) => data[0].systemRebootResponse[0].message[0])
   }
 
@@ -244,45 +269,52 @@ export class Device {
       service: 'device',
       body: '<GetNTP xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
-    this.#NTP = linerase(data[0].getNTPResponse[0].NTPInformation[0])
+    // @ts-expect-error TODO: improve later
+    this.#NTP = linerase(data[0].getNTPResponse[0].NTPInformation[0]) as NTPInformation
     if (this.#NTP?.NTPManual && !Array.isArray(this.#NTP.NTPManual)) {
       this.#NTP.NTPManual = [this.#NTP.NTPManual]
     }
     if (this.#NTP?.NTPFromDHCP && !Array.isArray(this.#NTP.NTPFromDHCP)) {
       this.#NTP.NTPFromDHCP = [this.#NTP.NTPFromDHCP]
     }
-    return this.#NTP!
+    return this.#NTP
   }
 
   /**
    * Set the NTP settings on a device
+   *
+   * @param options - NTP settings
    */
   async setNTP(options: SetNTP): Promise<NTPInformation> {
-    let body =
-      '<SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">' + `<FromDHCP>${options.fromDHCP ?? false}</FromDHCP>`
-    if (options.NTPManual && Array.isArray(options.NTPManual)) {
-      options.NTPManual.forEach((NTPManual) => {
-        body += NTPManual.type
-          ? '<NTPManual>' +
-            `<Type xmlns="http://www.onvif.org/ver10/schema">${NTPManual.type}</Type>${
-              NTPManual.IPv4Address
-                ? `<IPv4Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv4Address}</IPv4Address>`
-                : ''
-            }${
-              NTPManual.IPv6Address
-                ? `<IPv6Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv6Address}</IPv6Address>`
-                : ''
-            }${NTPManual.DNSname ? `<DNSname>${NTPManual.DNSname}</DNSname>` : ''}${
-              NTPManual.extension ? `<Extension>${NTPManual.extension}</Extension>` : ''
-            }</NTPManual>`
-          : ''
-      })
-    }
-    body += '</SetNTP>'
-    const [data, stat] = await this.onvif.request({
+    const ntpManualEntries =
+      options.NTPManual && Array.isArray(options.NTPManual)
+        ? options.NTPManual.map((NTPManual) => {
+            if (!NTPManual.type) return ''
+            return `
+          <NTPManual>
+            <Type xmlns="http://www.onvif.org/ver10/schema">${NTPManual.type}</Type>
+            ${NTPManual.IPv4Address ? `<IPv4Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv4Address}</IPv4Address>` : ''}
+            ${NTPManual.IPv6Address ? `<IPv6Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv6Address}</IPv6Address>` : ''}
+            ${NTPManual.DNSname ? `<DNSname>${NTPManual.DNSname}</DNSname>` : ''}
+            ${NTPManual.extension ? `<Extension>${NTPManual.extension ? JSON.stringify(NTPManual.extension) : ''}</Extension>` : ''}
+          </NTPManual>
+        `
+          }).join('')
+        : ''
+
+    const body = `
+    <SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">
+      <FromDHCP>${options.fromDHCP ?? false}</FromDHCP>
+      ${ntpManualEntries}
+    </SetNTP>
+  `
+
+    const [data] = await this.onvif.request({
       service: 'device',
-      body
+      body: body.trim().replace(/\s+/g, ' ')
     })
+
+    // @ts-expect-error TODO: improve later
     return linerase(data[0].setNTPResponse)
   }
 
@@ -295,14 +327,15 @@ export class Device {
       service: 'device',
       body: '<GetDNS xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
-    this.#DNS = linerase(data[0].getDNSResponse[0].DNSInformation)
+    // @ts-expect-error TODO: improve later
+    this.#DNS = linerase(data[0].getDNSResponse[0].DNSInformation) as DNSInformation
     if (this.#DNS?.DNSManual && !Array.isArray(this.#DNS.DNSManual)) {
       this.#DNS.DNSManual = [this.#DNS.DNSManual]
     }
     if (this.#DNS?.DNSFromDHCP && !Array.isArray(this.#DNS.DNSFromDHCP)) {
       this.#DNS.DNSFromDHCP = [this.#DNS.DNSFromDHCP]
     }
-    return this.#DNS!
+    return this.#DNS
   }
 
   /**
@@ -314,7 +347,8 @@ export class Device {
       service: 'device',
       body: '<GetNetworkInterfaces xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
-    const networkInterfaces = linerase(data[0].getNetworkInterfacesResponse[0].networkInterfaces)
+    // @ts-expect-error TODO: improve later
+    const networkInterfaces = linerase(data[0].getNetworkInterfacesResponse[0].networkInterfaces) as NetworkInterface
     // networkInterfaces is an array of network interfaces, but linerase remove the array if there is only one element inside
     // so we convert it back to an array
     if (!Array.isArray(networkInterfaces)) {

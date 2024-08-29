@@ -1,35 +1,36 @@
-import { Onvif } from './onvif.ts'
-import { linerase } from './utils.ts'
-import {
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import type { AnyURI } from './interfaces/basics.ts'
+import type { ReferenceToken } from './interfaces/common.ts'
+import type {
+  ConfigurationSet,
+  GetOSDOptions,
+  GetOSDOptionsResponse,
+  GetOSDs,
+  GetOSDsResponse,
+  GetVideoEncoderConfigurationsResponse as GetVideoEncoder2ConfigurationsResponse,
+  GetVideoEncoderConfigurations,
+  GetVideoSourceConfigurationOptions,
+  GetVideoSourceConfigurationOptionsResponse,
+  GetVideoSourceConfigurations,
+  MediaProfile
+} from './interfaces/media.2.ts'
+import type {
+  GetSnapshotUri,
+  GetVideoEncoderConfigurationsResponse,
+  GetVideoSourceConfigurationsResponse,
+  GetVideoSourcesResponse
+} from './interfaces/media.ts'
+import type {
   AudioEncoderConfiguration,
   MediaUri,
   Profile,
   VideoEncoderConfiguration,
   VideoSource
 } from './interfaces/onvif.ts'
-import { ReferenceToken } from './interfaces/common.ts'
-import { AnyURI } from './interfaces/basics.ts'
-import {
-  ConfigurationSet,
-  GetOSDOptions,
-  GetOSDOptionsResponse,
-  GetOSDs,
-  GetOSDsResponse,
-  GetVideoEncoderConfigurations,
-  GetVideoEncoderConfigurationsResponse as GetVideoEncoder2ConfigurationsResponse,
-  GetVideoSourceConfigurationOptions,
-  GetVideoSourceConfigurationOptionsResponse,
-  GetVideoSourceConfigurations,
-  MediaProfile
-} from './interfaces/media.2.ts'
-import {
-  GetVideoSourceConfigurationsResponse,
-  GetVideoSourcesResponse,
-  GetVideoEncoderConfigurationsResponse,
-  GetSnapshotUri
-} from './interfaces/media.ts'
+import type { Onvif } from './onvif.ts'
+import { linerase } from './utils.ts'
 
-export interface GetStreamUriOptions {
+export type GetStreamUriOptions = {
   profileToken?: ReferenceToken
   stream?: 'RTP-Unicast' | 'RTP-Multicast'
   protocol?:
@@ -42,8 +43,12 @@ export interface GetStreamUriOptions {
     | 'HTTP' // for Media1
 }
 
+export type GetSnapshotUriOptions = {
+  profileToken?: ReferenceToken
+}
+
 export class Media {
-  private onvif: Onvif
+  private readonly onvif: Onvif
   public profiles: Profile[] = []
   public videoSources: VideoSource[] = []
 
@@ -54,7 +59,7 @@ export class Media {
   /**
    * Receive profiles
    */
-  async getProfiles(): Promise<(Profile | MediaProfile)[]> {
+  async getProfiles(): Promise<Array<Profile | MediaProfile>> {
     if (this.onvif.device.media2Support) {
       // Profile T request using Media2
       // The reply is in a different format to the old API so we convert the data from the new API to the old structure
@@ -66,6 +71,7 @@ export class Media {
 
       // Slight difference in Media1 and Media2 reply XML
       // Generate a reply that looks like a Media1 reply for existing library users
+      // @ts-expect-error TODO: this request client sucks big time...
       this.profiles = data[0].getProfilesResponse[0].profiles.map((profile: Record<string, unknown>) => {
         const tmp = linerase(profile) as MediaProfile
         const conf = tmp.configurations as ConfigurationSet
@@ -107,8 +113,8 @@ export class Media {
         }
         if (conf.audioOutput || conf.audioDecoder) {
           newProfile.extension = {
-            audioOutputConfiguration: conf.audioOutput!,
-            audioDecoderConfiguration: conf.audioDecoder!
+            audioOutputConfiguration: conf.audioOutput,
+            audioDecoderConfiguration: conf.audioDecoder
           }
         }
         // TODO - Add Audio
@@ -121,6 +127,7 @@ export class Media {
       service: 'media',
       body: '<GetProfiles xmlns="http://www.onvif.org/ver10/media/wsdl"/>'
     })
+    // @ts-expect-error TODO: this request client sucks big time...
     this.profiles = data[0].getProfilesResponse[0].profiles.map(linerase)
     return this.profiles
   }
@@ -130,6 +137,7 @@ export class Media {
       service: 'media',
       body: '<GetVideoSources xmlns="http://www.onvif.org/ver10/media/wsdl"/>'
     })
+    // @ts-expect-error TODO: this request client sucks big time...
     const videoSourcesResponse = linerase(data, { array: ['videoSources'] }).getVideoSourcesResponse
     this.videoSources = videoSourcesResponse.videoSources
     return videoSourcesResponse
@@ -149,6 +157,7 @@ export class Media {
     const service = this.onvif.device.media2Support ? 'media2' : 'media'
 
     const [data] = await this.onvif.request({ service, body })
+    // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data, { array: ['configurations'] }).getVideoSourceConfigurationsResponse
   }
 
@@ -166,11 +175,13 @@ export class Media {
     const service = this.onvif.device.media2Support ? 'media2' : 'media'
 
     const [data] = await this.onvif.request({ service, body })
+    // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data, { array: ['videoSourceTokensAvailable'] }).getVideoSourceConfigurationOptionsResponse
   }
 
   /**
    * If device supports Media 2.0 returns an array of VideoEncoder2Configuration. Otherwise VideoEncoderConfiguration
+   *
    * @param configurationToken
    * @param profileToken
    */
@@ -191,6 +202,7 @@ export class Media {
 
     const [data] = await this.onvif.request({ service, body })
 
+    // @ts-expect-error TODO: this request client sucks big time...
     const { getVideoEncoderConfigurationsResponse } = linerase(data, { array: ['configurations'] })
     return getVideoEncoderConfigurationsResponse
   }
@@ -214,6 +226,8 @@ export class Media {
    * - RTP unicast over UDP: StreamType = "RTP_unicast", TransportProtocol = "UDP"
    * - RTP over RTSP over HTTP over TCP: StreamType = "RTP_unicast", TransportProtocol = "HTTP"
    * - RTP over RTSP over TCP: StreamType = "RTP_unicast", TransportProtocol = "RTSP"
+   *
+   * @param options
    */
   async getStreamUri(options: GetStreamUriOptions = {}): Promise<MediaUri | string> {
     const { profileToken, stream = 'RTP-Unicast' } = options
@@ -248,6 +262,7 @@ export class Media {
           `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
           '</GetStreamUri>'
       })
+      // @ts-expect-error TODO: this request client sucks big time...
       return linerase(data).getStreamUriResponse
     }
     // Original (v.1.0)  ONVIF Specification for Media (used in Profile S)
@@ -264,11 +279,13 @@ export class Media {
         `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
         '</GetStreamUri>'
     })
+    // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data).getStreamUriResponse.mediaUri
   }
 
   /**
    * Receive snapshot URI
+   *
    * @param profileToken
    */
   async getSnapshotUri({ profileToken }: GetSnapshotUri = {}): Promise<{ uri: AnyURI }> {
@@ -281,6 +298,7 @@ export class Media {
           `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
           '</GetSnapshotUri>'
       })
+      // @ts-expect-error TODO: this request client sucks big time...
       return linerase(data).getSnapshotUriResponse
     }
     const [data] = await this.onvif.request({
@@ -290,6 +308,7 @@ export class Media {
         `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
         '</GetSnapshotUri>'
     })
+    // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data).getSnapshotUriResponse.mediaUri
   }
 
@@ -306,6 +325,7 @@ export class Media {
       }${OSDToken ? `<OSDToken>${configurationToken}</OSDToken>` : ''}</GetOSDs>`
     })
     // this.videoSources = linerase(data).getVideoSourcesResponse.videoSources;
+    // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data[0].getOSDsResponse[0], { array: ['OSDs'] })
   }
 
@@ -322,6 +342,7 @@ export class Media {
         `<ConfigurationToken>${configurationToken ?? this.onvif.activeSource!.videoSourceConfigurationToken}</ConfigurationToken>` +
         '</GetOSDOptions>'
     })
+    // @ts-expect-error TODO: this request client sucks big time...
     const result = linerase(data).getOSDOptionsResponse
     return result
   }

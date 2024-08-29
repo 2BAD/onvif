@@ -1,20 +1,20 @@
-import { EventEmitter } from 'events'
-import { SecureContextOptions } from 'tls'
-import https, { Agent, RequestOptions } from 'https'
-import http from 'http'
-import { Buffer } from 'buffer'
-import crypto from 'crypto'
-import { linerase, parseSOAPString } from './utils.ts'
+import { Buffer } from 'node:buffer'
+import crypto from 'node:crypto'
+import { EventEmitter } from 'node:events'
+import http from 'node:http'
+import https, { type Agent, type RequestOptions } from 'node:https'
+import type { SecureContextOptions } from 'node:tls'
 import { Device } from './device.ts'
+import type { GetDeviceInformationResponse } from './interfaces/deviceManagement.ts'
+import type { Capabilities, DateTime, Profile } from './interfaces/onvif.ts'
 import { Media } from './media.ts'
 import { PTZ } from './ptz.ts'
-import { Capabilities, Profile } from './interfaces/onvif.ts'
-import { GetDeviceInformationResponse } from './interfaces/devicemgmt.ts'
+import { linerase, parseSOAPString } from './utils.ts'
 
 /**
  * Cam constructor options
  */
-export interface OnvifOptions {
+export type OnvifOptions = {
   /** Set true if using `https` protocol, defaults to false. */
   useSecure?: boolean
   /** Set options for https like ca, cert, ciphers, rejectUnauthorized, secureOptions, secureProtocol, etc. */
@@ -34,7 +34,7 @@ export interface OnvifOptions {
   autoConnect?: boolean
 }
 
-export interface OnvifServices {
+export type OnvifServices = {
   PTZ?: URL
   analyticsDevice?: URL
   device?: URL
@@ -51,7 +51,7 @@ export interface OnvifServices {
   [key: string]: URL | undefined
 }
 
-export interface OnvifRequestOptions extends RequestOptions {
+export type OnvifRequestOptions = {
   /** Name of service (ptz, media, etc) */
   service?: keyof OnvifServices
   /** SOAP body */
@@ -60,18 +60,18 @@ export interface OnvifRequestOptions extends RequestOptions {
   url?: string
   /** Make request to PTZ uri or not */
   ptz?: boolean
-}
+} & RequestOptions
 
-interface RequestError extends Error {
+type RequestError = {
   code: string
   errno: string
   syscall: string
-}
+} & Error
 
 /**
  * Information about active video source
  */
-export interface ActiveSource {
+export type ActiveSource = {
   sourceToken: string
   profileToken: string
   videoSourceConfigurationToken: string
@@ -86,7 +86,7 @@ export interface ActiveSource {
   }
 }
 
-export interface SetSystemDateAndTimeOptions {
+export type SetSystemDateAndTimeOptions = {
   dateTime?: Date
   dateTimeType: 'Manual' | 'NTP'
   daylightSavings?: boolean
@@ -108,6 +108,7 @@ export interface SetSystemDateAndTimeOptions {
 export class Onvif extends EventEmitter {
   /**
    * Indicates raw xml request to device.
+   *
    * @event rawRequest
    * @example
    * ```typescript
@@ -117,6 +118,7 @@ export class Onvif extends EventEmitter {
   static rawRequest = 'rawRequest' as const
   /**
    * Indicates raw xml response from device.
+   *
    * @event rawResponse
    * @example
    * ```typescript
@@ -126,6 +128,7 @@ export class Onvif extends EventEmitter {
   static rawResponse = 'rawResponse' as const
   /**
    * Indicates any warnings
+   *
    * @event warn
    * @example
    * ```typescript
@@ -135,7 +138,8 @@ export class Onvif extends EventEmitter {
   static warn = 'warn' as const
   /**
    * Indicates any errors
-   * @param error Error object
+   *
+   * @param error - Error object
    * @event error
    * @example
    * ```typescript
@@ -146,6 +150,7 @@ export class Onvif extends EventEmitter {
 
   /**
    * Core device namespace for device v1.0 methods
+   *
    * @example
    * ```typescript
    * const date = await onvif.device.getSystemDateAndTime();
@@ -158,22 +163,23 @@ export class Onvif extends EventEmitter {
   public useSecure: boolean
   public secureOptions: SecureContextOptions
   public hostname: string
-  public username?: string
-  public password?: string
+  public username?: string | undefined
+  public password?: string | undefined
   public port: number
   public path: string
   public timeout: number
   public agent: Agent | boolean
   public preserveAddress = false
-  private events: Record<string, unknown>
+  // private events: Record<string, unknown>
   public uri: OnvifServices
   private timeShift?: number
   public capabilities: Capabilities
   public defaultProfiles: Profile[] = []
   public defaultProfile?: Profile
+  // @ts-expect-error TODO investigate this
   private activeSources: ActiveSource[] = []
   public activeSource?: ActiveSource
-  public readonly urn?: string
+  public readonly urn?: string | undefined
   public deviceInformation?: GetDeviceInformationResponse
 
   constructor(options: OnvifOptions) {
@@ -185,11 +191,12 @@ export class Onvif extends EventEmitter {
     this.password = options.password
     this.port = options.port ?? (options.useSecure ? 443 : 80)
     this.path = options.path ?? '/onvif/device_service'
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     this.timeout = options.timeout || 120000
     this.urn = options.urn
     this.agent = options.agent ?? false
     this.preserveAddress = options.preserveAddress ?? false
-    this.events = {}
+    // this.events = {}
     this.uri = {}
     this.capabilities = {}
 
@@ -215,43 +222,56 @@ export class Onvif extends EventEmitter {
 
   /**
    * Envelope header for all SOAP messages
+   *
    * @param openHeader
-   * @private
    */
-  private envelopeHeader(openHeader = false) {
-    let header =
-      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing">' +
-      '<s:Header>'
+  private envelopeHeader(openHeader = false): string {
+    const headerStart = `
+    <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing">
+      <s:Header>
+  `.trim()
+
     // Only insert Security if there is a username and password
+    let securitySection = ''
     if (this.username && this.password) {
       const req = this.passwordDigest()
-      header +=
-        '<Security s:mustUnderstand="1" xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">' +
-        '<UsernameToken>' +
-        `<Username>${this.username}</Username>` +
-        `<Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">${req.passDigest}</Password>` +
-        `<Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">${req.nonce}</Nonce>` +
-        `<Created xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">${req.timestamp}</Created>` +
-        '</UsernameToken>' +
-        '</Security>'
+      securitySection = `
+      <Security s:mustUnderstand="1" xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+        <UsernameToken>
+          <Username>${this.username}</Username>
+          <Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">${req.passDigest}</Password>
+          <Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">${req.nonce}</Nonce>
+          <Created xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">${req.timestamp}</Created>
+        </UsernameToken>
+      </Security>
+    `.trim()
     }
-    if (!(openHeader !== undefined && openHeader)) {
-      header +=
-        '</s:Header>' +
-        '<s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">'
-    }
-    return header
+
+    const headerEnd = openHeader
+      ? ''
+      : `
+      </s:Header>
+      <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  `.trim()
+
+    return `${headerStart}${securitySection}${headerEnd}`
   }
 
   /**
    * Envelope footer for all SOAP messages
-   * @private
+   *
    */
-  private envelopeFooter() {
-    return '</s:Body>' + '</s:Envelope>'
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private envelopeFooter(): string {
+    return '</s:Body></s:Envelope>'
   }
 
-  private passwordDigest() {
+  private passwordDigest(): { passDigest: string; nonce: string; timestamp: string } {
+    if (this.password === undefined) {
+      throw new Error('Password is undefined')
+    }
+
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const timestamp = new Date(process.uptime() * 1000 + (this.timeShift || 0)).toISOString()
     const nonce = Buffer.allocUnsafe(16)
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 0, 4)
@@ -259,7 +279,7 @@ export class Onvif extends EventEmitter {
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 8, 4)
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 12, 4)
     const cryptoDigest = crypto.createHash('sha1')
-    cryptoDigest.update(Buffer.concat([nonce, Buffer.from(timestamp, 'ascii'), Buffer.from(this.password!, 'ascii')]))
+    cryptoDigest.update(Buffer.concat([nonce, Buffer.from(timestamp, 'ascii'), Buffer.from(this.password, 'ascii')]))
     const passDigest = cryptoDigest.digest('base64')
     return {
       passDigest,
@@ -268,27 +288,49 @@ export class Onvif extends EventEmitter {
     }
   }
 
-  private setupSystemDateAndTime(data: any) {
-    const systemDateAndTime = data[0].getSystemDateAndTimeResponse[0].systemDateAndTime[0]
+  private setupSystemDateAndTime(data: Record<string, unknown>): Date {
+    // @ts-expect-error TODO: improve type signature
+    const systemDateAndTime = data[0]?.getSystemDateAndTimeResponse?.[0]?.systemDateAndTime?.[0]
+    if (!systemDateAndTime) {
+      throw new Error('Invalid data structure: systemDateAndTime not found')
+    }
+
     const dateTime = systemDateAndTime.UTCDateTime || systemDateAndTime.localDateTime
-    let time
-    if (dateTime === undefined) {
-      // Seen on a cheap Chinese camera from GWellTimes-IPC. Use the current time.
+
+    // eslint-disable-next-line @typescript-eslint/init-declarations
+    let time: Date
+    if (!dateTime) {
+      // Fallback to current time if dateTime is undefined
       time = new Date()
     } else {
-      const dt = linerase(dateTime[0])
+      const dt = linerase(dateTime[0]) as DateTime
+      if (
+        !dt.date ||
+        !dt.time ||
+        !dt.date.year ||
+        !dt.date.month ||
+        !dt.date.day ||
+        !dt.time.hour ||
+        !dt.time.minute ||
+        !dt.time.second
+      ) {
+        throw new Error('Invalid date or time structure')
+      }
       time = new Date(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         Date.UTC(dt.date.year, dt.date.month - 1, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second)
       )
     }
+
     if (!this.timeShift) {
       this.timeShift = time.getTime() - process.uptime() * 1000
     }
+
     return time
   }
 
   private async rawRequest(options: OnvifRequestOptions): Promise<[Record<string, any>, string]> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       let alreadyReturned = false
       const requestOptions: RequestOptions = {
         ...options,
@@ -313,11 +355,11 @@ export class Onvif extends EventEmitter {
         Object.assign(requestOptions, this.secureOptions)
       }
       const request = httpLibrary.request(requestOptions, (response) => {
-        const bufs: Buffer[] = []
+        const buf: Buffer[] = []
         let length = 0
 
         response.on('data', (chunk) => {
-          bufs.push(chunk)
+          buf.push(chunk)
           length += chunk.length
         })
 
@@ -326,11 +368,11 @@ export class Onvif extends EventEmitter {
             return
           }
           alreadyReturned = true
-          const xml = Buffer.concat(bufs, length).toString('utf8')
+          const xml = Buffer.concat(buf, length).toString('utf8')
           /**
            * Indicates raw xml response from device.
+           *
            * @event Onvif#rawResponse
-           * @type {string}
            */
           this.emit('rawResponse', xml)
           resolve(parseSOAPString(xml))
@@ -368,22 +410,22 @@ export class Onvif extends EventEmitter {
     })
   }
 
-  public request(options: OnvifRequestOptions) {
+  public request<T>(options: OnvifRequestOptions): Promise<[T, string]> {
     if (!options.body) {
       throw new Error("There is no 'body' field in request options")
     }
     return this.rawRequest({
       ...options,
       body: `${this.envelopeHeader()}${options.body}${this.envelopeFooter()}`
-    })
+    }) as Promise<[T, string]>
   }
 
   /**
    * Parse url with an eye on `preserveAddress` property
+   *
    * @param address
-   * @private
    */
-  public parseUrl(address: string) {
+  public parseUrl(address: string): URL {
     const parsedAddress = new URL(address)
     // If host for service and default host differs, also if preserve address property set
     // we substitute host, hostname and port from settings then rebuild the href using .format
@@ -404,7 +446,7 @@ export class Onvif extends EventEmitter {
    */
   async getSystemDateAndTime(): Promise<Date> {
     // The ONVIF spec says this should work without a Password as we need to know any difference in the
-    // remote NVT's time relative to our own time clock (called the timeShift) before we can calculate the
+    // remote NVTs time relative to our own time clock (called the timeShift) before we can calculate the
     // correct timestamp in nonce SOAP Authentication header.
     // But... Panasonic and Digital Barriers both have devices that implement ONVIF that only work with
     // authenticated getSystemDateAndTime. So for these devices we need to do an authenticated getSystemDateAndTime.
@@ -422,119 +464,140 @@ export class Onvif extends EventEmitter {
     try {
       return this.setupSystemDateAndTime(data)
     } catch (error) {
-      if (xml && xml.toLowerCase().includes('sender not authorized')) {
+      if (xml?.toLowerCase().includes('sender not authorized')) {
         // Try again with a Username and Password
         const [data] = await this.request({
           body: '<GetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl"/>}'
         })
+        // @ts-expect-error this should be typed by request function
         return this.setupSystemDateAndTime(data)
       }
-      throw error
+      // @TODO: fix later
+      throw error as Error
     }
   }
   /**
    * Set the device system date and time
+   *
+   * @param options
    */
-  async setSystemDateAndTime(options: SetSystemDateAndTimeOptions) {
+  async setSystemDateAndTime(options: SetSystemDateAndTimeOptions): Promise<Date> {
     if (!['Manual', 'NTP'].includes(options.dateTimeType)) {
       throw new Error('DateTimeType should be `Manual` or `NTP`')
     }
     const [data] = await this.request({
       // Try the Unauthenticated Request first. Do not use this._envelopeHeader() as we don't have timeShift yet.
-      body:
-        '<SetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl">' +
-        `<DateTimeType>${options.dateTimeType}</DateTimeType>` +
-        `<DaylightSavings>${!!options.daylightSavings}</DaylightSavings>${
+      body: `
+      <SetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl">
+        <DateTimeType>${options.dateTimeType}</DateTimeType>
+        <DaylightSavings>${!!options.daylightSavings}</DaylightSavings>
+        ${
           options.timezone !== undefined
-            ? '<TimeZone>' + `<TZ xmlns="http://www.onvif.org/ver10/schema">${options.timezone}</TZ>` + '</TimeZone>'
+            ? `
+          <TimeZone>
+            <TZ xmlns="http://www.onvif.org/ver10/schema">${options.timezone}</TZ>
+          </TimeZone>
+        `
             : ''
-        }${
+        }
+        ${
           options.dateTime !== undefined && options.dateTime instanceof Date
-            ? '<UTCDateTime>' +
-              '<Time xmlns="http://www.onvif.org/ver10/schema">' +
-              `<Hour>${options.dateTime.getUTCHours()}</Hour>` +
-              `<Minute>${options.dateTime.getUTCMinutes()}</Minute>` +
-              `<Second>${options.dateTime.getUTCSeconds()}</Second>` +
-              '</Time>' +
-              '<Date xmlns="http://www.onvif.org/ver10/schema">' +
-              `<Year>${options.dateTime.getUTCFullYear()}</Year>` +
-              `<Month>${options.dateTime.getUTCMonth() + 1}</Month>` +
-              `<Day>${options.dateTime.getUTCDate()}</Day>` +
-              '</Date>' +
-              '</UTCDateTime>'
+            ? `
+          <UTCDateTime>
+            <Time xmlns="http://www.onvif.org/ver10/schema">
+              <Hour>${options.dateTime.getUTCHours()}</Hour>
+              <Minute>${options.dateTime.getUTCMinutes()}</Minute>
+              <Second>${options.dateTime.getUTCSeconds()}</Second>
+            </Time>
+            <Date xmlns="http://www.onvif.org/ver10/schema">
+              <Year>${options.dateTime.getUTCFullYear()}</Year>
+              <Month>${options.dateTime.getUTCMonth() + 1}</Month>
+              <Day>${options.dateTime.getUTCDate()}</Day>
+            </Date>
+          </UTCDateTime>
+        `
             : ''
-        }</SetSystemDateAndTime>`
+        }
+      </SetSystemDateAndTime>
+    `
+        .trim()
+        .replace(/\n\s+/g, '')
     })
+    // @ts-expect-error this should be typed by request function
     if (linerase(data).setSystemDateAndTimeResponse !== '') {
+      // @ts-expect-error this should be typed by request function
       throw new Error(`Wrong 'SetSystemDateAndTime' response: '${linerase(data).setSystemDateAndTimeResponse}'`)
     }
     // get new system time from device
-    return this.getSystemDateAndTime()
+    return await this.getSystemDateAndTime()
   }
 
   /**
    * Check and find out video configuration for device
-   * @private
+   *
    */
-  private async getActiveSources() {
-    this.media.videoSources.forEach((videoSource, idx) => {
-      // let's choose first appropriate profile for our video source and make it default
-      const videoSrcToken = videoSource.token
-      const appropriateProfiles = this.media.profiles.filter(
-        (profile) =>
-          (profile.videoSourceConfiguration ? profile.videoSourceConfiguration.sourceToken === videoSrcToken : false) &&
-          profile.videoEncoderConfiguration !== undefined
-      )
-      if (appropriateProfiles.length === 0) {
-        if (idx === 0) {
-          throw new Error('Unrecognized configuration')
-        } else {
-          return
+  async getActiveSources(): Promise<void> {
+    this.activeSources = this.media.videoSources
+      .map((videoSource, idx) => {
+        const videoSrcToken = videoSource.token
+        const appropriateProfiles = this.media.profiles.filter(
+          (profile) =>
+            profile.videoSourceConfiguration?.sourceToken === videoSrcToken &&
+            profile.videoEncoderConfiguration !== undefined
+        )
+
+        if (appropriateProfiles.length === 0 || appropriateProfiles[0] === undefined) {
+          if (idx === 0) throw new Error('Unrecognized configuration')
+          return null
         }
-      }
 
-      if (idx === 0) {
-        ;[this.defaultProfile] = appropriateProfiles
-      }
+        const defaultProfile = appropriateProfiles[0]
 
-      ;[this.defaultProfiles[idx]] = appropriateProfiles
+        if (idx === 0) this.defaultProfile = defaultProfile
+        this.defaultProfiles[idx] = defaultProfile
 
-      this.activeSources[idx] = {
-        sourceToken: videoSource.token,
-        profileToken: this.defaultProfiles[idx].token,
-        videoSourceConfigurationToken: this.defaultProfiles[idx].videoSourceConfiguration!.token
-      }
-      if (this.defaultProfiles[idx].videoEncoderConfiguration) {
-        const configuration = this.defaultProfiles[idx].videoEncoderConfiguration
-        this.activeSources[idx].encoding = configuration?.encoding
-        this.activeSources[idx].width = configuration?.resolution?.width
-        this.activeSources[idx].height = configuration?.resolution?.height
-        this.activeSources[idx].fps = configuration?.rateControl?.frameRateLimit
-        this.activeSources[idx].bitrate = configuration?.rateControl?.bitrateLimit
-      }
-
-      if (idx === 0) {
-        this.activeSource = this.activeSources[idx]
-      }
-
-      if (this.defaultProfiles[idx].PTZConfiguration) {
-        this.activeSources[idx].ptz = {
-          name: this.defaultProfiles[idx].PTZConfiguration!.name as string,
-          token: this.defaultProfiles[idx].PTZConfiguration!.token
+        const activeSource: ActiveSource = {
+          sourceToken: videoSource.token,
+          profileToken: defaultProfile.token,
+          // @ts-expect-error TODO: fix this
+          videoSourceConfigurationToken: defaultProfile.videoSourceConfiguration?.token
         }
-        /*
-        TODO Think about it
-        if (idx === 0) {
-          this.defaultProfile.PTZConfiguration = this.activeSources[idx].PTZConfiguration;
-        } */
-      }
-    })
+
+        const encoderConfig = defaultProfile.videoEncoderConfiguration
+        if (
+          encoderConfig &&
+          encoderConfig.encoding !== undefined &&
+          encoderConfig.resolution?.width !== undefined &&
+          encoderConfig.resolution.height !== undefined &&
+          encoderConfig.rateControl?.frameRateLimit !== undefined &&
+          encoderConfig.rateControl.bitrateLimit !== undefined
+        ) {
+          activeSource.encoding = encoderConfig.encoding
+          activeSource.width = encoderConfig.resolution?.width
+          activeSource.height = encoderConfig.resolution?.height
+          activeSource.fps = encoderConfig.rateControl?.frameRateLimit
+          activeSource.bitrate = encoderConfig.rateControl?.bitrateLimit
+        }
+
+        if (idx === 0) this.activeSource = activeSource
+
+        const ptzConfig = defaultProfile.PTZConfiguration
+        if (ptzConfig) {
+          activeSource.ptz = {
+            name: ptzConfig.name ?? '',
+            token: ptzConfig.token
+          }
+        }
+
+        return activeSource
+      })
+      .filter((source): source is ActiveSource => source !== null)
   }
 
   /**
    * Connect to the camera and fill device information properties
    */
-  async connect() {
+  async connect(): Promise<Onvif> {
     await this.getSystemDateAndTime()
     // Try to get services (new approach). If not, get capabilities
     try {
