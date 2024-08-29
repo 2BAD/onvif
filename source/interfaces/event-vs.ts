@@ -1,9 +1,9 @@
-import { AnyURI, FilterType } from './basics.ts'
-import { Capabilities, Date } from './onvif.ts'
+import type { AnyURI, FilterType } from './basics.ts'
+import type { Capabilities, OnvifDate } from './onvif.ts'
 
 export type EventBrokerProtocol = 'mqtt' | 'mqtts' | 'ws' | 'wss'
 export type ConnectionStatus = 'Offline' | 'Connecting' | 'Connected'
-export interface EventBrokerConfig {
+export type EventBrokerConfig = {
   /** Event broker address in the format "scheme://host:port[/resource]". The supported schemes shall be returned by the EventBrokerProtocols capability. The resource part of the URL is only valid when using websocket. The Address must be unique. */
   address?: AnyURI
   /** Prefix that will be prepended to all topics before they are published. This is used to make published topics unique for each device. TopicPrefix is not allowed to be empty. */
@@ -25,13 +25,13 @@ export interface EventBrokerConfig {
   /** Concrete Topic Expression to select specific metadata topics to publish. */
   metadataFilter?: FilterType
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the event service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface SubscriptionPolicy {}
-export interface CreatePullPointSubscription {
+export type SubscriptionPolicy = {}
+export type CreatePullPointSubscription = {
   /** Optional XPATH expression to select specific topics. */
   filter?: FilterType
   /** Initial termination time. */
@@ -39,7 +39,7 @@ export interface CreatePullPointSubscription {
   /** Refer to Web Services Base Notification 1.3 (WS-BaseNotification). */
   subscriptionPolicy?: SubscriptionPolicy
 }
-export interface CreatePullPointSubscriptionResponse {
+export type CreatePullPointSubscriptionResponse = {
   /** Endpoint reference of the subscription to be used for pulling the messages. */
   subscriptionReference?: unknown
   /** Current time of the server for synchronization purposes. */
@@ -47,37 +47,37 @@ export interface CreatePullPointSubscriptionResponse {
   /** Date time when the PullPoint will be shut down without further pull requests. */
   erminationTime?: unknown
 }
-export interface PullMessages {
+export type PullMessages = {
   /** Maximum time to block until this method returns. */
   timeout?: unknown
   /** Upper limit for the number of messages to return at once. A server implementation may decide to return less messages. */
   messageLimit?: number
 }
-export interface PullMessagesResponse {
+export type PullMessagesResponse = {
   /** The date and time when the messages have been delivered by the web server to the client. */
-  currentTime?: Date
+  currentTime?: OnvifDate
   /** Date time when the PullPoint will be shut down without further pull requests. */
-  terminationTime?: Date
+  terminationTime?: OnvifDate
   /** List of messages. This list shall be empty in case of a timeout. */
   otificationMessage?: unknown[]
 }
-export interface PullMessagesFaultResponse {
+export type PullMessagesFaultResponse = {
   /** Maximum timeout supported by the device. */
   maxTimeout?: unknown
   /** Maximum message limit supported by the device. */
   maxMessageLimit?: number
 }
-export interface Seek {
+export type Seek = {
   /** The date and time to match against stored messages. */
-  utcTime?: Date
+  utcTime?: OnvifDate
   /** Reverse the pull direction of PullMessages. */
   reverse?: boolean
 }
-export interface SeekResponse {}
-export interface SetSynchronizationPoint {}
-export interface SetSynchronizationPointResponse {}
-export interface GetEventProperties {}
-export interface GetEventPropertiesResponse {
+export type SeekResponse = {}
+export type SetSynchronizationPoint = {}
+export type SetSynchronizationPointResponse = {}
+export type GetEventProperties = {}
+export type GetEventPropertiesResponse = {
   /** List of topic namespaces supported. */
   topicNamespaceLocation?: AnyURI[]
   /** True when topicset is fixed for all times. */
@@ -113,17 +113,17 @@ export interface GetEventPropertiesResponse {
    */
   messageContentSchemaLocation?: AnyURI[]
 }
-export interface AddEventBroker {
+export type AddEventBroker = {
   eventBroker?: EventBrokerConfig
 }
-export interface AddEventBrokerResponse {}
-export interface DeleteEventBroker {
+export type AddEventBrokerResponse = {}
+export type DeleteEventBroker = {
   address?: AnyURI
 }
-export interface DeleteEventBrokerResponse {}
-export interface GetEventBrokers {
+export type DeleteEventBrokerResponse = {}
+export type GetEventBrokers = {
   address?: AnyURI
 }
-export interface GetEventBrokersResponse {
+export type GetEventBrokersResponse = {
   eventBroker?: EventBrokerConfig[]
 }

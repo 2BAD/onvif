@@ -1,5 +1,5 @@
-import { AnyURI } from './basics.ts'
-import { Date } from './onvif.ts'
+import type { AnyURI } from './basics.ts'
+import type { OnvifDate } from './onvif.ts'
 
 /**
  * Unique identifier for a physical or logical resource.
@@ -11,11 +11,11 @@ export type ReferenceToken = string
 export type MoveStatus = 'IDLE' | 'MOVING' | 'UNKNOWN'
 export type Entity = 'Device' | 'VideoSource' | 'AudioSource'
 /** Range of values greater equal Min value and less equal Max value. */
-export interface IntRange {
+export type IntRange = {
   min?: number
   max?: number
 }
-export interface Vector2D {
+export type Vector2D = {
   x: number
   y: number
   /**
@@ -28,7 +28,7 @@ export interface Vector2D {
    */
   space?: AnyURI
 }
-export interface Vector1D {
+export type Vector1D = {
   x: number
   /**
    * Zoom coordinate space selector. The following options are defined:
@@ -40,13 +40,13 @@ export interface Vector1D {
    */
   space?: AnyURI
 }
-export interface PTZVector {
+export type PTZVector = {
   /** Pan and tilt position. The x component corresponds to pan and the y component to tilt. */
   panTilt?: Vector2D
   /** A zoom position. */
   zoom?: Vector1D
 }
-export interface PTZStatus {
+export type PTZStatus = {
   /** Specifies the absolute position of the PTZ unit together with the Space references. The default absolute spaces of the corresponding PTZ configuration MUST be referenced within the Position element. */
   position?: PTZVector
   /** Indicates if the Pan/Tilt/Zoom device unit is currently moving, idle or in an unknown state. */
@@ -54,28 +54,28 @@ export interface PTZStatus {
   /** States a current PTZ error. */
   error?: string
   /** Specifies the UTC time when this status was generated. */
-  utcTime?: Date
+  utcTime?: OnvifDate
 }
-export interface PTZMoveStatus {
+export type PTZMoveStatus = {
   /**/
   panTilt?: MoveStatus
   /**/
   zoom?: MoveStatus
 }
-export interface Vector {
+export type Vector = {
   x?: number
   y?: number
 }
-export interface Rectangle {
+export type Rectangle = {
   bottom?: number
   top?: number
   right?: number
   left?: number
 }
-export interface Polygon {
+export type Polygon = {
   point?: Vector[]
 }
-export interface Color {
+export type Color = {
   X: number
   Y: number
   Z: number
@@ -105,7 +105,7 @@ export interface Color {
   /** Likelihood that the color is correct. */
   likelihood?: number
 }
-export interface ColorCovariance {
+export type ColorCovariance = {
   XX: number
   YY: number
   ZZ: number
@@ -115,22 +115,22 @@ export interface ColorCovariance {
   /** Acceptable values are the same as in tt:Color. */
   colorspace?: AnyURI
 }
-export interface ColorCluster {
+export type ColorCluster = {
   color?: Color
   weight?: number
   covariance?: ColorCovariance
 }
-export interface ColorDescriptor {
+export type ColorDescriptor = {
   colorCluster?: ColorCluster[]
   extension?: unknown
 }
-export interface Transformation {
+export type Transformation = {
   translate?: Vector
   scale?: Vector
   extension?: TransformationExtension
 }
-export interface TransformationExtension {}
-export interface GeoLocation {
+export type TransformationExtension = {}
+export type GeoLocation = {
   /** East west location as angle. */
   lon?: number
   /** North south location as angle. */
@@ -138,7 +138,7 @@ export interface GeoLocation {
   /** Hight in meters above sea level. */
   elevation?: number
 }
-export interface GeoOrientation {
+export type GeoOrientation = {
   /** Rotation around the x axis. */
   roll?: number
   /** Rotation around the y axis. */
@@ -146,7 +146,7 @@ export interface GeoOrientation {
   /** Rotation around the z axis. */
   yaw?: number
 }
-export interface LocalLocation {
+export type LocalLocation = {
   /** East west location as angle. */
   x?: number
   /** North south location as angle. */
@@ -154,7 +154,7 @@ export interface LocalLocation {
   /** Offset in meters from the sea level. */
   z?: number
 }
-export interface LocalOrientation {
+export type LocalOrientation = {
   /** Rotation around the y axis. */
   pan?: number
   /** Rotation around the z axis. */
@@ -162,7 +162,7 @@ export interface LocalOrientation {
   /** Rotation around the x axis. */
   roll?: number
 }
-export interface SphericalCoordinate {
+export type SphericalCoordinate = {
   /** Distance in meters to the object. */
   distance?: number
   /** Elevation angle in the range -90 to 90 degrees, where 0 is in level with the x-y plane. */
@@ -170,7 +170,7 @@ export interface SphericalCoordinate {
   /** Azimuth angle in the range -180 to 180 degrees counter clockwise, where 0 is rightwards. */
   azimuthAngle?: number
 }
-export interface LocationEntity {
+export type LocationEntity = {
   /** Entity type the entry refers to, use a value from the tt:Entity enumeration. */
   entity?: string
   /** Optional entity token. */

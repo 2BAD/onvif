@@ -1,81 +1,80 @@
-import {
-  StringList,
+import type { GeoLocation, PTZStatus, PTZVector, ReferenceToken } from './common.ts'
+import type {
+  AuxiliaryData,
   Capabilities,
-  PTZNode,
+  PresetTour,
   PTZConfiguration,
   PTZConfigurationOptions,
-  AuxiliaryData,
+  PTZNode,
   PTZPreset,
-  PTZSpeed,
-  PresetTour,
+  PTZPresetTourOperation,
   PTZPresetTourOptions,
-  PTZPresetTourOperation
+  PTZSpeed
 } from './onvif.ts'
-import { ReferenceToken, PTZStatus, PTZVector, GeoLocation } from './common.ts'
 
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = Record<string, unknown>
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the PTZ service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetNodesResponse {
+export type GetNodesResponse = {
   /** A list of the existing PTZ Nodes on the device. */
   PTZNode?: PTZNode[]
 }
-export interface GetNode {
+export type GetNode = {
   /** Token of the requested PTZNode. */
   nodeToken?: ReferenceToken
 }
-export interface GetNodeResponse {
+export type GetNodeResponse = {
   /** A requested PTZNode. */
   PTZNode?: PTZNode
 }
-export interface GetConfigurationsResponse {
+export type GetConfigurationsResponse = {
   /** A list of all existing PTZConfigurations on the device. */
   PTZConfiguration?: PTZConfiguration[]
 }
-export interface GetConfiguration {
+export type GetConfiguration = {
   /** Token of the requested PTZConfiguration. */
   PTZConfigurationToken?: ReferenceToken
 }
-export interface GetConfigurationResponse {
+export type GetConfigurationResponse = {
   /** A requested PTZConfiguration. */
   PTZConfiguration?: PTZConfiguration
 }
-export interface SetConfiguration {
+export type SetConfiguration = {
   /**/
   PTZConfiguration?: PTZConfiguration
   /** Flag that makes configuration persistent. Example: User wants the configuration to exist after reboot. */
   forcePersistence?: boolean
 }
-export interface SetConfigurationResponse {}
-export interface GetConfigurationOptions {
+export type SetConfigurationResponse = Record<string, unknown>
+export type GetConfigurationOptions = {
   /** Token of an existing configuration that the options are intended for. */
   configurationToken?: ReferenceToken
 }
-export interface GetConfigurationOptionsResponse {
+export type GetConfigurationOptionsResponse = {
   /** The requested PTZ configuration options. */
   PTZConfigurationOptions?: PTZConfigurationOptions
 }
-export interface SendAuxiliaryCommand {
+export type SendAuxiliaryCommand = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** The Auxiliary request data. */
   auxiliaryData?: AuxiliaryData
 }
-export interface SendAuxiliaryCommandResponse {
+export type SendAuxiliaryCommandResponse = {
   /** The response contains the auxiliary response. */
   auxiliaryResponse?: AuxiliaryData
 }
-export interface GetPresets {
+export type GetPresets = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
 }
-export interface GetPresetsResponse {
+export type GetPresetsResponse = {
   /** A list of presets which are available for the requested MediaProfile. */
   preset?: PTZPreset[]
 }
-export interface SetPreset {
+export type SetPreset = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** A requested preset name. */
@@ -83,17 +82,17 @@ export interface SetPreset {
   /** A requested preset token. */
   presetToken?: ReferenceToken
 }
-export interface SetPresetResponse {
+export type SetPresetResponse = {
   /** A token to the Preset which has been set. */
   presetToken?: ReferenceToken
 }
-export interface RemovePreset {
+export type RemovePreset = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** A requested preset token. */
   presetToken?: ReferenceToken
 }
-export interface GotoPreset {
+export type GotoPreset = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** A requested preset token. */
@@ -101,27 +100,27 @@ export interface GotoPreset {
   /** A requested speed.The speed parameter can only be specified when Speed Spaces are available for the PTZ Node. */
   speed?: PTZSpeed
 }
-export interface GetStatus {
+export type GetStatus = {
   /** A reference to the MediaProfile where the PTZStatus should be requested. */
   profileToken?: ReferenceToken
 }
-export interface GetStatusResponse {
+export type GetStatusResponse = {
   /** The PTZStatus for the requested MediaProfile. */
   PTZStatus?: PTZStatus
 }
-export interface GotoHomePosition {
+export type GotoHomePosition = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** A requested speed.The speed parameter can only be specified when Speed Spaces are available for the PTZ Node. */
   speed?: PTZSpeed
 }
-export interface GotoHomePositionResponse {}
-export interface SetHomePosition {
+export type GotoHomePositionResponse = Record<string, unknown>
+export type SetHomePosition = {
   /** A reference to the MediaProfile where the home position should be set. */
   profileToken?: ReferenceToken
 }
-export interface SetHomePositionResponse {}
-export interface ContinuousMove {
+export type SetHomePositionResponse = Record<string, unknown>
+export type ContinuousMove = {
   /** A reference to the MediaProfile. */
   profileToken?: ReferenceToken
   /** A Velocity vector specifying the velocity of pan, tilt and zoom. */
@@ -129,8 +128,8 @@ export interface ContinuousMove {
   /** An optional Timeout parameter. */
   timeout?: unknown
 }
-export interface ContinuousMoveResponse {}
-export interface RelativeMove {
+export type ContinuousMoveResponse = Record<string, unknown>
+export type RelativeMove = {
   /** A reference to the MediaProfile. */
   profileToken?: ReferenceToken
   /** A positional Translation relative to the current position */
@@ -138,8 +137,8 @@ export interface RelativeMove {
   /** An optional Speed parameter. */
   speed?: PTZSpeed
 }
-export interface RelativeMoveResponse {}
-export interface AbsoluteMove {
+export type RelativeMoveResponse = Record<string, unknown>
+export type AbsoluteMove = {
   /** A reference to the MediaProfile. */
   profileToken?: ReferenceToken
   /** A Position vector specifying the absolute target position. */
@@ -147,8 +146,8 @@ export interface AbsoluteMove {
   /** An optional Speed. */
   speed?: PTZSpeed
 }
-export interface AbsoluteMoveResponse {}
-export interface GeoMove {
+export type AbsoluteMoveResponse = Record<string, unknown>
+export type GeoMove = {
   /** A reference to the MediaProfile. */
   profileToken?: ReferenceToken
   /** The geolocation of the target position. */
@@ -160,8 +159,8 @@ export interface GeoMove {
   /** An optional indication of the width of the target/area. */
   areaWidth?: number
 }
-export interface GeoMoveResponse {}
-export interface Stop {
+export type GeoMoveResponse = Record<string, unknown>
+export type Stop = {
   /** A reference to the MediaProfile that indicate what should be stopped. */
   profileToken?: ReferenceToken
   /** Set true when we want to stop ongoing pan and tilt movements.If PanTilt arguments are not present, this command stops these movements. */
@@ -169,58 +168,58 @@ export interface Stop {
   /** Set true when we want to stop ongoing zoom movement.If Zoom arguments are not present, this command stops ongoing zoom movement. */
   zoom?: boolean
 }
-export interface StopResponse {}
-export interface GetPresetTours {
+export type StopResponse = Record<string, unknown>
+export type GetPresetTours = {
   profileToken?: ReferenceToken
 }
-export interface GetPresetToursResponse {
+export type GetPresetToursResponse = {
   presetTour?: PresetTour[]
 }
-export interface GetPresetTour {
+export type GetPresetTour = {
   profileToken?: ReferenceToken
   presetTourToken?: ReferenceToken
 }
-export interface GetPresetTourResponse {
+export type GetPresetTourResponse = {
   presetTour?: PresetTour
 }
-export interface GetPresetTourOptions {
+export type GetPresetTourOptions = {
   profileToken?: ReferenceToken
   presetTourToken?: ReferenceToken
 }
-export interface GetPresetTourOptionsResponse {
+export type GetPresetTourOptionsResponse = {
   options?: PTZPresetTourOptions
 }
-export interface CreatePresetTour {
+export type CreatePresetTour = {
   profileToken?: ReferenceToken
 }
-export interface CreatePresetTourResponse {
+export type CreatePresetTourResponse = {
   presetTourToken?: ReferenceToken
 }
-export interface ModifyPresetTour {
+export type ModifyPresetTour = {
   profileToken?: ReferenceToken
   presetTour?: PresetTour
 }
-export interface ModifyPresetTourResponse {}
-export interface OperatePresetTour {
+export type ModifyPresetTourResponse = Record<string, unknown>
+export type OperatePresetTour = {
   profileToken?: ReferenceToken
   presetTourToken?: ReferenceToken
   operation?: PTZPresetTourOperation
 }
-export interface OperatePresetTourResponse {}
-export interface RemovePresetTour {
+export type OperatePresetTourResponse = Record<string, unknown>
+export type RemovePresetTour = {
   profileToken?: ReferenceToken
   presetTourToken?: ReferenceToken
 }
-export interface RemovePresetTourResponse {}
-export interface GetCompatibleConfigurations {
+export type RemovePresetTourResponse = Record<string, unknown>
+export type GetCompatibleConfigurations = {
   /** Contains the token of an existing media profile the configurations shall be compatible with. */
   profileToken?: ReferenceToken
 }
-export interface GetCompatibleConfigurationsResponse {
+export type GetCompatibleConfigurationsResponse = {
   /** A list of all existing PTZConfigurations on the NVT that is suitable to be added to the addressed media profile. */
   PTZConfiguration?: PTZConfiguration[]
 }
-export interface MoveAndStartTracking {
+export type MoveAndStartTracking = {
   /** A reference to the MediaProfile where the operation should take place. */
   profileToken?: ReferenceToken
   /** A preset token. */
@@ -234,4 +233,4 @@ export interface MoveAndStartTracking {
   /** Object ID of the object to track. */
   objectID?: number
 }
-export interface MoveAndStartTrackingResponse {}
+export type MoveAndStartTrackingResponse = Record<string, unknown>

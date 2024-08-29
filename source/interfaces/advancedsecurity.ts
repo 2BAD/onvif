@@ -1,7 +1,7 @@
-import { NCName, AnyURI } from './basics.ts'
-import { PositiveInteger } from './types.ts'
-import { DeviceEntity, StringList, Date } from './onvif.ts'
-import { ReferenceToken } from './common.ts'
+import type { AnyURI, NCName } from './basics.ts'
+import type { ReferenceToken } from './common.ts'
+import type { DeviceEntity, OnvifDate, StringList } from './onvif.ts'
+import type { PositiveInteger } from './types.ts'
 
 /** Unique identifier for keys in the keystore. */
 export type KeyID = NCName
@@ -46,9 +46,9 @@ export type ClientAuthenticationMethod =
   | 'private_key_jwt'
   | 'tls_client_auth'
   | 'self_signed_tls_client_auth'
-export interface Extension {}
+export type Extension = {}
 /** The attributes of a key in the keystore. */
-export interface KeyAttribute {
+export type KeyAttribute = {
   /** The ID of the key. */
   keyID?: KeyID
   /** The client-defined alias of the key. */
@@ -64,22 +64,22 @@ export interface KeyAttribute {
   extension?: Extension
 }
 /** A distinguished name attribute type and value pair. */
-export interface DNAttributeTypeAndValue {
+export type DNAttributeTypeAndValue = {
   /** The attribute type. */
   type?: DNAttributeType
   /** The value of the attribute. */
   value?: DNAttributeValue
 }
 /** A multi-valued RDN */
-export interface MultiValuedRDN {
+export type MultiValuedRDN = {
   /** A list of types and values defining a multi-valued RDN */
   attribute?: DNAttributeTypeAndValue[]
 }
-export interface anyAttribute {
+export type anyAttribute = {
   /** Domain Component as specified in RFC3739 */
   domainComponent?: DNAttributeValue[]
 }
-export interface DistinguishedName {
+export type DistinguishedName = {
   /**
    * A country name as specified in
    * X.500.
@@ -142,9 +142,9 @@ export interface DistinguishedName {
   /** Required extension point. It is recommended to not use this element, and instead use GenericAttribute and the numeric Distinguished Name Attribute Type. */
   anyAttribute?: anyAttribute
 }
-export interface anyParameters {}
+export type anyParameters = {}
 /** An identifier of an algorithm. */
-export interface AlgorithmIdentifier {
+export type AlgorithmIdentifier = {
   /** The OID of the algorithm in dot-decimal form. */
   algorithm?: DotDecimalOID
   /** Optional parameters of the algorithm (depending on the algorithm). */
@@ -152,16 +152,16 @@ export interface AlgorithmIdentifier {
   anyParameters?: anyParameters
 }
 /** A CSR attribute as specified in RFC 2986. */
-export interface BasicRequestAttribute {
+export type BasicRequestAttribute = {
   /** The OID of the attribute. */
   OID?: DotDecimalOID
   /** The value of the attribute as a base64-encoded DER representation of an ASN.1 value. */
   value?: Base64DERencodedASN1Value
 }
 /** A CSR attribute as specified in PKCS#10. */
-export interface CSRAttribute {}
+export type CSRAttribute = {}
 /** An X.509v3 extension field as specified in RFC 5280 */
-export interface X509v3Extension {
+export type X509v3Extension = {
   /** The OID of the extension field. */
   extnOID?: DotDecimalOID
   /** True if and only if the extension is critical. */
@@ -170,7 +170,7 @@ export interface X509v3Extension {
   extnValue?: Base64DERencodedASN1Value
 }
 /** An X.509 cerficiate as specified in RFC 5280. */
-export interface X509Certificate {
+export type X509Certificate = {
   /** The ID of the certificate. */
   certificateID?: CertificateID
   /** The ID of the key that this certificate associates to the certificate subject. */
@@ -181,34 +181,34 @@ export interface X509Certificate {
   certificateContent?: Base64DERencodedASN1Value
 }
 /** A sequence of certificate IDs. */
-export interface CertificateIDs {
+export type CertificateIDs = {
   /** A certificate ID. */
   certificateID?: CertificateID[]
 }
-export interface anyElement {}
+export type anyElement = {}
 /** An X.509 certification path as defined in RFC 5280. */
-export interface CertificationPath {
+export type CertificationPath = {
   /** A certificate in the certification path. */
   certificateID?: CertificateID[]
   /** The client-defined alias of the certification path. */
   alias?: string
   anyElement?: anyElement
 }
-export interface PassphraseAttribute {
+export type PassphraseAttribute = {
   /** The ID of the passphrase. */
   passphraseID?: PassphraseID
   /** The alias of the passphrase. */
   alias?: string
 }
 /** The capabilities of the 802.1X implementation on a device. */
-export interface Dot1XCapabilities {
+export type Dot1XCapabilities = {
   /** The maximum number of 802.1X configurations that may be defined simultaneously. */
   maximumNumberOfDot1XConfigurations?: PositiveInteger
   /** The authentication methods supported by the 802.1X implementation. */
   dot1XMethods?: Dot1XMethods
 }
 /** The configuration parameters required for a particular authentication method. */
-export interface Dot1XStage {
+export type Dot1XStage = {
   /** The authentication method for this stage (e.g., "EAP-PEAP"). */
   method: string
   /** The identity used in this authentication method, if required. */
@@ -221,8 +221,8 @@ export interface Dot1XStage {
   inner?: Dot1XStage
   extension?: Dot1XStageExtension
 }
-export interface Dot1XStageExtension {}
-export interface Dot1XConfiguration {
+export type Dot1XStageExtension = {}
+export type Dot1XConfiguration = {
   /** The unique identifier of the IEEE 802.1X configuration. */
   dot1XID?: Dot1XID
   /** The client-defined alias of the 802.1X configuration. */
@@ -230,23 +230,23 @@ export interface Dot1XConfiguration {
   /** The outer level authentication method used in this 802.1X configuration. */
   outer?: Dot1XStage
 }
-export interface CRL {
+export type CRL = {
   CRLID?: CRLID
   alias?: string
   CRLContent?: Base64DERencodedASN1Value
 }
-export interface CertPathValidationParameters {
+export type CertPathValidationParameters = {
   /** True if and only if the TLS server shall not authenticate client certificates that do not contain the TLS WWW client authentication key usage extension as specified in RFC 5280, Sect. 4.2.1.12. */
   requireTLSWWWClientAuthExtendedKeyUsage?: boolean
   /** True if and only if delta CRLs, if available, shall be applied to CRLs. */
   useDeltaCRLs?: boolean
   anyParameters?: anyParameters
 }
-export interface TrustAnchor {
+export type TrustAnchor = {
   /** The certificate ID of the certificate to be used as trust anchor. */
   certificateID?: CertificateID
 }
-export interface CertPathValidationPolicy {
+export type CertPathValidationPolicy = {
   certPathValidationPolicyID?: CertPathValidationPolicyID
   alias?: string
   parameters?: CertPathValidationParameters
@@ -254,7 +254,7 @@ export interface CertPathValidationPolicy {
   anyParameters?: anyParameters
 }
 /** The capabilities of a keystore implementation on a device. */
-export interface KeystoreCapabilities {
+export type KeystoreCapabilities = {
   /** Indicates the maximum number of keys that the device can store simultaneously. */
   maximumNumberOfKeys?: PositiveInteger
   /** Indicates the maximum number of certificates that the device can store simultaneously. */
@@ -306,7 +306,7 @@ export interface KeystoreCapabilities {
   anyElement?: anyElement
 }
 /** The capabilities of a TLS server implementation on a device. */
-export interface TLSServerCapabilities {
+export type TLSServerCapabilities = {
   /** Indicates which TLS versions are supported by the device. */
   TLSServerSupported?: TLSVersions
   /** Indicates whether the device supports enabling and disabling specific TLS versions. */
@@ -320,7 +320,7 @@ export interface TLSServerCapabilities {
   /** Indicates the maximum number of certification path validation policies that may be assigned to the TLS server simultaneously. */
   maximumNumberOfTLSCertificationPathValidationPolicies?: number
 }
-export interface AuthorizationServerConfigurationData {
+export type AuthorizationServerConfigurationData = {
   /** The type of configuration, tas:AuthorizationServerConfigurationType lists the acceptable values */
   type: string
   /** How to authenticate with the server, tas:ClientAuthenticationMethod lists the acceptable values */
@@ -338,10 +338,10 @@ export interface AuthorizationServerConfigurationData {
   /** Certificate identifier for the self_signed_tls_client_auth authentication method */
   certificateID?: CertificateID
 }
-export interface AuthorizationServerConfiguration extends DeviceEntity {
+export type AuthorizationServerConfiguration = {
   data?: AuthorizationServerConfigurationData
-}
-export interface AuthorizationServerConfigurationCapabilities {
+} & DeviceEntity
+export type AuthorizationServerConfigurationCapabilities = {
   /** Indicates maximum number of authorization server configurations supported. */
   maxConfigurations?: number
   /** Enumerates the supported authorization server configuration types, see tas:AuthorizationServerConfigurationType. */
@@ -350,7 +350,7 @@ export interface AuthorizationServerConfigurationCapabilities {
   clientAuthenticationMethodsSupported?: StringList
 }
 /** The capabilities of a Security Configuration Service implementation on a device. */
-export interface Capabilities {
+export type Capabilities = {
   /** The capabilities of the keystore implementation. */
   keystoreCapabilities?: KeystoreCapabilities
   /** The capabilities of the TLS server implementation. */
@@ -360,7 +360,7 @@ export interface Capabilities {
   /** The capabilities for external authorization server capabilities. */
   authorizationServer?: AuthorizationServerConfigurationCapabilities
 }
-export interface JWTConfiguration {
+export type JWTConfiguration = {
   /** The list of all the aud claims, which the recipient identifies with. */
   audiences?: StringList
   /** If present, this is the list to URIs pointing to the metadata file conforming to RFC8414, such as "https://your.domain/.well-known/openid-configuration" , of the trusted Open ID Connect servers issuing JWT tokens. Using metadata, the device can reach the information about the JWKS and implement the rotation of the keys accordingly. */
@@ -370,44 +370,44 @@ export interface JWTConfiguration {
   /** If present, the device will validate the certification path of the Open ID Connect servers. The OIDC server iso considered to be valid if its certificate is validated by one of the provided certification path validation policies. */
   validationPolicy?: CertPathValidationPolicyID[]
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the security configuration service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetJWTConfiguration {}
-export interface GetJWTConfigurationResponse {
+export type GetJWTConfiguration = {}
+export type GetJWTConfigurationResponse = {
   configuration?: JWTConfiguration
 }
-export interface SetJWTConfiguration {
+export type SetJWTConfiguration = {
   configuration?: JWTConfiguration
 }
-export interface SetJWTConfigurationResponse {}
-export interface CreateRSAKeyPair {
+export type SetJWTConfigurationResponse = {}
+export type CreateRSAKeyPair = {
   /** The length of the key to be created. */
   keyLength?: number
   /** The client-defined alias of the key. */
   alias?: string
 }
-export interface CreateRSAKeyPairResponse {
+export type CreateRSAKeyPairResponse = {
   /** The key ID of the key pair being generated. */
   keyID?: KeyID
   /** Best-effort estimate of how long the key generation will take. */
   estimatedCreationTime?: unknown
 }
-export interface CreateECCKeyPair {
+export type CreateECCKeyPair = {
   /** The name of the elliptic curve to be used for generating the ECC keypair. */
   ellipticCurve?: string
   /** The client-defined alias of the key. */
   alias?: string
 }
-export interface CreateECCKeyPairResponse {
+export type CreateECCKeyPairResponse = {
   /** The key ID of the key pair being generated. */
   keyID?: KeyID
   /** Best-effort estimate of how long the key generation will take. */
   estimatedCreationTime?: unknown
 }
-export interface UploadKeyPairInPKCS8 {
+export type UploadKeyPairInPKCS8 = {
   /** The key pair to be uploaded in a PKCS#8 data structure. */
   keyPair?: Base64DERencodedASN1Value
   /** The client-defined alias of the key pair. */
@@ -417,11 +417,11 @@ export interface UploadKeyPairInPKCS8 {
   /** The passphrase to use for decrypting the uploaded key pair. */
   encryptionPassphrase?: string
 }
-export interface UploadKeyPairInPKCS8Response {
+export type UploadKeyPairInPKCS8Response = {
   /** The key ID of the uploaded key pair. */
   keyID?: KeyID
 }
-export interface UploadCertificateWithPrivateKeyInPKCS12 {
+export type UploadCertificateWithPrivateKeyInPKCS12 = {
   /** The certificates and key pair to be uploaded in a PKCS#12 data structure. */
   certWithPrivateKey?: Base64DERencodedASN1Value
   /** The client-defined alias of the certification path. */
@@ -437,39 +437,39 @@ export interface UploadCertificateWithPrivateKeyInPKCS12 {
   /** The passphrase to use for integrity checking and decrypting the uploaded PKCS#12 data structure. */
   passphrase?: string
 }
-export interface UploadCertificateWithPrivateKeyInPKCS12Response {
+export type UploadCertificateWithPrivateKeyInPKCS12Response = {
   /** The certification path ID of the uploaded certification path. */
   certificationPathID?: CertificationPathID
   /** The key ID of the uploaded key pair. */
   keyID?: KeyID
 }
-export interface GetKeyStatus {
+export type GetKeyStatus = {
   /** The ID of the key for which to return the status. */
   keyID?: KeyID
 }
-export interface GetKeyStatusResponse {
+export type GetKeyStatusResponse = {
   /** Status of the requested key. The value should be one of the values in the tas:KeyStatus enumeration. */
   keyStatus?: string
 }
-export interface GetPrivateKeyStatus {
+export type GetPrivateKeyStatus = {
   /** The ID of the key pair for which to return whether it contains a private key. */
   keyID?: KeyID
 }
-export interface GetPrivateKeyStatusResponse {
+export type GetPrivateKeyStatusResponse = {
   /** True if and only if the key pair contains a private key. */
   hasPrivateKey?: boolean
 }
-export interface GetAllKeys {}
-export interface GetAllKeysResponse {
+export type GetAllKeys = {}
+export type GetAllKeysResponse = {
   /** Information about a key in the keystore. */
   keyAttribute?: KeyAttribute[]
 }
-export interface DeleteKey {
+export type DeleteKey = {
   /** The ID of the key that is to be deleted from the keystore. */
   keyID?: KeyID
 }
-export interface DeleteKeyResponse {}
-export interface CreatePKCS10CSR {
+export type DeleteKeyResponse = {}
+export type CreatePKCS10CSR = {
   /** The subject to be included in the CSR. */
   subject?: DistinguishedName
   /** The ID of the key for which the CSR shall be created. */
@@ -479,11 +479,11 @@ export interface CreatePKCS10CSR {
   /** The signature algorithm to be used to sign the CSR. */
   signatureAlgorithm?: AlgorithmIdentifier
 }
-export interface CreatePKCS10CSRResponse {
+export type CreatePKCS10CSRResponse = {
   /** The DER encoded PKCS#10 certification request. */
   PKCS10CSR?: Base64DERencodedASN1Value
 }
-export interface CreateSelfSignedCertificate {
+export type CreateSelfSignedCertificate = {
   /** The X.509 version that the generated certificate shall comply to. */
   X509Version?: PositiveInteger
   /** Distinguished name of the entity that the certificate shall belong to. */
@@ -493,19 +493,19 @@ export interface CreateSelfSignedCertificate {
   /** The client-defined alias of the certificate to be created. */
   alias?: string
   /** The X.509 not valid before information to be included in the certificate. Defaults to the device's current time or a time before the device's current time. */
-  notValidBefore?: Date
+  notValidBefore?: OnvifDate
   /** The X.509 not valid after information to be included in the certificate. Defaults to the time 99991231235959Z as specified in RFC 5280. */
-  notValidAfter?: Date
+  notValidAfter?: OnvifDate
   /** The signature algorithm to be used for signing the certificate. */
   signatureAlgorithm?: AlgorithmIdentifier
   /** An X.509v3 extension to be included in the certificate. */
   extension?: X509v3Extension[]
 }
-export interface CreateSelfSignedCertificateResponse {
+export type CreateSelfSignedCertificateResponse = {
   /** The ID of the generated certificate. */
   certificateID?: CertificateID
 }
-export interface UploadCertificate {
+export type UploadCertificate = {
   /** The base64-encoded DER representation of the X.509 certificate to be uploaded. */
   certificate?: Base64DERencodedASN1Value
   /** The client-defined alias of the certificate. */
@@ -515,137 +515,137 @@ export interface UploadCertificate {
   /** Indicates if the device shall verify that a matching key pair with a private key exists in the keystore. */
   privateKeyRequired?: boolean
 }
-export interface UploadCertificateResponse {
+export type UploadCertificateResponse = {
   /** The ID of the uploaded certificate. */
   certificateID?: CertificateID
   /** The ID of the key that the uploaded certificate certifies. */
   keyID?: KeyID
 }
-export interface GetCertificate {
+export type GetCertificate = {
   /** The ID of the certificate to retrieve. */
   certificateID?: CertificateID
 }
-export interface GetCertificateResponse {
+export type GetCertificateResponse = {
   /** The DER representation of the certificate. */
   certificate?: X509Certificate
 }
-export interface GetAllCertificates {}
+export type GetAllCertificates = {}
 /** A list with all certificates stored in the keystore. */
-export interface GetAllCertificatesResponse {
+export type GetAllCertificatesResponse = {
   /** A certificate stored in the keystore. */
   certificate?: X509Certificate[]
 }
-export interface DeleteCertificate {
+export type DeleteCertificate = {
   /** The ID of the certificate to delete. */
   certificateID?: CertificateID
 }
-export interface DeleteCertificateResponse {}
-export interface CreateCertificationPath {
+export type DeleteCertificateResponse = {}
+export type CreateCertificationPath = {
   /** The IDs of the certificates to include in the certification path, where each certificate signature except for the last one in the path must be verifiable with the public key certified by the next certificate in the path. */
   certificateIDs?: CertificateIDs
   /** The client-defined alias of the certification path. */
   alias?: string
 }
-export interface CreateCertificationPathResponse {
+export type CreateCertificationPathResponse = {
   /** The ID of the generated certification path. */
   certificationPathID?: CertificationPathID
 }
-export interface GetCertificationPath {
+export type GetCertificationPath = {
   /** The ID of the certification path to retrieve. */
   certificationPathID?: CertificationPathID
 }
-export interface GetCertificationPathResponse {
+export type GetCertificationPathResponse = {
   /** The certification path that is stored under the given ID in the keystore. */
   certificationPath?: CertificationPath
 }
-export interface GetAllCertificationPaths {}
-export interface GetAllCertificationPathsResponse {
+export type GetAllCertificationPaths = {}
+export type GetAllCertificationPathsResponse = {
   /** An ID of a certification path in the keystore. */
   certificationPathID?: CertificationPathID[]
 }
-export interface DeleteCertificationPath {
+export type DeleteCertificationPath = {
   /** The ID of the certification path to delete. */
   certificationPathID?: CertificationPathID
 }
-export interface DeleteCertificationPathResponse {}
-export interface UploadPassphrase {
+export type DeleteCertificationPathResponse = {}
+export type UploadPassphrase = {
   /** The passphrase to upload. */
   passphrase?: string
   /** The alias for the passphrase to upload. */
   passphraseAlias?: string
 }
-export interface UploadPassphraseResponse {
+export type UploadPassphraseResponse = {
   /** The PassphraseID of the uploaded passphrase. */
   passphraseID?: PassphraseID
 }
-export interface GetAllPassphrases {}
-export interface GetAllPassphrasesResponse {
+export type GetAllPassphrases = {}
+export type GetAllPassphrasesResponse = {
   /** Information about a passphrase in the keystore. */
   passphraseAttribute?: PassphraseAttribute[]
 }
-export interface DeletePassphrase {
+export type DeletePassphrase = {
   /** The ID of the passphrase that is to be deleted from the keystore. */
   passphraseID?: PassphraseID
 }
-export interface DeletePassphraseResponse {}
-export interface AddServerCertificateAssignment {
+export type DeletePassphraseResponse = {}
+export type AddServerCertificateAssignment = {
   certificationPathID?: CertificationPathID
 }
-export interface AddServerCertificateAssignmentResponse {}
-export interface RemoveServerCertificateAssignment {
+export type AddServerCertificateAssignmentResponse = {}
+export type RemoveServerCertificateAssignment = {
   certificationPathID?: CertificationPathID
 }
-export interface RemoveServerCertificateAssignmentResponse {}
-export interface ReplaceServerCertificateAssignment {
+export type RemoveServerCertificateAssignmentResponse = {}
+export type ReplaceServerCertificateAssignment = {
   oldCertificationPathID?: CertificationPathID
   newCertificationPathID?: CertificationPathID
 }
-export interface ReplaceServerCertificateAssignmentResponse {}
-export interface GetAssignedServerCertificates {}
-export interface GetAssignedServerCertificatesResponse {
+export type ReplaceServerCertificateAssignmentResponse = {}
+export type GetAssignedServerCertificates = {}
+export type GetAssignedServerCertificatesResponse = {
   /** The IDs of all certification paths that are assigned to the TLS server on the device. */
   certificationPathID?: CertificationPathID[]
 }
-export interface SetEnabledTLSVersions {
+export type SetEnabledTLSVersions = {
   /** List of TLS versions to allow. */
   versions?: TLSVersions
 }
-export interface SetEnabledTLSVersionsResponse {}
-export interface GetEnabledTLSVersions {}
-export interface GetEnabledTLSVersionsResponse {
+export type SetEnabledTLSVersionsResponse = {}
+export type GetEnabledTLSVersions = {}
+export type GetEnabledTLSVersionsResponse = {
   /** List of allowed TLS versions. */
   versions?: TLSVersions
 }
-export interface UploadCRL {
+export type UploadCRL = {
   /** The CRL to be uploaded to the device. */
   crl?: Base64DERencodedASN1Value
   /** The alias to assign to the uploaded CRL. */
   alias?: string
   anyParameters?: anyParameters
 }
-export interface UploadCRLResponse {
+export type UploadCRLResponse = {
   /** The ID of the uploaded CRL. */
   crlID?: CRLID
 }
-export interface GetCRL {
+export type GetCRL = {
   /** The ID of the CRL to be returned. */
   crlID?: CRLID
 }
-export interface GetCRLResponse {
+export type GetCRLResponse = {
   /** The CRL with the requested ID. */
   crl?: CRL
 }
-export interface GetAllCRLs {}
-export interface GetAllCRLsResponse {
+export type GetAllCRLs = {}
+export type GetAllCRLsResponse = {
   /** A list of all CRLs that are stored in the keystore on the device. */
   crl?: CRL[]
 }
-export interface DeleteCRL {
+export type DeleteCRL = {
   /** The ID of the CRL to be deleted. */
   crlID?: CRLID
 }
-export interface DeleteCRLResponse {}
-export interface CreateCertPathValidationPolicy {
+export type DeleteCRLResponse = {}
+export type CreateCertPathValidationPolicy = {
   /** The alias to assign to the created certification path validation policy. */
   alias?: string
   /** The parameters of the certification path validation policy to be created. */
@@ -654,135 +654,135 @@ export interface CreateCertPathValidationPolicy {
   trustAnchor?: TrustAnchor[]
   anyParameters?: anyParameters
 }
-export interface CreateCertPathValidationPolicyResponse {
+export type CreateCertPathValidationPolicyResponse = {
   /** The ID of the created certification path validation policy. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface GetCertPathValidationPolicy {
+export type GetCertPathValidationPolicy = {
   /** The ID of the certification path validation policy to be created. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface GetCertPathValidationPolicyResponse {
+export type GetCertPathValidationPolicyResponse = {
   /** The certification path validation policy that is stored under the requested ID. */
   certPathValidationPolicy?: CertPathValidationPolicy
 }
-export interface GetAllCertPathValidationPolicies {}
-export interface GetAllCertPathValidationPoliciesResponse {
+export type GetAllCertPathValidationPolicies = {}
+export type GetAllCertPathValidationPoliciesResponse = {
   /** A list of all certification path validation policies that are stored in the keystore on the device. */
   certPathValidationPolicy?: CertPathValidationPolicy[]
 }
-export interface DeleteCertPathValidationPolicy {
+export type DeleteCertPathValidationPolicy = {
   /** The ID of the certification path validation policy to be deleted. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface DeleteCertPathValidationPolicyResponse {}
-export interface SetClientAuthenticationRequired {
+export type DeleteCertPathValidationPolicyResponse = {}
+export type SetClientAuthenticationRequired = {
   clientAuthenticationRequired?: boolean
 }
-export interface SetClientAuthenticationRequiredResponse {}
-export interface GetClientAuthenticationRequired {}
-export interface GetClientAuthenticationRequiredResponse {
+export type SetClientAuthenticationRequiredResponse = {}
+export type GetClientAuthenticationRequired = {}
+export type GetClientAuthenticationRequiredResponse = {
   clientAuthenticationRequired?: boolean
 }
-export interface SetCnMapsToUser {
+export type SetCnMapsToUser = {
   cnMapsToUser?: boolean
 }
-export interface SetCnMapsToUserResponse {}
-export interface GetCnMapsToUser {}
-export interface GetCnMapsToUserResponse {
+export type SetCnMapsToUserResponse = {}
+export type GetCnMapsToUser = {}
+export type GetCnMapsToUserResponse = {
   cnMapsToUser?: boolean
 }
-export interface AddCertPathValidationPolicyAssignment {
+export type AddCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to assign to the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface AddCertPathValidationPolicyAssignmentResponse {}
-export interface RemoveCertPathValidationPolicyAssignment {
+export type AddCertPathValidationPolicyAssignmentResponse = {}
+export type RemoveCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to de-assign from the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface RemoveCertPathValidationPolicyAssignmentResponse {}
-export interface ReplaceCertPathValidationPolicyAssignment {
+export type RemoveCertPathValidationPolicyAssignmentResponse = {}
+export type ReplaceCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to be de-assigned from the TLS server. */
   oldCertPathValidationPolicyID?: CertPathValidationPolicyID
   /** The ID of the certification path validation policy to assign to the TLS server. */
   newCertPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export interface ReplaceCertPathValidationPolicyAssignmentResponse {}
-export interface GetAssignedCertPathValidationPolicies {}
-export interface GetAssignedCertPathValidationPoliciesResponse {
+export type ReplaceCertPathValidationPolicyAssignmentResponse = {}
+export type GetAssignedCertPathValidationPolicies = {}
+export type GetAssignedCertPathValidationPoliciesResponse = {
   /** A list of IDs of the certification path validation policies that are assigned to the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID[]
 }
-export interface AddDot1XConfiguration {
+export type AddDot1XConfiguration = {
   /** The desired 802.1X configuration. */
   dot1XConfiguration?: Dot1XConfiguration
 }
-export interface AddDot1XConfigurationResponse {
+export type AddDot1XConfigurationResponse = {
   /** The unique identifier of the created 802.1X configuration. */
   dot1XID?: Dot1XID
 }
-export interface GetAllDot1XConfigurations {}
-export interface GetAllDot1XConfigurationsResponse {
+export type GetAllDot1XConfigurations = {}
+export type GetAllDot1XConfigurationsResponse = {
   /** The list of unique identifiers of 802.1X configurations on the device. */
   configuration?: Dot1XConfiguration[]
 }
-export interface GetDot1XConfiguration {
+export type GetDot1XConfiguration = {
   /** The unique identifier of the desired 802.1X configuration. */
   dot1XID?: Dot1XID
 }
-export interface GetDot1XConfigurationResponse {
+export type GetDot1XConfigurationResponse = {
   /** The 802.1X configuration, without password information. */
   dot1XConfiguration?: Dot1XConfiguration
 }
-export interface DeleteDot1XConfiguration {
+export type DeleteDot1XConfiguration = {
   /** The unique identifier of the 802.1X configuration to be deleted. */
   dot1XID?: Dot1XID
 }
-export interface DeleteDot1XConfigurationResponse {}
-export interface SetNetworkInterfaceDot1XConfiguration {
+export type DeleteDot1XConfigurationResponse = {}
+export type SetNetworkInterfaceDot1XConfiguration = {
   /** The unique identifier of the Network Interface on which the 802.1X configuration is to be set. (NOTE: the network interface token is defined in devicemgmt.wsdl as tt:ReferenceToken, which is a derived type of xs:string.  To avoid importing all of common.xsd for this single type, the base type is used here.) */
   token?: string
   /** The unique identifier of the 802.1X configuration to be set. */
   dot1XID?: Dot1XID
 }
-export interface SetNetworkInterfaceDot1XConfigurationResponse {
+export type SetNetworkInterfaceDot1XConfigurationResponse = {
   /** Indicates whether or not a reboot is required after configuration updates. */
   rebootNeeded?: boolean
 }
-export interface GetNetworkInterfaceDot1XConfiguration {
+export type GetNetworkInterfaceDot1XConfiguration = {
   /** The unique identifier of the Network Interface for which the 802.1X configuration is to be retrieved. (NOTE: the network interface token is defined in devicemgmt.wsdl as tt:ReferenceToken, which is a derived type of xs:string.  To avoid importing all of common.xsd for this single type, the base type is used here.) */
   token?: string
 }
-export interface GetNetworkInterfaceDot1XConfigurationResponse {
+export type GetNetworkInterfaceDot1XConfigurationResponse = {
   /** The unique identifier of 802.1X configuration assigned to the Network Interface. */
   dot1XID?: Dot1XID
 }
-export interface DeleteNetworkInterfaceDot1XConfiguration {
+export type DeleteNetworkInterfaceDot1XConfiguration = {
   /** The unique identifier of the Network Interface for which the 802.1X configuration is to be deleted. (NOTE: the network interface token is defined in devicemgmt.wsdl as tt:ReferenceToken, which is a derived type of xs:string.  To avoid importing all of common.xsd for this single type, the base type is used here.) */
   token?: string
 }
-export interface DeleteNetworkInterfaceDot1XConfigurationResponse {
+export type DeleteNetworkInterfaceDot1XConfigurationResponse = {
   /** Indicates whether or not a reboot is required after configuration updates. */
   rebootNeeded?: boolean
 }
-export interface GetAuthorizationServerConfigurations {
+export type GetAuthorizationServerConfigurations = {
   token?: ReferenceToken
 }
-export interface GetAuthorizationServerConfigurationsResponse {
+export type GetAuthorizationServerConfigurationsResponse = {
   configuration?: AuthorizationServerConfiguration[]
 }
-export interface CreateAuthorizationServerConfiguration {
+export type CreateAuthorizationServerConfiguration = {
   configuration?: AuthorizationServerConfigurationData
 }
-export interface CreateAuthorizationServerConfigurationResponse {
+export type CreateAuthorizationServerConfigurationResponse = {
   token?: ReferenceToken
 }
-export interface SetAuthorizationServerConfiguration {
+export type SetAuthorizationServerConfiguration = {
   configuration?: AuthorizationServerConfiguration
 }
-export interface SetAuthorizationServerConfigurationResponse {}
-export interface DeleteAuthorizationServerConfiguration {
+export type SetAuthorizationServerConfigurationResponse = {}
+export type DeleteAuthorizationServerConfiguration = {
   token?: ReferenceToken
 }
-export interface DeleteAuthorizationServerConfigurationResponse {}
+export type DeleteAuthorizationServerConfigurationResponse = {}

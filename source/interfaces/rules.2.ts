@@ -1,6 +1,6 @@
-import { IntRange, ReferenceToken } from './common.ts'
+import type { IntRange, ReferenceToken } from './common.ts'
 
-export interface MotionRegionConfigOptions {
+export type MotionRegionConfigOptions = {
   /** Indicates the support for PTZ preset based motion detection, if supported Preset token can be associated with a motion region. */
   PTZPresetMotionSupport?: boolean
   /**
@@ -34,7 +34,7 @@ export interface MotionRegionConfigOptions {
    */
   ruleNotification?: boolean
 }
-export interface MotionRegionConfig {
+export type MotionRegionConfig = {
   /**
    * Indicates if the Motion Region is Armed (detecting motion) or Disarmed (motion is
    * not being detected).

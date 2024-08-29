@@ -1,89 +1,88 @@
-import {
-  StringList,
-  StringAttrList,
+import type { ReferenceToken } from './common.ts'
+import type {
+  ArrayOfFileProgress,
   Capabilities,
-  RecordingConfiguration,
-  RecordingReference,
-  GetRecordingsResponseItem,
-  TrackConfiguration,
-  TrackReference,
-  RecordingJobConfiguration,
-  RecordingJobReference,
   GetRecordingJobsResponseItem,
+  GetRecordingsResponseItem,
+  OnvifDate,
+  RecordingConfiguration,
+  RecordingJobConfiguration,
   RecordingJobMode,
+  RecordingJobReference,
   RecordingJobStateInformation,
-  Date,
+  RecordingReference,
   SearchScope,
   StorageReferencePath,
-  ArrayOfFileProgress
+  StringAttrList,
+  TrackConfiguration,
+  TrackReference
 } from './onvif.ts'
-import { ReferenceToken } from './common.ts'
 
-export interface RecordingOptions {
+export type RecordingOptions = {
   job?: JobOptions
   track?: TrackOptions
 }
-export interface JobOptions {
+export type JobOptions = {
   /** Number of spare jobs that can be created for the recording. */
   spare?: number
   /** A device that supports recording of a restricted set of Media/Media2 Service Profiles returns the list of profiles that can be recorded on the given Recording. */
   compatibleSources?: StringAttrList
 }
-export interface TrackOptions {
+export type TrackOptions = {
   /** Total spare number of tracks that can be added to this recording. */
   spareTotal?: number
   /** Number of spare Video tracks that can be added to this recording. */
   spareVideo?: number
-  /** Number of spare Aduio tracks that can be added to this recording. */
+  /** Number of spare Audio tracks that can be added to this recording. */
   spareAudio?: number
   /** Number of spare Metadata tracks that can be added to this recording. */
   spareMetadata?: number
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = Record<string, unknown>
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the recording service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface CreateRecording {
+export type CreateRecording = {
   /** Initial configuration for the recording. */
   recordingConfiguration?: RecordingConfiguration
 }
-export interface CreateRecordingResponse {
+export type CreateRecordingResponse = {
   /** The reference to the created recording. */
   recordingToken?: RecordingReference
 }
-export interface DeleteRecording {
+export type DeleteRecording = {
   /** The reference of the recording to be deleted. */
   recordingToken?: RecordingReference
 }
-export interface DeleteRecordingResponse {}
-export interface GetRecordings {}
-export interface GetRecordingsResponse {
+export type DeleteRecordingResponse = Record<string, unknown>
+export type GetRecordings = Record<string, unknown>
+export type GetRecordingsResponse = {
   /** List of recording items. */
   recordingItem?: GetRecordingsResponseItem[]
 }
-export interface SetRecordingConfiguration {
+export type SetRecordingConfiguration = {
   /** Token of the recording that shall be changed. */
   recordingToken?: RecordingReference
   /** The new configuration. */
   recordingConfiguration?: RecordingConfiguration
 }
-export interface SetRecordingConfigurationResponse {}
-export interface GetRecordingConfiguration {
+export type SetRecordingConfigurationResponse = Record<string, unknown>
+export type GetRecordingConfiguration = {
   /** Token of the configuration to be retrieved. */
   recordingToken?: RecordingReference
 }
-export interface GetRecordingConfigurationResponse {
+export type GetRecordingConfigurationResponse = {
   /** Configuration of the recording. */
   recordingConfiguration?: RecordingConfiguration
 }
-export interface CreateTrack {
+export type CreateTrack = {
   /** Identifies the recording to which a track shall be added. */
   recordingToken?: RecordingReference
   /** The configuration of the new track. */
   trackConfiguration?: TrackConfiguration
 }
-export interface CreateTrackResponse {
+export type CreateTrackResponse = {
   /**
    * The TrackToken shall identify the newly created track. The
    * TrackToken shall be unique within the recoding to which
@@ -91,24 +90,24 @@ export interface CreateTrackResponse {
    */
   trackToken?: TrackReference
 }
-export interface DeleteTrack {
+export type DeleteTrack = {
   /** Token of the recording the track belongs to. */
   recordingToken?: RecordingReference
   /** Token of the track to be deleted. */
   trackToken?: TrackReference
 }
-export interface DeleteTrackResponse {}
-export interface GetTrackConfiguration {
+export type DeleteTrackResponse = Record<string, unknown>
+export type GetTrackConfiguration = {
   /** Token of the recording the track belongs to. */
   recordingToken?: RecordingReference
   /** Token of the track. */
   trackToken?: TrackReference
 }
-export interface GetTrackConfigurationResponse {
+export type GetTrackConfigurationResponse = {
   /** Configuration of the track. */
   trackConfiguration?: TrackConfiguration
 }
-export interface SetTrackConfiguration {
+export type SetTrackConfiguration = {
   /** Token of the recording the track belongs to. */
   recordingToken?: RecordingReference
   /** Token of the track to be modified. */
@@ -116,12 +115,12 @@ export interface SetTrackConfiguration {
   /** New configuration for the track. */
   trackConfiguration?: TrackConfiguration
 }
-export interface SetTrackConfigurationResponse {}
-export interface CreateRecordingJob {
+export type SetTrackConfigurationResponse = Record<string, unknown>
+export type CreateRecordingJob = {
   /** The initial configuration of the new recording job. */
   jobConfiguration?: RecordingJobConfiguration
 }
-export interface CreateRecordingJobResponse {
+export type CreateRecordingJobResponse = {
   /** The JobToken shall identify the created recording job. */
   jobToken?: RecordingJobReference
   /**
@@ -130,65 +129,65 @@ export interface CreateRecordingJobResponse {
    */
   jobConfiguration?: RecordingJobConfiguration
 }
-export interface DeleteRecordingJob {
+export type DeleteRecordingJob = {
   /** The token of the job to be deleted. */
   jobToken?: RecordingJobReference
 }
-export interface DeleteRecordingJobResponse {}
-export interface GetRecordingJobs {}
-export interface GetRecordingJobsResponse {
+export type DeleteRecordingJobResponse = Record<string, unknown>
+export type GetRecordingJobs = Record<string, unknown>
+export type GetRecordingJobsResponse = {
   /** List of recording jobs. */
   jobItem?: GetRecordingJobsResponseItem[]
 }
-export interface SetRecordingJobConfiguration {
+export type SetRecordingJobConfiguration = {
   /** Token of the job to be modified. */
   jobToken?: RecordingJobReference
   /** New configuration of the recording job. */
   jobConfiguration?: RecordingJobConfiguration
 }
-export interface SetRecordingJobConfigurationResponse {
+export type SetRecordingJobConfigurationResponse = {
   /**
    * The JobConfiguration structure shall be the configuration
    * as it is used by the device. This may be different from the JobConfiguration passed to SetRecordingJobConfiguration.
    */
   jobConfiguration?: RecordingJobConfiguration
 }
-export interface GetRecordingJobConfiguration {
+export type GetRecordingJobConfiguration = {
   /** Token of the recording job. */
   jobToken?: RecordingJobReference
 }
-export interface GetRecordingJobConfigurationResponse {
+export type GetRecordingJobConfigurationResponse = {
   /** Current configuration of the recording job. */
   jobConfiguration?: RecordingJobConfiguration
 }
-export interface SetRecordingJobMode {
+export type SetRecordingJobMode = {
   /** Token of the recording job. */
   jobToken?: RecordingJobReference
   /** The new mode for the recording job. */
   mode?: RecordingJobMode
 }
-export interface SetRecordingJobModeResponse {}
-export interface GetRecordingJobState {
+export type SetRecordingJobModeResponse = Record<string, unknown>
+export type GetRecordingJobState = {
   /** Token of the recording job. */
   jobToken?: RecordingJobReference
 }
-export interface GetRecordingJobStateResponse {
+export type GetRecordingJobStateResponse = {
   /** The current state of the recording job. */
   state?: RecordingJobStateInformation
 }
-export interface GetRecordingOptions {
+export type GetRecordingOptions = {
   /** Token of the recording. */
   recordingToken?: RecordingReference
 }
-export interface GetRecordingOptionsResponse {
+export type GetRecordingOptionsResponse = {
   /** Configuration of the recording. */
   options?: RecordingOptions
 }
-export interface ExportRecordedData {
+export type ExportRecordedData = {
   /** Optional parameter that specifies start time for the exporting. */
-  startPoint?: Date
+  startPoint?: OnvifDate
   /** Optional parameter that specifies end time for the exporting. */
-  endPoint?: Date
+  endPoint?: OnvifDate
   /** Indicates the selection criterion on the existing recordings. . */
   searchScope?: SearchScope
   /** Indicates which export file format to be used. */
@@ -196,29 +195,29 @@ export interface ExportRecordedData {
   /** Indicates the target storage and relative directory path. */
   storageDestination?: StorageReferencePath
 }
-export interface Extension {}
-export interface ExportRecordedDataResponse {
+export type Extension = Record<string, unknown>
+export type ExportRecordedDataResponse = {
   /** Unique operation token for client to associate the relevant events. */
   operationToken?: ReferenceToken
-  /** List of exported file names. The device can also use AsyncronousOperationStatus event to publish this list. */
+  /** List of exported file names. The device can also use AsynchronousOperationStatus event to publish this list. */
   fileNames?: string[]
   extension?: Extension
 }
-export interface StopExportRecordedData {
+export type StopExportRecordedData = {
   /** Unique ExportRecordedData operation token */
   operationToken?: ReferenceToken
 }
-export interface StopExportRecordedDataResponse {
+export type StopExportRecordedDataResponse = {
   /** Progress percentage of ExportRecordedData operation. */
   progress?: number
   /**/
   fileProgressStatus?: ArrayOfFileProgress
 }
-export interface GetExportRecordedDataState {
+export type GetExportRecordedDataState = {
   /** Unique ExportRecordedData operation token */
   operationToken?: ReferenceToken
 }
-export interface GetExportRecordedDataStateResponse {
+export type GetExportRecordedDataStateResponse = {
   /** Progress percentage of ExportRecordedData operation. */
   progress?: number
   /**/

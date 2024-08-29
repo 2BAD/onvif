@@ -1,29 +1,29 @@
-import { FloatList, Capabilities, StreamSetup, ReplayConfiguration } from './onvif.ts'
-import { AnyURI } from './basics.ts'
-import { ReferenceToken } from './common.ts'
+import type { AnyURI } from './basics.ts'
+import type { ReferenceToken } from './common.ts'
+import type { Capabilities, ReplayConfiguration, StreamSetup } from './onvif.ts'
 
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = Record<string, unknown>
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the replay service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetReplayUri {
+export type GetReplayUri = {
   /** Specifies the connection parameters to be used for the stream. The URI that is returned may depend on these parameters. */
   streamSetup?: StreamSetup
   /** The identifier of the recording to be streamed. */
   recordingToken?: ReferenceToken
 }
-export interface GetReplayUriResponse {
+export type GetReplayUriResponse = {
   /** The URI to which the client should connect in order to stream the recording. */
   uri?: AnyURI
 }
-export interface SetReplayConfiguration {
+export type SetReplayConfiguration = {
   /** Description of the new replay configuration parameters. */
   configuration?: ReplayConfiguration
 }
-export interface SetReplayConfigurationResponse {}
-export interface GetReplayConfiguration {}
-export interface GetReplayConfigurationResponse {
+export type SetReplayConfigurationResponse = Record<string, unknown>
+export type GetReplayConfiguration = Record<string, unknown>
+export type GetReplayConfigurationResponse = {
   /** The current replay configuration parameters. */
   configuration?: ReplayConfiguration
 }

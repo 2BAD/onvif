@@ -1,4 +1,4 @@
-import { ColorDescriptor } from './common.ts'
+import type { ColorDescriptor } from './common.ts'
 
 export type BodyShape = 'Fat' | 'Thin' | 'Other'
 export type TopsCategory = 'LongSleeve' | 'ShortSleeve' | 'Sleeveless' | 'Other'
@@ -20,25 +20,25 @@ export type HumanActivity =
   | 'Standing'
   | 'Driving'
   | 'Other'
-export interface BodyMetric {
+export type BodyMetric = {
   /** Describe the Stature of the body, the unit is centimeter. */
   height?: number
-  /** Describle the Shape of the body, acceptable values are defined in bd:BodyShape. */
+  /** Describe the Shape of the body, acceptable values are defined in bd:BodyShape. */
   bodyShape?: string
 }
-export interface Scarf {
+export type Scarf = {
   /** Describe the Color of the Scarf, acceptable values are defined in ColorDescriptor. */
   color?: ColorDescriptor
   /** Describe if the body wears the Scarf. */
   wear?: boolean
 }
-export interface Gloves {
+export type Gloves = {
   /** Describe the Color of Gloves, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
   /** Describe if the body wears Gloves. */
   wear?: boolean
 }
-export interface Tops {
+export type Tops = {
   /** Describe the Category of the Tops, acceptable values are defined in bd:TopsCategory. */
   category?: string
   /** Describe the Color of the Tops, acceptable values are defined in tt:ColorDescriptor. */
@@ -48,7 +48,7 @@ export interface Tops {
   /** Describe the Style of the Tops, acceptable values are defined in bd:TopsStyle. */
   style?: string
 }
-export interface Bottoms {
+export type Bottoms = {
   /** Describe the Category of the Bottoms, acceptable values are defined in bd:BottomsCategory. */
   category?: string
   /** Describe the Color of the Bottoms, acceptable values are defined in tt:ColorDescriptor. */
@@ -58,13 +58,13 @@ export interface Bottoms {
   /** Describe the Style of the Bottoms, acceptable values are defined in bd:BottomsStyle. */
   style?: string
 }
-export interface Shoes {
+export type Shoes = {
   /** Describe the Category of the Shoes, acceptable values are defined in bd:ShoesCategory. */
   category?: string
   /** Describe the Color of the Shoes, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
 }
-export interface Clothing {
+export type Clothing = {
   /** Describe the Scarf of the body,acceptable values are defined in bd:Scarf. */
   scarf?: Scarf
   /** Describe Gloves of the body,acceptable values are defined in bd:Gloves. */
@@ -76,31 +76,31 @@ export interface Clothing {
   /** Describe the Shoes of the body,acceptable values are defined in bd:Shoes. */
   shoes?: Shoes
 }
-export interface Bag {
+export type Bag = {
   /** Describe the Category of the Bag, acceptable values are defined in bd:KnapsackCategory. */
   category?: string
   /** Describe the Colour of the Bag, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
 }
-export interface Umbrella {
+export type Umbrella = {
   /** Describe the Color of the Bag, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
   /** Describe if the body Opens the Umbrella. */
   open?: boolean
 }
-export interface Box {
+export type Box = {
   /** Describe the Color of the Box, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
   /** Describe if the body Lugs the Box. */
   lug?: boolean
 }
-export interface Cart {
+export type Cart = {
   /** Describe the Category of the Cart, acceptable values are defined in bd:CartCategory. */
   category?: string
   /** Describe the Color of the Cart, acceptable values are defined in tt:ColorDescriptor. */
   color?: ColorDescriptor
 }
-export interface Belonging {
+export type Belonging = {
   /** Describe the Bag of the body,acceptable values are defined in bd:Bag */
   bag?: Bag
   /** Describe the Umbrella carried by the body,acceptable values are defined in bd:Umbrella. */
@@ -114,7 +114,7 @@ export interface Belonging {
   /** Describe if the body carries the Weapon. */
   weapon?: boolean
 }
-export interface Behaviour {
+export type Behaviour = {
   /** Acceptable values are defined in bd:Smoking. */
   smoking?: string
   /** Acceptable values are defined in bd:UsingMobile. */
@@ -122,7 +122,7 @@ export interface Behaviour {
   /** Describe the activity of the body, Acceptable values are defined in bd:HumanActivity. */
   activity?: string
 }
-export interface HumanBody {
+export type HumanBody = {
   /** Describe the body metric of the body. */
   bodyMetric?: BodyMetric
   /** Describe the Clothing of the body. */

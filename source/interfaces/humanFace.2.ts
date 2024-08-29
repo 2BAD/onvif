@@ -1,4 +1,4 @@
-import { ColorDescriptor, GeoOrientation, IntRange } from './common.ts'
+import type { ColorDescriptor, GeoOrientation, IntRange } from './common.ts'
 
 export type Gender = 'Male' | 'Female'
 export type Complexion = 'White' | 'Black' | 'Asian' | 'Other'
@@ -21,7 +21,7 @@ export type Expression = 'Natural' | 'Smile' | 'RaisedEyebrows' | 'Squint' | 'Fr
 export type HatType = 'Cap'
 export type HelmetType = 'ConstructionCap' | 'CycleCap' | 'RidingHat'
 export type FrecklesType = 'AroundCheek' | 'Nose' | 'forehead' | 'Other'
-export interface Hair {
+export type Hair = {
   /**
    * Describe the length of the Hair, acceptable values are defined in fc:Length. Short usually means that the end of the hair doesn’t exceed the shoulder.
    * Medium usually means that the end of the hair is parallel with the shoulder. Long usually means that the end of the hair exceeds the chest.
@@ -34,7 +34,7 @@ export interface Hair {
   /** Describe the bangs of the Hair */
   bangs?: boolean
 }
-export interface Eyebrow {
+export type Eyebrow = {
   /**
    * Describe the shape of the eyebrow, Short usually means that the width of eye brow is shorter than the length of eye.
    * Long usually means that the width of eye brow is equal to or longer than the length of eye.acceptable values are defined in fc:EyebrowWidth.
@@ -45,7 +45,7 @@ export interface Eyebrow {
   /** Describe the space of two eyebrows, acceptable values are defined in fc:EyebrowSpace. */
   space?: string
 }
-export interface Eye {
+export type Eye = {
   /** Describe the shape of the eye, acceptable values are defined in fc:EyeShape. */
   shape?: string
   /** Describe the eyelid of the eye, acceptable values are defined in fc:Eyelid. */
@@ -53,7 +53,7 @@ export interface Eye {
   /** Describe the eyeball of the eye, acceptable values are defined in fc:Eyeball. */
   eyeball?: string
 }
-export interface Nose {
+export type Nose = {
   /**
    * Describe the length of the nose, acceptable values are defined in fc:NoseLength.
    * Long usually means that the length of the nose is longer than 1/3 of the length of the face.
@@ -67,7 +67,7 @@ export interface Nose {
   /** Describe the end of the nose, acceptable values are defined in fc:NoseEnd. */
   noseEnd?: string
 }
-export interface FacialHair {
+export type FacialHair = {
   /** Describe if there is mustache on the face. */
   mustache?: boolean
   /** Describe if there are Beard on the face. */
@@ -75,13 +75,13 @@ export interface FacialHair {
   /** Describe if there are sideburns on the face. */
   sideburn?: boolean
 }
-export interface PoseAngle {
+export type PoseAngle = {
   /** Describe the pose angle of the face. */
   poseAngles?: GeoOrientation
   /** Describe the expected degree of uncertainty of the pose angle yaw, pitch, and roll. */
   uncertainty?: GeoOrientation
 }
-export interface AccessoryDescription {
+export type AccessoryDescription = {
   /** Describe if the object wear a accessory . */
   wear?: boolean
   /** Describe the Color of the accessory. */
@@ -92,7 +92,7 @@ export interface AccessoryDescription {
    */
   subtype?: string
 }
-export interface Accessory {
+export type Accessory = {
   /** Describe if the object wear opticals. */
   opticals?: AccessoryDescription
   /** Describe if the object wear hat. */
@@ -110,7 +110,7 @@ export interface Accessory {
   /** Describe if there is a patch on the left eye. */
   leftEyePatch?: AccessoryDescription
 }
-export interface AdditionalFeatures {
+export type AdditionalFeatures = {
   /** Is there scar on the face. */
   scar?: boolean
   /** Is there mole on the face. */
@@ -120,7 +120,7 @@ export interface AdditionalFeatures {
   /** Describe freckles on the face, acceptable values are defined in fc:FrecklesType. */
   freckles?: string
 }
-export interface HumanFace {
+export type HumanFace = {
   /** Describe the age of the face. */
   age?: IntRange
   /** Describe the gender of the face, acceptable values are defined in fc:Gender. */

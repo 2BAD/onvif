@@ -1,11 +1,11 @@
-import { StringList, Capabilities } from './onvif.ts'
-import { AnyURI } from './basics.ts'
-import { ReferenceToken } from './common.ts'
+import type { AnyURI } from './basics.ts'
+import type { ReferenceToken } from './common.ts'
+import type { Capabilities } from './onvif.ts'
 
 export type Protocols = 'https' | 'wss'
 export type AuthorizationModes = 'mTLS' | 'JWT'
 export type ConnectionStatus = 'Offline' | 'Connecting' | 'Connected'
-export interface Configuration {
+export type Configuration = {
   /** Uniform resource locator by which the remote client can be reached. */
   remoteAddress?: AnyURI
   /** ID of the certificate to be used for client authentication. */
@@ -19,23 +19,23 @@ export interface Configuration {
   /** The configuration to be used to obtain a JWT token to authorize with the uplink server. */
   authorizationServer?: ReferenceToken
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = Record<string, unknown>
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the uplink service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetUplinks {}
-export interface GetUplinksResponse {
+export type GetUplinks = Record<string, unknown>
+export type GetUplinksResponse = {
   /** List of configured uplinks. */
   configuration?: Configuration[]
 }
-export interface SetUplink {
+export type SetUplink = {
   /** Configuration to be added or modified. */
   configuration?: Configuration
 }
-export interface SetUplinkResponse {}
-export interface DeleteUplink {
+export type SetUplinkResponse = Record<string, unknown>
+export type DeleteUplink = {
   /** Uniform resource locator of the configuration to be deleted. */
   remoteAddress?: AnyURI
 }
-export interface DeleteUplinkResponse {}
+export type DeleteUplinkResponse = Record<string, unknown>

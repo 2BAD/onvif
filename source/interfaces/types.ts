@@ -29,15 +29,15 @@ export type RecognitionType =
   | 'pt:REX'
 export type StringList = string[]
 /**
- * General datastructure referenced by a token.
+ * General data structure referenced by a token.
  * Should be used as extension base.
  */
-export interface DataEntity {
+export type DataEntity = {
   /** A service-unique identifier of the item. */
   token: ReferenceToken
 }
 /** Attributes contains a Name and an optional Value and type. */
-export interface Attribute {
+export type Attribute = {
   /**
    * Name of attribute. Key names starting with "ONVIF" (any case) are reserved for ONVIF
    * use.

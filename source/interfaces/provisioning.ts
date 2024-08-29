@@ -1,5 +1,5 @@
-import { PositiveInteger } from './types.ts'
-import { ReferenceToken } from './common.ts'
+import type { ReferenceToken } from './common.ts'
+import type { PositiveInteger } from './types.ts'
 
 /** The direction for PanMove to move the device. */
 export type PanDirection = 'Left' | 'Right'
@@ -12,7 +12,7 @@ export type RollDirection = 'Clockwise' | 'Counterclockwise' | 'Auto'
 /** The direction for FocusMove to move the focal plane in relation to the video source. */
 export type FocusDirection = 'Near' | 'Far' | 'Auto'
 /** The quantity of movement events that have occured over the lifetime of the device. */
-export interface Usage {
+export type Usage = {
   /** The quantity of pan movement events over the life of the device. */
   pan?: PositiveInteger
   /** The quantity of tilt movement events over the life of the device. */
@@ -25,7 +25,7 @@ export interface Usage {
   focus?: PositiveInteger
 }
 /** The provisioning capabilities of a video source on the device. */
-export interface SourceCapabilities {
+export type SourceCapabilities = {
   /** Unique identifier of a video source. */
   videoSourceToken: ReferenceToken
   /** Lifetime limit of pan moves for this video source.  Presence of this attribute indicates support of pan move. */
@@ -44,18 +44,18 @@ export interface SourceCapabilities {
   autoFocus?: boolean
 }
 /** The capabilities of Provisioning Service on the device. */
-export interface Capabilities {
+export type Capabilities = {
   /** Maximum time before stopping movement after a move operation. */
   defaultTimeout?: unknown
   /** Capabilities per video source. */
   source?: SourceCapabilities[]
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the provisioning service on this device. */
   capabilities?: Capabilities
 }
-export interface PanMove {
+export type PanMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
   /** "left" or "right". */
@@ -63,8 +63,8 @@ export interface PanMove {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export interface PanMoveResponse {}
-export interface TiltMove {
+export type PanMoveResponse = {}
+export type TiltMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
   /** "up" or "down". */
@@ -72,8 +72,8 @@ export interface TiltMove {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export interface TiltMoveResponse {}
-export interface ZoomMove {
+export type TiltMoveResponse = {}
+export type ZoomMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
   /** "wide" or "telephoto". */
@@ -81,8 +81,8 @@ export interface ZoomMove {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export interface ZoomMoveResponse {}
-export interface RollMove {
+export type ZoomMoveResponse = {}
+export type RollMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
   /** "clockwise", "counterclockwise", or "auto". */
@@ -90,8 +90,8 @@ export interface RollMove {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export interface RollMoveResponse {}
-export interface FocusMove {
+export type RollMoveResponse = {}
+export type FocusMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
   /** "near", "far", or "auto". */
@@ -99,17 +99,17 @@ export interface FocusMove {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export interface FocusMoveResponse {}
-export interface Stop {
+export type FocusMoveResponse = {}
+export type Stop = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
 }
-export interface StopResponse {}
-export interface GetUsage {
+export type StopResponse = {}
+export type GetUsage = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
 }
-export interface GetUsageResponse {
+export type GetUsageResponse = {
   /** The set of lifetime usage values for the provisioning associated with the video source. */
   usage?: Usage
 }

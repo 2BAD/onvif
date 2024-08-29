@@ -1,45 +1,45 @@
-import {
+import type {
   Capabilities,
-  RecordingSummary,
-  RecordingReference,
-  RecordingInformation,
-  Date,
-  MediaAttributes,
-  SearchScope,
-  JobToken,
-  FindRecordingResultList,
   EventFilter,
   FindEventResultList,
-  PTZPositionFilter,
-  FindPTZPositionResultList,
-  MetadataFilter,
   FindMetadataResultList,
+  FindPTZPositionResultList,
+  FindRecordingResultList,
+  JobToken,
+  MediaAttributes,
+  MetadataFilter,
+  OnvifDate,
+  PTZPositionFilter,
+  RecordingInformation,
+  RecordingReference,
+  RecordingSummary,
+  SearchScope,
   SearchState
 } from './onvif.ts'
 
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the search service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetRecordingSummary {}
-export interface GetRecordingSummaryResponse {
+export type GetRecordingSummary = {}
+export type GetRecordingSummaryResponse = {
   summary?: RecordingSummary
 }
-export interface GetRecordingInformation {
+export type GetRecordingInformation = {
   recordingToken?: RecordingReference
 }
-export interface GetRecordingInformationResponse {
+export type GetRecordingInformationResponse = {
   recordingInformation?: RecordingInformation
 }
-export interface GetMediaAttributes {
+export type GetMediaAttributes = {
   recordingTokens?: RecordingReference[]
-  time?: Date
+  time?: OnvifDate
 }
-export interface GetMediaAttributesResponse {
+export type GetMediaAttributesResponse = {
   mediaAttributes?: MediaAttributes[]
 }
-export interface FindRecordings {
+export type FindRecordings = {
   /** Scope defines the dataset to consider for this search. */
   scope?: SearchScope
   /** The search will be completed after this many matches. If not specified, the search will continue until reaching the endpoint or until the session expires. */
@@ -47,10 +47,10 @@ export interface FindRecordings {
   /** The time the search session will be kept alive after responding to this and subsequent requests. A device shall support at least values up to ten seconds. */
   keepAliveTime?: unknown
 }
-export interface FindRecordingsResponse {
+export type FindRecordingsResponse = {
   searchToken?: JobToken
 }
-export interface GetRecordingSearchResults {
+export type GetRecordingSearchResults = {
   /** The search session to get results from. */
   searchToken?: JobToken
   /** The minimum number of results to return in one response. */
@@ -60,14 +60,14 @@ export interface GetRecordingSearchResults {
   /** The maximum time before responding to the request, even if the MinResults parameter is not fulfilled. */
   waitTime?: unknown
 }
-export interface GetRecordingSearchResultsResponse {
+export type GetRecordingSearchResultsResponse = {
   resultList?: FindRecordingResultList
 }
-export interface FindEvents {
+export type FindEvents = {
   /** The point of time where the search will start. */
-  startPoint?: Date
+  startPoint?: OnvifDate
   /** The point of time where the search will stop. This can be a time before the StartPoint, in which case the search is performed backwards in time. */
-  endPoint?: Date
+  endPoint?: OnvifDate
   scope?: SearchScope
   searchFilter?: EventFilter
   /** Setting IncludeStartState to true means that the server should return virtual events representing the start state for any recording included in the scope. Start state events are limited to the topics defined in the SearchFilter that have the IsProperty flag set to true. */
@@ -77,11 +77,11 @@ export interface FindEvents {
   /** The time the search session will be kept alive after responding to this and subsequent requests. A device shall support at least values up to ten seconds. */
   keepAliveTime?: unknown
 }
-export interface FindEventsResponse {
+export type FindEventsResponse = {
   /** A unique reference to the search session created by this request. */
   searchToken?: JobToken
 }
-export interface GetEventSearchResults {
+export type GetEventSearchResults = {
   /** The search session to get results from. */
   searchToken?: JobToken
   /** The minimum number of results to return in one response. */
@@ -91,14 +91,14 @@ export interface GetEventSearchResults {
   /** The maximum time before responding to the request, even if the MinResults parameter is not fulfilled. */
   waitTime?: unknown
 }
-export interface GetEventSearchResultsResponse {
+export type GetEventSearchResultsResponse = {
   resultList?: FindEventResultList
 }
-export interface FindPTZPosition {
+export type FindPTZPosition = {
   /** The point of time where the search will start. */
-  startPoint?: Date
+  startPoint?: OnvifDate
   /** The point of time where the search will stop. This can be a time before the StartPoint, in which case the search is performed backwards in time. */
-  endPoint?: Date
+  endPoint?: OnvifDate
   scope?: SearchScope
   searchFilter?: PTZPositionFilter
   /** The search will be completed after this many matches. If not specified, the search will continue until reaching the endpoint or until the session expires. */
@@ -106,11 +106,11 @@ export interface FindPTZPosition {
   /** The time the search session will be kept alive after responding to this and subsequent requests. A device shall support at least values up to ten seconds. */
   keepAliveTime?: unknown
 }
-export interface FindPTZPositionResponse {
+export type FindPTZPositionResponse = {
   /** A unique reference to the search session created by this request. */
   searchToken?: JobToken
 }
-export interface GetPTZPositionSearchResults {
+export type GetPTZPositionSearchResults = {
   /** The search session to get results from. */
   searchToken?: JobToken
   /** The minimum number of results to return in one response. */
@@ -120,14 +120,14 @@ export interface GetPTZPositionSearchResults {
   /** The maximum time before responding to the request, even if the MinResults parameter is not fulfilled. */
   waitTime?: unknown
 }
-export interface GetPTZPositionSearchResultsResponse {
+export type GetPTZPositionSearchResultsResponse = {
   resultList?: FindPTZPositionResultList
 }
-export interface FindMetadata {
+export type FindMetadata = {
   /** The point of time where the search will start. */
-  startPoint?: Date
+  startPoint?: OnvifDate
   /** The point of time where the search will stop. This can be a time before the StartPoint, in which case the search is performed backwards in time. */
-  endPoint?: Date
+  endPoint?: OnvifDate
   scope?: SearchScope
   metadataFilter?: MetadataFilter
   /** The search will be completed after this many matches. If not specified, the search will continue until reaching the endpoint or until the session expires. */
@@ -135,11 +135,11 @@ export interface FindMetadata {
   /** The time the search session will be kept alive after responding to this and subsequent requests. A device shall support at least values up to ten seconds. */
   keepAliveTime?: unknown
 }
-export interface FindMetadataResponse {
+export type FindMetadataResponse = {
   /** A unique reference to the search session created by this request. */
   searchToken?: JobToken
 }
-export interface GetMetadataSearchResults {
+export type GetMetadataSearchResults = {
   /** The search session to get results from. */
   searchToken?: JobToken
   /** The minimum number of results to return in one response. */
@@ -149,21 +149,21 @@ export interface GetMetadataSearchResults {
   /** The maximum time before responding to the request, even if the MinResults parameter is not fulfilled. */
   waitTime?: unknown
 }
-export interface GetMetadataSearchResultsResponse {
+export type GetMetadataSearchResultsResponse = {
   resultList?: FindMetadataResultList
 }
-export interface GetSearchState {
+export type GetSearchState = {
   /** The search session to get the state from. */
   searchToken?: JobToken
 }
-export interface GetSearchStateResponse {
+export type GetSearchStateResponse = {
   state?: SearchState
 }
-export interface EndSearch {
+export type EndSearch = {
   /** The search session to end. */
   searchToken?: JobToken
 }
-export interface EndSearchResponse {
+export type EndSearchResponse = {
   /** The point of time the search had reached when it was ended. It is equal to the EndPoint specified in Find-operation if the search was completed. */
-  endpoint?: Date
+  endpoint?: OnvifDate
 }

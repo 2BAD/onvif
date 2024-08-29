@@ -1,23 +1,23 @@
-import { ReferenceToken } from './common.ts'
-import {
-  RelayMode,
-  FloatList,
-  DigitalIdleState,
-  DeviceEntity,
-  IntItems,
-  FloatItems,
-  Capabilities,
-  VideoOutput,
-  AudioSourceConfiguration,
+import type { ReferenceToken } from './common.ts'
+import type {
   AudioOutputConfiguration,
-  VideoSourceConfiguration,
-  VideoOutputConfiguration,
-  VideoSourceConfigurationOptions,
-  VideoOutputConfigurationOptions,
-  AudioSourceConfigurationOptions,
   AudioOutputConfigurationOptions,
+  AudioSourceConfiguration,
+  AudioSourceConfigurationOptions,
+  Capabilities,
+  DeviceEntity,
+  DigitalIdleState,
+  DigitalInput,
+  FloatItems,
+  FloatList,
+  IntItems,
+  RelayMode,
   RelayOutput,
-  DigitalInput
+  VideoOutput,
+  VideoOutputConfiguration,
+  VideoOutputConfigurationOptions,
+  VideoSourceConfiguration,
+  VideoSourceConfigurationOptions
 } from './onvif.ts'
 
 /** The type of serial port.Generic can be signaled as a vendor specific serial port type. */
@@ -30,7 +30,7 @@ export type SerialPortType =
   | 'Generic'
 /** The parity for the data error detection. */
 export type ParityBit = 'None' | 'Even' | 'Odd' | 'Mark' | 'Space' | 'Extended'
-export interface RelayOutputOptions {
+export type RelayOutputOptions = {
   /** Token of the relay output. */
   token: ReferenceToken
   /** Supported Modes. */
@@ -41,22 +41,22 @@ export interface RelayOutputOptions {
   discrete?: boolean
   extension?: RelayOutputOptionsExtension
 }
-export interface RelayOutputOptionsExtension {}
-export interface Get {}
-export interface GetResponse {
+export type RelayOutputOptionsExtension = {}
+export type Get = {}
+export type GetResponse = {
   /** List tokens of a physical IO of a device. */
   token?: ReferenceToken[]
 }
-export interface DigitalInputConfigurationOptions {
+export type DigitalInputConfigurationOptions = {
   /** Configuration Options for a digital input. */
   idleState?: DigitalIdleState[]
 }
 /** The serial port data. */
-export interface SerialData {}
+export type SerialData = {}
 /** Lists all available serial ports of a device */
-export interface SerialPort extends DeviceEntity {}
+export type SerialPort = {} & DeviceEntity
 /** The parameters for configuring the serial port. */
-export interface SerialPortConfiguration {
+export type SerialPortConfiguration = {
   token: ReferenceToken
   type: SerialPortType
   /** The transfer bitrate. */
@@ -69,7 +69,7 @@ export interface SerialPortConfiguration {
   stopBit?: number
 }
 /** The configuration options that relates to serial port. */
-export interface SerialPortConfigurationOptions {
+export type SerialPortConfigurationOptions = {
   token: ReferenceToken
   /** The list of configurable transfer bitrate. */
   baudRateList?: IntItems
@@ -81,60 +81,60 @@ export interface SerialPortConfigurationOptions {
   stopBitList?: FloatItems
 }
 /** The list of configurable parity for the data error detection. */
-export interface ParityBitList {
+export type ParityBitList = {
   items?: ParityBit[]
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the device IO service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetRelayOutputOptions {
+export type GetRelayOutputOptions = {
   /** Optional reference token to the relay for which the options are requested. */
   relayOutputToken?: ReferenceToken
 }
-export interface GetRelayOutputOptionsResponse {
+export type GetRelayOutputOptionsResponse = {
   /** Valid values and ranges for the configuration of a relay output. */
   relayOutputOptions?: RelayOutputOptions[]
 }
-export interface GetVideoOutputs {}
-export interface GetVideoOutputsResponse {
+export type GetVideoOutputs = {}
+export type GetVideoOutputsResponse = {
   /** List containing all physical Video output connections of a device. */
   videoOutputs?: VideoOutput[]
 }
-export interface GetAudioSourceConfiguration {
+export type GetAudioSourceConfiguration = {
   /** Token of the requested AudioSource. */
   audioSourceToken?: ReferenceToken
 }
-export interface GetAudioSourceConfigurationResponse {
+export type GetAudioSourceConfigurationResponse = {
   /** Current configuration of the Audio input. */
   audioSourceConfiguration?: AudioSourceConfiguration
 }
-export interface GetAudioOutputConfiguration {
+export type GetAudioOutputConfiguration = {
   /** Token of the physical Audio output. */
   audioOutputToken?: ReferenceToken
 }
-export interface GetAudioOutputConfigurationResponse {
+export type GetAudioOutputConfigurationResponse = {
   /** Current configuration of the Audio output. */
   audioOutputConfiguration?: AudioOutputConfiguration
 }
-export interface GetVideoSourceConfiguration {
+export type GetVideoSourceConfiguration = {
   /** Token of the requested VideoSource. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetVideoSourceConfigurationResponse {
+export type GetVideoSourceConfigurationResponse = {
   /** Current configuration of the Video input. */
   videoSourceConfiguration?: VideoSourceConfiguration
 }
-export interface GetVideoOutputConfiguration {
+export type GetVideoOutputConfiguration = {
   /** Token of the requested VideoOutput. */
   videoOutputToken?: ReferenceToken
 }
-export interface GetVideoOutputConfigurationResponse {
+export type GetVideoOutputConfigurationResponse = {
   /** Current configuration of the Video output. */
   videoOutputConfiguration?: VideoOutputConfiguration
 }
-export interface SetAudioSourceConfiguration {
+export type SetAudioSourceConfiguration = {
   configuration?: AudioSourceConfiguration
   /**
    * The ForcePersistence element determines how configuration
@@ -143,8 +143,8 @@ export interface SetAudioSourceConfiguration {
    */
   forcePersistence?: boolean
 }
-export interface SetAudioSourceConfigurationResponse {}
-export interface SetAudioOutputConfiguration {
+export type SetAudioSourceConfigurationResponse = {}
+export type SetAudioOutputConfiguration = {
   configuration?: AudioOutputConfiguration
   /**
    * The ForcePersistence element determines how configuration
@@ -153,8 +153,8 @@ export interface SetAudioOutputConfiguration {
    */
   forcePersistence?: boolean
 }
-export interface SetAudioOutputConfigurationResponse {}
-export interface SetVideoSourceConfiguration {
+export type SetAudioOutputConfigurationResponse = {}
+export type SetVideoSourceConfiguration = {
   configuration?: VideoSourceConfiguration
   /**
    * The ForcePersistence element determines how configuration
@@ -163,8 +163,8 @@ export interface SetVideoSourceConfiguration {
    */
   forcePersistence?: boolean
 }
-export interface SetVideoSourceConfigurationResponse {}
-export interface SetVideoOutputConfiguration {
+export type SetVideoSourceConfigurationResponse = {}
+export type SetVideoOutputConfiguration = {
   configuration?: VideoOutputConfiguration
   /**
    * The ForcePersistence element determines how configuration
@@ -173,77 +173,77 @@ export interface SetVideoOutputConfiguration {
    */
   forcePersistence?: boolean
 }
-export interface SetVideoOutputConfigurationResponse {}
-export interface GetVideoSourceConfigurationOptions {
+export type SetVideoOutputConfigurationResponse = {}
+export type GetVideoSourceConfigurationOptions = {
   /** Token of the Video input whose options are requested.. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetVideoSourceConfigurationOptionsResponse {
+export type GetVideoSourceConfigurationOptionsResponse = {
   videoSourceConfigurationOptions?: VideoSourceConfigurationOptions
 }
-export interface GetVideoOutputConfigurationOptions {
+export type GetVideoOutputConfigurationOptions = {
   /** Token of the Video Output whose options are requested.. */
   videoOutputToken?: ReferenceToken
 }
-export interface GetVideoOutputConfigurationOptionsResponse {
+export type GetVideoOutputConfigurationOptionsResponse = {
   videoOutputConfigurationOptions?: VideoOutputConfigurationOptions
 }
-export interface GetAudioSourceConfigurationOptions {
+export type GetAudioSourceConfigurationOptions = {
   /** Token of the physical Audio input whose options are requested.. */
   audioSourceToken?: ReferenceToken
 }
-export interface GetAudioSourceConfigurationOptionsResponse {
+export type GetAudioSourceConfigurationOptionsResponse = {
   /** Returns the AudioSourceToken available. */
   audioSourceOptions?: AudioSourceConfigurationOptions
 }
-export interface GetAudioOutputConfigurationOptions {
+export type GetAudioOutputConfigurationOptions = {
   /** Token of the physical Audio Output whose options are requested.. */
   audioOutputToken?: ReferenceToken
 }
-export interface GetAudioOutputConfigurationOptionsResponse {
+export type GetAudioOutputConfigurationOptionsResponse = {
   /** Available settings and ranges for the requested Audio output. */
   audioOutputOptions?: AudioOutputConfigurationOptions
 }
-export interface SetRelayOutputSettings {
+export type SetRelayOutputSettings = {
   relayOutput?: RelayOutput
 }
-export interface SetRelayOutputSettingsResponse {}
-export interface GetDigitalInputs {}
-export interface GetDigitalInputsResponse {
+export type SetRelayOutputSettingsResponse = {}
+export type GetDigitalInputs = {}
+export type GetDigitalInputsResponse = {
   digitalInputs?: DigitalInput[]
 }
-export interface GetDigitalInputConfigurationOptions {
+export type GetDigitalInputConfigurationOptions = {
   token?: ReferenceToken
 }
-export interface GetDigitalInputConfigurationOptionsResponse {
+export type GetDigitalInputConfigurationOptionsResponse = {
   digitalInputOptions?: DigitalInputConfigurationOptions
 }
-export interface SetDigitalInputConfigurations {
+export type SetDigitalInputConfigurations = {
   digitalInputs?: DigitalInput[]
 }
-export interface SetDigitalInputConfigurationsResponse {}
-export interface GetSerialPorts {}
-export interface GetSerialPortsResponse {
+export type SetDigitalInputConfigurationsResponse = {}
+export type GetSerialPorts = {}
+export type GetSerialPortsResponse = {
   serialPort?: SerialPort[]
 }
-export interface GetSerialPortConfiguration {
+export type GetSerialPortConfiguration = {
   serialPortToken?: ReferenceToken
 }
-export interface GetSerialPortConfigurationResponse {
+export type GetSerialPortConfigurationResponse = {
   serialPortConfiguration?: SerialPortConfiguration
 }
-export interface SetSerialPortConfiguration {
+export type SetSerialPortConfiguration = {
   serialPortConfiguration?: SerialPortConfiguration
   forcePersistance?: boolean
 }
-export interface SetSerialPortConfigurationResponse {}
-export interface GetSerialPortConfigurationOptions {
+export type SetSerialPortConfigurationResponse = {}
+export type GetSerialPortConfigurationOptions = {
   serialPortToken?: ReferenceToken
 }
-export interface GetSerialPortConfigurationOptionsResponse {
+export type GetSerialPortConfigurationOptionsResponse = {
   serialPortOptions?: SerialPortConfigurationOptions
 }
-export interface SendReceiveSerialCommand {
+export type SendReceiveSerialCommand = {
   /** The physical serial port reference to be used when this request is invoked. */
   token?: ReferenceToken
   /** The serial port data. */
@@ -255,6 +255,6 @@ export interface SendReceiveSerialCommand {
   /** This element may be put in the case that the delimiter codes returned from the connected serial device is already known. It indicates the termination data sequence of the responded data. In case the string has more than one character a device shall interpret the whole string as a single delimiter. Furthermore a device shall return the delimiter character(s) to the client. */
   delimiter?: string
 }
-export interface SendReceiveSerialCommandResponse {
+export type SendReceiveSerialCommandResponse = {
   serialData?: SerialData
 }

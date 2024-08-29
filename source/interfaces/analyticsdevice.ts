@@ -1,127 +1,127 @@
-import {
-  Capabilities,
-  AnalyticsEngineInput,
-  AnalyticsEngineControl,
+import type { AnyURI } from './basics.ts'
+import type { ReferenceToken } from './common.ts'
+import type {
   AnalyticsEngine,
-  VideoAnalyticsConfiguration,
+  AnalyticsEngineControl,
+  AnalyticsEngineInput,
+  AnalyticsStateInformation,
+  Capabilities,
   StreamSetup,
-  AnalyticsStateInformation
+  VideoAnalyticsConfiguration
 } from './onvif.ts'
-import { ReferenceToken } from './common.ts'
-import { AnyURI } from './basics.ts'
 
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the analytics device service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface DeleteAnalyticsEngineControl {
+export type DeleteAnalyticsEngineControl = {
   /** Token of the Analytics Engine Control configuration to be deleted. */
   configurationToken?: ReferenceToken
 }
-export interface DeleteAnalyticsEngineControlResponse {}
-export interface CreateAnalyticsEngineInputs {
+export type DeleteAnalyticsEngineControlResponse = {}
+export type CreateAnalyticsEngineInputs = {
   /** Settings of the configurations to be created. */
   configuration?: AnalyticsEngineInput[]
   forcePersistence?: boolean[]
 }
-export interface CreateAnalyticsEngineInputsResponse {
+export type CreateAnalyticsEngineInputsResponse = {
   /** Configurations containing token generated. */
   configuration?: AnalyticsEngineInput[]
 }
-export interface CreateAnalyticsEngineControl {
+export type CreateAnalyticsEngineControl = {
   /** Settings of the Analytics Engine Control configuration to be created. Mode shall be set to "idle". */
   configuration?: AnalyticsEngineControl
 }
-export interface CreateAnalyticsEngineControlResponse {
+export type CreateAnalyticsEngineControlResponse = {
   /** Configuration containing token generated. */
   configuration?: AnalyticsEngineInput[]
 }
-export interface SetAnalyticsEngineControl {
+export type SetAnalyticsEngineControl = {
   /** Contains the modified Analytics Engine Control configuration. */
   configuration?: AnalyticsEngineControl
   forcePersistence?: boolean
 }
-export interface SetAnalyticsEngineControlResponse {}
-export interface GetAnalyticsEngineControl {
+export type SetAnalyticsEngineControlResponse = {}
+export type GetAnalyticsEngineControl = {
   /** Token of the requested AnalyticsEngineControl configuration. */
   configurationToken?: ReferenceToken
 }
-export interface GetAnalyticsEngineControlResponse {
+export type GetAnalyticsEngineControlResponse = {
   /** Configuration of the AnalyticsEngineControl. */
   configuration?: AnalyticsEngineControl
 }
-export interface GetAnalyticsEngineControls {}
-export interface GetAnalyticsEngineControlsResponse {
+export type GetAnalyticsEngineControls = {}
+export type GetAnalyticsEngineControlsResponse = {
   /** List of available AnalyticsEngineControl configurations. */
   analyticsEngineControls?: AnalyticsEngineControl[]
 }
-export interface GetAnalyticsEngine {
+export type GetAnalyticsEngine = {
   /** Token of the requested AnalyticsEngine configuration. */
   configurationToken?: ReferenceToken
 }
-export interface GetAnalyticsEngineResponse {
+export type GetAnalyticsEngineResponse = {
   /** Configuration of the AnalyticsEngine. */
   configuration?: AnalyticsEngine
 }
-export interface GetAnalyticsEngines {}
-export interface GetAnalyticsEnginesResponse {
+export type GetAnalyticsEngines = {}
+export type GetAnalyticsEnginesResponse = {
   /** List of available AnalyticsEngine configurations. */
   configuration?: AnalyticsEngine[]
 }
-export interface SetVideoAnalyticsConfiguration {
+export type SetVideoAnalyticsConfiguration = {
   /** Contains the modified video analytics configuration. The configuration shall exist in the device. */
   configuration?: VideoAnalyticsConfiguration
   forcePersistence?: boolean
 }
-export interface SetVideoAnalyticsConfigurationResponse {}
-export interface SetAnalyticsEngineInput {
+export type SetVideoAnalyticsConfigurationResponse = {}
+export type SetAnalyticsEngineInput = {
   /** Contains the modified Analytics Engine Input configuration. The configuration shall exist in the device. */
   configuration?: AnalyticsEngineInput
   forcePersistence?: boolean
 }
-export interface SetAnalyticsEngineInputResponse {}
-export interface GetAnalyticsEngineInput {
+export type SetAnalyticsEngineInputResponse = {}
+export type GetAnalyticsEngineInput = {
   /** Token of the requested AnalyticsEngineInput configuration. */
   configurationToken?: ReferenceToken
 }
-export interface GetAnalyticsEngineInputResponse {
+export type GetAnalyticsEngineInputResponse = {
   /** Configuration of the AnalyticsEngineInput. */
   configuration?: AnalyticsEngineInput
 }
-export interface GetAnalyticsEngineInputs {}
-export interface GetAnalyticsEngineInputsResponse {
+export type GetAnalyticsEngineInputs = {}
+export type GetAnalyticsEngineInputsResponse = {
   /** List of available AnalyticsEngineInput configurations. */
   configuration?: AnalyticsEngineInput[]
 }
-export interface GetAnalyticsDeviceStreamUri {
+export type GetAnalyticsDeviceStreamUri = {
   /** Configuration of the URI requested. */
   streamSetup?: StreamSetup
   /** Token of the AnalyticsEngineControl whose URI is requested. */
   analyticsEngineControlToken?: ReferenceToken
 }
-export interface GetAnalyticsDeviceStreamUriResponse {
+export type GetAnalyticsDeviceStreamUriResponse = {
   /** Streaming URI. */
   uri?: AnyURI
 }
-export interface GetVideoAnalyticsConfiguration {
+export type GetVideoAnalyticsConfiguration = {
   /** Token of the VideoAnalyticsConfiguration requested. */
   configurationToken?: ReferenceToken
 }
-export interface GetVideoAnalyticsConfigurationResponse {
+export type GetVideoAnalyticsConfigurationResponse = {
   /** Settings of the VideoAnalyticsConfiguration. */
   configuration?: VideoAnalyticsConfiguration
 }
-export interface DeleteAnalyticsEngineInputs {
+export type DeleteAnalyticsEngineInputs = {
   /** LIst of tokens of Analytics Engine Input configurations to be deleted. */
   configurationToken?: ReferenceToken[]
 }
-export interface DeleteAnalyticsEngineInputsResponse {}
-export interface GetAnalyticsState {
+export type DeleteAnalyticsEngineInputsResponse = {}
+export type GetAnalyticsState = {
   /** Token of the AnalyticsEngineControl whose state information is requested. */
   analyticsEngineControlToken?: ReferenceToken
 }
-export interface GetAnalyticsStateResponse {
+export type GetAnalyticsStateResponse = {
   /** Current status information. */
   state?: AnalyticsStateInformation
 }

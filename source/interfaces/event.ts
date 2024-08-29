@@ -1,5 +1,5 @@
-import { AnyURI, FilterType } from './basics.ts'
-import { Capabilities, Date } from './onvif.ts'
+import type { AnyURI, FilterType } from './basics.ts'
+import type { Capabilities, OnvifDate } from './onvif.ts'
 
 export type EventBrokerProtocol = 'mqtt' | 'mqtts' | 'ws' | 'wss'
 export type ConnectionStatus = 'Offline' | 'Connecting' | 'Connected'
@@ -25,12 +25,12 @@ export interface EventBrokerConfig {
   /** Concrete Topic Expression to select specific metadata topics to publish. */
   metadataFilter?: FilterType
 }
-export interface GetServiceCapabilities {}
+export type GetServiceCapabilities = {}
 export interface GetServiceCapabilitiesResponse {
   /** The capabilities for the event service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface SubscriptionPolicy {}
+export type SubscriptionPolicy = {}
 export interface CreatePullPointSubscription {
   /** Optional XPATH expression to select specific topics. */
   filter?: FilterType
@@ -55,9 +55,9 @@ export interface PullMessages {
 }
 export interface PullMessagesResponse {
   /** The date and time when the messages have been delivered by the web server to the client. */
-  currentTime?: Date
+  currentTime?: OnvifDate
   /** Date time when the PullPoint will be shut down without further pull requests. */
-  terminationTime?: Date
+  terminationTime?: OnvifDate
   /** List of messages. This list shall be empty in case of a timeout. */
   otificationMessage?: unknown[]
 }
@@ -69,14 +69,14 @@ export interface PullMessagesFaultResponse {
 }
 export interface Seek {
   /** The date and time to match against stored messages. */
-  utcTime?: Date
+  utcTime?: OnvifDate
   /** Reverse the pull direction of PullMessages. */
   reverse?: boolean
 }
-export interface SeekResponse {}
-export interface SetSynchronizationPoint {}
-export interface SetSynchronizationPointResponse {}
-export interface GetEventProperties {}
+export type SeekResponse = {}
+export type SetSynchronizationPoint = {}
+export type SetSynchronizationPointResponse = {}
+export type GetEventProperties = {}
 export interface GetEventPropertiesResponse {
   /** List of topic namespaces supported. */
   topicNamespaceLocation?: AnyURI[]
@@ -116,11 +116,11 @@ export interface GetEventPropertiesResponse {
 export interface AddEventBroker {
   eventBroker?: EventBrokerConfig
 }
-export interface AddEventBrokerResponse {}
+export type AddEventBrokerResponse = {}
 export interface DeleteEventBroker {
   address?: AnyURI
 }
-export interface DeleteEventBrokerResponse {}
+export type DeleteEventBrokerResponse = {}
 export interface GetEventBrokers {
   address?: AnyURI
 }

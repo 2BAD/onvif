@@ -1,5 +1,5 @@
-import { ReferenceToken } from './common.ts'
-import { Name, FloatRange, Capabilities } from './onvif.ts'
+import type { ReferenceToken } from './common.ts'
+import type { Capabilities, FloatRange, Name } from './onvif.ts'
 
 export type Polarity = 'WhiteHot' | 'BlackHot'
 /**
@@ -18,7 +18,7 @@ export type ColorPaletteType =
   | 'Rainbow'
   | 'Isotherm'
 /** Describes a Color Palette element. */
-export interface ColorPalette {
+export type ColorPalette = {
   /** Unique identifier of this Color Palette. */
   token: ReferenceToken
   /**
@@ -30,7 +30,7 @@ export interface ColorPalette {
   name?: Name
 }
 /** Type describing a NUC Table element. */
-export interface NUCTable {
+export type NUCTable = {
   /** Unique identifier of this NUC Table. */
   token: ReferenceToken
   /** Low Temperature limit for application of NUC Table, in Kelvin. */
@@ -41,7 +41,7 @@ export interface NUCTable {
   name?: Name
 }
 /** Type describing the Cooler settings. */
-export interface Cooler {
+export type Cooler = {
   /** Indicates whether the Cooler is enabled (running) or not. */
   enabled?: boolean
   /** Number of hours the Cooler has been running (unit: hours). Read-only. */
@@ -51,7 +51,7 @@ export interface Cooler {
  * Describes valid ranges for the thermal device cooler settings.
  * Only applicable to cooled thermal devices.
  */
-export interface CoolerOptions {
+export type CoolerOptions = {
   /** Indicates the Device allows cooler status to be changed from running (Enabled) to stopped (Disabled), and viceversa. */
   enabled?: boolean
 }
@@ -59,7 +59,7 @@ export interface CoolerOptions {
  * Holds default values that will be used in measurement modules when local parameters are not specified for the module (these are still required for valid temperature calculations).
  * Having ReflectedAmbientTemperature, Emissivity and DistanceToObject as mandatory ensures minimum parameters are available to obtain valid temperature values.
  */
-export interface RadiometryGlobalParameters {
+export type RadiometryGlobalParameters = {
   /** Reflected Ambient Temperature for the environment in which the thermal device and the object being measured is located. */
   reflectedAmbientTemperature?: number
   /** Emissivity of the surface of the object on which temperature is being measured. */
@@ -78,7 +78,7 @@ export interface RadiometryGlobalParameters {
   extOpticsTransmittance?: number
 }
 /** Describes valid ranges for the different radiometry parameters required for accurate temperature calculation. */
-export interface RadiometryGlobalParameterOptions {
+export type RadiometryGlobalParameterOptions = {
   /** Valid range of temperature values, in Kelvin. */
   reflectedAmbientTemperature?: FloatRange
   /** Valid range of emissivity values for the objects to measure. */
@@ -96,7 +96,7 @@ export interface RadiometryGlobalParameterOptions {
   /** Valid range of external optics transmittance. */
   extOpticsTransmittance?: FloatRange
 }
-export interface Configuration {
+export type Configuration = {
   /** Current Color Palette in use by the Thermal Device. */
   colorPalette?: ColorPalette
   /** Polarity configuration of the Thermal Device. */
@@ -106,20 +106,20 @@ export interface Configuration {
   /** Cooler settings of the Thermal Device. */
   cooler?: Cooler
 }
-export interface Configurations {
+export type Configurations = {
   /** Reference token to the thermal VideoSource. */
   token: ReferenceToken
   /** Current Thermal Settings for the VideoSource. */
   configuration?: Configuration
 }
-export interface RadiometryConfiguration {
+export type RadiometryConfiguration = {
   /**
    * Global Parameters for Radiometry Measurements. Shall exist if Radiometry Capability is reported,
    * and Global Parameters are supported by the device.
    */
   radiometryGlobalParameters?: RadiometryGlobalParameters
 }
-export interface ConfigurationOptions {
+export type ConfigurationOptions = {
   /** List of Color Palettes available for the requested Thermal VideoSource. */
   colorPalette?: ColorPalette[]
   /** List of Non-Uniformity Correction (NUC) Tables available for the requested Thermal VideoSource. */
@@ -127,62 +127,62 @@ export interface ConfigurationOptions {
   /** Specifies Cooler Options for cooled thermal devices. */
   coolerOptions?: CoolerOptions
 }
-export interface RadiometryConfigurationOptions {
+export type RadiometryConfigurationOptions = {
   /**
    * Specifies valid ranges and options for the global radiometry parameters used as default parameter values
    * for temperature measurement modules (spots and boxes).
    */
   radiometryGlobalParameterOptions?: RadiometryGlobalParameterOptions
 }
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities of the thermal service are returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export interface GetConfigurationOptions {
+export type GetConfigurationOptions = {
   /** Reference token to the VideoSource for which the Thermal Configuration Options are requested. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetConfigurationOptionsResponse {
+export type GetConfigurationOptionsResponse = {
   /** Valid ranges for the Thermal configuration parameters that are categorized as device specific. */
   configurationOptions?: ConfigurationOptions
 }
-export interface GetConfiguration {
+export type GetConfiguration = {
   /** Reference token to the VideoSource for which the Thermal Settings are requested. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetConfigurationResponse {
+export type GetConfigurationResponse = {
   /** Thermal Settings for the VideoSource that was requested. */
   configuration?: Configuration
 }
-export interface GetConfigurations {}
-export interface GetConfigurationsResponse {
+export type GetConfigurations = {}
+export type GetConfigurationsResponse = {
   /** This element contains a list of thermal VideoSource configurations. */
   configurations?: Configurations[]
 }
-export interface SetConfiguration {
+export type SetConfiguration = {
   /** Reference token to the VideoSource for which the Thermal Settings are configured. */
   videoSourceToken?: ReferenceToken
   /** Thermal Settings to be configured. */
   configuration?: Configuration
 }
-export interface GetRadiometryConfigurationOptions {
+export type GetRadiometryConfigurationOptions = {
   /** Reference token to the VideoSource for which the Thermal Radiometry Options are requested. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetRadiometryConfigurationOptionsResponse {
+export type GetRadiometryConfigurationOptionsResponse = {
   /** Valid ranges for the Thermal Radiometry parameters that are categorized as device specific. */
   configurationOptions?: RadiometryConfigurationOptions
 }
-export interface GetRadiometryConfiguration {
+export type GetRadiometryConfiguration = {
   /** Reference token to the VideoSource for which the Radiometry Configuration is requested. */
   videoSourceToken?: ReferenceToken
 }
-export interface GetRadiometryConfigurationResponse {
+export type GetRadiometryConfigurationResponse = {
   /** Radiometry Configuration for the VideoSource that was requested. */
   configuration?: RadiometryConfiguration
 }
-export interface SetRadiometryConfiguration {
+export type SetRadiometryConfiguration = {
   /** Reference token to the VideoSource for which the Radiometry settings are configured. */
   videoSourceToken?: ReferenceToken
   /** Radiometry settings to be configured. */

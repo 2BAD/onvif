@@ -1,18 +1,18 @@
-import {
-  Transformation,
+import type { AnyURI } from './basics.ts'
+import type {
   ColorDescriptor,
   GeoLocation,
-  SphericalCoordinate,
-  Rectangle,
-  Vector,
+  GeoOrientation,
   Polygon,
   PTZStatus,
-  GeoOrientation
+  Rectangle,
+  SphericalCoordinate,
+  Transformation,
+  Vector
 } from './common.ts'
-import { HumanFace } from './humanface.2.ts'
-import { HumanBody } from './humanbody.2.ts'
-import { AnyURI } from './basics.ts'
-import { Date } from './onvif.ts'
+import type { HumanBody } from './humanbody.2.ts'
+import type { HumanFace } from './humanface.2.ts'
+import type { OnvifDate } from './onvif.ts'
 
 export type VehicleType = 'Bus' | 'Car' | 'Truck' | 'Bicycle' | 'Motorcycle'
 export type PlateType = 'Normal' | 'Police' | 'Diplomat' | 'Temporary'
@@ -63,7 +63,7 @@ export interface Appearance {
   barcodeInfo?: BarcodeInfo
   sphericalCoordinate?: SphericalCoordinate
 }
-export interface AppearanceExtension {}
+export type AppearanceExtension = {}
 export interface BarcodeInfo {
   /** Information encoded in barcode */
   data?: StringLikelihood
@@ -93,8 +93,8 @@ export interface ShapeDescriptor {
   polygon?: Polygon[]
   extension?: ShapeDescriptorExtension
 }
-export interface ShapeDescriptorExtension {}
-export interface StringLikelihood {}
+export type ShapeDescriptorExtension = {}
+export type StringLikelihood = {}
 export interface ClassCandidate {
   type?: ClassType
   likelihood?: number
@@ -109,7 +109,7 @@ export interface ClassDescriptorExtension {
   otherTypes?: OtherType[]
   extension?: ClassDescriptorExtension2
 }
-export interface ClassDescriptorExtension2 {}
+export type ClassDescriptorExtension2 = {}
 export interface OtherType {
   /** Object Class Type */
   type?: string
@@ -121,9 +121,9 @@ export interface OnvifObject extends ObjectId {
   behaviour?: Behaviour
   extension?: ObjectExtension
 }
-export interface ObjectExtension {}
+export type ObjectExtension = {}
 export interface Frame {
-  utcTime: Date
+  utcTime: OnvifDate
   /** Default color space of Color definitions in frame. Valid values are "RGB" and "YCbCr". Defaults to "YCbCr". */
   colorspace?: string
   /** Optional name of the analytics module that generated this frame. */
@@ -140,7 +140,7 @@ export interface FrameExtension {
   motionInCells?: MotionInCells
   extension?: FrameExtension2
 }
-export interface FrameExtension2 {}
+export type FrameExtension2 = {}
 export interface Merge {
   from?: ObjectId[]
   to?: ObjectId
@@ -156,8 +156,8 @@ export interface Rename {
 export interface ObjectId {
   objectId?: number
 }
-export interface Removed {}
-export interface Idle {}
+export type Removed = {}
+export type Idle = {}
 export interface Behaviour {
   removed?: Removed
   idle?: Idle
@@ -166,7 +166,7 @@ export interface Behaviour {
   /** Direction the object is moving. Yaw describes the horizontal direction in the range [-180..180] where 0 is towards the right of the device and 90 is away from the device. Pitch describes the vertical direction in the range [-90..90] where 90 is upwards. */
   direction?: GeoOrientation
 }
-export interface BehaviourExtension {}
+export type BehaviourExtension = {}
 export interface ObjectTree {
   rename?: Rename[]
   split?: Split[]
@@ -174,7 +174,7 @@ export interface ObjectTree {
   delete?: ObjectId[]
   extension?: ObjectTreeExtension
 }
-export interface ObjectTreeExtension {}
+export type ObjectTreeExtension = {}
 export interface MotionInCells {
   /** Number of columns of the cell grid (x dimension) */
   columns: number
@@ -183,23 +183,23 @@ export interface MotionInCells {
   /** A “1” denotes a cell where motion is detected and a “0” an empty cell. The first cell is in the upper left corner. Then the cell order goes first from left to right and then from up to down.  If the number of cells is not a multiple of 8 the last byte is filled with zeros. The information is run length encoded according to Packbit coding in ISO 12369 (TIFF, Revision 6.0). */
   cells: unknown
 }
-export interface MetadataStream {}
+export type MetadataStream = {}
 export interface MetadataStreamExtension {
   audioAnalyticsStream?: AudioAnalyticsStream
   extension?: MetadataStreamExtension2
 }
-export interface MetadataStreamExtension2 {}
+export type MetadataStreamExtension2 = {}
 export interface AudioAnalyticsStream {
   audioDescriptor?: AudioDescriptor[]
   extension?: AudioAnalyticsStreamExtension
 }
 export interface AudioDescriptor {
-  utcTime: Date
+  utcTime: OnvifDate
 }
-export interface AudioAnalyticsStreamExtension {}
-export interface VideoAnalyticsStream {}
-export interface VideoAnalyticsStreamExtension {}
-export interface PTZStream {}
-export interface PTZStreamExtension {}
-export interface EventStream {}
-export interface EventStreamExtension {}
+export type AudioAnalyticsStreamExtension = {}
+export type VideoAnalyticsStream = {}
+export type VideoAnalyticsStreamExtension = {}
+export type PTZStream = {}
+export type PTZStreamExtension = {}
+export type EventStream = {}
+export type EventStreamExtension = {}

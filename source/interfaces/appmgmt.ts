@@ -1,22 +1,22 @@
-import { Date, StringAttrList, Capabilities } from './onvif.ts'
-import { AnyURI } from './basics.ts'
+import type { AnyURI } from './basics.ts'
+import type { Capabilities, OnvifDate } from './onvif.ts'
 
 export type AppState = 'Active' | 'Inactive' | 'Installing' | 'Uninstalling' | 'Removed' | 'InstallationFailed'
-export interface AppInfo {
+export type AppInfo = {
   /** Unique app identifier of the application instance. */
   appID?: string
   /** User readable application name */
   name?: string
-  /** Version of the installed application. The details of the format are outside of the scope of this specificaton. */
+  /** Version of the installed application. The details of the format are outside of the scope of this specification. */
   version?: string
   /** Licenses associated with the application. */
   licenses?: LicenseInfo[]
   /** List of privileges granted to the application. */
   privileges?: string[]
   /** Date and time when the application has been installed. */
-  installationDate?: Date
+  installationDate?: OnvifDate
   /** Time of last update to this app, i.e. the time when this particular version was installed. */
-  lastUpdate?: Date
+  lastUpdate?: OnvifDate
   /** InstallationFailed state shall not be used here. */
   state?: AppState
   /** Supplemental information why the application is in the current state. In error cases this field contains the error reason. */
@@ -32,58 +32,58 @@ export interface AppInfo {
   /** Optional reference to the interface definition of the application. */
   interfaceDescription?: AnyURI[]
 }
-export interface LicenseInfo {
+export type LicenseInfo = {
   /** Textual name of the license */
   name?: string
   /** Start time of validity */
-  validFrom?: Date
+  validFrom?: OnvifDate
   /** End time of validity */
-  validUntil?: Date
+  validUntil?: OnvifDate
 }
-export interface Uninstall {
-  /** App to be uninstalled. Possible failures during deinstallation will be delivered via an event. */
+export type Uninstall = {
+  /** App to be uninstalled. Possible failures during de-installation will be delivered via an event. */
   appID?: string
 }
-export interface UninstallResponse {}
-export interface GetAppsInfo {
+export type UninstallResponse = Record<string, unknown>
+export type GetAppsInfo = {
   /** Optional ID to only retrieve information for a single application. */
   appID?: string
 }
-export interface GetAppsInfoResponse {
+export type GetAppsInfoResponse = {
   info?: AppInfo[]
 }
-export interface GetInstalledApps {}
-export interface App {
+export type GetInstalledApps = Record<string, unknown>
+export type App = {
   name?: string
   appID?: string
 }
-export interface GetInstalledAppsResponse {
+export type GetInstalledAppsResponse = {
   /** List of installed apps providing both user readable name and token. */
   app?: App[]
 }
-export interface Activate {
+export type Activate = {
   /** App identifier. */
   appID?: string
 }
-export interface ActivateResponse {}
-export interface Deactivate {
+export type ActivateResponse = Record<string, unknown>
+export type Deactivate = {
   /** App identifier. */
   appID?: string
 }
-export interface DeactivateResponse {}
-export interface InstallLicense {
+export type DeactivateResponse = Record<string, unknown>
+export type InstallLicense = {
   /** Application the license shall be associated to. */
   appID?: string
   /** Opaque machine readable license string. */
   license?: string
 }
-export interface InstallLicenseResponse {}
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type InstallLicenseResponse = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
+export type GetServiceCapabilitiesResponse = {
   /** The capabilities of the service. */
   capabilities?: Capabilities
 }
-export interface GetDeviceId {}
-export interface GetDeviceIdResponse {
+export type GetDeviceId = Record<string, unknown>
+export type GetDeviceIdResponse = {
   deviceId?: string
 }

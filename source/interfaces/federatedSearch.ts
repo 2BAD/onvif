@@ -1,5 +1,5 @@
-import { AnyURI } from './basics.ts'
-import { Capabilities } from './onvif.ts'
+import type { AnyURI } from './basics.ts'
+import type { Capabilities } from './onvif.ts'
 
 /** Corresponds to SimpleTermType definition in ISO/IEC 15938-12 */
 export type SimpleTermType = AnyURI
@@ -9,11 +9,11 @@ export type mimeType = string
  * Contains features provided by a database, formatted according to
  * presets defined in ISO/IEC 15938-12
  */
-export interface RegisterDatabase extends CapabilityType {
+export type RegisterDatabase = {
   extension?: RegisterDatabaseExtension
-}
-export interface RegisterDatabaseExtension {}
-export interface CapabilityType {
+} & CapabilityType
+export type RegisterDatabaseExtension = {}
+export type CapabilityType = {
   supportedQFProfile?: TermType
   supportedMetadata?: AnyURI[]
   supportedExampleMediaTypes?: unknown
@@ -22,16 +22,16 @@ export interface CapabilityType {
   supportedExpressions?: TermType[]
 }
 /** Corresponds to TermType definition in ISO/IEC 15938-12 */
-export interface TermType {
+export type TermType = {
   href: SimpleTermType
   name?: string
   description?: string
   term?: TermType[]
 }
-export interface GetServiceCapabilitiesResponse {
+export type GetServiceCapabilitiesResponse = {
   capabilities?: Capabilities
 }
-export interface GetServiceFeatures {
+export type GetServiceFeatures = {
   /**
    * Contains descriptions of desired services
    * capabilities and may contain the ID for a particular service to
@@ -39,7 +39,7 @@ export interface GetServiceFeatures {
    */
   inputCapabilities?: unknown
 }
-export interface GetServiceFeaturesResponse {
+export type GetServiceFeaturesResponse = {
   /**
    * Contains a list of available service capability
    * descriptions or a system message in case of an error. If no
@@ -48,7 +48,7 @@ export interface GetServiceFeaturesResponse {
    */
   outputCapabilities?: unknown
 }
-export interface Search {
+export type Search = {
   /**
    * Container for describing a query request
    * containing a set of conditions and/or the specification of the
@@ -57,7 +57,7 @@ export interface Search {
    */
   inputQuery?: unknown
 }
-export interface SearchResponse {
+export type SearchResponse = {
   /**
    * Container for all the results from a responder to
    * a requester. It may contain in addition messages such as error
@@ -65,18 +65,18 @@ export interface SearchResponse {
    */
   outputQuery?: unknown
 }
-export interface GetSearchResults {
+export type GetSearchResults = {
   /**
    * Allows to request the results of a previous query
    * issued.
    */
   results?: unknown
 }
-export interface GetSearchResultsResponse {
+export type GetSearchResultsResponse = {
   /**
    * Describes a single result returned from a
    * responder.
    */
   resultItem?: unknown[]
 }
-export interface RegisterDatabaseResponse {}
+export type RegisterDatabaseResponse = {}

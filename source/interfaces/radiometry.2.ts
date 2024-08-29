@@ -1,9 +1,9 @@
-import { FloatRange } from './onvif.ts'
-import { ReferenceToken, Vector, PTZVector, Rectangle } from './common.ts'
+import type { PTZVector, Rectangle, ReferenceToken, Vector } from './common.ts'
+import type { FloatRange } from './onvif.ts'
 
 export type TemperatureCondition = 'LessThan' | 'MoreThan' | 'EqualTo' | 'Change'
 export type TemperatureType = 'MaxTemp' | 'MinTemp' | 'AverageTemp' | 'StdDeviation' | 'MedianTemp' | 'ISOCoverage'
-export interface RadiometryModuleConfigOptions {
+export type RadiometryModuleConfigOptions = {
   /**
    * The total number of temperature measurement modules that can be created on the
    * device, screen based or geolocated, of any type (spots or boxes).
@@ -23,7 +23,7 @@ export interface RadiometryModuleConfigOptions {
   radiometryParameterOptions?: RadiometryParameterOptions
 }
 /** Describes valid ranges for the different radiometry parameters used for accurate temperature calculation. */
-export interface RadiometryParameterOptions {
+export type RadiometryParameterOptions = {
   /** Valid range of temperature values, in Kelvin. */
   reflectedAmbientTemperature?: FloatRange
   /** Valid range of emissivity values for the objects to measure. */
@@ -41,7 +41,7 @@ export interface RadiometryParameterOptions {
   /** Valid range of external optics transmittance. */
   extOpticsTransmittance?: FloatRange
 }
-export interface RadiometrySpotModuleConfig {
+export type RadiometrySpotModuleConfig = {
   /** Unique identifier for this Spot Temperature Measurement Analytics Module. */
   itemID?: ReferenceToken
   /** Indicates if the Temperature Measurement Item is enabled to provide temperature readings. */
@@ -59,7 +59,7 @@ export interface RadiometrySpotModuleConfig {
   /** Not present parameter means the Device shall use its value from Global Parameters in Thermal Service. */
   radiometryParameters?: RadiometryParameters
 }
-export interface RadiometryBoxModuleConfig {
+export type RadiometryBoxModuleConfig = {
   /** Unique identifier for this Box Temperature Measurement Analytics Module. */
   itemID?: ReferenceToken
   /** Indicates if the Temperature Measurement Item is enabled to provide temperature readings. */
@@ -77,13 +77,13 @@ export interface RadiometryBoxModuleConfig {
   /** Not present parameter means the Device shall use its value from Global Parameters in Thermal Service. */
   radiometryParameters?: RadiometryParameters
 }
-export interface SpotTemperatureReading {
+export type SpotTemperatureReading = {
   itemID?: ReferenceToken
   spotTemperature: number
   /** Not present means Global Parameters from Thermal Service are being used. */
   radiometryParameters?: RadiometryParameters
 }
-export interface BoxTemperatureReading {
+export type BoxTemperatureReading = {
   itemID: ReferenceToken
   maxTemperature: number
   minTemperature: number
@@ -92,7 +92,7 @@ export interface BoxTemperatureReading {
   /** Not present means Global Parameters from Thermal Service are being used. */
   radiometryParameters?: RadiometryParameters
 }
-export interface RadiometryParameters {
+export type RadiometryParameters = {
   reflectedAmbientTemperature?: number
   emissivity?: number
   distanceToObject?: number
@@ -102,7 +102,7 @@ export interface RadiometryParameters {
   extOpticsTemperature?: number
   extOpticsTransmittance?: number
 }
-export interface RadiometryRuleConfigOptions {
+export type RadiometryRuleConfigOptions = {
   /** Specifies valid ranges for thresholds and reference parameters used for triggering radiometric rules. */
   radiometryRuleOptions?: RadiometryRuleOptions
   /** Specifies valid rule conditions for temperature comparisions in radiometric rules. */
@@ -111,7 +111,7 @@ export interface RadiometryRuleConfigOptions {
   temperatureTypeOptions?: TemperatureType[]
 }
 /** Describes valid ranges for radiometric rule condition thresholds and reference parameters. */
-export interface RadiometryRuleOptions {
+export type RadiometryRuleOptions = {
   /** Valid range of temperature values, in Kelvin. */
   thresholdTemperature?: FloatRange
   /** Valid range of hysteresis time interval for temperature conditions, in seconds. */
@@ -119,7 +119,7 @@ export interface RadiometryRuleOptions {
   /** Valid range of temperature hysteresis values, in Kelvin. */
   hysteresisTemperature?: FloatRange
 }
-export interface RadiometryTemperatureRuleConfig {
+export type RadiometryTemperatureRuleConfig = {
   /** Reference Token to the Temperature Measurement Analytics Module providing the Temperature on which rule is defined. */
   radiometryModuleID?: ReferenceToken
   /** Indicates if the Temperature Rule is enabled to provide temperature alarm events. */

@@ -1,12 +1,12 @@
-import { PositiveInteger, DataEntity } from './types.ts'
-import { StringList, Name, Description } from './onvif.ts'
-import { ReferenceToken } from './common.ts'
+import type { ReferenceToken } from './common.ts'
+import type { Description, Name, StringList } from './onvif.ts'
+import type { DataEntity, PositiveInteger } from './types.ts'
 
 /**
  * The service capabilities reflect optional functionality of a service. The information is static
  * and does not change during device operation. The following capabilities are available:
  */
-export interface ServiceCapabilities {
+export type ServiceCapabilities = {
   /**
    * The maximum number of entries returned by a single Get&lt;Entity&gt;List or Get&lt;Entity&gt;
    * request.
@@ -59,7 +59,7 @@ export interface ServiceCapabilities {
  * The AuthenticationProfileInfo structure contains information of a specific authentication
  * profile instance.
  */
-export interface AuthenticationProfileInfo extends DataEntity {
+export type AuthenticationProfileInfo = {
   /** A user readable name. It shall be up to 64 characters. */
   name?: Name
   /**
@@ -67,14 +67,14 @@ export interface AuthenticationProfileInfo extends DataEntity {
    * to 1024 characters.
    */
   description?: Description
-}
+} & DataEntity
 /**
  * The AuthenticationProfile structure shall include all properties of the
  * AuthenticationProfileInfo structure
  * and also a default security level, an authentication mode, and a list of AuthenticationProfile
  * instances.
  */
-export interface AuthenticationProfile extends AuthenticationProfileInfo {
+export type AuthenticationProfile = {
   /**
    * The default security level is used if none of the authentication policies
    * has a schedule covering the time of access (or if no authentication policies
@@ -87,15 +87,15 @@ export interface AuthenticationProfile extends AuthenticationProfileInfo {
    */
   authenticationPolicy?: AuthenticationPolicy[]
   extension?: AuthenticationProfileExtension
-}
-export interface AuthenticationProfileExtension {}
+} & AuthenticationProfileInfo
+export type AuthenticationProfileExtension = {}
 /**
  * The authentication policy is an association of a security level and a schedule. It defines when
  * a certain security level is required to grant access to a credential holder. Each security
  * level is given a unique priority. If authentication policies have overlapping schedules,
  * the security level with the highest priority is used.
  */
-export interface AuthenticationPolicy {
+export type AuthenticationPolicy = {
   /** Reference to the schedule used by the authentication policy. */
   scheduleToken?: ReferenceToken
   /**
@@ -106,12 +106,12 @@ export interface AuthenticationPolicy {
   securityLevelConstraint?: SecurityLevelConstraint[]
   extension?: AuthenticationPolicyExtension
 }
-export interface AuthenticationPolicyExtension {}
+export type AuthenticationPolicyExtension = {}
 /**
  * This structure defines what security level should be active depending on the state of the
  * schedule.
  */
-export interface SecurityLevelConstraint {
+export type SecurityLevelConstraint = {
   /**
    * Corresponds to the Active field in the ScheduleState structure in
    * [ONVIF Schedule Service Specification].
@@ -136,7 +136,7 @@ export interface SecurityLevelConstraint {
   securityLevelToken?: ReferenceToken
   extension?: SecurityLevelConstraintExtension
 }
-export interface SecurityLevelConstraintExtension {}
+export type SecurityLevelConstraintExtension = {}
 /**
  * Recognition is the action of identifying authorized users requesting access by the comparison of
  * presented
@@ -146,7 +146,7 @@ export interface SecurityLevelConstraintExtension {}
  * input such as
  * a request-to-exit button.
  */
-export interface RecognitionMethod {
+export type RecognitionMethod = {
   /**
    * The requested type of recognition. Is of type text.
    * Recognition types starting with the prefix pt: are reserved to define
@@ -162,16 +162,16 @@ export interface RecognitionMethod {
   order?: number
   extension?: RecognitionMethodExtension
 }
-export interface RecognitionMethodExtension {}
+export type RecognitionMethodExtension = {}
 /**/
-export interface RecognitionGroup {
+export type RecognitionGroup = {
   /** A list of recognition methods to request for at the access point. */
   recognitionMethod?: RecognitionMethod[]
   extension?: RecognitionGroupExtension
 }
-export interface RecognitionGroupExtension {}
+export type RecognitionGroupExtension = {}
 /** The SecurityLevelInfo structure contains information of a specific security level instance. */
-export interface SecurityLevelInfo extends DataEntity {
+export type SecurityLevelInfo = {
   /** A user readable name. It shall be up to 64 characters. */
   name?: Name
   /**
@@ -189,7 +189,7 @@ export interface SecurityLevelInfo extends DataEntity {
    * to 1024 characters.
    */
   description?: Description
-}
+} & DataEntity
 /**
  * The SecurityLevel structure shall include all properties of the SecurityLevelInfo structure and
  * also a set
@@ -198,32 +198,32 @@ export interface SecurityLevelInfo extends DataEntity {
  * group consists
  * of one or more recognition methods.
  */
-export interface SecurityLevel extends SecurityLevelInfo {
+export type SecurityLevel = {
   /**
    * The recognition groups are used to define a logical OR between the groups. Each
    * recognition group consists of one or more recognition methods.
    */
   recognitionGroup?: RecognitionGroup[]
   extension?: SecurityLevelExtension
-}
-export interface SecurityLevelExtension {}
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+} & SecurityLevelInfo
+export type SecurityLevelExtension = {}
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested access rules
    * service capabilities using a hierarchical XML capability structure.
    */
   capabilities?: ServiceCapabilities
 }
-export interface GetAuthenticationProfileInfo {
+export type GetAuthenticationProfileInfo = {
   /** Tokens of AuthenticationProfileInfo items to get. */
   token?: ReferenceToken[]
 }
-export interface GetAuthenticationProfileInfoResponse {
+export type GetAuthenticationProfileInfoResponse = {
   /** List of AuthenticationProfileInfo items. */
   authenticationProfileInfo?: AuthenticationProfileInfo[]
 }
-export interface GetAuthenticationProfileInfoList {
+export type GetAuthenticationProfileInfoList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -236,7 +236,7 @@ export interface GetAuthenticationProfileInfoList {
    */
   startReference?: string
 }
-export interface GetAuthenticationProfileInfoListResponse {
+export type GetAuthenticationProfileInfoListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -245,15 +245,15 @@ export interface GetAuthenticationProfileInfoListResponse {
   /** List of AuthenticationProfileInfo items. */
   authenticationProfileInfo?: AuthenticationProfileInfo[]
 }
-export interface GetAuthenticationProfiles {
+export type GetAuthenticationProfiles = {
   /** Tokens of AuthenticationProfile items to get. */
   token?: ReferenceToken[]
 }
-export interface GetAuthenticationProfilesResponse {
+export type GetAuthenticationProfilesResponse = {
   /** List of AuthenticationProfile items. */
   authenticationProfile?: AuthenticationProfile[]
 }
-export interface GetAuthenticationProfileList {
+export type GetAuthenticationProfileList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -266,7 +266,7 @@ export interface GetAuthenticationProfileList {
    */
   startReference?: string
 }
-export interface GetAuthenticationProfileListResponse {
+export type GetAuthenticationProfileListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -275,38 +275,38 @@ export interface GetAuthenticationProfileListResponse {
   /** List of AuthenticationProfile items. */
   authenticationProfile?: AuthenticationProfile[]
 }
-export interface CreateAuthenticationProfile {
+export type CreateAuthenticationProfile = {
   /** The AuthenticationProfile to create. */
   authenticationProfile?: AuthenticationProfile
 }
-export interface CreateAuthenticationProfileResponse {
+export type CreateAuthenticationProfileResponse = {
   /** The Token of created AuthenticationProfile. */
   token?: ReferenceToken
 }
-export interface SetAuthenticationProfile {
+export type SetAuthenticationProfile = {
   /** The AuthenticationProfile to create or modify. */
   authenticationProfile?: AuthenticationProfile
 }
-export interface SetAuthenticationProfileResponse {}
-export interface ModifyAuthenticationProfile {
+export type SetAuthenticationProfileResponse = {}
+export type ModifyAuthenticationProfile = {
   /** The AuthenticationProfile to modify. */
   authenticationProfile?: AuthenticationProfile
 }
-export interface ModifyAuthenticationProfileResponse {}
-export interface DeleteAuthenticationProfile {
+export type ModifyAuthenticationProfileResponse = {}
+export type DeleteAuthenticationProfile = {
   /** The token of the AuthenticationProfile to delete. */
   token?: ReferenceToken
 }
-export interface DeleteAuthenticationProfileResponse {}
-export interface GetSecurityLevelInfo {
+export type DeleteAuthenticationProfileResponse = {}
+export type GetSecurityLevelInfo = {
   /** Tokens of SecurityLevelInfo items to get. */
   token?: ReferenceToken[]
 }
-export interface GetSecurityLevelInfoResponse {
+export type GetSecurityLevelInfoResponse = {
   /** List of SecurityLevelInfo items. */
   securityLevelInfo?: SecurityLevelInfo[]
 }
-export interface GetSecurityLevelInfoList {
+export type GetSecurityLevelInfoList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -319,7 +319,7 @@ export interface GetSecurityLevelInfoList {
    */
   startReference?: string
 }
-export interface GetSecurityLevelInfoListResponse {
+export type GetSecurityLevelInfoListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -328,15 +328,15 @@ export interface GetSecurityLevelInfoListResponse {
   /** List of SecurityLevelInfo items. */
   securityLevelInfo?: SecurityLevelInfo[]
 }
-export interface GetSecurityLevels {
+export type GetSecurityLevels = {
   /** Tokens of SecurityLevel items to get. */
   token?: ReferenceToken[]
 }
-export interface GetSecurityLevelsResponse {
+export type GetSecurityLevelsResponse = {
   /** List of SecurityLevel items. */
   securityLevel?: SecurityLevel[]
 }
-export interface GetSecurityLevelList {
+export type GetSecurityLevelList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -349,7 +349,7 @@ export interface GetSecurityLevelList {
    */
   startReference?: string
 }
-export interface GetSecurityLevelListResponse {
+export type GetSecurityLevelListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -358,26 +358,26 @@ export interface GetSecurityLevelListResponse {
   /** List of SecurityLevel items. */
   securityLevel?: SecurityLevel[]
 }
-export interface CreateSecurityLevel {
+export type CreateSecurityLevel = {
   /** The SecurityLevel to create. */
   securityLevel?: SecurityLevel
 }
-export interface CreateSecurityLevelResponse {
+export type CreateSecurityLevelResponse = {
   /** The Token of created SecurityLevel. */
   token?: ReferenceToken
 }
-export interface SetSecurityLevel {
+export type SetSecurityLevel = {
   /** The SecurityLevel to create or modify. */
   securityLevel?: SecurityLevel
 }
-export interface SetSecurityLevelResponse {}
-export interface ModifySecurityLevel {
+export type SetSecurityLevelResponse = {}
+export type ModifySecurityLevel = {
   /** The SecurityLevel to modify. */
   securityLevel?: SecurityLevel
 }
-export interface ModifySecurityLevelResponse {}
-export interface DeleteSecurityLevel {
+export type ModifySecurityLevelResponse = {}
+export type DeleteSecurityLevel = {
   /** The token of the SecurityLevel to delete. */
   token?: ReferenceToken
 }
-export interface DeleteSecurityLevelResponse {}
+export type DeleteSecurityLevelResponse = {}

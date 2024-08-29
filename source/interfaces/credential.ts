@@ -1,12 +1,12 @@
-import { PositiveInteger, DataEntity, Attribute } from './types.ts'
-import { Name, Description, Date } from './onvif.ts'
-import { ReferenceToken } from './common.ts'
+import type { ReferenceToken } from './common.ts'
+import type { Description, Name, OnvifDate } from './onvif.ts'
+import type { Attribute, DataEntity, PositiveInteger } from './types.ts'
 
 /**
  * The service capabilities reflect optional functionality of a service. The information is static
  * and does not change during device operation. The following capabilities are available:
  */
-export interface ServiceCapabilities {
+export type ServiceCapabilities = {
   /**
    * The maximum number of entries returned by a single Get&lt;Entity&gt;List or Get&lt;Entity&gt;
    * request. The device shall never return more than this number of entities in a single response.
@@ -60,7 +60,7 @@ export interface ServiceCapabilities {
   supportedIdentifierType?: Name[]
   extension?: ServiceCapabilitiesExtension
 }
-export interface ServiceCapabilitiesExtension {
+export type ServiceCapabilitiesExtension = {
   /**
    * A list of exemptions that the device supports. Supported exemptions starting with the
    * prefix pt: are reserved to define ONVIF specific exemption types and these reserved
@@ -73,7 +73,7 @@ export interface ServiceCapabilitiesExtension {
  * the basic information of a specific credential instance. The device shall provide the following
  * fields for each credential.
  */
-export interface CredentialInfo extends DataEntity {
+export type CredentialInfo = {
   /** User readable description for the credential. It shall be up to 1024 characters. */
   description?: Description
   /**
@@ -87,21 +87,21 @@ export interface CredentialInfo extends DataEntity {
    * ValiditySupportsTimeValue capability is set to false, then only date is
    * supported (time is ignored).
    */
-  validFrom?: Date
+  validFrom?: OnvifDate
   /**
    * The expiration date/time validity of the credential. If the
    * ValiditySupportsTimeValue capability is set to false, then only date is
    * supported (time is ignored).
    */
-  validTo?: Date
-}
+  validTo?: OnvifDate
+} & DataEntity
 /**
  * A Credential is a physical/tangible object, a piece of knowledge, or a facet of a person's
  * physical being, that enables an individual access to a given physical facility or computer-based
  * information system. A credential holds one or more credential identifiers. To gain access one or
  * more identifiers may be required.
  */
-export interface Credential extends CredentialInfo {
+export type Credential = {
   /**
    * A list of credential identifier structures. At least one
    * credential identifier is required. Maximum one credential identifier structure
@@ -122,14 +122,14 @@ export interface Credential extends CredentialInfo {
    */
   attribute?: Attribute[]
   extension?: CredentialExtension
-}
-export interface CredentialExtension {}
+} & CredentialInfo
+export type CredentialExtension = {}
 /**
  * A credential identifier is a card number, unique card information, PIN or
  * biometric information such as fingerprint, iris, vein, face recognition, that can be validated
  * in an access point.
  */
-export interface CredentialIdentifier {
+export type CredentialIdentifier = {
   /**
    * Contains the details of the credential identifier type. Is of type
    * CredentialIdentifierType.
@@ -149,7 +149,7 @@ export interface CredentialIdentifier {
  * Specifies the name of credential identifier type and its format for the credential
  * value.
  */
-export interface CredentialIdentifierType {
+export type CredentialIdentifierType = {
   /**
    * The name of the credential identifier type, such as pt:Card, pt:PIN,
    * etc.
@@ -162,7 +162,7 @@ export interface CredentialIdentifierType {
   formatType?: string
 }
 /** The association between a credential and an access profile. */
-export interface CredentialAccessProfile {
+export type CredentialAccessProfile = {
   /** The reference token of the associated access profile. */
   accessProfileToken?: ReferenceToken
   /**
@@ -170,19 +170,19 @@ export interface CredentialAccessProfile {
    * credential and the access profile. If the ValiditySupportsTimeValue capability is set to
    * false, then only date is supported (time is ignored).
    */
-  validFrom?: Date
+  validFrom?: OnvifDate
   /**
    * The end date/time of the validity for the association between the
    * credential and the access profile. If the ValiditySupportsTimeValue capability is set to
    * false, then only date is supported (time is ignored).
    */
-  validTo?: Date
+  validTo?: OnvifDate
 }
 /**
  * The CredentialState structure contains information about the state of the credential and
  * optionally the reason of why the credential was disabled.
  */
-export interface CredentialState {
+export type CredentialState = {
   /**
    * True if the credential is enabled or false if the credential is
    * disabled.
@@ -201,14 +201,14 @@ export interface CredentialState {
   antipassbackState?: AntipassbackState
   extension?: CredentialStateExtension
 }
-export interface CredentialStateExtension {}
+export type CredentialStateExtension = {}
 /** A structure containing anti-passback related state information. */
-export interface AntipassbackState {
+export type AntipassbackState = {
   /** Indicates if anti-passback is violated for the credential. */
   antipassbackViolated?: boolean
 }
 /** Contains information about a format type. */
-export interface CredentialIdentifierFormatTypeInfo {
+export type CredentialIdentifierFormatTypeInfo = {
   /**
    * A format type supported by the device. A list of supported format types is
    * provided in [ISO 16484-5:2014-09 Annex P]. The BACnet type "CUSTOM" is not used in this
@@ -224,9 +224,9 @@ export interface CredentialIdentifierFormatTypeInfo {
   description?: Description
   extension?: CredentialIdentifierFormatTypeInfoExtension
 }
-export interface CredentialIdentifierFormatTypeInfoExtension {}
+export type CredentialIdentifierFormatTypeInfoExtension = {}
 /** Contains information about a format type. */
-export interface CredentialData {
+export type CredentialData = {
   /**
    * A format type supported by the device. A list of supported format types is
    * provided in [ISO 16484-5:2014-09 Annex P]. The BACnet type "CUSTOM" is not used in this
@@ -242,19 +242,19 @@ export interface CredentialData {
   credentialState?: CredentialState
   extension?: CredentialDataExtension
 }
-export interface CredentialDataExtension {}
+export type CredentialDataExtension = {}
 /**
  * A credential identifier is a card number, unique card information, PIN or biometric information
  * such as fingerprint, iris, vein, face recognition, that can be validated in an access point.
  */
-export interface CredentialIdentifierItem {
+export type CredentialIdentifierItem = {
   /** Contains the details of the credential identifier type. */
   type?: CredentialIdentifierType
   /** The value of the identifier in hexadecimal representation. */
   value?: unknown
 }
 /** Contains information about a format type. */
-export interface FaultResponse {
+export type FaultResponse = {
   /**
    * A format type supported by the device. A list of supported format types is
    * provided in [ISO 16484-5:2014-09 Annex P]. The BACnet type "CUSTOM" is not used in this
@@ -270,32 +270,32 @@ export interface FaultResponse {
   fault?: string
   extension?: FaultResponseExtension
 }
-export interface FaultResponseExtension {}
-export interface GetServiceCapabilities {}
-export interface GetServiceCapabilitiesResponse {
+export type FaultResponseExtension = {}
+export type GetServiceCapabilities = {}
+export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested credential
    * service capabilities using a hierarchical XML capability structure.
    */
   capabilities?: ServiceCapabilities
 }
-export interface GetSupportedFormatTypes {
+export type GetSupportedFormatTypes = {
   /** Name of the credential identifier type */
   credentialIdentifierTypeName?: string
 }
-export interface GetSupportedFormatTypesResponse {
+export type GetSupportedFormatTypesResponse = {
   /** Identifier format type */
   formatTypeInfo?: CredentialIdentifierFormatTypeInfo[]
 }
-export interface GetCredentialInfo {
+export type GetCredentialInfo = {
   /** Tokens of CredentialInfo items to get. */
   token?: ReferenceToken[]
 }
-export interface GetCredentialInfoResponse {
+export type GetCredentialInfoResponse = {
   /** List of CredentialInfo items. */
   credentialInfo?: CredentialInfo[]
 }
-export interface GetCredentialInfoList {
+export type GetCredentialInfoList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -308,7 +308,7 @@ export interface GetCredentialInfoList {
    */
   startReference?: string
 }
-export interface GetCredentialInfoListResponse {
+export type GetCredentialInfoListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -317,15 +317,15 @@ export interface GetCredentialInfoListResponse {
   /** List of CredentialInfo items. */
   credentialInfo?: CredentialInfo[]
 }
-export interface GetCredentials {
+export type GetCredentials = {
   /** Token of Credentials to get */
   token?: ReferenceToken[]
 }
-export interface GetCredentialsResponse {
+export type GetCredentialsResponse = {
   /** List of Credential items. */
   credential?: Credential[]
 }
-export interface GetCredentialList {
+export type GetCredentialList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
    * or higher than what the device supports, the number of items is determined by the
@@ -338,7 +338,7 @@ export interface GetCredentialList {
    */
   startReference?: string
 }
-export interface GetCredentialListResponse {
+export type GetCredentialListResponse = {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
@@ -347,103 +347,103 @@ export interface GetCredentialListResponse {
   /** List of Credential items. */
   credential?: Credential[]
 }
-export interface CreateCredential {
+export type CreateCredential = {
   /** The credential to create. */
   credential?: Credential
   /** The state of the credential. */
   state?: CredentialState
 }
-export interface CreateCredentialResponse {
+export type CreateCredentialResponse = {
   /** The token of the created credential */
   token?: ReferenceToken
 }
-export interface ModifyCredential {
+export type ModifyCredential = {
   /** Details of the credential. */
   credential?: Credential
 }
-export interface ModifyCredentialResponse {}
-export interface SetCredential {
+export type ModifyCredentialResponse = {}
+export type SetCredential = {
   /** Details of the credential. */
   credentialData?: CredentialData
 }
-export interface SetCredentialResponse {}
-export interface DeleteCredential {
+export type SetCredentialResponse = {}
+export type DeleteCredential = {
   /** The token of the credential to delete. */
   token?: ReferenceToken
 }
-export interface DeleteCredentialResponse {}
-export interface GetCredentialState {
+export type DeleteCredentialResponse = {}
+export type GetCredentialState = {
   /** Token of Credential */
   token?: ReferenceToken
 }
-export interface GetCredentialStateResponse {
+export type GetCredentialStateResponse = {
   /** State of the credential. */
   state?: CredentialState
 }
-export interface EnableCredential {
+export type EnableCredential = {
   /** The token of the credential */
   token?: ReferenceToken
   /** Reason for enabling the credential. */
   reason?: Name
 }
-export interface EnableCredentialResponse {}
-export interface DisableCredential {
+export type EnableCredentialResponse = {}
+export type DisableCredential = {
   /** Token of the Credential */
   token?: ReferenceToken
   /** Reason for disabling the credential */
   reason?: Name
 }
-export interface DisableCredentialResponse {}
-export interface ResetAntipassbackViolation {
+export type DisableCredentialResponse = {}
+export type ResetAntipassbackViolation = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
 }
-export interface ResetAntipassbackViolationResponse {}
-export interface GetCredentialIdentifiers {
+export type ResetAntipassbackViolationResponse = {}
+export type GetCredentialIdentifiers = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
 }
-export interface GetCredentialIdentifiersResponse {
+export type GetCredentialIdentifiersResponse = {
   /** Identifier of the credential */
   credentialIdentifier?: CredentialIdentifier[]
 }
-export interface SetCredentialIdentifier {
+export type SetCredentialIdentifier = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Identifier of the credential */
   credentialIdentifier?: CredentialIdentifier
 }
-export interface SetCredentialIdentifierResponse {}
-export interface DeleteCredentialIdentifier {
+export type SetCredentialIdentifierResponse = {}
+export type DeleteCredentialIdentifier = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Identifier type name of a credential */
   credentialIdentifierTypeName?: Name
 }
-export interface DeleteCredentialIdentifierResponse {}
-export interface GetCredentialAccessProfiles {
+export type DeleteCredentialIdentifierResponse = {}
+export type GetCredentialAccessProfiles = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
 }
-export interface GetCredentialAccessProfilesResponse {
+export type GetCredentialAccessProfilesResponse = {
   /** Access Profiles of the credential */
   credentialAccessProfile?: CredentialAccessProfile[]
 }
-export interface SetCredentialAccessProfiles {
+export type SetCredentialAccessProfiles = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Access Profiles of the credential */
   credentialAccessProfile?: CredentialAccessProfile[]
 }
-export interface SetCredentialAccessProfilesResponse {}
-export interface DeleteCredentialAccessProfiles {
+export type SetCredentialAccessProfilesResponse = {}
+export type DeleteCredentialAccessProfiles = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Tokens of Access Profiles */
   accessProfileToken?: ReferenceToken[]
 }
-export interface DeleteCredentialAccessProfilesResponse {}
-export interface GetWhitelist {
+export type DeleteCredentialAccessProfilesResponse = {}
+export type GetWhitelist = {
   /**
    * Maximum number of entries to return. If not specified, less than one or higher than what the device
    * supports, the number of items is determined by the device.
@@ -461,25 +461,25 @@ export interface GetWhitelist {
   /** Get only whitelisted credential identifiers with the specified identifier value. */
   value?: unknown
 }
-export interface GetWhitelistResponse {
+export type GetWhitelistResponse = {
   /** StartReference to use in next call to get the following items. If absent, no more items to get. */
   nextStartReference?: string
   /** The whitelisted credential identifiers matching the request criteria. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface AddToWhitelist {
+export type AddToWhitelist = {
   /** The credential identifiers to be added to the whitelist. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface AddToWhitelistResponse {}
-export interface RemoveFromWhitelist {
+export type AddToWhitelistResponse = {}
+export type RemoveFromWhitelist = {
   /** The credential identifiers to be removed from the whitelist. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface RemoveFromWhitelistResponse {}
-export interface DeleteWhitelist {}
-export interface DeleteWhitelistResponse {}
-export interface GetBlacklist {
+export type RemoveFromWhitelistResponse = {}
+export type DeleteWhitelist = {}
+export type DeleteWhitelistResponse = {}
+export type GetBlacklist = {
   /**
    * Maximum number of entries to return. If not specified, less than one or higher than what the device
    * supports, the number of items is determined by the device.
@@ -497,21 +497,21 @@ export interface GetBlacklist {
   /** Get only blacklisted credential identifiers with the specified identifier value. */
   value?: unknown
 }
-export interface GetBlacklistResponse {
+export type GetBlacklistResponse = {
   /** StartReference to use in next call to get the following items. If absent, no more items to get. */
   nextStartReference?: string
   /** The blacklisted credential identifiers matching the request criteria. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface AddToBlacklist {
+export type AddToBlacklist = {
   /** The credential identifiers to be added to the blacklist. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface AddToBlacklistResponse {}
-export interface RemoveFromBlacklist {
+export type AddToBlacklistResponse = {}
+export type RemoveFromBlacklist = {
   /** The credential identifiers to be removed from the blacklist. */
   identifier?: CredentialIdentifierItem[]
 }
-export interface RemoveFromBlacklistResponse {}
-export interface DeleteBlacklist {}
-export interface DeleteBlacklistResponse {}
+export type RemoveFromBlacklistResponse = {}
+export type DeleteBlacklist = {}
+export type DeleteBlacklistResponse = {}
