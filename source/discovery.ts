@@ -1,12 +1,15 @@
-import { EventEmitter } from 'events'
-import { createSocket, RemoteInfo } from 'dgram'
-import url from 'url'
-import os from 'os'
-import { guid, linerase, parseSOAPString } from './utils.ts'
+import { createSocket, type RemoteInfo } from 'node:dgram'
+import { EventEmitter } from 'node:events'
+import os from 'node:os'
+import { URL } from 'node:url'
 import { Onvif } from './onvif.ts'
+import { guid, linerase, parseSOAPString } from './utils.ts'
 
-export interface DiscoveryOptions {
-  /** Timeout in milliseconds for discovery responses, Default 5000 */
+/**
+ * Options for discovery process
+ */
+export type DiscoveryOptions = {
+  /** Timeout in milliseconds for discovery responses. Default 5000 */
   timeout?: number
   /** Set to `false` if you want to omit creating of Cam objects. Default true */
   resolve?: boolean
@@ -23,10 +26,13 @@ export interface DiscoveryOptions {
 /**
  * Try to find the most suitable record
  * Now it is simple ip match
+ *
+ * @param xaddrs - Array of XAddr URLs
+ * @param address - IP address to match
+ * @returns The matched URL or the first URL if no match is found
  */
-function matchXAddr(xaddrs: URL[], address: string) {
-  const ipMatch = xaddrs.filter((xaddr) => xaddr.hostname === address)
-  return ipMatch[0] || xaddrs[0]
+function matchXAddr(xaddrs: URL[], address: string): URL | undefined {
+  return xaddrs.find((xaddr) => xaddr.hostname === address) ?? xaddrs[0]
 }
 
 /**
@@ -35,27 +41,25 @@ function matchXAddr(xaddrs: URL[], address: string) {
 export class DiscoverySingleton extends EventEmitter {
   /**
    * Fires when device found
-   * @param onvif Onvif instance {@link Onvif} or just information object about found device
+   *
+   * @param onvif - Onvif instance {@link Onvif} or just information object about found device
    * @event device
-   * @example
-   * ```typescript
-   * discovery.on('device', console.log);
-   * ```
    */
-  static device = 'device' as const
+  static readonly device = 'device' as const
+
   /**
    * Indicates any errors
-   * @param error Error instance or array of error instances from {@link Error}
+   *
+   * @param error - Error instance or array of error instances from {@link Error}
    * @event error
-   * @example
-   * ```typescript
-   * discovery.on('error', console.error);
-   * ```
    */
-  static error = 'error' as const
+  static readonly error = 'error' as const
 
   private static instance?: DiscoverySingleton
 
+  /**
+   * Get the singleton instance of DiscoverySingleton
+   */
   public static get getInstance(): DiscoverySingleton {
     if (!DiscoverySingleton.instance) {
       DiscoverySingleton.instance = new DiscoverySingleton()
@@ -63,13 +67,14 @@ export class DiscoverySingleton extends EventEmitter {
     return DiscoverySingleton.instance
   }
 
-  // eslint-disable-next-line no-useless-constructor
   private constructor() {
     super()
   }
 
   /**
-   * Discover NVT devices in the subnetwork
+   * Discover NVT devices in the subnet
+   *
+   * @param options - Options for WS-Discovery
    * @example
    * ```typescript
    * import { Discovery } from 'onvif';
@@ -88,105 +93,126 @@ export class DiscoverySingleton extends EventEmitter {
    *   console.log(await cams[0]?.getSystemDateAndTime());
    * })();
    */
-  probe(options: DiscoveryOptions = {}): Promise<(Onvif | Record<string, unknown>)[]> {
-    return new Promise((resolve, reject) => {
-      const cams: Map<string, Onvif | Record<string, unknown>> = new Map()
+  async probe(options: DiscoveryOptions = {}): Promise<Array<Onvif | Record<string, unknown>>> {
+    return await new Promise((resolve, reject) => {
+      const cams = new Map<string, Onvif | Record<string, unknown>>()
       const errors: Error[] = []
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       const messageID = `urn:uuid:${options.messageId || guid()}`
-      const request = Buffer.from(
-        '<Envelope xmlns="http://www.w3.org/2003/05/soap-envelope" xmlns:dn="http://www.onvif.org/ver10/network/wsdl">' +
-          '<Header>' +
-          `<wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">${messageID}</wsa:MessageID>` +
-          '<wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>' +
-          '<wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>' +
-          '</Header>' +
-          '<Body>' +
-          '<Probe xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-          '<Types>dn:NetworkVideoTransmitter</Types>' +
-          '<Scopes />' +
-          '</Probe>' +
-          '</Body>' +
-          '</Envelope>'
-      )
+      const request = Buffer.from(`
+        <Envelope xmlns="http://www.w3.org/2003/05/soap-envelope" xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
+          <Header>
+            <wsa:MessageID xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">${messageID}</wsa:MessageID>
+            <wsa:To xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
+            <wsa:Action xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action>
+          </Header>
+          <Body>
+            <Probe xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <Types>dn:NetworkVideoTransmitter</Types>
+              <Scopes />
+            </Probe>
+          </Body>
+        </Envelope>
+        `)
+
       const socket = createSocket(options.type ?? 'udp4')
       socket.on('error', (err) => {
         this.emit('error', err)
       })
 
-      const listener = async (msg: Buffer, rinfo: RemoteInfo) => {
-        let data
-        let xml
+      /**
+       * Listen for responses from devices
+       *
+       * @param msg - Message from device
+       * @param rinfo - Remote info
+       */
+      const listener = async (msg: Buffer, rinfo: RemoteInfo): Promise<void> => {
         try {
-          ;[data, xml] = await parseSOAPString(msg.toString())
-        } catch (error) {
-          errors.push(error as Error)
-          this.emit('error', error, xml)
-          return
-        }
-        // TODO check for matching RelatesTo field and messageId
-        if (!data[0].probeMatches) {
-          errors.push(new Error(`Wrong SOAP message from ${rinfo.address}:${rinfo.port}\n${xml}`))
-          this.emit('error', `Wrong SOAP message from ${rinfo.address}:${rinfo.port}`, xml)
-        } else {
-          data = linerase(data)
-
-          // Possible to get multiple matches for the same camera
-          // when your computer has more than one network adapter in the same subnet
-          const camAddr = data.probeMatches.probeMatch.endpointReference.address
-          if (!cams.has(camAddr)) {
-            let cam
-            if (options.resolve !== false) {
-              // Create cam with one of the XAddrs uri
-              const camUris = data.probeMatches.probeMatch.XAddrs.split(' ').map(url.parse)
-              const camUri = matchXAddr(camUris, rinfo.address)
-              cam = new Onvif({
-                hostname: camUri.hostname,
-                port: parseInt(camUri.port, 10),
-                path: camUri.pathname,
-                urn: camAddr
-              })
-            } else {
-              cam = data
-            }
-            cams.set(camAddr, cam)
-            this.emit('device', cam, rinfo, xml)
+          const [data, xml] = await parseSOAPString(msg.toString())
+          if (!data['probeMatches']) {
+            throw new Error(`Wrong SOAP message from ${rinfo.address}:${rinfo.port}\n${xml}`)
           }
+
+          const parsedData = linerase(data) as {
+            probeMatches?: { probeMatch?: { endpointReference?: { address?: string }; XAddrs?: string } }
+          }
+          const camAddr = parsedData?.probeMatches?.probeMatch?.endpointReference?.address
+
+          if (!camAddr || cams.has(camAddr)) {
+            return
+          }
+
+          // eslint-disable-next-line @typescript-eslint/init-declarations
+          let cam: Onvif | Record<string, unknown>
+
+          if (options.resolve !== false) {
+            const camUris = parsedData?.probeMatches?.probeMatch?.XAddrs?.split(' ').map((uri: string) => new URL(uri))
+
+            if (!camUris?.length) {
+              throw new Error(`No XAddrs found for ${rinfo.address}`)
+            }
+
+            const camUri = matchXAddr(camUris, rinfo.address)
+            if (!camUri) {
+              throw new Error(`No matching XAddr found for ${rinfo.address}`)
+            }
+
+            cam = new Onvif({
+              hostname: camUri.hostname,
+              port: Number(camUri.port),
+              path: camUri.pathname,
+              urn: camAddr
+            })
+          } else {
+            cam = parsedData
+          }
+
+          cams.set(camAddr, cam)
+          this.emit('device', cam, rinfo, xml)
+        } catch (error) {
+          const errorObj = error instanceof Error ? error : new Error(String(error))
+          errors.push(errorObj)
+          this.emit('error', errorObj)
         }
       }
 
-      // If device is specified try to bind to that interface
       if (options.device) {
         const interfaces = os.networkInterfaces()
-        // Try to find the interface based on the device name
-        if (options.device in interfaces) {
-          interfaces[options.device]?.forEach((iface) => {
-            // Only use IPv4 addresses
+        const deviceInterfaces = interfaces[options.device]
+        if (deviceInterfaces) {
+          deviceInterfaces.forEach((iface) => {
             if (iface.family === 'IPv4') {
               socket.bind(options.listeningPort, iface.address)
             }
           })
+        } else {
+          reject(new Error(`Device ${options.device} not found`))
+          return
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       socket.on('message', listener)
       socket.send(request, 0, request.length, 3702, '239.255.255.250')
 
       setTimeout(() => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         socket.removeListener('message', listener)
         socket.close()
         if (errors.length === 0) {
           resolve(Array.from(cams.values()))
         } else {
-          reject(errors)
+          reject(new AggregateError(errors, 'Multiple errors occurred'))
         }
-      }, options.timeout || 5000)
+      }, options.timeout ?? 5000)
     })
   }
 }
 
 /**
  * Singleton for the discovery to provide `probe` method
- * {@link Discovery.probe}
+ * {@link DiscoverySingleton.probe}
+ *
  * @example
  * ```typescript
  * import { Discovery } from 'onvif';
