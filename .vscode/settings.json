@@ -6,5 +6,49 @@
   "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
-  "eslint.workingDirectories": [{ "mode": "auto" }]
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "cSpell.words": [
+    "backchannel",
+    "Bgain",
+    "BSSID",
+    "CBCS",
+    "CCMP",
+    "CDMI",
+    "CENC",
+    "CEST",
+    "CIFS",
+    "clude",
+    "CMAF",
+    "dewarp",
+    "kbps",
+    "LATM",
+    "linerase",
+    "monostable",
+    "mqtts",
+    "onvif",
+    "oper",
+    "passpharse",
+    "pausable",
+    "PCMU",
+    "POPSMTP",
+    "proxying",
+    "quantizers",
+    "Rgain",
+    "RSNA",
+    "rtsp",
+    "RTSPURI",
+    "samplerate",
+    "submask",
+    "tele",
+    "timespan",
+    "TKIP",
+    "unitless",
+    "xaddr",
+    "xaddrs",
+    "xmlsoap"
+  ]
 }
