@@ -190,3 +190,5 @@ export type LocationEntity = {
   /** Indoor orientation offset. */
   localOrientation?: LocalOrientation
 }
+
+export type Duration = string

@@ -1,6 +1,7 @@
 import type { AnyURI, FilterType } from './basics.ts'
 import type {
   Color,
+  Duration,
   IntRange,
   MoveStatus,
   PTZVector,
@@ -159,8 +160,8 @@ export type FloatRange = {
 }
 /** Range of duration greater equal Min duration and less equal Max duration. */
 export type DurationRange = {
-  min?: unknown
-  max?: unknown
+  min?: Duration
+  max?: Duration
 }
 /** List of values. */
 export type IntItems = {

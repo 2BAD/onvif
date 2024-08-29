@@ -1,116 +1,155 @@
-import { Onvif } from './onvif.ts'
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import type { Duration, MoveStatus, ReferenceToken, Vector1D, Vector2D } from './interfaces/common.ts'
+import type { PTZConfiguration, PTZSpeed, Space1DDescription, Space2DDescription } from './interfaces/onvif.ts'
+import type { GetConfigurationsResponse } from './interfaces/ptz.2.ts'
+import type { Onvif } from './onvif.ts'
 import { linerase } from './utils.ts'
-import {
-  Duration,
-  PTZConfiguration,
-  PTZSpeed,
-  Space1DDescription,
-  Space2DDescription,
-  Vector1D,
-  Vector2D
-} from './media.ts'
-import { ReferenceToken } from './interfaces/common.ts'
 
-export interface PTZPresetTourSupported {
-  /** Indicates number of preset tours that can be created. Required preset tour operations shall be available for this
-   * PTZ Node if one or more preset tour is supported */
+/**
+ * Represents the supported PTZ preset tour options.
+ */
+export type PTZPresetTourSupported = {
+  /**
+   * Indicates number of preset tours that can be created. Required preset tour operations shall be available for this
+   * PTZ Node if one or more preset tour is supported
+   */
   maximumNumberOfPresetTours: number
-  /** Indicates which preset tour operations are available for this PTZ Node */
+  /**
+   * Indicates which preset tour operations are available for this PTZ Node.
+   */
   ptzPresetTourOperation: 'Start' | 'Stop' | 'Pause' | 'Extended'
 }
 
-export interface PTZNode {
+/**
+ * Represents a PTZ Node with its properties and capabilities.
+ */
+export type PTZNode = {
   /** Unique identifier referencing the physical entity */
   token: ReferenceToken
-  /** Indication whether the HomePosition of a Node is fixed or it can be changed via the SetHomePosition command */
+  /** Indicates whether the HomePosition of a Node is fixed or can be changed via the SetHomePosition command */
   fixedHomePosition: boolean
-  /** Indication whether the Node supports the geo-referenced move command */
+  /** Indicates whether the Node supports the geo-referenced move command */
   geoMove: boolean
   /** A unique identifier that is used to reference PTZ Nodes */
   name?: string
-  /** A list of Coordinate Systems available for the PTZ Node. For each Coordinate System, the PTZ Node MUST specify
-   * its allowed range */
+  /**
+   * A list of Coordinate Systems available for the PTZ Node. For each Coordinate System, the PTZ Node MUST specify
+   * its allowed range
+   */
   supportedPTZSpaces: PTZSpace[]
   /** All preset operations MUST be available for this PTZ Node if one preset is supported */
   maximumNumberOfPresets: number
-  /** A boolean operator specifying the availability of a home position. If set to true, the Home Position Operations
-   * MUST be available for this PTZ Node */
+  /**
+   * A boolean operator specifying the availability of a home position. If set to true, the Home Position Operations
+   * MUST be available for this PTZ Node
+   */
   homeSupported: boolean
-  /** A list of supported Auxiliary commands. If the list is not empty, the Auxiliary Operations MUST be available for
-   * this PTZ Node */
-  auxiliaryCommands?: any
+  /**
+   * A list of supported Auxiliary commands. If the list is not empty, the Auxiliary Operations MUST be available for
+   * this PTZ Node
+   */
+  auxiliaryCommands?: unknown
   extension?: {
     /** Detail of supported Preset Tour feature */
     supportedPresetTour?: PTZPresetTourSupported
-    extension?: any
+    extension?: unknown
   }
 }
 
-export interface PTZSpace {
-  /**  The Generic Pan/Tilt Position space is provided by every PTZ node that supports absolute Pan/Tilt, since it
+/**
+ * Represents the available PTZ spaces for a node.
+ */
+export type PTZSpace = {
+  /**
+   *  The Generic Pan/Tilt Position space is provided by every PTZ node that supports absolute Pan/Tilt, since it
    * does not relate to a specific physical range. Instead, the range should be defined as the full range of the PTZ
-   * unit normalized to the range -1 to 1 resulting in the following space description */
+   * unit normalized to the range -1 to 1 resulting in the following space description
+   */
   absolutePanTiltPositionSpace?: Space2DDescription
-  /**  The Generic Zoom Position Space is provided by every PTZ node that supports absolute Zoom, since it does not
+  /**
+   *  The Generic Zoom Position Space is provided by every PTZ node that supports absolute Zoom, since it does not
    * relate to a specific physical range. Instead, the range should be defined as the full range of the Zoom normalized
    * to the range 0 (wide) to 1 (tele). There is no assumption about how the generic zoom range is mapped
-   * to magnification, FOV or other physical zoom dimension */
+   * to magnification, FOV or other physical zoom dimension
+   */
   absoluteZoomPositionSpace?: Space1DDescription
-  /** The Generic Pan/Tilt translation space is provided by every PTZ node that supports relative Pan/Tilt, since it
+  /**
+   * The Generic Pan/Tilt translation space is provided by every PTZ node that supports relative Pan/Tilt, since it
    * does not relate to a specific physical range. Instead, the range should be defined as the full positive and
    * negative translation range of the PTZ unit normalized to the range -1 to 1, where positive translation would mean
-   * clockwise rotation or movement in right/up direction resulting in the following space description */
+   * clockwise rotation or movement in right/up direction resulting in the following space description
+   */
   relativePanTiltTranslationSpace?: Space2DDescription
-  /** The Generic Zoom Translation Space is provided by every PTZ node that supports relative Zoom, since it does not
+  /**
+   * The Generic Zoom Translation Space is provided by every PTZ node that supports relative Zoom, since it does not
    * relate to a specific physical range. Instead, the corresponding absolute range should be defined as the full
    * positive and negative translation range of the Zoom normalized to the range -1 to1, where a positive translation
    * maps to a movement in TELE direction. The translation is signed to indicate direction (negative is to wide,
    * positive is to tele). There is no assumption about how the generic zoom range is mapped to magnification, FOV or
-   * other physical zoom dimension. This results in the following space description */
+   * other physical zoom dimension. This results in the following space description
+   */
   relativeZoomTranslationSpace?: Space1DDescription
-  /** The generic Pan/Tilt velocity space shall be provided by every PTZ node, since it does not relate to a specific
+  /**
+   * The generic Pan/Tilt velocity space shall be provided by every PTZ node, since it does not relate to a specific
    * physical range. Instead, the range should be defined as a range of the PTZ unit’s speed normalized to the range
    * -1 to 1, where a positive velocity would map to clockwise rotation or movement in the right/up direction. A signed
-   * speed can be independently specified for the pan and tilt component resulting in the following space description */
+   * speed can be independently specified for the pan and tilt component resulting in the following space description
+   */
   continuousPanTiltVelocitySpace?: Space2DDescription
-  /** The generic zoom velocity space specifies a zoom factor velocity without knowing the underlying physical model.
+  /**
+   * The generic zoom velocity space specifies a zoom factor velocity without knowing the underlying physical model.
    * The range should be normalized from -1 to 1, where a positive velocity would map to TELE direction. A generic zoom
-   * velocity space description resembles the following */
+   * velocity space description resembles the following
+   */
   continuousZoomVelocitySpace?: Space1DDescription
-  /** The speed space specifies the speed for a Pan/Tilt movement when moving to an absolute position or to a relative
+  /**
+   * The speed space specifies the speed for a Pan/Tilt movement when moving to an absolute position or to a relative
    * translation. In contrast to the velocity spaces, speed spaces do not contain any directional information. The speed
-   * of a combined Pan/Tilt movement is represented by a single non-negative scalar value */
+   * of a combined Pan/Tilt movement is represented by a single non-negative scalar value
+   */
   panTiltSpeedSpace?: Space1DDescription
-  /** The speed space specifies the speed for a Zoom movement when moving to an absolute position or to a relative
-   * translation. In contrast to the velocity spaces, speed spaces do not contain any directional information */
+  /**
+   * The speed space specifies the speed for a Zoom movement when moving to an absolute position or to a relative
+   * translation. In contrast to the velocity spaces, speed spaces do not contain any directional information
+   */
   zoomSpeedSpace?: Space1DDescription
-  extension?: any
+  extension?: unknown
 }
 
-export interface DurationRange {
+/**
+ * Represents a range of durations.
+ */
+export type DurationRange = {
   min: Duration
   max: Duration
 }
 
-export interface PTControlDirectionOptions {
+/**
+ * Represents the options for PT Direction Control.
+ */
+export type PTControlDirectionOptions = {
   /** Supported options for EFlip feature */
   EFlip?: {
     /** Options of EFlip mode parameter */
     mode?: 'OFF' | 'ON' | 'Extended'
-    extension?: any
+    extension?: unknown
   }
   /** Supported options for Reverse feature */
   reverse?: {
     /** Options of Reverse mode parameter */
     mode?: 'OFF' | 'ON' | 'AUTO' | 'Extended'
-    extension?: any
+    extension?: unknown
   }
 }
 
-/** The requested PTZ configuration options */
-export interface PTZConfigurationOptions {
-  /** The list of acceleration ramps supported by the device. The smallest acceleration value corresponds to the minimal
-   * index, the highest acceleration corresponds to the maximum index */
+/**
+ * Represents the requested PTZ configuration options.
+ */
+export type PTZConfigurationOptions = {
+  /**
+   * The list of acceleration ramps supported by the device. The smallest acceleration value corresponds to the minimal
+   * index, the highest acceleration corresponds to the maximum index
+   */
   PTZRamps: number[]
   /** A list of supported coordinate systems including their range limitations */
   spaces: PTZSpace[]
@@ -118,31 +157,37 @@ export interface PTZConfigurationOptions {
   PTZTimeout: DurationRange
   /** Supported options for PT Direction Control */
   PTControlDirection?: PTControlDirectionOptions
-  extension: any
+  extension: unknown
 }
 
-export interface GetPresetsOptions {
+/**
+ * Options for getting presets.
+ */
+export type GetPresetsOptions = {
   profileToken?: ReferenceToken
 }
 
 /** A list of presets which are available for the requested MediaProfile. */
-export interface PTZPreset {
+export type PTZPreset = {
   token: ReferenceToken
-  /** A list of preset position name */
+  /** The name of the preset position */
   name?: string
-  /** A list of preset position */
+  /** The preset position */
   PTZPosition?: PTZVector
 }
 
-export interface PTZVector {
+/**
+ * Represents a PTZ vector with pan, tilt, and zoom components.
+ */
+export type PTZVector = {
   panTilt?: Vector2D
   zoom?: Vector1D
 }
 
 /**
  * Simplified structure of PTZ vector to use as an input argument for position and speed in movement commands.
- * */
-export interface PTZInputVector {
+ */
+export type PTZInputVector = {
   /** Pan value */
   pan?: number
   /** Synonym for pan value */
@@ -155,8 +200,11 @@ export interface PTZInputVector {
   zoom?: number
 }
 
-export interface GotoPresetOptions {
-  /** A reference to the MediaProfile where the operation should take place. */
+/**
+ * Options for the gotoPreset operation.
+ */
+export type GotoPresetOptions = {
+  /** A reference to the MediaProfile where the operation should take place */
   profileToken?: ReferenceToken
   /** A requested preset token. From {@link PTZ.presets} property */
   presetToken: ReferenceToken
@@ -164,102 +212,142 @@ export interface GotoPresetOptions {
   speed?: PTZVector | PTZInputVector
 }
 
-export interface SetPresetOptions {
-  /** A reference to the MediaProfile where the operation should take place. */
+/**
+ * Options for the setPreset operation.
+ */
+export type SetPresetOptions = {
+  /** A reference to the MediaProfile where the operation should take place */
   profileToken?: ReferenceToken
-  /** A requested preset name. */
+  /** A requested preset name */
   presetName: string
-  /** A requested preset token. */
+  /** A requested preset token */
   presetToken?: ReferenceToken
 }
 
-export interface SetPresetResponse {
-  /** A token to the Preset which has been set. */
+/**
+ * Response from the setPreset operation.
+ */
+export type SetPresetResponse = {
+  /** A token to the Preset which has been set */
   presetToken: ReferenceToken
 }
 
-export interface RemovePresetOptions {
-  /** A reference to the MediaProfile where the operation should take place. */
+/**
+ * Options for the removePreset operation.
+ */
+export type RemovePresetOptions = {
+  /** A reference to the MediaProfile where the operation should take place */
   profileToken?: ReferenceToken
-  /** A requested preset token. */
+  /** A requested preset token */
   presetToken: ReferenceToken
 }
 
-export interface GotoHomePositionOptions {
-  /** A reference to the MediaProfile where the operation should take place. */
+/**
+ * Options for the gotoHomePosition operation.
+ */
+export type GotoHomePositionOptions = {
+  /** A reference to the MediaProfile where the operation should take place */
   profileToken?: ReferenceToken
   /** A requested speed.The speed parameter can only be specified when Speed Spaces are available for the PTZ Node. */
   speed?: PTZVector | PTZInputVector
 }
 
-export interface SetHomePositionOptions {
-  /** A reference to the MediaProfile where the home position should be set. */
+/**
+ * Options for the setHomePosition operation.
+ */
+export type SetHomePositionOptions = {
+  /** A reference to the MediaProfile where the home position should be set */
   profileToken?: ReferenceToken
 }
 
-export interface GetStatusOptions {
+/**
+ * Options for the getStatus operation.
+ */
+export type GetStatusOptions = {
   profileToken?: ReferenceToken
 }
 
-type MoveStatus = string
-
-export interface PTZMoveStatus {
+/**
+ * Represents the move status of PTZ.
+ */
+export type PTZMoveStatus = {
   panTilt: MoveStatus
   zoom: MoveStatus
 }
 
-export interface PTZStatus {
-  /** Specifies the absolute position of the PTZ unit together with the Space references. The default absolute spaces
-   * of the corresponding PTZ configuration MUST be referenced within the Position element. */
+/**
+ * Represents the current status of PTZ.
+ */
+export type PTZStatus = {
+  /**
+   * Specifies the absolute position of the PTZ unit together with the Space references. The default absolute spaces
+   * of the corresponding PTZ configuration MUST be referenced within the Position element.
+   */
   position?: PTZVector
-  /** Indicates if the Pan/Tilt/Zoom device unit is currently moving, idle or in an unknown state. */
+  /** Indicates if the Pan/Tilt/Zoom device unit is currently moving, idle or in an unknown state */
   moveStatus?: PTZMoveStatus
-  /** States a current PTZ error. */
+  /** States a current PTZ error */
   error?: string
-  /** Specifies the UTC time when this status was generated. */
+  /** Specifies the UTC time when this status was generated */
   utcTime?: Date
 }
 
-export interface AbsoluteMoveOptions {
-  /** A reference to the MediaProfile. */
+/**
+ * Options for the absoluteMove operation.
+ */
+export type AbsoluteMoveOptions = {
+  /** A reference to the MediaProfile */
   profileToken?: ReferenceToken
-  /** A Position vector specifying the absolute target position. */
-  position: PTZVector
-  /** An optional Speed. */
-  speed?: PTZSpeed
+  /** A Position vector specifying the absolute target position */
+  position: PTZVector | PTZInputVector
+  /** An optional Speed */
+  speed?: PTZSpeed | PTZInputVector
 }
 
-export interface RelativeMoveOptions {
-  /** A reference to the MediaProfile. */
+/**
+ * Options for the relativeMove operation.
+ */
+export type RelativeMoveOptions = {
+  /** A reference to the MediaProfile */
   profileToken?: ReferenceToken
   /** A positional Translation relative to the current position */
-  translation: PTZVector
-  /** An optional Speed. */
-  speed?: PTZSpeed
+  translation: PTZVector | PTZInputVector
+  /** An optional Speed */
+  speed?: PTZSpeed | PTZInputVector
 }
 
-export interface ContinuousMoveOptions {
-  /** A reference to the MediaProfile. */
+/**
+ * Options for the continuousMove operation.
+ */
+export type ContinuousMoveOptions = {
+  /** A reference to the MediaProfile */
   profileToken?: ReferenceToken
-  /** A Velocity vector specifying the velocity of pan, tilt and zoom. */
-  velocity: PTZSpeed
-  /** An optional Timeout parameter. Milliseconds or duration string. */
+  /** A Velocity vector specifying the velocity of pan, tilt and zoom */
+  velocity: PTZSpeed | PTZInputVector
+  /** An optional Timeout parameter */
   timeout?: Duration | number
 }
 
-export interface StopOptions {
-  /** A reference to the MediaProfile that indicate what should be stopped. */
+/**
+ * Options for the stop operation.
+ */
+export type StopOptions = {
+  /** A reference to the MediaProfile that indicates what should be stopped */
   profileToken?: ReferenceToken
-  /** Set true when we want to stop ongoing pan and tilt movements.If PanTilt arguments are not present, this command
-   * stops these movements. */
+  /**
+   * Set true when we want to stop ongoing pan and tilt movements.If PanTilt arguments are not present, this command
+   * stops these movements.
+   */
   panTilt?: boolean
-  /** Set true when we want to stop ongoing zoom movement.If Zoom arguments are not present, this command stops ongoing
-   * zoom movement. */
+  /**
+   * Set true when we want to stop ongoing zoom movement.If Zoom arguments are not present, this command stops ongoing
+   * zoom movement.
+   */
   zoom?: boolean
 }
 
 /**
- * PTZ methods
+ * PTZ class containing methods for PTZ operations
  */
 export class PTZ {
   private readonly onvif: Onvif
@@ -284,13 +372,13 @@ export class PTZ {
    * Returns the properties of the requested PTZ node, if it exists.
    * Use this function to get maximum number of presets, ranges of admitted values for x, y, zoom, iris, focus
    */
-  async getNodes() {
+  async getNodes(): Promise<Record<ReferenceToken, PTZNode>> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
       body: '<GetNodes xmlns="http://www.onvif.org/ver20/ptz/wsdl" />'
     })
     this.#nodes = {}
-    data[0].getNodesResponse.forEach((ptzNode: any) => {
+    data[0].getNodesResponse.forEach((ptzNode: unknown) => {
       const node: PTZNode = linerase(ptzNode.PTZNode[0])
       this.#nodes[node.token] = node
     })
@@ -298,21 +386,20 @@ export class PTZ {
   }
 
   /**
-   * Get an array with all the existing PTZConfigurations from the device
+   * Get an array with all the existing PTZConfigurations from the device.
    */
-  async getConfigurations() {
-    const [data] = await this.onvif.request({
+  async getConfigurations(): Promise<Record<ReferenceToken, PTZConfiguration>> {
+    const [data] = await this.onvif.request<GetConfigurationsResponse>({
       service: 'PTZ',
-      body: '<GetConfigurations xmlns="http://www.onvif.org/ver20/ptz/wsdl">' + '</GetConfigurations>'
+      body: '<GetConfigurations xmlns="http://www.onvif.org/ver20/ptz/wsdl"></GetConfigurations>'
     })
     this.#configurations = {}
-    if (!Array.isArray(data[0].getConfigurationsResponse[0].PTZConfiguration)) {
-      return this.#configurations
+    if (Array.isArray(data.PTZConfiguration)) {
+      data.PTZConfiguration.forEach((configuration) => {
+        const result = linerase(configuration) as PTZConfiguration
+        this.#configurations[result.token] = result
+      })
     }
-    data[0].getConfigurationsResponse[0].PTZConfiguration.forEach((configuration: any) => {
-      const result = linerase(configuration)
-      this.#configurations[result.token] = result
-    })
     return this.#configurations
   }
 
@@ -322,90 +409,89 @@ export class PTZ {
    * a Video Source Configuration. In that case, the options may additionally contain coordinate systems referring to
    * the image coordinate system described by the Video Source Configuration. If the PTZ Node supports continuous
    * movements, it shall return a Timeout Range within which Timeouts are accepted by the PTZ Node
-   * @param options
-   * @param options.configurationToken Token of an existing configuration that the options are intended for
+   *
+   * @param options - The options for getting configuration options.
+   * @param options.configurationToken - Token of an existing configuration that the options are intended for
    */
   async getConfigurationOptions({
     configurationToken
   }: { configurationToken: ReferenceToken }): Promise<PTZConfigurationOptions> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<GetConfigurationOptions xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ConfigurationToken>${configurationToken}</ConfigurationToken>` +
-        '</GetConfigurationOptions>'
+      body: `
+        <GetConfigurationOptions xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ConfigurationToken>${configurationToken}</ConfigurationToken>
+        </GetConfigurationOptions>
+      `
     })
-    return linerase(data)
+    return linerase(data) as PTZConfigurationOptions
   }
 
   /**
    * Operation to request all PTZ presets for the PTZNode in the selected profile. The operation is supported if there
    * is support for at least on PTZ preset by the PTZNode.
-   * @param options
+   *
+   * @param options - The options for getting presets.
    */
-  async getPresets({ profileToken }: GetPresetsOptions = {}) {
+  async getPresets({ profileToken }: GetPresetsOptions = {}): Promise<Record<ReferenceToken, PTZPreset>> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<GetPresets xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-        '</GetPresets>'
+      body: `
+        <GetPresets xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>
+        </GetPresets>
+      `
     })
     this.#presets = {}
-    const result = linerase(data[0].getPresetsResponse[0].preset)
+    const result = linerase(data[0].getPresetsResponse[0].preset) as PTZPreset[] | PTZPreset
     if (Array.isArray(result)) {
-      // eslint-disable-next-line no-return-assign
-      linerase(result).forEach((preset: any) => (this.#presets[preset.token] = preset))
-    } else {
+      result.forEach((preset: PTZPreset) => {
+        this.#presets[preset.token] = preset
+      })
+    } else if (result) {
       this.#presets[result.token] = result
     }
     return this.#presets
   }
 
-  private static formatPTZSimpleVector(
-    { pan, tilt, x, y, zoom }: PTZInputVector = {
-      x: 0,
-      y: 0,
-      zoom: 0
-    }
-  ): PTZVector {
-    return <PTZVector>{
+  private static formatPTZSimpleVector(vector: PTZInputVector = { x: 0, y: 0, zoom: 0 }): PTZVector {
+    return {
       panTilt: {
-        x: pan || x,
-        y: tilt || y
+        x: vector.pan ?? vector.x ?? 0,
+        y: vector.tilt ?? vector.y ?? 0
       },
       zoom: {
-        x: zoom
+        x: vector.zoom ?? 0
       }
     }
   }
 
-  private static PTZVectorToXML(input: PTZVector | PTZInputVector) {
-    const vector: PTZVector = 'x' in input || 'pan' in input ? PTZ.formatPTZSimpleVector(input) : (input as PTZVector)
-    return (
-      (vector.panTilt
-        ? `<PanTilt x="${vector.panTilt.x}" y="${vector.panTilt.y}" xmlns="http://www.onvif.org/ver10/schema"/>`
-        : '') + (vector.zoom ? `<Zoom x="${vector.zoom.x}" xmlns="http://www.onvif.org/ver10/schema"/>` : '')
-    )
+  private static PTZVectorToXML(input: PTZVector | PTZInputVector): string {
+    const vector: PTZVector = 'x' in input || 'pan' in input ? PTZ.formatPTZSimpleVector(input) : input
+    return `
+      ${vector.panTilt ? `<PanTilt x="${vector.panTilt.x}" y="${vector.panTilt.y}" xmlns="http://www.onvif.org/ver10/schema"/>` : ''}
+      ${vector.zoom ? `<Zoom x="${vector.zoom.x}" xmlns="http://www.onvif.org/ver10/schema"/>` : ''}
+    `
   }
 
   /**
    * Operation to go to a saved preset position for the PTZNode in the selected profile. The operation is supported if
    * there is support for at least on PTZ preset by the PTZNode.
+   *
    * @param options
    */
   async gotoPreset({ profileToken, presetToken, speed }: GotoPresetOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<GotoPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-        `<PresetToken>${presetToken}</PresetToken>${
-          speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''
-        }</GotoPreset>`
+      body: `
+        <GotoPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>
+          <PresetToken>${presetToken}</PresetToken>
+          ${speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''}
+        </GotoPreset>
+      `
     })
   }
-
   /**
    * The SetPreset command saves the current device position parameters so that the device can move to the saved preset
    * position through the GotoPreset operation. In order to create a new preset, the SetPresetRequest contains no
@@ -414,17 +500,19 @@ export class PTZ {
    * (overwriting or creation) an optional PresetName can be specified. The operation fails if the PTZ device is moving
    * during the SetPreset operation. The device MAY internally save additional states such as imaging properties in the
    * PTZ Preset which then should be recalled in the GotoPreset operation.
+   *
    * @param options
    */
   async setPreset({ profileToken, presetName, presetToken }: SetPresetOptions): Promise<SetPresetResponse> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<SetPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken ?? this.onvif.activeSource!.profileToken}</ProfileToken>` +
-        `<PresetName>${presetName}</PresetName>${
-          presetToken ? `<PresetToken>${presetToken}</PresetToken>` : ''
-        }</SetPreset>`
+      body: `
+        <SetPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource!.profileToken}</ProfileToken>
+          <PresetName>${presetName}</PresetName>
+          ${presetToken ? `<PresetToken>${presetToken}</PresetToken>` : ''}
+        </SetPreset>
+      `
     })
     return linerase(data[0].setPresetResponse)
   }
@@ -432,38 +520,36 @@ export class PTZ {
   /**
    * Operation to remove a PTZ preset for the Node in the selected profile. The operation is supported if the
    * PresetPosition capability exists for teh Node in the selected profile.
-   * @param options
+   *
+   * @param options - The options for removing a preset.
    */
-  async removePreset({
-    profileToken = this.onvif.activeSource?.profileToken,
-    presetToken
-  }: RemovePresetOptions): Promise<void> {
+  async removePreset({ profileToken, presetToken }: RemovePresetOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<RemovePreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        `<PresetToken>${presetToken}</PresetToken>` +
-        '</RemovePreset>'
+      body: `
+        <RemovePreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          <PresetToken>${presetToken}</PresetToken>
+        </RemovePreset>
+      `
     })
   }
 
   /**
    * Operation to move the PTZ device to it's "home" position. The operation is supported if the HomeSupported element
    * in the PTZNode is true.
+   *
    * @param options
    */
-  async gotoHomePosition({
-    profileToken = this.onvif.activeSource?.profileToken,
-    speed
-  }: GotoHomePositionOptions): Promise<void> {
+  async gotoHomePosition({ profileToken, speed }: GotoHomePositionOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<GotoHomePosition xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>${
-          speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''
-        }</GotoHomePosition>`
+      body: `
+        <GotoHomePosition xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          ${speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''}
+        </GotoHomePosition>
+      `
     })
   }
 
@@ -471,54 +557,56 @@ export class PTZ {
    * Operation to save current position as the home position. The SetHomePosition command returns with a failure if
    * the “home” position is fixed and cannot be overwritten. If the SetHomePosition is successful, it is possible
    * to recall the Home Position with the GotoHomePosition command.
+   *
    * @param options
    */
-  async setHomePosition({ profileToken = this.onvif.activeSource?.profileToken }: SetHomePositionOptions) {
+  async setHomePosition({ profileToken }: SetHomePositionOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<SetHomePosition xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        '</SetHomePosition>'
+      body: `
+        <SetHomePosition xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+        </SetHomePosition>
+      `
     })
   }
 
   /**
    * Operation to request PTZ status for the Node in the selected profile.
-   * @param options
+   *
+   * @param options - The options for getting the PTZ status.
    */
-  async getStatus({ profileToken = this.onvif.activeSource?.profileToken }: GetStatusOptions = {}): Promise<PTZStatus> {
+  async getStatus({ profileToken }: GetStatusOptions = {}): Promise<PTZStatus> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<GetStatus xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        '</GetStatus>'
+      body: `
+        <GetStatus xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+        </GetStatus>
+      `
     })
     return linerase(data).getStatusResponse.PTZStatus
   }
 
   /**
-   * Operation to move pan,tilt or zoom to a absolute destination.
+   * Operation to move pan, tilt or zoom to an absolute destination.
    *
    * The speed argument is optional. If an x/y speed value is given it is up to the device to either use the x value as
    * absolute resoluting speed vector or to map x and y to the component speed. If the speed argument is omitted, the
    * default speed set by the PTZConfiguration will be used.
+   *
    * @param options
    */
-  async absoluteMove({
-    profileToken = this.onvif.activeSource?.profileToken,
-    position,
-    speed
-  }: AbsoluteMoveOptions): Promise<void> {
+  async absoluteMove({ profileToken, position, speed }: AbsoluteMoveOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<AbsoluteMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        `<Position>${PTZ.PTZVectorToXML(position)}</Position>${
-          speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''
-        }</AbsoluteMove>`
+      body: `
+        <AbsoluteMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          <Position>${PTZ.PTZVectorToXML(position)}</Position>
+          ${speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''}
+        </AbsoluteMove>
+      `
     })
   }
 
@@ -529,21 +617,19 @@ export class PTZ {
    * The speed argument is optional. If an x/y speed value is given it is up to the device to either use the x value as
    * absolute resoluting speed vector or to map x and y to the component speed. If the speed argument is omitted,
    * the default speed set by the PTZConfiguration will be used.
+   *
    * @param options
    */
-  async relativeMove({
-    profileToken = this.onvif.activeSource?.profileToken,
-    translation,
-    speed
-  }: RelativeMoveOptions): Promise<void> {
+  async relativeMove({ profileToken, translation, speed }: RelativeMoveOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<RelativeMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        `<Translation>${PTZ.PTZVectorToXML(translation)}</Translation>${
-          speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''
-        }</RelativeMove>`
+      body: `
+        <RelativeMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          <Translation>${PTZ.PTZVectorToXML(translation)}</Translation>
+          ${speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''}
+        </RelativeMove>
+      `
     })
   }
 
@@ -551,39 +637,38 @@ export class PTZ {
    * Operation for continuous Pan/Tilt and Zoom movements. The operation is supported if the PTZNode supports at least
    * one continuous Pan/Tilt or Zoom space. If the space argument is omitted, the default space set by the
    * PTZConfiguration will be used.
-   * @param options
+   *
+   * @param options - The options for continuous move.
    */
-  async continuousMove({
-    profileToken = this.onvif.activeSource?.profileToken,
-    velocity,
-    timeout
-  }: ContinuousMoveOptions): Promise<void> {
+  async continuousMove({ profileToken, velocity, timeout }: ContinuousMoveOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<ContinuousMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken>` +
-        `<Velocity>${PTZ.PTZVectorToXML(velocity)}</Velocity>${
-          timeout ? `<Timeout>${typeof timeout === 'number' ? `PT${timeout / 1000}S` : timeout}</Timeout>` : ''
-        }</ContinuousMove>`
+      body: `
+        <ContinuousMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          <Velocity>${PTZ.PTZVectorToXML(velocity)}</Velocity>
+          ${timeout ? `<Timeout>${typeof timeout === 'number' ? `PT${timeout / 1000}S` : timeout}</Timeout>` : ''}
+        </ContinuousMove>
+      `
     })
   }
 
   /**
    * Operation to stop ongoing pan, tilt and zoom movements of absolute relative and continuous type. If no stop
    * argument for pan, tilt or zoom is set, the device will stop all ongoing pan, tilt and zoom movements.
-   * @param options
+   *
+   * @param options - The options for stopping PTZ movements.
    */
-  async stop(options?: StopOptions) {
-    const profileToken = options?.profileToken || this.onvif?.activeSource?.profileToken
-    const panTilt = options?.panTilt ?? true
-    const zoom = options?.zoom ?? true
+  async stop({ profileToken, panTilt = true, zoom = true }: StopOptions = {}): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
-      body:
-        '<Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">' +
-        `<ProfileToken>${profileToken}</ProfileToken><PanTilt>${panTilt}</PanTilt><Zoom>${zoom}</Zoom>` +
-        '</Stop>'
+      body: `
+        <Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
+          <PanTilt>${panTilt}</PanTilt>
+          <Zoom>${zoom}</Zoom>
+        </Stop>
+      `
     })
   }
 }
