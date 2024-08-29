@@ -31,47 +31,40 @@
   "scripts": {
     "prebuild": "rimraf build",
     "build": "run-p build:*",
+    "postbuild": "run-s fix:alias fix:ext",
     "build:swc": "swc ./source -d ./build --strip-leading-paths",
     "build:types": "tsc --project tsconfig.build.json",
-    "postbuild": "run-s fix:alias fix:ext",
     "check": "run-p check:*",
-    "check:code": "eslint . --ext .ts --report-unused-disable-directives --max-warnings 0",
-    "check:format": "prettier --check 'source/**/*.ts'",
+    "check:code": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "check:format": "biome format ./source",
     "fix": "run-s fix:code fix:format",
     "fix:alias": "tsc-alias -p tsconfig.build.json",
     "fix:code": "run-s 'check:code -- --fix'",
     "fix:ext": "./fix-ext.sh",
-    "fix:format": "prettier --write 'source/**/*.ts'",
+    "fix:format": "biome format --write ./source",
     "prepublishOnly": "run-s build",
     "preversion": "run-s check test build",
     "test": "vitest run",
     "test:integration": "vitest run integration --coverage",
     "test:unit": "vitest run unit --coverage"
   },
-  "prettier": {
-    "printWidth": 120,
-    "semi": false,
-    "singleQuote": true,
-    "trailingComma": "none"
-  },
   "devDependencies": {
     "@2bad/tsconfig": "3.0.1",
+    "@biomejs/biome": "1.8.3",
     "@swc/cli": "0.4.0",
     "@swc/core": "1.7.18",
     "@types/node": "20.16.1",
     "@vitest/coverage-v8": "2.0.5",
-    "eslint-config-love": "46.0.0",
+    "eslint-config-love": "62.0.1",
     "eslint-config-prettier": "9.1.0",
     "eslint-import-resolver-typescript": "3.6.1",
-    "eslint-plugin-jsdoc": "48.11.0",
-    "eslint-plugin-prettier": "5.2.1",
+    "eslint-plugin-jsdoc": "50.2.2",
     "eslint-plugin-vitest": "0.5.4",
     "npm-run-all2": "6.2.2",
-    "prettier": "3.3.3",
     "rimraf": "6.0.1",
     "tsc-alias": "1.8.10",
     "typescript": "5.5.4",
-    "vite-tsconfig-paths": "4.3.2",
+    "vite-tsconfig-paths": "5.0.1",
     "vitest": "2.0.5"
   },
   "packageManager": "npm@10.8.2",
@@ -79,7 +72,7 @@
     "node": ">=20"
   },
   "volta": {
-    "node": "20.17.0",
+    "node": "22.7.0",
     "npm": "10.8.2"
   }
 }
