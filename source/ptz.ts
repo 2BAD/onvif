@@ -1,9 +1,9 @@
-import { Onvif } from './onvif';
-import { linerase } from './utils';
+import { Onvif } from './onvif.ts';
+import { linerase } from './utils.ts';
 import {
   Duration, PTZConfiguration, PTZSpeed, Space1DDescription, Space2DDescription, Vector1D, Vector2D,
-} from './media';
-import { ReferenceToken } from './interfaces/common';
+} from './media.ts';
+import { ReferenceToken } from './interfaces/common.ts';
 
 export interface PTZPresetTourSupported {
   /** Indicates number of preset tours that can be created. Required preset tour operations shall be available for this

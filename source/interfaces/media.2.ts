@@ -23,9 +23,9 @@ import {
   AudioOutputConfigurationOptions,
   OSDConfiguration,
   OSDConfigurationOptions,
-} from './onvif';
-import { AnyURI } from './basics';
-import { ReferenceToken, Polygon, Color } from './common';
+} from './onvif.ts';
+import { AnyURI } from './basics.ts';
+import { ReferenceToken, Polygon, Color } from './common.ts';
 
 export type ConfigurationEnumeration =
   | 'All'

@@ -1,5 +1,5 @@
-import { Capabilities, Layout, LayoutOptions, CodingCapabilities, PaneConfiguration } from './onvif';
-import { ReferenceToken } from './common';
+import { Capabilities, Layout, LayoutOptions, CodingCapabilities, PaneConfiguration } from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

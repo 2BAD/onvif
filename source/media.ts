@@ -1,13 +1,13 @@
-import { Onvif } from './onvif';
-import { linerase } from './utils';
+import { Onvif } from './onvif.ts';
+import { linerase } from './utils.ts';
 import {
   AudioEncoderConfiguration, MediaUri,
   Profile,
   VideoEncoderConfiguration,
   VideoSource,
-} from './interfaces/onvif';
-import { ReferenceToken } from './interfaces/common';
-import { AnyURI } from './interfaces/basics';
+} from './interfaces/onvif.ts';
+import { ReferenceToken } from './interfaces/common.ts';
+import { AnyURI } from './interfaces/basics.ts';
 import {
   ConfigurationSet,
   GetOSDOptions,
@@ -18,13 +18,13 @@ import {
   GetVideoSourceConfigurationOptions,
   GetVideoSourceConfigurationOptionsResponse,
   GetVideoSourceConfigurations, MediaProfile,
-} from './interfaces/media.2';
+} from './interfaces/media.2.ts';
 import {
   GetVideoSourceConfigurationsResponse,
   GetVideoSourcesResponse,
   GetVideoEncoderConfigurationsResponse,
   GetSnapshotUri,
-} from './interfaces/media';
+} from './interfaces/media.ts';
 
 export interface GetStreamUriOptions {
   profileToken?: ReferenceToken;

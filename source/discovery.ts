@@ -2,8 +2,8 @@ import { EventEmitter } from 'events';
 import { createSocket, RemoteInfo } from 'dgram';
 import url from 'url';
 import os from 'os';
-import { guid, linerase, parseSOAPString } from './utils';
-import { Onvif } from './onvif';
+import { guid, linerase, parseSOAPString } from './utils.ts';
+import { Onvif } from './onvif.ts';
 
 export interface DiscoveryOptions {
   /** Timeout in milliseconds for discovery responses, Default 5000 */

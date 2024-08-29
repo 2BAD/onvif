@@ -1,4 +1,4 @@
-import { ReferenceToken } from './common';
+import { ReferenceToken } from './common.ts';
 import {
   RelayMode,
   FloatList,
@@ -18,7 +18,7 @@ import {
   AudioOutputConfigurationOptions,
   RelayOutput,
   DigitalInput,
-} from './onvif';
+} from './onvif.ts';
 
 /** The type of serial port.Generic can be signaled as a vendor specific serial port type. */
 export type SerialPortType =

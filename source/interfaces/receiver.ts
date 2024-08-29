@@ -1,5 +1,5 @@
-import { Capabilities, Receiver, ReceiverConfiguration, ReceiverMode, ReceiverStateInformation } from './onvif';
-import { ReferenceToken } from './common';
+import { Capabilities, Receiver, ReceiverConfiguration, ReceiverMode, ReceiverStateInformation } from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

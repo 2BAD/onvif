@@ -1,5 +1,5 @@
-import { AnyURI } from './basics';
-import { Date } from './onvif';
+import { AnyURI } from './basics.ts';
+import { Date } from './onvif.ts';
 
 /**
  * Unique identifier for a physical or logical resource.

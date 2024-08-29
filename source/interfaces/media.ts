@@ -1,4 +1,4 @@
-import { ReferenceToken } from './common';
+import { ReferenceToken } from './common.ts';
 import {
   VideoResolution,
   StringList,
@@ -27,7 +27,7 @@ import {
   MediaUri,
   OSDConfiguration,
   OSDConfigurationOptions,
-} from './onvif';
+} from './onvif.ts';
 
 export interface Capabilities {
   /** Indicates if GetSnapshotUri is supported. */

@@ -1,5 +1,5 @@
-import { FloatRange } from './onvif';
-import { ReferenceToken, Vector, PTZVector, Rectangle } from './common';
+import { FloatRange } from './onvif.ts';
+import { ReferenceToken, Vector, PTZVector, Rectangle } from './common.ts';
 
 export type TemperatureCondition = 'LessThan' | 'MoreThan' | 'EqualTo' | 'Change';
 export type TemperatureType = 'MaxTemp' | 'MinTemp' | 'AverageTemp' | 'StdDeviation' | 'MedianTemp' | 'ISOCoverage';

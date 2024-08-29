@@ -15,7 +15,7 @@ import {
   MetadataFilter,
   FindMetadataResultList,
   SearchState,
-} from './onvif';
+} from './onvif.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

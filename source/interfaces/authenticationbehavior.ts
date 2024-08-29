@@ -1,6 +1,6 @@
-import { PositiveInteger, DataEntity } from './types';
-import { StringList, Name, Description } from './onvif';
-import { ReferenceToken } from './common';
+import { PositiveInteger, DataEntity } from './types.ts';
+import { StringList, Name, Description } from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 /**
  * The service capabilities reflect optional functionality of a service. The information is static

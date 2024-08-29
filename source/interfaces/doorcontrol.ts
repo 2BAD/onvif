@@ -1,6 +1,6 @@
-import { DataEntity } from './types';
-import { Name, Description } from './onvif';
-import { ReferenceToken } from './common';
+import { DataEntity } from './types.ts';
+import { Name, Description } from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 /** The physical state of a Door. */
 export type DoorPhysicalState = 'Unknown' | 'Open' | 'Closed' | 'Fault';

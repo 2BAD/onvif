@@ -9,8 +9,8 @@ import {
   Vector,
   Transformation,
   Color,
-} from './common';
-import { FilterType, AnyURI } from './basics';
+} from './common.ts';
+import { FilterType, AnyURI } from './basics.ts';
 
 /** User readable name. Length up to 64 characters. */
 export type Name = string;

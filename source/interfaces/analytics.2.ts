@@ -1,6 +1,6 @@
-import { StringList, Capabilities, SupportedRules, Config, SupportedAnalyticsModules } from './onvif';
-import { Frame } from './metadatastream';
-import { ReferenceToken } from './common';
+import { StringList, Capabilities, SupportedRules, Config, SupportedAnalyticsModules } from './onvif.ts';
+import { Frame } from './metadatastream.ts';
+import { ReferenceToken } from './common.ts';
 
 export interface ConfigOptions {
   /** The RuleType the ConfigOptions applies to if the Name attribute is ambiguous. */

@@ -1,6 +1,6 @@
-import { StringList, Capabilities } from './onvif';
-import { AnyURI } from './basics';
-import { ReferenceToken } from './common';
+import { StringList, Capabilities } from './onvif.ts';
+import { AnyURI } from './basics.ts';
+import { ReferenceToken } from './common.ts';
 
 export type Protocols = 'https' | 'wss';
 export type AuthorizationModes = 'mTLS' | 'JWT';

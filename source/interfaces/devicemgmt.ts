@@ -1,4 +1,4 @@
-import { AnyURI } from './basics';
+import { AnyURI } from './basics.ts';
 import {
   Capabilities,
   OnvifVersion,
@@ -52,8 +52,8 @@ import {
   Dot11Status,
   Dot11AvailableNetworks,
   SystemLogUriList,
-} from './onvif';
-import { IntRange, ReferenceToken, LocationEntity } from './common';
+} from './onvif.ts';
+import { IntRange, ReferenceToken, LocationEntity } from './common.ts';
 
 export type AutoGeoModes = 'Location' | 'Heading' | 'Leveling';
 export type StorageType = 'NFS' | 'CIFS' | 'CDMI' | 'FTP' | 'ObjectStorageS3' | 'ObjectStorageAzure';

@@ -5,8 +5,8 @@
 import { EventEmitter } from 'events';
 import {
   Onvif, OnvifRequestOptions, SetSystemDateAndTimeOptions,
-} from '../onvif';
-import { GetSnapshotUriOptions, GetStreamUriOptions } from '../media';
+} from '../onvif.ts';
+import { GetSnapshotUriOptions, GetStreamUriOptions } from '../media.ts';
 import {
   GetPresetsOptions, GetStatusOptions,
   GotoHomePositionOptions,
@@ -14,11 +14,11 @@ import {
   RemovePresetOptions,
   SetHomePositionOptions,
   SetPresetOptions, RelativeMoveOptions, ContinuousMoveOptions,
-} from '../ptz';
-import { SetNTP } from '../interfaces/devicemgmt';
-import { NetworkHostType } from '../interfaces/onvif';
-import { GetOSDs } from '../interfaces/media.2';
-import { ReferenceToken } from '../interfaces/common';
+} from '../ptz.ts';
+import { SetNTP } from '../interfaces/devicemgmt.ts';
+import { NetworkHostType } from '../interfaces/onvif.ts';
+import { GetOSDs } from '../interfaces/media.2.ts';
+import { ReferenceToken } from '../interfaces/common.ts';
 
 export type Callback = (error: any, result?: any) => void;
 export type CompatibilityAbsoluteMoveOptions = AbsoluteMoveOptions & { x?: number; y?: number; zoom?: number };

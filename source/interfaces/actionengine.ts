@@ -1,7 +1,7 @@
-import { ItemListDescription, ItemList } from './onvif';
-import { AnyURI } from './basics';
-import { PositiveInteger } from './types';
-import { ReferenceToken } from './common';
+import { ItemListDescription, ItemList } from './onvif.ts';
+import { AnyURI } from './basics.ts';
+import { PositiveInteger } from './types.ts';
+import { ReferenceToken } from './common.ts';
 
 export type AddressFormatType = 'hostname' | 'ipv4' | 'ipv6' | 'Extended';
 export type EMailAuthenticationMode = 'none' | 'SMTP' | 'POPSMTP' | 'Extended';

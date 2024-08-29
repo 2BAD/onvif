@@ -8,11 +8,11 @@ import {
   Polygon,
   PTZStatus,
   GeoOrientation,
-} from './common';
-import { HumanFace } from './humanface.2';
-import { HumanBody } from './humanbody.2';
-import { AnyURI } from './basics';
-import { Date } from './onvif';
+} from './common.ts';
+import { HumanFace } from './humanface.2.ts';
+import { HumanBody } from './humanbody.2.ts';
+import { AnyURI } from './basics.ts';
+import { Date } from './onvif.ts';
 
 export type VehicleType = 'Bus' | 'Car' | 'Truck' | 'Bicycle' | 'Motorcycle';
 export type PlateType = 'Normal' | 'Police' | 'Diplomat' | 'Temporary';

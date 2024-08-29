@@ -16,8 +16,8 @@ import {
   SearchScope,
   StorageReferencePath,
   ArrayOfFileProgress,
-} from './onvif';
-import { ReferenceToken } from './common';
+} from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 export interface RecordingOptions {
   job?: JobOptions;

@@ -1,7 +1,7 @@
-import { NCName, AnyURI } from './basics';
-import { PositiveInteger } from './types';
-import { DeviceEntity, StringList, Date } from './onvif';
-import { ReferenceToken } from './common';
+import { NCName, AnyURI } from './basics.ts';
+import { PositiveInteger } from './types.ts';
+import { DeviceEntity, StringList, Date } from './onvif.ts';
+import { ReferenceToken } from './common.ts';
 
 /** Unique identifier for keys in the keystore. */
 export type KeyID = NCName;

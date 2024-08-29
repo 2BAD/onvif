@@ -4,12 +4,12 @@ import https, { Agent, RequestOptions } from 'https';
 import http from 'http';
 import { Buffer } from 'buffer';
 import crypto from 'crypto';
-import { linerase, parseSOAPString } from './utils';
-import { Device } from './device';
-import { Media } from './media';
-import { PTZ } from './ptz';
-import { Capabilities, Profile } from './interfaces/onvif';
-import { GetDeviceInformationResponse } from './interfaces/devicemgmt';
+import { linerase, parseSOAPString } from './utils.ts';
+import { Device } from './device.ts';
+import { Media } from './media.ts';
+import { PTZ } from './ptz.ts';
+import { Capabilities, Profile } from './interfaces/onvif.ts';
+import { GetDeviceInformationResponse } from './interfaces/devicemgmt.ts';
 
 /**
  * Cam constructor options

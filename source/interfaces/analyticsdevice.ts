@@ -6,9 +6,9 @@ import {
   VideoAnalyticsConfiguration,
   StreamSetup,
   AnalyticsStateInformation,
-} from './onvif';
-import { ReferenceToken } from './common';
-import { AnyURI } from './basics';
+} from './onvif.ts';
+import { ReferenceToken } from './common.ts';
+import { AnyURI } from './basics.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

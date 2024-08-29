@@ -10,8 +10,8 @@ import {
   PresetTour,
   PTZPresetTourOptions,
   PTZPresetTourOperation,
-} from './onvif';
-import { ReferenceToken, PTZStatus, PTZVector, GeoLocation } from './common';
+} from './onvif.ts';
+import { ReferenceToken, PTZStatus, PTZVector, GeoLocation } from './common.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

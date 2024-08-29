@@ -1,6 +1,6 @@
-import { FloatList, Capabilities, StreamSetup, ReplayConfiguration } from './onvif';
-import { AnyURI } from './basics';
-import { ReferenceToken } from './common';
+import { FloatList, Capabilities, StreamSetup, ReplayConfiguration } from './onvif.ts';
+import { AnyURI } from './basics.ts';
+import { ReferenceToken } from './common.ts';
 
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {

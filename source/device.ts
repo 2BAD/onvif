@@ -1,8 +1,8 @@
 import url from 'url';
 import {
   Onvif, OnvifServices, SetSystemDateAndTimeOptions,
-} from './onvif';
-import { linerase } from './utils';
+} from './onvif.ts';
+import { linerase } from './utils.ts';
 import {
   DeviceServiceCapabilities,
   GetCapabilities, GetCapabilitiesResponse, GetDeviceInformationResponse, GetServiceCapabilitiesResponse,
@@ -10,12 +10,12 @@ import {
   GetServicesResponse,
   Service,
   SetNTP,
-} from './interfaces/devicemgmt';
+} from './interfaces/devicemgmt.ts';
 import {
   Capabilities, CapabilitiesExtension,
   DNSInformation, HostnameInformation, NetworkInterface,
   NTPInformation, Scope,
-} from './interfaces/onvif';
+} from './interfaces/onvif.ts';
 
 /**
  * Device methods

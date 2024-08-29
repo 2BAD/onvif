@@ -1,5 +1,5 @@
-import { Date, StringAttrList, Capabilities } from './onvif';
-import { AnyURI } from './basics';
+import { Date, StringAttrList, Capabilities } from './onvif.ts';
+import { AnyURI } from './basics.ts';
 
 export type AppState = 'Active' | 'Inactive' | 'Installing' | 'Uninstalling' | 'Removed' | 'InstallationFailed';
 export interface AppInfo {
