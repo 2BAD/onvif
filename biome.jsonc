@@ -1,12 +1,19 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.8.1/schema.json",
   "files": {
-    "include": ["*.js", "*.mjs", "*.jsx", "*.ts", "*.tsx"]
+    "include": ["*.js", "*.mjs", "*.jsx", "*.ts", "*.tsx", "*.json"]
   },
   "formatter": {
     // should be removed once this issue is fixed: https://github.com/biomejs/biome/issues/1724
     "indentStyle": "space",
     "lineWidth": 120
+  },
+  "linter": {
+    "rules": {
+      "complexity": {
+        "noForEach": "off"
+      }
+    }
   },
   "javascript": {
     "formatter": {
@@ -15,5 +22,8 @@
       "semicolons": "asNeeded",
       "trailingCommas": "none"
     }
+  },
+  "organizeImports": {
+    "enabled": false
   }
 }
