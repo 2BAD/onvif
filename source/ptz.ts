@@ -180,8 +180,8 @@ export type PTZPreset = {
  * Represents a PTZ vector with pan, tilt, and zoom components.
  */
 export type PTZVector = {
-  panTilt?: Vector2D
-  zoom?: Vector1D
+  panTilt?: Vector2D | undefined
+  zoom?: Vector1D | undefined
 }
 
 /**
@@ -189,15 +189,15 @@ export type PTZVector = {
  */
 export type PTZInputVector = {
   /** Pan value */
-  pan?: number
+  pan?: number | undefined
   /** Synonym for pan value */
-  x?: number
+  x?: number | undefined
   /** Tilt value */
-  tilt?: number
+  tilt?: number | undefined
   /** Synonym for tilt value */
-  y?: number
+  y?: number | undefined
   /** Zoom value */
-  zoom?: number
+  zoom?: number | undefined
 }
 
 /**
@@ -352,15 +352,15 @@ export type StopOptions = {
 export class PTZ {
   private readonly onvif: Onvif
   #nodes: Record<ReferenceToken, PTZNode> = {}
-  get nodes() {
+  get nodes(): Record<ReferenceToken, PTZNode> {
     return this.#nodes
   }
   #configurations: Record<ReferenceToken, PTZConfiguration> = {}
-  get configurations() {
+  get configurations(): Record<ReferenceToken, PTZConfiguration> {
     return this.#configurations
   }
   #presets: Record<ReferenceToken, PTZPreset> = {}
-  get presets() {
+  get presets(): Record<ReferenceToken, PTZPreset> {
     return this.#presets
   }
 
@@ -378,10 +378,14 @@ export class PTZ {
       body: '<GetNodes xmlns="http://www.onvif.org/ver20/ptz/wsdl" />'
     })
     this.#nodes = {}
-    data[0].getNodesResponse.forEach((ptzNode: unknown) => {
-      const node: PTZNode = linerase(ptzNode.PTZNode[0])
-      this.#nodes[node.token] = node
-    })
+    console.warn('NOT IMPLEMENTED')
+    console.log('GetNodes response: ', data)
+    // TODO fix this later
+    // data[0].getNodesResponse.forEach((ptzNodeResponse: GetNodesResponse) => {
+    //   ptzNodeResponse.PTZNode?.forEach((ptzNode) => {
+    //     this.#nodes[ptzNode.token] = ptzNode
+    //   })
+    // })
     return this.#nodes
   }
 
@@ -394,6 +398,7 @@ export class PTZ {
       body: '<GetConfigurations xmlns="http://www.onvif.org/ver20/ptz/wsdl"></GetConfigurations>'
     })
     this.#configurations = {}
+    // TODO check if this is correct
     if (Array.isArray(data.PTZConfiguration)) {
       data.PTZConfiguration.forEach((configuration) => {
         const result = linerase(configuration) as PTZConfiguration
@@ -438,11 +443,12 @@ export class PTZ {
       service: 'PTZ',
       body: `
         <GetPresets xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-          <ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>
+          <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
         </GetPresets>
       `
     })
     this.#presets = {}
+    // @ts-expect-error TODO this has to be fixed and type checked
     const result = linerase(data[0].getPresetsResponse[0].preset) as PTZPreset[] | PTZPreset
     if (Array.isArray(result)) {
       result.forEach((preset: PTZPreset) => {
@@ -467,6 +473,7 @@ export class PTZ {
   }
 
   private static PTZVectorToXML(input: PTZVector | PTZInputVector): string {
+    // @ts-expect-error TODO this has to be fixed and type checked, probably broken
     const vector: PTZVector = 'x' in input || 'pan' in input ? PTZ.formatPTZSimpleVector(input) : input
     return `
       ${vector.panTilt ? `<PanTilt x="${vector.panTilt.x}" y="${vector.panTilt.y}" xmlns="http://www.onvif.org/ver10/schema"/>` : ''}
@@ -478,14 +485,14 @@ export class PTZ {
    * Operation to go to a saved preset position for the PTZNode in the selected profile. The operation is supported if
    * there is support for at least on PTZ preset by the PTZNode.
    *
-   * @param options
+   * @param options - The options for getting presets.
    */
   async gotoPreset({ profileToken, presetToken, speed }: GotoPresetOptions): Promise<void> {
     await this.onvif.request({
       service: 'PTZ',
       body: `
         <GotoPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-          <ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>
+          <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
           <PresetToken>${presetToken}</PresetToken>
           ${speed ? `<Speed>${PTZ.PTZVectorToXML(speed)}</Speed>` : ''}
         </GotoPreset>
@@ -501,20 +508,21 @@ export class PTZ {
    * during the SetPreset operation. The device MAY internally save additional states such as imaging properties in the
    * PTZ Preset which then should be recalled in the GotoPreset operation.
    *
-   * @param options
+   * @param options - The options for setting presets.
    */
   async setPreset({ profileToken, presetName, presetToken }: SetPresetOptions): Promise<SetPresetResponse> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
       body: `
         <SetPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
-          <ProfileToken>${profileToken ?? this.onvif.activeSource!.profileToken}</ProfileToken>
+          <ProfileToken>${profileToken ?? this.onvif.activeSource?.profileToken}</ProfileToken>
           <PresetName>${presetName}</PresetName>
           ${presetToken ? `<PresetToken>${presetToken}</PresetToken>` : ''}
         </SetPreset>
       `
     })
-    return linerase(data[0].setPresetResponse)
+    // @ts-expect-error TODO this has to be fixed and type checked
+    return linerase(data[0].setPresetResponse) as SetPresetResponse
   }
 
   /**
@@ -539,7 +547,7 @@ export class PTZ {
    * Operation to move the PTZ device to it's "home" position. The operation is supported if the HomeSupported element
    * in the PTZNode is true.
    *
-   * @param options
+   * @param options - The options for moving the device to it's home position.
    */
   async gotoHomePosition({ profileToken, speed }: GotoHomePositionOptions): Promise<void> {
     await this.onvif.request({
@@ -558,7 +566,7 @@ export class PTZ {
    * the “home” position is fixed and cannot be overwritten. If the SetHomePosition is successful, it is possible
    * to recall the Home Position with the GotoHomePosition command.
    *
-   * @param options
+   * @param options - The options for setting the home position.
    */
   async setHomePosition({ profileToken }: SetHomePositionOptions): Promise<void> {
     await this.onvif.request({
@@ -585,6 +593,7 @@ export class PTZ {
         </GetStatus>
       `
     })
+    // @ts-expect-error TODO this has to be fixed and type checked
     return linerase(data).getStatusResponse.PTZStatus
   }
 
@@ -592,10 +601,10 @@ export class PTZ {
    * Operation to move pan, tilt or zoom to an absolute destination.
    *
    * The speed argument is optional. If an x/y speed value is given it is up to the device to either use the x value as
-   * absolute resoluting speed vector or to map x and y to the component speed. If the speed argument is omitted, the
+   * absolute resulting speed vector or to map x and y to the component speed. If the speed argument is omitted, the
    * default speed set by the PTZConfiguration will be used.
    *
-   * @param options
+   * @param options - The options for absolute movement.
    */
   async absoluteMove({ profileToken, position, speed }: AbsoluteMoveOptions): Promise<void> {
     await this.onvif.request({
@@ -615,10 +624,10 @@ export class PTZ {
    * relative Pan/Tilt or Zoom space.
    *
    * The speed argument is optional. If an x/y speed value is given it is up to the device to either use the x value as
-   * absolute resoluting speed vector or to map x and y to the component speed. If the speed argument is omitted,
+   * absolute resulting speed vector or to map x and y to the component speed. If the speed argument is omitted,
    * the default speed set by the PTZConfiguration will be used.
    *
-   * @param options
+   * @param options - The options for relative movement.
    */
   async relativeMove({ profileToken, translation, speed }: RelativeMoveOptions): Promise<void> {
     await this.onvif.request({
