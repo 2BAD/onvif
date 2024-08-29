@@ -6,7 +6,7 @@ export type TemperatureType = 'MaxTemp' | 'MinTemp' | 'AverageTemp' | 'StdDeviat
 export type RadiometryModuleConfigOptions = {
   /**
    * The total number of temperature measurement modules that can be created on the
-   * device, screen based or geolocated, of any type (spots or boxes).
+   * device, screen based or geo located, of any type (spots or boxes).
    */
   maxMeasurementModules?: number
   /**
@@ -105,7 +105,7 @@ export type RadiometryParameters = {
 export type RadiometryRuleConfigOptions = {
   /** Specifies valid ranges for thresholds and reference parameters used for triggering radiometric rules. */
   radiometryRuleOptions?: RadiometryRuleOptions
-  /** Specifies valid rule conditions for temperature comparisions in radiometric rules. */
+  /** Specifies valid rule conditions for temperature comparisons in radiometric rules. */
   temperatureConditionOptions?: TemperatureCondition[]
   /** Specifies temperature measurement types provided by radiometry analytics modules in the device. */
   temperatureTypeOptions?: TemperatureType[]
@@ -136,6 +136,6 @@ export type RadiometryTemperatureRuleConfig = {
   thresholdTemperature?: number
   /** Indicates the time interval during which the rule condition shall be met to trigger an event. */
   thresholdTime?: unknown
-  /** Indicates the width in Kelvin of the temerature hysteresis band to be considered by the rule. */
+  /** Indicates the width in Kelvin of the temperature hysteresis band to be considered by the rule. */
   hysteresisTemperature?: number
 }

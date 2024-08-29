@@ -52,7 +52,7 @@ export type AccessPolicy = {
   entityType?: unknown
   extension?: AccessPolicyExtension
 }
-export type AccessPolicyExtension = {}
+export type AccessPolicyExtension = Record<string, unknown>
 /**
  * The AccessProfileInfo structure contains basic information about an access profile. The device
  * shall provide the following fields for each access profile instance.
@@ -79,8 +79,8 @@ export type AccessProfile = {
   accessPolicy?: AccessPolicy[]
   extension?: AccessProfileExtension
 } & AccessProfileInfo
-export type AccessProfileExtension = {}
-export type GetServiceCapabilities = {}
+export type AccessProfileExtension = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested access rules
@@ -160,14 +160,14 @@ export type ModifyAccessProfile = {
   /** The details of Access Profile */
   accessProfile?: AccessProfile
 }
-export type ModifyAccessProfileResponse = {}
+export type ModifyAccessProfileResponse = Record<string, unknown>
 export type SetAccessProfile = {
   /** The AccessProfile item to create or modify */
   accessProfile?: AccessProfile
 }
-export type SetAccessProfileResponse = {}
+export type SetAccessProfileResponse = Record<string, unknown>
 export type DeleteAccessProfile = {
   /** The token of the access profile to delete. */
   token?: ReferenceToken
 }
-export type DeleteAccessProfileResponse = {}
+export type DeleteAccessProfileResponse = Record<string, unknown>

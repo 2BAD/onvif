@@ -1,7 +1,7 @@
 import type { ReferenceToken } from './common.ts'
 import type { Capabilities, CodingCapabilities, Layout, LayoutOptions, PaneConfiguration } from './onvif.ts'
 
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the display service is returned in the Capabilities element. */
   capabilities?: Capabilities
@@ -20,7 +20,7 @@ export type SetLayout = {
   /** Layout to be set */
   layout?: Layout
 }
-export type SetLayoutResponse = {}
+export type SetLayoutResponse = Record<string, unknown>
 export type GetDisplayOptions = {
   /** Token of the Video Output whose options are requested */
   videoOutput?: ReferenceToken
@@ -58,14 +58,14 @@ export type SetPaneConfigurations = {
   /** Pane Configuration to be set. */
   paneConfiguration?: PaneConfiguration[]
 }
-export type SetPaneConfigurationsResponse = {}
+export type SetPaneConfigurationsResponse = Record<string, unknown>
 export type SetPaneConfiguration = {
   /** Token of the video output whose panes to set. */
   videoOutput?: ReferenceToken
   /** Pane Configuration to be set. */
   paneConfiguration?: PaneConfiguration
 }
-export type SetPaneConfigurationResponse = {}
+export type SetPaneConfigurationResponse = Record<string, unknown>
 export type CreatePaneConfiguration = {
   /** Token of the video output where the pane shall be created. */
   videoOutput?: ReferenceToken
@@ -82,4 +82,4 @@ export type DeletePaneConfiguration = {
   /** Token of the pane to be deleted. */
   paneToken?: ReferenceToken
 }
-export type DeletePaneConfigurationResponse = {}
+export type DeletePaneConfigurationResponse = Record<string, unknown>

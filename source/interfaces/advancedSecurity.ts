@@ -46,7 +46,7 @@ export type ClientAuthenticationMethod =
   | 'private_key_jwt'
   | 'tls_client_auth'
   | 'self_signed_tls_client_auth'
-export type Extension = {}
+export type Extension = Record<string, unknown>
 /** The attributes of a key in the keystore. */
 export type KeyAttribute = {
   /** The ID of the key. */
@@ -142,7 +142,7 @@ export type DistinguishedName = {
   /** Required extension point. It is recommended to not use this element, and instead use GenericAttribute and the numeric Distinguished Name Attribute Type. */
   anyAttribute?: anyAttribute
 }
-export type anyParameters = {}
+export type anyParameters = Record<string, unknown>
 /** An identifier of an algorithm. */
 export type AlgorithmIdentifier = {
   /** The OID of the algorithm in dot-decimal form. */
@@ -159,7 +159,7 @@ export type BasicRequestAttribute = {
   value?: Base64DERencodedASN1Value
 }
 /** A CSR attribute as specified in PKCS#10. */
-export type CSRAttribute = {}
+export type CSRAttribute = Record<string, unknown>
 /** An X.509v3 extension field as specified in RFC 5280 */
 export type X509v3Extension = {
   /** The OID of the extension field. */
@@ -185,7 +185,7 @@ export type CertificateIDs = {
   /** A certificate ID. */
   certificateID?: CertificateID[]
 }
-export type anyElement = {}
+export type anyElement = Record<string, unknown>
 /** An X.509 certification path as defined in RFC 5280. */
 export type CertificationPath = {
   /** A certificate in the certification path. */
@@ -221,7 +221,7 @@ export type Dot1XStage = {
   inner?: Dot1XStage
   extension?: Dot1XStageExtension
 }
-export type Dot1XStageExtension = {}
+export type Dot1XStageExtension = Record<string, unknown>
 export type Dot1XConfiguration = {
   /** The unique identifier of the IEEE 802.1X configuration. */
   dot1XID?: Dot1XID
@@ -370,19 +370,19 @@ export type JWTConfiguration = {
   /** If present, the device will validate the certification path of the Open ID Connect servers. The OIDC server iso considered to be valid if its certificate is validated by one of the provided certification path validation policies. */
   validationPolicy?: CertPathValidationPolicyID[]
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the security configuration service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export type GetJWTConfiguration = {}
+export type GetJWTConfiguration = Record<string, unknown>
 export type GetJWTConfigurationResponse = {
   configuration?: JWTConfiguration
 }
 export type SetJWTConfiguration = {
   configuration?: JWTConfiguration
 }
-export type SetJWTConfigurationResponse = {}
+export type SetJWTConfigurationResponse = Record<string, unknown>
 export type CreateRSAKeyPair = {
   /** The length of the key to be created. */
   keyLength?: number
@@ -459,7 +459,7 @@ export type GetPrivateKeyStatusResponse = {
   /** True if and only if the key pair contains a private key. */
   hasPrivateKey?: boolean
 }
-export type GetAllKeys = {}
+export type GetAllKeys = Record<string, unknown>
 export type GetAllKeysResponse = {
   /** Information about a key in the keystore. */
   keyAttribute?: KeyAttribute[]
@@ -468,7 +468,7 @@ export type DeleteKey = {
   /** The ID of the key that is to be deleted from the keystore. */
   keyID?: KeyID
 }
-export type DeleteKeyResponse = {}
+export type DeleteKeyResponse = Record<string, unknown>
 export type CreatePKCS10CSR = {
   /** The subject to be included in the CSR. */
   subject?: DistinguishedName
@@ -529,7 +529,7 @@ export type GetCertificateResponse = {
   /** The DER representation of the certificate. */
   certificate?: X509Certificate
 }
-export type GetAllCertificates = {}
+export type GetAllCertificates = Record<string, unknown>
 /** A list with all certificates stored in the keystore. */
 export type GetAllCertificatesResponse = {
   /** A certificate stored in the keystore. */
@@ -539,7 +539,7 @@ export type DeleteCertificate = {
   /** The ID of the certificate to delete. */
   certificateID?: CertificateID
 }
-export type DeleteCertificateResponse = {}
+export type DeleteCertificateResponse = Record<string, unknown>
 export type CreateCertificationPath = {
   /** The IDs of the certificates to include in the certification path, where each certificate signature except for the last one in the path must be verifiable with the public key certified by the next certificate in the path. */
   certificateIDs?: CertificateIDs
@@ -558,7 +558,7 @@ export type GetCertificationPathResponse = {
   /** The certification path that is stored under the given ID in the keystore. */
   certificationPath?: CertificationPath
 }
-export type GetAllCertificationPaths = {}
+export type GetAllCertificationPaths = Record<string, unknown>
 export type GetAllCertificationPathsResponse = {
   /** An ID of a certification path in the keystore. */
   certificationPathID?: CertificationPathID[]
@@ -567,7 +567,7 @@ export type DeleteCertificationPath = {
   /** The ID of the certification path to delete. */
   certificationPathID?: CertificationPathID
 }
-export type DeleteCertificationPathResponse = {}
+export type DeleteCertificationPathResponse = Record<string, unknown>
 export type UploadPassphrase = {
   /** The passphrase to upload. */
   passphrase?: string
@@ -578,7 +578,7 @@ export type UploadPassphraseResponse = {
   /** The PassphraseID of the uploaded passphrase. */
   passphraseID?: PassphraseID
 }
-export type GetAllPassphrases = {}
+export type GetAllPassphrases = Record<string, unknown>
 export type GetAllPassphrasesResponse = {
   /** Information about a passphrase in the keystore. */
   passphraseAttribute?: PassphraseAttribute[]
@@ -587,21 +587,21 @@ export type DeletePassphrase = {
   /** The ID of the passphrase that is to be deleted from the keystore. */
   passphraseID?: PassphraseID
 }
-export type DeletePassphraseResponse = {}
+export type DeletePassphraseResponse = Record<string, unknown>
 export type AddServerCertificateAssignment = {
   certificationPathID?: CertificationPathID
 }
-export type AddServerCertificateAssignmentResponse = {}
+export type AddServerCertificateAssignmentResponse = Record<string, unknown>
 export type RemoveServerCertificateAssignment = {
   certificationPathID?: CertificationPathID
 }
-export type RemoveServerCertificateAssignmentResponse = {}
+export type RemoveServerCertificateAssignmentResponse = Record<string, unknown>
 export type ReplaceServerCertificateAssignment = {
   oldCertificationPathID?: CertificationPathID
   newCertificationPathID?: CertificationPathID
 }
-export type ReplaceServerCertificateAssignmentResponse = {}
-export type GetAssignedServerCertificates = {}
+export type ReplaceServerCertificateAssignmentResponse = Record<string, unknown>
+export type GetAssignedServerCertificates = Record<string, unknown>
 export type GetAssignedServerCertificatesResponse = {
   /** The IDs of all certification paths that are assigned to the TLS server on the device. */
   certificationPathID?: CertificationPathID[]
@@ -610,8 +610,8 @@ export type SetEnabledTLSVersions = {
   /** List of TLS versions to allow. */
   versions?: TLSVersions
 }
-export type SetEnabledTLSVersionsResponse = {}
-export type GetEnabledTLSVersions = {}
+export type SetEnabledTLSVersionsResponse = Record<string, unknown>
+export type GetEnabledTLSVersions = Record<string, unknown>
 export type GetEnabledTLSVersionsResponse = {
   /** List of allowed TLS versions. */
   versions?: TLSVersions
@@ -635,7 +635,7 @@ export type GetCRLResponse = {
   /** The CRL with the requested ID. */
   crl?: CRL
 }
-export type GetAllCRLs = {}
+export type GetAllCRLs = Record<string, unknown>
 export type GetAllCRLsResponse = {
   /** A list of all CRLs that are stored in the keystore on the device. */
   crl?: CRL[]
@@ -644,7 +644,7 @@ export type DeleteCRL = {
   /** The ID of the CRL to be deleted. */
   crlID?: CRLID
 }
-export type DeleteCRLResponse = {}
+export type DeleteCRLResponse = Record<string, unknown>
 export type CreateCertPathValidationPolicy = {
   /** The alias to assign to the created certification path validation policy. */
   alias?: string
@@ -666,7 +666,7 @@ export type GetCertPathValidationPolicyResponse = {
   /** The certification path validation policy that is stored under the requested ID. */
   certPathValidationPolicy?: CertPathValidationPolicy
 }
-export type GetAllCertPathValidationPolicies = {}
+export type GetAllCertPathValidationPolicies = Record<string, unknown>
 export type GetAllCertPathValidationPoliciesResponse = {
   /** A list of all certification path validation policies that are stored in the keystore on the device. */
   certPathValidationPolicy?: CertPathValidationPolicy[]
@@ -675,20 +675,20 @@ export type DeleteCertPathValidationPolicy = {
   /** The ID of the certification path validation policy to be deleted. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export type DeleteCertPathValidationPolicyResponse = {}
+export type DeleteCertPathValidationPolicyResponse = Record<string, unknown>
 export type SetClientAuthenticationRequired = {
   clientAuthenticationRequired?: boolean
 }
-export type SetClientAuthenticationRequiredResponse = {}
-export type GetClientAuthenticationRequired = {}
+export type SetClientAuthenticationRequiredResponse = Record<string, unknown>
+export type GetClientAuthenticationRequired = Record<string, unknown>
 export type GetClientAuthenticationRequiredResponse = {
   clientAuthenticationRequired?: boolean
 }
 export type SetCnMapsToUser = {
   cnMapsToUser?: boolean
 }
-export type SetCnMapsToUserResponse = {}
-export type GetCnMapsToUser = {}
+export type SetCnMapsToUserResponse = Record<string, unknown>
+export type GetCnMapsToUser = Record<string, unknown>
 export type GetCnMapsToUserResponse = {
   cnMapsToUser?: boolean
 }
@@ -696,20 +696,20 @@ export type AddCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to assign to the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export type AddCertPathValidationPolicyAssignmentResponse = {}
+export type AddCertPathValidationPolicyAssignmentResponse = Record<string, unknown>
 export type RemoveCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to de-assign from the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export type RemoveCertPathValidationPolicyAssignmentResponse = {}
+export type RemoveCertPathValidationPolicyAssignmentResponse = Record<string, unknown>
 export type ReplaceCertPathValidationPolicyAssignment = {
   /** The ID of the certification path validation policy to be de-assigned from the TLS server. */
   oldCertPathValidationPolicyID?: CertPathValidationPolicyID
   /** The ID of the certification path validation policy to assign to the TLS server. */
   newCertPathValidationPolicyID?: CertPathValidationPolicyID
 }
-export type ReplaceCertPathValidationPolicyAssignmentResponse = {}
-export type GetAssignedCertPathValidationPolicies = {}
+export type ReplaceCertPathValidationPolicyAssignmentResponse = Record<string, unknown>
+export type GetAssignedCertPathValidationPolicies = Record<string, unknown>
 export type GetAssignedCertPathValidationPoliciesResponse = {
   /** A list of IDs of the certification path validation policies that are assigned to the TLS server. */
   certPathValidationPolicyID?: CertPathValidationPolicyID[]
@@ -722,7 +722,7 @@ export type AddDot1XConfigurationResponse = {
   /** The unique identifier of the created 802.1X configuration. */
   dot1XID?: Dot1XID
 }
-export type GetAllDot1XConfigurations = {}
+export type GetAllDot1XConfigurations = Record<string, unknown>
 export type GetAllDot1XConfigurationsResponse = {
   /** The list of unique identifiers of 802.1X configurations on the device. */
   configuration?: Dot1XConfiguration[]
@@ -739,7 +739,7 @@ export type DeleteDot1XConfiguration = {
   /** The unique identifier of the 802.1X configuration to be deleted. */
   dot1XID?: Dot1XID
 }
-export type DeleteDot1XConfigurationResponse = {}
+export type DeleteDot1XConfigurationResponse = Record<string, unknown>
 export type SetNetworkInterfaceDot1XConfiguration = {
   /** The unique identifier of the Network Interface on which the 802.1X configuration is to be set. (NOTE: the network interface token is defined in devicemgmt.wsdl as tt:ReferenceToken, which is a derived type of xs:string.  To avoid importing all of common.xsd for this single type, the base type is used here.) */
   token?: string
@@ -781,8 +781,8 @@ export type CreateAuthorizationServerConfigurationResponse = {
 export type SetAuthorizationServerConfiguration = {
   configuration?: AuthorizationServerConfiguration
 }
-export type SetAuthorizationServerConfigurationResponse = {}
+export type SetAuthorizationServerConfigurationResponse = Record<string, unknown>
 export type DeleteAuthorizationServerConfiguration = {
   token?: ReferenceToken
 }
-export type DeleteAuthorizationServerConfigurationResponse = {}
+export type DeleteAuthorizationServerConfigurationResponse = Record<string, unknown>

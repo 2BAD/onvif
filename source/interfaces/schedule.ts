@@ -106,7 +106,7 @@ export type Schedule = {
   specialDays?: SpecialDaysSchedule[]
   extension?: ScheduleExtension
 } & ScheduleInfo
-export type ScheduleExtension = {}
+export type ScheduleExtension = Record<string, unknown>
 /** A override schedule that defines alternate time periods for a group of special days. */
 export type SpecialDaysSchedule = {
   /** Indicates the list of special days in a schedule. */
@@ -123,7 +123,7 @@ export type SpecialDaysSchedule = {
   timeRange?: TimePeriod[]
   extension?: SpecialDaysScheduleExtension
 }
-export type SpecialDaysScheduleExtension = {}
+export type SpecialDaysScheduleExtension = Record<string, unknown>
 /** The ScheduleState contains state information for a schedule. */
 export type ScheduleState = {
   /**
@@ -143,7 +143,7 @@ export type ScheduleState = {
   specialDay?: boolean
   extension?: ScheduleStateExtension
 }
-export type ScheduleStateExtension = {}
+export type ScheduleStateExtension = Record<string, unknown>
 /**
  * A time period defines a start and end time. For full day access, the
  * start time ="00:00:00" with no defined end time. For a time period with no
@@ -162,7 +162,7 @@ export type TimePeriod = {
   until?: Time
   extension?: TimePeriodExtension
 }
-export type TimePeriodExtension = {}
+export type TimePeriodExtension = Record<string, unknown>
 /** The SpecialDayGroupInfo structure contains the basic information about the special days list. */
 export type SpecialDayGroupInfo = {
   /** User readable name. It shall be up to 64 characters. */
@@ -187,8 +187,8 @@ export type SpecialDayGroup = {
   days?: string
   extension?: SpecialDayGroupExtension
 } & SpecialDayGroupInfo
-export type SpecialDayGroupExtension = {}
-export type GetServiceCapabilities = {}
+export type SpecialDayGroupExtension = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested schedule service
@@ -276,17 +276,17 @@ export type SetSchedule = {
   /** The Schedule to modify/create */
   schedule?: Schedule
 }
-export type SetScheduleResponse = {}
+export type SetScheduleResponse = Record<string, unknown>
 export type ModifySchedule = {
   /** The Schedule to modify/update */
   schedule?: Schedule
 }
-export type ModifyScheduleResponse = {}
+export type ModifyScheduleResponse = Record<string, unknown>
 export type DeleteSchedule = {
   /** The token of the schedule to delete. */
   token?: ReferenceToken
 }
-export type DeleteScheduleResponse = {}
+export type DeleteScheduleResponse = Record<string, unknown>
 export type GetSpecialDayGroupInfo = {
   /** Tokens of SpecialDayGroupInfo items to get. */
   token?: ReferenceToken[]
@@ -359,14 +359,14 @@ export type SetSpecialDayGroup = {
   /** The SpecialDayGroup to modify/create */
   specialDayGroup?: SpecialDayGroup
 }
-export type SetSpecialDayGroupResponse = {}
+export type SetSpecialDayGroupResponse = Record<string, unknown>
 export type ModifySpecialDayGroup = {
   /** The special day group to modify/update. */
   specialDayGroup?: SpecialDayGroup
 }
-export type ModifySpecialDayGroupResponse = {}
+export type ModifySpecialDayGroupResponse = Record<string, unknown>
 export type DeleteSpecialDayGroup = {
   /** The token of the special day group item to delete. */
   token?: ReferenceToken
 }
-export type DeleteSpecialDayGroupResponse = {}
+export type DeleteSpecialDayGroupResponse = Record<string, unknown>

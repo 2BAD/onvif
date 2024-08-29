@@ -17,12 +17,12 @@ import type {
   SearchState
 } from './onvif.ts'
 
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the search service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export type GetRecordingSummary = {}
+export type GetRecordingSummary = Record<string, unknown>
 export type GetRecordingSummaryResponse = {
   summary?: RecordingSummary
 }

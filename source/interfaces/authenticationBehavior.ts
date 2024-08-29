@@ -88,7 +88,7 @@ export type AuthenticationProfile = {
   authenticationPolicy?: AuthenticationPolicy[]
   extension?: AuthenticationProfileExtension
 } & AuthenticationProfileInfo
-export type AuthenticationProfileExtension = {}
+export type AuthenticationProfileExtension = Record<string, unknown>
 /**
  * The authentication policy is an association of a security level and a schedule. It defines when
  * a certain security level is required to grant access to a credential holder. Each security
@@ -106,7 +106,7 @@ export type AuthenticationPolicy = {
   securityLevelConstraint?: SecurityLevelConstraint[]
   extension?: AuthenticationPolicyExtension
 }
-export type AuthenticationPolicyExtension = {}
+export type AuthenticationPolicyExtension = Record<string, unknown>
 /**
  * This structure defines what security level should be active depending on the state of the
  * schedule.
@@ -136,7 +136,7 @@ export type SecurityLevelConstraint = {
   securityLevelToken?: ReferenceToken
   extension?: SecurityLevelConstraintExtension
 }
-export type SecurityLevelConstraintExtension = {}
+export type SecurityLevelConstraintExtension = Record<string, unknown>
 /**
  * Recognition is the action of identifying authorized users requesting access by the comparison of
  * presented
@@ -162,14 +162,14 @@ export type RecognitionMethod = {
   order?: number
   extension?: RecognitionMethodExtension
 }
-export type RecognitionMethodExtension = {}
+export type RecognitionMethodExtension = Record<string, unknown>
 /**/
 export type RecognitionGroup = {
   /** A list of recognition methods to request for at the access point. */
   recognitionMethod?: RecognitionMethod[]
   extension?: RecognitionGroupExtension
 }
-export type RecognitionGroupExtension = {}
+export type RecognitionGroupExtension = Record<string, unknown>
 /** The SecurityLevelInfo structure contains information of a specific security level instance. */
 export type SecurityLevelInfo = {
   /** A user readable name. It shall be up to 64 characters. */
@@ -206,8 +206,8 @@ export type SecurityLevel = {
   recognitionGroup?: RecognitionGroup[]
   extension?: SecurityLevelExtension
 } & SecurityLevelInfo
-export type SecurityLevelExtension = {}
-export type GetServiceCapabilities = {}
+export type SecurityLevelExtension = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested access rules
@@ -287,17 +287,17 @@ export type SetAuthenticationProfile = {
   /** The AuthenticationProfile to create or modify. */
   authenticationProfile?: AuthenticationProfile
 }
-export type SetAuthenticationProfileResponse = {}
+export type SetAuthenticationProfileResponse = Record<string, unknown>
 export type ModifyAuthenticationProfile = {
   /** The AuthenticationProfile to modify. */
   authenticationProfile?: AuthenticationProfile
 }
-export type ModifyAuthenticationProfileResponse = {}
+export type ModifyAuthenticationProfileResponse = Record<string, unknown>
 export type DeleteAuthenticationProfile = {
   /** The token of the AuthenticationProfile to delete. */
   token?: ReferenceToken
 }
-export type DeleteAuthenticationProfileResponse = {}
+export type DeleteAuthenticationProfileResponse = Record<string, unknown>
 export type GetSecurityLevelInfo = {
   /** Tokens of SecurityLevelInfo items to get. */
   token?: ReferenceToken[]
@@ -370,14 +370,14 @@ export type SetSecurityLevel = {
   /** The SecurityLevel to create or modify. */
   securityLevel?: SecurityLevel
 }
-export type SetSecurityLevelResponse = {}
+export type SetSecurityLevelResponse = Record<string, unknown>
 export type ModifySecurityLevel = {
   /** The SecurityLevel to modify. */
   securityLevel?: SecurityLevel
 }
-export type ModifySecurityLevelResponse = {}
+export type ModifySecurityLevelResponse = Record<string, unknown>
 export type DeleteSecurityLevel = {
   /** The token of the SecurityLevel to delete. */
   token?: ReferenceToken
 }
-export type DeleteSecurityLevelResponse = {}
+export type DeleteSecurityLevelResponse = Record<string, unknown>

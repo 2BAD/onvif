@@ -123,7 +123,7 @@ export type Credential = {
   attribute?: Attribute[]
   extension?: CredentialExtension
 } & CredentialInfo
-export type CredentialExtension = {}
+export type CredentialExtension = Record<string, unknown>
 /**
  * A credential identifier is a card number, unique card information, PIN or
  * biometric information such as fingerprint, iris, vein, face recognition, that can be validated
@@ -201,7 +201,7 @@ export type CredentialState = {
   antipassbackState?: AntipassbackState
   extension?: CredentialStateExtension
 }
-export type CredentialStateExtension = {}
+export type CredentialStateExtension = Record<string, unknown>
 /** A structure containing anti-passback related state information. */
 export type AntipassbackState = {
   /** Indicates if anti-passback is violated for the credential. */
@@ -224,7 +224,7 @@ export type CredentialIdentifierFormatTypeInfo = {
   description?: Description
   extension?: CredentialIdentifierFormatTypeInfoExtension
 }
-export type CredentialIdentifierFormatTypeInfoExtension = {}
+export type CredentialIdentifierFormatTypeInfoExtension = Record<string, unknown>
 /** Contains information about a format type. */
 export type CredentialData = {
   /**
@@ -242,7 +242,7 @@ export type CredentialData = {
   credentialState?: CredentialState
   extension?: CredentialDataExtension
 }
-export type CredentialDataExtension = {}
+export type CredentialDataExtension = Record<string, unknown>
 /**
  * A credential identifier is a card number, unique card information, PIN or biometric information
  * such as fingerprint, iris, vein, face recognition, that can be validated in an access point.
@@ -270,8 +270,8 @@ export type FaultResponse = {
   fault?: string
   extension?: FaultResponseExtension
 }
-export type FaultResponseExtension = {}
-export type GetServiceCapabilities = {}
+export type FaultResponseExtension = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested credential
@@ -361,17 +361,17 @@ export type ModifyCredential = {
   /** Details of the credential. */
   credential?: Credential
 }
-export type ModifyCredentialResponse = {}
+export type ModifyCredentialResponse = Record<string, unknown>
 export type SetCredential = {
   /** Details of the credential. */
   credentialData?: CredentialData
 }
-export type SetCredentialResponse = {}
+export type SetCredentialResponse = Record<string, unknown>
 export type DeleteCredential = {
   /** The token of the credential to delete. */
   token?: ReferenceToken
 }
-export type DeleteCredentialResponse = {}
+export type DeleteCredentialResponse = Record<string, unknown>
 export type GetCredentialState = {
   /** Token of Credential */
   token?: ReferenceToken
@@ -386,19 +386,19 @@ export type EnableCredential = {
   /** Reason for enabling the credential. */
   reason?: Name
 }
-export type EnableCredentialResponse = {}
+export type EnableCredentialResponse = Record<string, unknown>
 export type DisableCredential = {
   /** Token of the Credential */
   token?: ReferenceToken
   /** Reason for disabling the credential */
   reason?: Name
 }
-export type DisableCredentialResponse = {}
+export type DisableCredentialResponse = Record<string, unknown>
 export type ResetAntipassbackViolation = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
 }
-export type ResetAntipassbackViolationResponse = {}
+export type ResetAntipassbackViolationResponse = Record<string, unknown>
 export type GetCredentialIdentifiers = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
@@ -413,14 +413,14 @@ export type SetCredentialIdentifier = {
   /** Identifier of the credential */
   credentialIdentifier?: CredentialIdentifier
 }
-export type SetCredentialIdentifierResponse = {}
+export type SetCredentialIdentifierResponse = Record<string, unknown>
 export type DeleteCredentialIdentifier = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Identifier type name of a credential */
   credentialIdentifierTypeName?: Name
 }
-export type DeleteCredentialIdentifierResponse = {}
+export type DeleteCredentialIdentifierResponse = Record<string, unknown>
 export type GetCredentialAccessProfiles = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
@@ -435,14 +435,14 @@ export type SetCredentialAccessProfiles = {
   /** Access Profiles of the credential */
   credentialAccessProfile?: CredentialAccessProfile[]
 }
-export type SetCredentialAccessProfilesResponse = {}
+export type SetCredentialAccessProfilesResponse = Record<string, unknown>
 export type DeleteCredentialAccessProfiles = {
   /** Token of the Credential */
   credentialToken?: ReferenceToken
   /** Tokens of Access Profiles */
   accessProfileToken?: ReferenceToken[]
 }
-export type DeleteCredentialAccessProfilesResponse = {}
+export type DeleteCredentialAccessProfilesResponse = Record<string, unknown>
 export type GetWhitelist = {
   /**
    * Maximum number of entries to return. If not specified, less than one or higher than what the device
@@ -471,14 +471,14 @@ export type AddToWhitelist = {
   /** The credential identifiers to be added to the whitelist. */
   identifier?: CredentialIdentifierItem[]
 }
-export type AddToWhitelistResponse = {}
+export type AddToWhitelistResponse = Record<string, unknown>
 export type RemoveFromWhitelist = {
   /** The credential identifiers to be removed from the whitelist. */
   identifier?: CredentialIdentifierItem[]
 }
-export type RemoveFromWhitelistResponse = {}
-export type DeleteWhitelist = {}
-export type DeleteWhitelistResponse = {}
+export type RemoveFromWhitelistResponse = Record<string, unknown>
+export type DeleteWhitelist = Record<string, unknown>
+export type DeleteWhitelistResponse = Record<string, unknown>
 export type GetBlacklist = {
   /**
    * Maximum number of entries to return. If not specified, less than one or higher than what the device
@@ -507,11 +507,11 @@ export type AddToBlacklist = {
   /** The credential identifiers to be added to the blacklist. */
   identifier?: CredentialIdentifierItem[]
 }
-export type AddToBlacklistResponse = {}
+export type AddToBlacklistResponse = Record<string, unknown>
 export type RemoveFromBlacklist = {
   /** The credential identifiers to be removed from the blacklist. */
   identifier?: CredentialIdentifierItem[]
 }
-export type RemoveFromBlacklistResponse = {}
-export type DeleteBlacklist = {}
-export type DeleteBlacklistResponse = {}
+export type RemoveFromBlacklistResponse = Record<string, unknown>
+export type DeleteBlacklist = Record<string, unknown>
+export type DeleteBlacklistResponse = Record<string, unknown>

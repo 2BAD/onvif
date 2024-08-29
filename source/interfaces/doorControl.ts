@@ -87,7 +87,7 @@ export type Door = {
   timings?: Timings
   extension?: DoorExtension
 } & DoorInfoBase
-export type DoorExtension = {}
+export type DoorExtension = Record<string, unknown>
 /**
  * A structure defining times such as how long the door is unlocked when accessed,
  * extended grant time, etc.
@@ -130,7 +130,7 @@ export type Timings = {
   preAlarmTime?: unknown
   extension?: TimingsExtension
 }
-export type TimingsExtension = {}
+export type TimingsExtension = Record<string, unknown>
 /**
  * DoorCapabilities reflect optional functionality of a particular physical entity.
  * Different door instances may have different set of capabilities.
@@ -280,8 +280,8 @@ export type DoorFault = {
   state?: DoorFaultState
 }
 /** Extension for the AccessDoor command. */
-export type AccessDoorExtension = {}
-export type GetServiceCapabilities = {}
+export type AccessDoorExtension = Record<string, unknown>
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested DoorControl
@@ -361,17 +361,17 @@ export type SetDoor = {
   /** The Door item to create or modify */
   door?: Door
 }
-export type SetDoorResponse = {}
+export type SetDoorResponse = Record<string, unknown>
 export type ModifyDoor = {
   /** The details of the door */
   door?: Door
 }
-export type ModifyDoorResponse = {}
+export type ModifyDoorResponse = Record<string, unknown>
 export type DeleteDoor = {
   /** The Token of the door to delete. */
   token?: ReferenceToken
 }
-export type DeleteDoorResponse = {}
+export type DeleteDoorResponse = Record<string, unknown>
 export type GetDoorState = {
   /** Token of the Door instance to get the state for. */
   token?: ReferenceToken
@@ -397,44 +397,44 @@ export type AccessDoor = {
   /** Future extension. */
   extension?: AccessDoorExtension
 }
-export type AccessDoorResponse = {}
+export type AccessDoorResponse = Record<string, unknown>
 export type LockDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type LockDoorResponse = {}
+export type LockDoorResponse = Record<string, unknown>
 export type UnlockDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type UnlockDoorResponse = {}
+export type UnlockDoorResponse = Record<string, unknown>
 export type BlockDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type BlockDoorResponse = {}
+export type BlockDoorResponse = Record<string, unknown>
 export type LockDownDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type LockDownDoorResponse = {}
+export type LockDownDoorResponse = Record<string, unknown>
 export type LockDownReleaseDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type LockDownReleaseDoorResponse = {}
+export type LockDownReleaseDoorResponse = Record<string, unknown>
 export type LockOpenDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type LockOpenDoorResponse = {}
+export type LockOpenDoorResponse = Record<string, unknown>
 export type LockOpenReleaseDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type LockOpenReleaseDoorResponse = {}
+export type LockOpenReleaseDoorResponse = Record<string, unknown>
 export type DoubleLockDoor = {
   /** Token of the Door instance to control. */
   token?: ReferenceToken
 }
-export type DoubleLockDoorResponse = {}
+export type DoubleLockDoorResponse = Record<string, unknown>

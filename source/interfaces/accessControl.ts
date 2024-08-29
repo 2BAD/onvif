@@ -129,7 +129,7 @@ export type AccessPoint = {
   authenticationProfileToken?: ReferenceToken
   extension?: AccessPointExtension
 } & AccessPointInfo
-export type AccessPointExtension = {}
+export type AccessPointExtension = Record<string, unknown>
 /**
  * The AccessPoint capabilities reflect optional functionality of a particular physical entity.
  * Different AccessPoint instances may have different set of capabilities. This information may
@@ -198,7 +198,7 @@ export type AccessPointCapabilities = {
   supportedSecurityLevels?: ReferenceToken[]
   extension?: SupportedSecurityLevelsExtension
 }
-export type SupportedSecurityLevelsExtension = {}
+export type SupportedSecurityLevelsExtension = Record<string, unknown>
 /** Basic information about an Area. Used as extension base. */
 export type AreaInfoBase = {
   /** User readable name. It shall be up to 64 characters. */
@@ -213,7 +213,7 @@ export type AreaInfoBase = {
  * The AreaInfo structure contains basic information about an Area.
  * An ONVIF compliant device shall provide the following fields for each Area:
  */
-export type AreaInfo = {} & AreaInfoBase
+export type AreaInfo = Record<string, unknown> & AreaInfoBase
 /**
  * The Area structure shall include all properties of the AreaInfo structure and optionally
  * a parent area token, an OccupancyControl structure and/or an Antipassback structure.
@@ -221,7 +221,7 @@ export type AreaInfo = {} & AreaInfoBase
 export type Area = {
   extension?: AreaExtension
 } & AreaInfo
-export type AreaExtension = {}
+export type AreaExtension = Record<string, unknown>
 /**
  * The AccessPointState contains state information for an AccessPoint.
  * An ONVIF compliant device shall provide the following fields for each AccessPoint instance:
@@ -233,7 +233,7 @@ export type AccessPointState = {
    */
   enabled?: boolean
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /**
    * The capability response message contains the requested Access Control
@@ -313,29 +313,29 @@ export type SetAccessPoint = {
   /** AccessPoint item to create or modify */
   accessPoint?: AccessPoint
 }
-export type SetAccessPointResponse = {}
+export type SetAccessPointResponse = Record<string, unknown>
 export type ModifyAccessPoint = {
   /** AccessPoint item to modify */
   accessPoint?: AccessPoint
 }
-export type ModifyAccessPointResponse = {}
+export type ModifyAccessPointResponse = Record<string, unknown>
 export type DeleteAccessPoint = {
   /** Token of AccessPoint item to delete. */
   token?: ReferenceToken
 }
-export type DeleteAccessPointResponse = {}
+export type DeleteAccessPointResponse = Record<string, unknown>
 export type SetAccessPointAuthenticationProfile = {
   /** Token of the AccessPoint. */
   token?: ReferenceToken
   /** Token of the AuthenticationProfile. */
   authenticationProfileToken?: ReferenceToken
 }
-export type SetAccessPointAuthenticationProfileResponse = {}
+export type SetAccessPointAuthenticationProfileResponse = Record<string, unknown>
 export type DeleteAccessPointAuthenticationProfile = {
   /** Token of the AccessPoint. */
   token?: ReferenceToken
 }
-export type DeleteAccessPointAuthenticationProfileResponse = {}
+export type DeleteAccessPointAuthenticationProfileResponse = Record<string, unknown>
 export type GetAreaInfoList = {
   /**
    * Maximum number of entries to return. If not specified, less than one
@@ -408,17 +408,17 @@ export type SetArea = {
   /** Area item to create or modify */
   area?: Area
 }
-export type SetAreaResponse = {}
+export type SetAreaResponse = Record<string, unknown>
 export type ModifyArea = {
   /** Area item to modify */
   area?: Area
 }
-export type ModifyAreaResponse = {}
+export type ModifyAreaResponse = Record<string, unknown>
 export type DeleteArea = {
   /** Token of Area item to delete. */
   token?: ReferenceToken
 }
-export type DeleteAreaResponse = {}
+export type DeleteAreaResponse = Record<string, unknown>
 export type GetAccessPointState = {
   /** Token of AccessPoint instance to get AccessPointState for. */
   token?: ReferenceToken
@@ -431,12 +431,12 @@ export type EnableAccessPoint = {
   /** Token of the AccessPoint instance to enable. */
   token?: ReferenceToken
 }
-export type EnableAccessPointResponse = {}
+export type EnableAccessPointResponse = Record<string, unknown>
 export type DisableAccessPoint = {
   /** Token of the AccessPoint instance to disable. */
   token?: ReferenceToken
 }
-export type DisableAccessPointResponse = {}
+export type DisableAccessPointResponse = Record<string, unknown>
 export type ExternalAuthorization = {
   /** Token of the Access Point instance. */
   accessPointToken?: ReferenceToken
@@ -447,7 +447,7 @@ export type ExternalAuthorization = {
   /** Decision - Granted or Denied. */
   decision?: Decision
 }
-export type ExternalAuthorizationResponse = {}
+export type ExternalAuthorizationResponse = Record<string, unknown>
 export type Feedback = {
   /** Token of the access point to control. */
   accessPointToken?: ReferenceToken
@@ -471,4 +471,4 @@ export type Feedback = {
    */
   textMessage?: string
 }
-export type FeedbackResponse = {}
+export type FeedbackResponse = Record<string, unknown>

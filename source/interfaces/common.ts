@@ -129,7 +129,7 @@ export type Transformation = {
   scale?: Vector
   extension?: TransformationExtension
 }
-export type TransformationExtension = {}
+export type TransformationExtension = Record<string, unknown>
 export type GeoLocation = {
   /** East west location as angle. */
   lon?: number

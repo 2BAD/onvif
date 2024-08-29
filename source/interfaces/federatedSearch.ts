@@ -12,7 +12,7 @@ export type mimeType = string
 export type RegisterDatabase = {
   extension?: RegisterDatabaseExtension
 } & CapabilityType
-export type RegisterDatabaseExtension = {}
+export type RegisterDatabaseExtension = Record<string, unknown>
 export type CapabilityType = {
   supportedQFProfile?: TermType
   supportedMetadata?: AnyURI[]
@@ -79,4 +79,4 @@ export type GetSearchResultsResponse = {
    */
   resultItem?: unknown[]
 }
-export type RegisterDatabaseResponse = {}
+export type RegisterDatabaseResponse = Record<string, unknown>

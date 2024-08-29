@@ -41,8 +41,8 @@ export type RelayOutputOptions = {
   discrete?: boolean
   extension?: RelayOutputOptionsExtension
 }
-export type RelayOutputOptionsExtension = {}
-export type Get = {}
+export type RelayOutputOptionsExtension = Record<string, unknown>
+export type Get = Record<string, unknown>
 export type GetResponse = {
   /** List tokens of a physical IO of a device. */
   token?: ReferenceToken[]
@@ -52,9 +52,9 @@ export type DigitalInputConfigurationOptions = {
   idleState?: DigitalIdleState[]
 }
 /** The serial port data. */
-export type SerialData = {}
+export type SerialData = Record<string, unknown>
 /** Lists all available serial ports of a device */
-export type SerialPort = {} & DeviceEntity
+export type SerialPort = Record<string, unknown> & DeviceEntity
 /** The parameters for configuring the serial port. */
 export type SerialPortConfiguration = {
   token: ReferenceToken
@@ -84,7 +84,7 @@ export type SerialPortConfigurationOptions = {
 export type ParityBitList = {
   items?: ParityBit[]
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the device IO service is returned in the Capabilities element. */
   capabilities?: Capabilities
@@ -97,7 +97,7 @@ export type GetRelayOutputOptionsResponse = {
   /** Valid values and ranges for the configuration of a relay output. */
   relayOutputOptions?: RelayOutputOptions[]
 }
-export type GetVideoOutputs = {}
+export type GetVideoOutputs = Record<string, unknown>
 export type GetVideoOutputsResponse = {
   /** List containing all physical Video output connections of a device. */
   videoOutputs?: VideoOutput[]
@@ -143,7 +143,7 @@ export type SetAudioSourceConfiguration = {
    */
   forcePersistence?: boolean
 }
-export type SetAudioSourceConfigurationResponse = {}
+export type SetAudioSourceConfigurationResponse = Record<string, unknown>
 export type SetAudioOutputConfiguration = {
   configuration?: AudioOutputConfiguration
   /**
@@ -153,7 +153,7 @@ export type SetAudioOutputConfiguration = {
    */
   forcePersistence?: boolean
 }
-export type SetAudioOutputConfigurationResponse = {}
+export type SetAudioOutputConfigurationResponse = Record<string, unknown>
 export type SetVideoSourceConfiguration = {
   configuration?: VideoSourceConfiguration
   /**
@@ -163,7 +163,7 @@ export type SetVideoSourceConfiguration = {
    */
   forcePersistence?: boolean
 }
-export type SetVideoSourceConfigurationResponse = {}
+export type SetVideoSourceConfigurationResponse = Record<string, unknown>
 export type SetVideoOutputConfiguration = {
   configuration?: VideoOutputConfiguration
   /**
@@ -173,7 +173,7 @@ export type SetVideoOutputConfiguration = {
    */
   forcePersistence?: boolean
 }
-export type SetVideoOutputConfigurationResponse = {}
+export type SetVideoOutputConfigurationResponse = Record<string, unknown>
 export type GetVideoSourceConfigurationOptions = {
   /** Token of the Video input whose options are requested.. */
   videoSourceToken?: ReferenceToken
@@ -207,8 +207,8 @@ export type GetAudioOutputConfigurationOptionsResponse = {
 export type SetRelayOutputSettings = {
   relayOutput?: RelayOutput
 }
-export type SetRelayOutputSettingsResponse = {}
-export type GetDigitalInputs = {}
+export type SetRelayOutputSettingsResponse = Record<string, unknown>
+export type GetDigitalInputs = Record<string, unknown>
 export type GetDigitalInputsResponse = {
   digitalInputs?: DigitalInput[]
 }
@@ -221,8 +221,8 @@ export type GetDigitalInputConfigurationOptionsResponse = {
 export type SetDigitalInputConfigurations = {
   digitalInputs?: DigitalInput[]
 }
-export type SetDigitalInputConfigurationsResponse = {}
-export type GetSerialPorts = {}
+export type SetDigitalInputConfigurationsResponse = Record<string, unknown>
+export type GetSerialPorts = Record<string, unknown>
 export type GetSerialPortsResponse = {
   serialPort?: SerialPort[]
 }
@@ -236,7 +236,7 @@ export type SetSerialPortConfiguration = {
   serialPortConfiguration?: SerialPortConfiguration
   forcePersistance?: boolean
 }
-export type SetSerialPortConfigurationResponse = {}
+export type SetSerialPortConfigurationResponse = Record<string, unknown>
 export type GetSerialPortConfigurationOptions = {
   serialPortToken?: ReferenceToken
 }

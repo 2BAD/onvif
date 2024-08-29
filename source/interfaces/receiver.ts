@@ -1,12 +1,12 @@
 import type { ReferenceToken } from './common.ts'
 import type { Capabilities, Receiver, ReceiverConfiguration, ReceiverMode, ReceiverStateInformation } from './onvif.ts'
 
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the receiver service is returned in the Capabilities element. */
   capabilities?: Capabilities
 }
-export type GetReceivers = {}
+export type GetReceivers = Record<string, unknown>
 export type GetReceiversResponse = {
   /** A list of all receivers that currently exist on the device. */
   receivers?: Receiver[]
@@ -31,21 +31,21 @@ export type DeleteReceiver = {
   /** The token of the receiver to be deleted. */
   receiverToken?: ReferenceToken
 }
-export type DeleteReceiverResponse = {}
+export type DeleteReceiverResponse = Record<string, unknown>
 export type ConfigureReceiver = {
   /** The token of the receiver to be configured. */
   receiverToken?: ReferenceToken
   /** The new configuration for the receiver. */
   configuration?: ReceiverConfiguration
 }
-export type ConfigureReceiverResponse = {}
+export type ConfigureReceiverResponse = Record<string, unknown>
 export type SetReceiverMode = {
   /** The token of the receiver to be changed. */
   receiverToken?: ReferenceToken
   /** The new receiver mode. Options available are: */
   mode?: ReceiverMode
 }
-export type SetReceiverModeResponse = {}
+export type SetReceiverModeResponse = Record<string, unknown>
 export type GetReceiverState = {
   /** The token of the receiver to be queried. */
   receiverToken?: ReferenceToken

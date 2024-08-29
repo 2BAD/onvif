@@ -23,7 +23,7 @@ export type SupportedActions = {
   actionDescription?: ActionConfigDescription[]
   extension?: SupportedActionsExtension
 }
-export type SupportedActionsExtension = {}
+export type SupportedActionsExtension = Record<string, unknown>
 /** Action Engine Capabilities data structure contains the maximum number of supported actions and number of actions in use for generic as well as specific action types */
 export type ActionEngineCapabilities = {
   /** The maximum number of trigger configurations that the service provider can concurrently support */
@@ -34,7 +34,7 @@ export type ActionEngineCapabilities = {
   actionCapabilities?: ActionTypeLimits[]
   extension?: ActionEngineCapabilitiesExtension
 }
-export type ActionEngineCapabilitiesExtension = {}
+export type ActionEngineCapabilitiesExtension = Record<string, unknown>
 /** ActionTypeLimits data structure contains maximum and current usage information for a specific action type in the service provider */
 export type ActionTypeLimits = {
   /** Action Type */
@@ -70,7 +70,7 @@ export type ActionTriggerConfiguration = {
   actionToken?: ReferenceToken[]
   extension?: ActionTriggerConfigurationExtension
 }
-export type ActionTriggerConfigurationExtension = {}
+export type ActionTriggerConfigurationExtension = Record<string, unknown>
 /** Action Trigger data type contains the service provider assigned unique identifier for the configuration and action trigger configuration data. */
 export type ActionTrigger = {
   /** Unique Action Trigger identifier that service provider assigned to the action trigger configuration. */
@@ -112,7 +112,7 @@ export type UserCredentials = {
   password?: unknown
   extension?: UserCredentialsExtension
 }
-export type UserCredentialsExtension = {}
+export type UserCredentialsExtension = Record<string, unknown>
 export type AuthenticationConfig = {
   /** Email server authentication mode */
   mode: EMailAuthenticationMode
@@ -127,7 +127,7 @@ export type EMailReceiverConfiguration = {
   /**/
   extension?: EMailReceiverConfigurationExtension
 }
-export type EMailReceiverConfigurationExtension = {}
+export type EMailReceiverConfigurationExtension = Record<string, unknown>
 export type EMailAttachmentConfiguration = {
   /**/
   fileName?: string
@@ -136,7 +136,7 @@ export type EMailAttachmentConfiguration = {
   /**/
   extension?: EMailAttachmentConfigurationExtension
 }
-export type EMailAttachmentConfigurationExtension = {}
+export type EMailAttachmentConfigurationExtension = Record<string, unknown>
 export type EMailBodyTextConfiguration = {
   /** Whether content of E-mail message contains event data */
   includeEvent?: boolean
@@ -153,7 +153,7 @@ export type HttpHostConfigurations = {
   /**/
   extension?: HttpHostConfigurationsExtension
 }
-export type HttpHostConfigurationsExtension = {}
+export type HttpHostConfigurationsExtension = Record<string, unknown>
 export type HttpDestinationConfiguration = {
   /** URI for POST Message destination */
   uri?: string
@@ -166,7 +166,7 @@ export type HttpDestinationConfiguration = {
   /**/
   extension?: HttpDestinationConfigurationExtension
 }
-export type HttpDestinationConfigurationExtension = {}
+export type HttpDestinationConfigurationExtension = Record<string, unknown>
 export type HttpAuthenticationConfiguration = {
   /** HTTP Authentication Method */
   method?: HttpAuthenticationMethodType
@@ -175,7 +175,7 @@ export type HttpAuthenticationConfiguration = {
   /**/
   extension?: HttpAuthenticationConfigurationExtension
 }
-export type HttpAuthenticationConfigurationExtension = {}
+export type HttpAuthenticationConfigurationExtension = Record<string, unknown>
 export type HttpHostAddress = {
   /** IPv4 or IPv6 */
   formatType: AddressFormatType
@@ -204,7 +204,7 @@ export type FtpHostConfigurations = {
   /**/
   extension?: FtpHostConfigurationsExtension
 }
-export type FtpHostConfigurationsExtension = {}
+export type FtpHostConfigurationsExtension = Record<string, unknown>
 export type FtpDestinationConfiguration = {
   /** FTP Server IP Address */
   hostAddress?: FtpHostAddress
@@ -214,13 +214,13 @@ export type FtpDestinationConfiguration = {
   ftpAuthentication?: FtpAuthenticationConfiguration
   extension?: FtpDestinationConfigurationExtension
 }
-export type FtpDestinationConfigurationExtension = {}
+export type FtpDestinationConfigurationExtension = Record<string, unknown>
 export type FtpAuthenticationConfiguration = {
   /** User Credentials */
   user?: UserCredentials
   extension?: FtpAuthenticationConfigurationExtension
 }
-export type FtpAuthenticationConfigurationExtension = {}
+export type FtpAuthenticationConfigurationExtension = Record<string, unknown>
 export type FtpHostAddress = {
   /** IPv4 or IPv6 */
   formatType: AddressFormatType

@@ -147,7 +147,7 @@ export type GetConfiguration = {
   /** Contains the token of an existing media profile the configurations shall be compatible with. */
   profileToken?: ReferenceToken
 }
-export type SetConfigurationResponse = {}
+export type SetConfigurationResponse = Record<string, unknown>
 export type EncoderInstance = {
   /** Video Media Subtype for the video format. For definitions see tt:VideoEncodingMimeNames and  IANA Media Types. */
   encoding?: string
@@ -231,12 +231,12 @@ export type WebRTCConfiguration = {
   /** Optional user readable error information (readonly). */
   error?: string
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the media service is returned in the Capabilities element. */
   capabilities?: Capabilities2
 }
-export type Capabilities = {} & Capabilities2
+export type Capabilities = Record<string, unknown> & Capabilities2
 export type CreateProfile = {
   /** friendly name of the profile to be created */
   name?: Name
@@ -268,55 +268,55 @@ export type AddConfiguration = {
   /** List of configurations to be added. The types shall be provided in the order defined by tr2:ConfigurationEnumeration. List entries with tr2:ConfigurationEnumeration value "All" shall be ignored. */
   configuration?: ConfigurationRef[]
 }
-export type AddConfigurationResponse = {}
+export type AddConfigurationResponse = Record<string, unknown>
 export type RemoveConfiguration = {
   /** This element contains a  reference to the media profile from which the configuration shall be removed. */
   profileToken?: ReferenceToken
   /** List of configurations to be removed. The types shall be provided in the order defined by tr2:ConfigurationEnumeration. Tokens appearing in the configuration list shall be ignored. Presence of the "All" type shall result in an empty profile. */
   configuration?: ConfigurationRef[]
 }
-export type RemoveConfigurationResponse = {}
+export type RemoveConfigurationResponse = Record<string, unknown>
 export type DeleteProfile = {
   /** This element contains a  reference to the profile that should be deleted. */
   token?: ReferenceToken
 }
-export type DeleteProfileResponse = {}
-export type GetVideoEncoderConfigurations = {} & GetConfiguration
+export type DeleteProfileResponse = Record<string, unknown>
+export type GetVideoEncoderConfigurations = Record<string, unknown> & GetConfiguration
 export type GetVideoEncoderConfigurationsResponse = {
   /** This element contains a list of video encoder configurations. */
   configurations?: VideoEncoder2Configuration[]
 }
-export type GetVideoSourceConfigurations = {} & GetConfiguration
+export type GetVideoSourceConfigurations = Record<string, unknown> & GetConfiguration
 export type GetVideoSourceConfigurationsResponse = {
   /** This element contains a list of video source configurations. */
   configurations?: VideoSourceConfiguration[]
 }
-export type GetAudioEncoderConfigurations = {} & GetConfiguration
+export type GetAudioEncoderConfigurations = Record<string, unknown> & GetConfiguration
 export type GetAudioEncoderConfigurationsResponse = {
   /** This element contains a list of audio encoder configurations. */
   configurations?: AudioEncoder2Configuration[]
 }
-export type GetAudioSourceConfigurations = {} & GetConfiguration
+export type GetAudioSourceConfigurations = Record<string, unknown> & GetConfiguration
 export type GetAudioSourceConfigurationsResponse = {
   /** This element contains a list of audio source configurations. */
   configurations?: AudioSourceConfiguration[]
 }
-export type GetAnalyticsConfigurations = {} & GetConfiguration
+export type GetAnalyticsConfigurations = Record<string, unknown> & GetConfiguration
 export type GetAnalyticsConfigurationsResponse = {
   /** This element contains a list of Analytics configurations. */
   configurations?: VideoAnalyticsConfiguration[]
 }
-export type GetMetadataConfigurations = {} & GetConfiguration
+export type GetMetadataConfigurations = Record<string, unknown> & GetConfiguration
 export type GetMetadataConfigurationsResponse = {
   /** This element contains a list of metadata configurations */
   configurations?: MetadataConfiguration[]
 }
-export type GetAudioOutputConfigurations = {} & GetConfiguration
+export type GetAudioOutputConfigurations = Record<string, unknown> & GetConfiguration
 export type GetAudioOutputConfigurationsResponse = {
   /** This element contains a list of audio output configurations */
   configurations?: AudioOutputConfiguration[]
 }
-export type GetAudioDecoderConfigurations = {} & GetConfiguration
+export type GetAudioDecoderConfigurations = Record<string, unknown> & GetConfiguration
 export type GetAudioDecoderConfigurationsResponse = {
   /** This element contains a list of audio decoder configurations */
   configurations?: AudioDecoderConfiguration[]
@@ -325,67 +325,67 @@ export type SetVideoEncoderConfiguration = {
   /** Contains the modified video encoder configuration. The configuration shall exist in the device. */
   configuration?: VideoEncoder2Configuration
 }
-export type SetVideoEncoderConfigurationResponse = {} & SetConfigurationResponse
+export type SetVideoEncoderConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetVideoSourceConfiguration = {
   /** Contains the modified video source configuration. The configuration shall exist in the device. */
   configuration?: VideoSourceConfiguration
 }
-export type SetVideoSourceConfigurationResponse = {} & SetConfigurationResponse
+export type SetVideoSourceConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetAudioEncoderConfiguration = {
   /** Contains the modified audio encoder configuration. The configuration shall exist in the device. */
   configuration?: AudioEncoder2Configuration
 }
-export type SetAudioEncoderConfigurationResponse = {} & SetConfigurationResponse
+export type SetAudioEncoderConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetAudioSourceConfiguration = {
   /** Contains the modified audio source configuration. The configuration shall exist in the device. */
   configuration?: AudioSourceConfiguration
 }
-export type SetAudioSourceConfigurationResponse = {} & SetConfigurationResponse
+export type SetAudioSourceConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetMetadataConfiguration = {
   /** Contains the modified metadata configuration. The configuration shall exist in the device. */
   configuration?: MetadataConfiguration
 }
-export type SetMetadataConfigurationResponse = {} & SetConfigurationResponse
+export type SetMetadataConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetAudioOutputConfiguration = {
   /** Contains the modified audio output configuration. The configuration shall exist in the device. */
   configuration?: AudioOutputConfiguration
 }
-export type SetAudioOutputConfigurationResponse = {} & SetConfigurationResponse
+export type SetAudioOutputConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
 export type SetAudioDecoderConfiguration = {
   /** Contains the modified audio decoder configuration. The configuration shall exist in the device. */
   configuration?: AudioDecoderConfiguration
 }
-export type SetAudioDecoderConfigurationResponse = {} & SetConfigurationResponse
-export type GetVideoSourceConfigurationOptions = {} & GetConfiguration
+export type SetAudioDecoderConfigurationResponse = Record<string, unknown> & SetConfigurationResponse
+export type GetVideoSourceConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetVideoSourceConfigurationOptionsResponse = {
   /** This message contains the video source configuration options. If a video source configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: VideoSourceConfigurationOptions
 }
-export type GetVideoEncoderConfigurationOptions = {} & GetConfiguration
+export type GetVideoEncoderConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetVideoEncoderConfigurationOptionsResponse = {
   options?: VideoEncoder2ConfigurationOptions[]
 }
-export type GetAudioSourceConfigurationOptions = {} & GetConfiguration
+export type GetAudioSourceConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetAudioSourceConfigurationOptionsResponse = {
   /** This message contains the audio source configuration options. If a audio source configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: AudioSourceConfigurationOptions
 }
-export type GetAudioEncoderConfigurationOptions = {} & GetConfiguration
+export type GetAudioEncoderConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetAudioEncoderConfigurationOptionsResponse = {
   /** This message contains the audio encoder configuration options. If a audio encoder configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: AudioEncoder2ConfigurationOptions[]
 }
-export type GetMetadataConfigurationOptions = {} & GetConfiguration
+export type GetMetadataConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetMetadataConfigurationOptionsResponse = {
   /** This message contains the metadata configuration options. If a metadata configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: MetadataConfigurationOptions
 }
-export type GetAudioOutputConfigurationOptions = {} & GetConfiguration
+export type GetAudioOutputConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetAudioOutputConfigurationOptionsResponse = {
   /** This message contains the audio output configuration options. If a audio output configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: AudioOutputConfigurationOptions
 }
-export type GetAudioDecoderConfigurationOptions = {} & GetConfiguration
+export type GetAudioDecoderConfigurationOptions = Record<string, unknown> & GetConfiguration
 export type GetAudioDecoderConfigurationOptionsResponse = {
   /** This message contains the audio decoder configuration options. If a audio decoder configuration is specified, the options shall concern that particular configuration. If a media profile is specified, the options shall be compatible with that media profile. If no tokens are specified, the options shall be considered generic for the device. */
   options?: AudioEncoder2ConfigurationOptions[]
@@ -412,7 +412,7 @@ export type SetSynchronizationPoint = {
   /** Contains a Profile reference for which a Synchronization Point is requested. */
   profileToken?: ReferenceToken
 }
-export type SetSynchronizationPointResponse = {}
+export type SetSynchronizationPointResponse = Record<string, unknown>
 export type GetSnapshotUri = {
   /** The ProfileToken element indicates the media profile to use and will define the source and dimensions of the snapshot. */
   profileToken?: ReferenceToken
@@ -421,10 +421,10 @@ export type GetSnapshotUriResponse = {
   /** Stable Uri to be used for requesting snapshot images. */
   uri?: AnyURI
 }
-export type StartMulticastStreaming = {} & StartStopMulticastStreaming
-export type StartMulticastStreamingResponse = {} & SetConfigurationResponse
-export type StopMulticastStreaming = {} & StartStopMulticastStreaming
-export type StopMulticastStreamingResponse = {} & SetConfigurationResponse
+export type StartMulticastStreaming = Record<string, unknown> & StartStopMulticastStreaming
+export type StartMulticastStreamingResponse = Record<string, unknown> & SetConfigurationResponse
+export type StopMulticastStreaming = Record<string, unknown> & StartStopMulticastStreaming
+export type StopMulticastStreamingResponse = Record<string, unknown> & SetConfigurationResponse
 export type GetVideoSourceModes = {
   /** Contains a video source reference for which a video source mode is requested. */
   videoSourceToken?: ReferenceToken
@@ -457,7 +457,7 @@ export type SetOSD = {
   /** Contains the modified OSD configuration. */
   OSD?: OSDConfiguration
 }
-export type SetOSDResponse = {} & SetConfigurationResponse
+export type SetOSDResponse = Record<string, unknown> & SetConfigurationResponse
 export type GetOSDOptions = {
   /** Video Source Configuration Token that specifies an existing video source configuration that the options shall be compatible with. */
   configurationToken?: ReferenceToken
@@ -478,7 +478,7 @@ export type DeleteOSD = {
   /** This element contains a reference to the OSD configuration that should be deleted. */
   OSDToken?: ReferenceToken
 }
-export type DeleteOSDResponse = {} & SetConfigurationResponse
+export type DeleteOSDResponse = Record<string, unknown> & SetConfigurationResponse
 export type GetMasks = {
   /** Optional mask token of an existing mask. */
   token?: ReferenceToken
@@ -493,7 +493,7 @@ export type SetMask = {
   /** Mask to be updated. */
   mask?: Mask
 }
-export type SetMaskResponse = {} & SetConfigurationResponse
+export type SetMaskResponse = Record<string, unknown> & SetConfigurationResponse
 export type GetMaskOptions = {
   /** Video Source Configuration Token that specifies an existing video source configuration that the options shall be compatible with. */
   configurationToken?: ReferenceToken
@@ -514,8 +514,8 @@ export type DeleteMask = {
   /** This element contains a reference to the Mask configuration that should be deleted. */
   token?: ReferenceToken
 }
-export type DeleteMaskResponse = {} & SetConfigurationResponse
-export type GetWebRTCConfigurations = {}
+export type DeleteMaskResponse = Record<string, unknown> & SetConfigurationResponse
+export type GetWebRTCConfigurations = Record<string, unknown>
 export type GetWebRTCConfigurationsResponse = {
   /** Video Source Configuration Token that specifies an existing video source configuration that the options shall be compatible with. */
   webRTCConfiguration?: WebRTCConfiguration[]
@@ -524,4 +524,4 @@ export type SetWebRTCConfigurations = {
   /** Video Source Configuration Token that specifies an existing video source configuration that the options shall be compatible with. */
   webRTCConfiguration?: WebRTCConfiguration[]
 }
-export type SetWebRTCConfigurationsResponse = {}
+export type SetWebRTCConfigurationsResponse = Record<string, unknown>

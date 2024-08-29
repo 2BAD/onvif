@@ -49,7 +49,7 @@ export type ImagingPreset = {
   /** Human readable name of the Imaging Preset. */
   name?: Name
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the imaging service is returned in the Capabilities element. */
   capabilities?: Capabilities
@@ -81,7 +81,7 @@ export type Move = {
   /** Content of the requested move (focus) operation. */
   focus?: FocusMove
 }
-export type MoveResponse = {}
+export type MoveResponse = Record<string, unknown>
 export type GetMoveOptions = {
   /** Reference token to the VideoSource for the requested move options. */
   videoSourceToken?: ReferenceToken
@@ -94,7 +94,7 @@ export type Stop = {
   /** Reference token to the VideoSource where the focus movement should be stopped. */
   videoSourceToken?: ReferenceToken
 }
-export type StopResponse = {}
+export type StopResponse = Record<string, unknown>
 export type GetStatus = {
   /** Reference token to the VideoSource where the imaging status should be requested. */
   videoSourceToken?: ReferenceToken
@@ -125,4 +125,4 @@ export type SetCurrentPreset = {
   /** Reference token to the Imaging Preset to be applied to the specified Video Source. */
   presetToken?: ReferenceToken
 }
-export type SetCurrentPresetResponse = {}
+export type SetCurrentPresetResponse = Record<string, unknown>

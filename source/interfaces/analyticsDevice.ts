@@ -10,7 +10,7 @@ import type {
   VideoAnalyticsConfiguration
 } from './onvif.ts'
 
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the analytics device service is returned in the Capabilities element. */
   capabilities?: Capabilities
@@ -19,7 +19,7 @@ export type DeleteAnalyticsEngineControl = {
   /** Token of the Analytics Engine Control configuration to be deleted. */
   configurationToken?: ReferenceToken
 }
-export type DeleteAnalyticsEngineControlResponse = {}
+export type DeleteAnalyticsEngineControlResponse = Record<string, unknown>
 export type CreateAnalyticsEngineInputs = {
   /** Settings of the configurations to be created. */
   configuration?: AnalyticsEngineInput[]
@@ -42,7 +42,7 @@ export type SetAnalyticsEngineControl = {
   configuration?: AnalyticsEngineControl
   forcePersistence?: boolean
 }
-export type SetAnalyticsEngineControlResponse = {}
+export type SetAnalyticsEngineControlResponse = Record<string, unknown>
 export type GetAnalyticsEngineControl = {
   /** Token of the requested AnalyticsEngineControl configuration. */
   configurationToken?: ReferenceToken
@@ -51,7 +51,7 @@ export type GetAnalyticsEngineControlResponse = {
   /** Configuration of the AnalyticsEngineControl. */
   configuration?: AnalyticsEngineControl
 }
-export type GetAnalyticsEngineControls = {}
+export type GetAnalyticsEngineControls = Record<string, unknown>
 export type GetAnalyticsEngineControlsResponse = {
   /** List of available AnalyticsEngineControl configurations. */
   analyticsEngineControls?: AnalyticsEngineControl[]
@@ -64,7 +64,7 @@ export type GetAnalyticsEngineResponse = {
   /** Configuration of the AnalyticsEngine. */
   configuration?: AnalyticsEngine
 }
-export type GetAnalyticsEngines = {}
+export type GetAnalyticsEngines = Record<string, unknown>
 export type GetAnalyticsEnginesResponse = {
   /** List of available AnalyticsEngine configurations. */
   configuration?: AnalyticsEngine[]
@@ -74,13 +74,13 @@ export type SetVideoAnalyticsConfiguration = {
   configuration?: VideoAnalyticsConfiguration
   forcePersistence?: boolean
 }
-export type SetVideoAnalyticsConfigurationResponse = {}
+export type SetVideoAnalyticsConfigurationResponse = Record<string, unknown>
 export type SetAnalyticsEngineInput = {
   /** Contains the modified Analytics Engine Input configuration. The configuration shall exist in the device. */
   configuration?: AnalyticsEngineInput
   forcePersistence?: boolean
 }
-export type SetAnalyticsEngineInputResponse = {}
+export type SetAnalyticsEngineInputResponse = Record<string, unknown>
 export type GetAnalyticsEngineInput = {
   /** Token of the requested AnalyticsEngineInput configuration. */
   configurationToken?: ReferenceToken
@@ -89,7 +89,7 @@ export type GetAnalyticsEngineInputResponse = {
   /** Configuration of the AnalyticsEngineInput. */
   configuration?: AnalyticsEngineInput
 }
-export type GetAnalyticsEngineInputs = {}
+export type GetAnalyticsEngineInputs = Record<string, unknown>
 export type GetAnalyticsEngineInputsResponse = {
   /** List of available AnalyticsEngineInput configurations. */
   configuration?: AnalyticsEngineInput[]
@@ -116,7 +116,7 @@ export type DeleteAnalyticsEngineInputs = {
   /** LIst of tokens of Analytics Engine Input configurations to be deleted. */
   configurationToken?: ReferenceToken[]
 }
-export type DeleteAnalyticsEngineInputsResponse = {}
+export type DeleteAnalyticsEngineInputsResponse = Record<string, unknown>
 export type GetAnalyticsState = {
   /** Token of the AnalyticsEngineControl whose state information is requested. */
   analyticsEngineControlToken?: ReferenceToken

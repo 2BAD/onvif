@@ -134,7 +134,7 @@ export type RadiometryConfigurationOptions = {
    */
   radiometryGlobalParameterOptions?: RadiometryGlobalParameterOptions
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities of the thermal service are returned in the Capabilities element. */
   capabilities?: Capabilities
@@ -155,7 +155,7 @@ export type GetConfigurationResponse = {
   /** Thermal Settings for the VideoSource that was requested. */
   configuration?: Configuration
 }
-export type GetConfigurations = {}
+export type GetConfigurations = Record<string, unknown>
 export type GetConfigurationsResponse = {
   /** This element contains a list of thermal VideoSource configurations. */
   configurations?: Configurations[]

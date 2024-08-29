@@ -50,7 +50,7 @@ export type Capabilities = {
   /** Capabilities per video source. */
   source?: SourceCapabilities[]
 }
-export type GetServiceCapabilities = {}
+export type GetServiceCapabilities = Record<string, unknown>
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the provisioning service on this device. */
   capabilities?: Capabilities
@@ -63,7 +63,7 @@ export type PanMove = {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export type PanMoveResponse = {}
+export type PanMoveResponse = Record<string, unknown>
 export type TiltMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
@@ -72,7 +72,7 @@ export type TiltMove = {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export type TiltMoveResponse = {}
+export type TiltMoveResponse = Record<string, unknown>
 export type ZoomMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
@@ -81,7 +81,7 @@ export type ZoomMove = {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export type ZoomMoveResponse = {}
+export type ZoomMoveResponse = Record<string, unknown>
 export type RollMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
@@ -90,7 +90,7 @@ export type RollMove = {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export type RollMoveResponse = {}
+export type RollMoveResponse = Record<string, unknown>
 export type FocusMove = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
@@ -99,12 +99,12 @@ export type FocusMove = {
   /** "Operation timeout, if less than default timeout. */
   timeout?: unknown
 }
-export type FocusMoveResponse = {}
+export type FocusMoveResponse = Record<string, unknown>
 export type Stop = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
 }
-export type StopResponse = {}
+export type StopResponse = Record<string, unknown>
 export type GetUsage = {
   /** The video source associated with the provisioning. */
   videoSource?: ReferenceToken
