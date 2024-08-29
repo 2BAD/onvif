@@ -31,7 +31,7 @@ export default [
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
       '@typescript-eslint/promise-function-async': 'off',
-      '@typescript-eslint/strict-boolean-expressions': ['error', { allowNullableObject: true }],
+      '@typescript-eslint/strict-boolean-expressions': 'off',
       '@typescript-eslint/space-before-function-paren': 'off',
       'n/prefer-node-protocol': 'error'
     }
