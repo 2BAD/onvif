@@ -4,75 +4,92 @@ const numberRE = /^-?([1-9]\d*|0)(\.\d*)?$/
 const dateRE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?Z$/
 const prefixMatch = /(?!xmlns)^.*:/
 
+type LineRaseOptions = {
+  array: string[]
+  name?: string
+}
+
 /**
- * Parse SOAP object to pretty JS-object
+ * Parse SOAP object to a pretty JS-object
+ *
+ * @param xml - The XML object to parse
+ * @param options - Options for parsing
+ * @returns The parsed JS object
  */
-export function linerase(xml: any, options?: { array: string[]; name?: string } | number): any {
-  if (typeof options !== 'object') {
-    options = { array: [] }
-  }
+export function linerase(xml: unknown, options: LineRaseOptions = { array: [] }): unknown {
   if (Array.isArray(xml)) {
-    if (xml.length === 1 && !options.array.includes(options.name!)) {
-      ;[xml] = xml
-    } else {
-      return xml.map((item) => linerase(item, options))
+    if (xml.length === 1 && !options.array.includes(options.name ?? '')) {
+      return linerase(xml[0], options)
     }
+    return xml.map((item) => linerase(item, options))
   }
-  if (typeof xml === 'object') {
-    let obj: any = {}
-    Object.keys(xml).forEach((key) => {
+
+  if (typeof xml === 'object' && xml !== null) {
+    const obj: Record<string, unknown> = {}
+    Object.entries(xml).forEach(([key, value]) => {
       if (key === '$') {
         // for xml attributes
-        obj = {
-          ...obj,
-          ...linerase(xml.$, options)
-        }
+        Object.assign(obj, linerase(value, options))
       } else {
-        obj[key] = linerase(xml[key], { ...options, name: key })
+        obj[key] = linerase(value, { ...options, name: key })
       }
     })
     return obj
   }
+
   if (xml === 'true') {
     return true
   }
   if (xml === 'false') {
     return false
   }
-  if (numberRE.test(xml)) {
-    return parseFloat(xml)
-  }
-  if (dateRE.test(xml)) {
-    return new Date(xml)
+  if (typeof xml === 'string') {
+    if (numberRE.test(xml)) {
+      return Number.parseFloat(xml)
+    }
+    if (dateRE.test(xml)) {
+      return new Date(xml)
+    }
   }
   return xml
 }
 
-function s4() {
-  // eslint-disable-next-line no-bitwise
-  return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1)
+/**
+ * Generate a random hexadecimal string
+ *
+ * @returns A 4-character hexadecimal string
+ */
+function s4(): string {
+  return Math.floor((1 + Math.random()) * 0x10000)
+    .toString(16)
+    .substring(1)
 }
 
 /**
- * Generate GUID
- * @returns {string}
+ * Generate a GUID (Globally Unique Identifier)
+ *
+ * @returns A GUID string
  */
-export function guid() {
+export function guid(): string {
   return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
 }
 
-export type CamResponse = Promise<[Record<string, any>, string]>
+export type CamResponse = Promise<[Record<string, unknown>, string]>
 
 /**
  * Parse SOAP response
+ *
+ * @param rawXml - The raw XML string to parse
+ * @returns A promise that resolves to a tuple containing the parsed body and the filtered XML string
+ * @throws {Error} If the SOAP response is invalid or contains a fault
  */
 export async function parseSOAPString(rawXml: string): CamResponse {
-  /* Filter out xml name spaces */
+  // Filter out XML namespaces
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 
   const result = await xml2js.parseStringPromise(xml, {
     tagNameProcessors: [
-      (tag) => {
+      (tag: string) => {
         const str = tag.replace(prefixMatch, '')
         const secondLetter = str.charAt(1)
         if (secondLetter && secondLetter.toUpperCase() !== secondLetter) {
@@ -82,35 +99,32 @@ export async function parseSOAPString(rawXml: string): CamResponse {
       }
     ]
   })
-  if (!result || !result.envelope || !result.envelope.body) {
-    throw new Error('Wrong ONVIF SOAP response')
+
+  if (!result?.envelope?.body) {
+    throw new Error('Invalid ONVIF SOAP response')
   }
-  if (result.envelope.body[0].fault) {
-    const fault = result.envelope.body[0].fault[0]
-    let reason
+
+  const body = result.envelope.body[0]
+
+  if (body.fault) {
+    const fault = body.fault[0]
+    let reason = ''
+    let detail = ''
+
     try {
-      if (fault.reason[0].text[0]._) {
-        reason = fault.reason[0].text[0]._
-      }
+      reason = fault.reason[0].text[0]._ || JSON.stringify(linerase(fault.code[0]))
     } catch (e) {
-      reason = ''
+      // Ignore error if reason extraction fails
     }
-    if (!reason) {
-      try {
-        reason = JSON.stringify(linerase(fault.code[0]))
-      } catch (e) {
-        reason = ''
-      }
-    }
-    let detail
+
     try {
       ;[detail] = fault.detail[0].text
     } catch (e) {
-      detail = ''
+      // Ignore error if detail extraction fails
     }
 
-    // console.error('Fault:', reason, detail);
     throw new Error(`ONVIF SOAP Fault: ${reason}${detail}`)
   }
-  return [result.envelope.body, xml]
+
+  return [body, xml]
 }

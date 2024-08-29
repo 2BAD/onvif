@@ -32,9 +32,10 @@ describe('linerase', () => {
   })
 
   it('should parse dates', () => {
-    expect.assertions(2)
+    expect.assertions(3)
     const input = { date: '2023-04-01T12:00:00Z' }
-    const result = linerase(input)
+    const result = linerase(input) as { date: Date }
+    expect(result).toHaveProperty('date')
     expect(result.date).toBeInstanceOf(Date)
     expect(result.date.toISOString()).toBe('2023-04-01T12:00:00.000Z')
   })
@@ -71,7 +72,7 @@ describe('parseSOAPString', () => {
     vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue(mockParsedResult)
 
     const [result, xml] = await parseSOAPString(mockXml)
-    expect(result).toStrictEqual([{ result: ['Success'] }])
+    expect(result).toStrictEqual({ result: ['Success'] })
     expect(xml).toBe(mockXml.replace(/xmlns([^=]*?)=(".*?")/g, ''))
   })
 
@@ -80,7 +81,7 @@ describe('parseSOAPString', () => {
     const mockXml = '<invalid>XML</invalid>'
     vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue({})
 
-    await expect(parseSOAPString(mockXml)).rejects.toThrow('Wrong ONVIF SOAP response')
+    await expect(parseSOAPString(mockXml)).rejects.toThrow('Invalid ONVIF SOAP response')
   })
 
   it('should throw an error for SOAP fault', async () => {
