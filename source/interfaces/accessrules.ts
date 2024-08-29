@@ -1,6 +1,6 @@
-import { ReferenceToken } from './common.ts';
-import { DataEntity } from './types.ts';
-import { Name, Description } from './onvif.ts';
+import { ReferenceToken } from './common.ts'
+import { DataEntity } from './types.ts'
+import { Name, Description } from './onvif.ts'
 
 /**
  * The service capabilities reflect optional functionality of a service. The information is static
@@ -12,21 +12,21 @@ export interface ServiceCapabilities {
    * request. The device shall never return more than this number of entities in a single
    * response.
    */
-  maxLimit: unknown;
+  maxLimit: unknown
   /** Indicates the maximum number of access profiles supported by the device. */
-  maxAccessProfiles: unknown;
+  maxAccessProfiles: unknown
   /** Indicates the maximum number of access policies per access profile supported by the device. */
-  maxAccessPoliciesPerAccessProfile: unknown;
+  maxAccessPoliciesPerAccessProfile: unknown
   /**
    * Indicates whether or not several access policies can refer to the same access point in an
    * access profile.
    */
-  multipleSchedulesPerAccessPointSupported: boolean;
+  multipleSchedulesPerAccessPointSupported: boolean
   /**
    * Indicates that the client is allowed to supply the token when creating access profiles. To
    * enable the use of the command SetAccessProfile, the value must be set to true.
    */
-  clientSuppliedTokenSupported?: boolean;
+  clientSuppliedTokenSupported?: boolean
 }
 /**
  * The access policy is an association of an access point and a schedule. It defines when an access
@@ -36,12 +36,12 @@ export interface ServiceCapabilities {
  */
 export interface AccessPolicy {
   /** Reference to the schedule used by the access policy. */
-  scheduleToken?: ReferenceToken;
+  scheduleToken?: ReferenceToken
   /**
    * Reference to the entity used by the rule engine, the entity type may be specified by the
    * optional EntityType field explained below but is typically an access point.
    */
-  entity?: ReferenceToken;
+  entity?: ReferenceToken
   /**
    * Optional entity type; if missing, an access point type as defined by the ONVIF Access
    * Control Service Specification should be assumed. This can also be represented by the
@@ -49,8 +49,8 @@ export interface AccessPolicy {
    * Service Specification. This field is provided for future extensions; it will allow an
    * access policy being	extended to cover entity types other than access points as well.
    */
-  entityType?: unknown;
-  extension?: AccessPolicyExtension;
+  entityType?: unknown
+  extension?: AccessPolicyExtension
 }
 export interface AccessPolicyExtension {}
 /**
@@ -59,12 +59,12 @@ export interface AccessPolicyExtension {}
  */
 export interface AccessProfileInfo extends DataEntity {
   /** A user readable name. It shall be up to 64 characters. */
-  name?: Name;
+  name?: Name
   /**
    * User readable description for the access profile. It shall be up
    * to 1024 characters.
    */
-  description?: Description;
+  description?: Description
 }
 /**
  * The access profile structure contains information about the collection of access policies. The
@@ -76,8 +76,8 @@ export interface AccessProfile extends AccessProfileInfo {
    * A list of access policy structures, where each access policy
    * defines during which schedule an access point can be accessed.
    */
-  accessPolicy?: AccessPolicy[];
-  extension?: AccessProfileExtension;
+  accessPolicy?: AccessPolicy[]
+  extension?: AccessProfileExtension
 }
 export interface AccessProfileExtension {}
 export interface GetServiceCapabilities {}
@@ -86,15 +86,15 @@ export interface GetServiceCapabilitiesResponse {
    * The capability response message contains the requested access rules
    * service capabilities using a hierarchical XML capability structure.
    */
-  capabilities?: ServiceCapabilities;
+  capabilities?: ServiceCapabilities
 }
 export interface GetAccessProfileInfo {
   /** Tokens of AccessProfileInfo items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAccessProfileInfoResponse {
   /** List of AccessProfileInfo items. */
-  accessProfileInfo?: AccessProfileInfo[];
+  accessProfileInfo?: AccessProfileInfo[]
 }
 export interface GetAccessProfileInfoList {
   /**
@@ -102,29 +102,29 @@ export interface GetAccessProfileInfoList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAccessProfileInfoListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of AccessProfileInfo items. */
-  accessProfileInfo?: AccessProfileInfo[];
+  accessProfileInfo?: AccessProfileInfo[]
 }
 export interface GetAccessProfiles {
   /** Tokens of AccessProfile items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAccessProfilesResponse {
   /** List of Access Profile items. */
-  accessProfile?: AccessProfile[];
+  accessProfile?: AccessProfile[]
 }
 export interface GetAccessProfileList {
   /**
@@ -132,42 +132,42 @@ export interface GetAccessProfileList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAccessProfileListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of Access Profile items. */
-  accessProfile?: AccessProfile[];
+  accessProfile?: AccessProfile[]
 }
 export interface CreateAccessProfile {
   /** The AccessProfile to create. */
-  accessProfile?: AccessProfile;
+  accessProfile?: AccessProfile
 }
 export interface CreateAccessProfileResponse {
   /** The Token of created AccessProfile. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface ModifyAccessProfile {
   /** The details of Access Profile */
-  accessProfile?: AccessProfile;
+  accessProfile?: AccessProfile
 }
 export interface ModifyAccessProfileResponse {}
 export interface SetAccessProfile {
   /** The AccessProfile item to create or modify */
-  accessProfile?: AccessProfile;
+  accessProfile?: AccessProfile
 }
 export interface SetAccessProfileResponse {}
 export interface DeleteAccessProfile {
   /** The token of the access profile to delete. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface DeleteAccessProfileResponse {}

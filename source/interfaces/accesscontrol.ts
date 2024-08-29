@@ -1,9 +1,9 @@
-import { DataEntity } from './types.ts';
-import { Name, Description, StringList } from './onvif.ts';
-import { ReferenceToken } from './common.ts';
+import { DataEntity } from './types.ts'
+import { Name, Description, StringList } from './onvif.ts'
+import { ReferenceToken } from './common.ts'
 
 /** The Decision enumeration represents a choice of two available options for an access request: */
-export type Decision = 'Granted' | 'Denied';
+export type Decision = 'Granted' | 'Denied'
 /**
  * Non-normative enum that describes the various reasons for denying access.
  * The following strings shall be used for the reason field:
@@ -15,7 +15,7 @@ export type DenyReason =
   | 'InvalidPIN'
   | 'NotPermittedAtThisTime'
   | 'Unauthorized'
-  | 'Other';
+  | 'Other'
 /**
  * Non-normative enumeration that describes the ONVIF defined feedback types.
  * These types are used in string fields where extendibility is desired.
@@ -39,7 +39,7 @@ export type FeedbackType =
   | 'pt:Ok'
   | 'pt:Fault'
   | 'pt:Warning'
-  | 'pt:Alarm';
+  | 'pt:Alarm'
 /**
  * The service capabilities reflect optional functionality of a service.
  * The information is static and does not change during device operation.
@@ -51,44 +51,44 @@ export interface ServiceCapabilities {
    * Get&lt;Entity&gt; request.
    * The device shall never return more than this number of entities in a single response.
    */
-  maxLimit: number;
+  maxLimit: number
   /** Indicates the maximum number of access points supported by the device. */
-  maxAccessPoints?: number;
+  maxAccessPoints?: number
   /** Indicates the maximum number of areas supported by the device. */
-  maxAreas?: number;
+  maxAreas?: number
   /**
    * Indicates that the client is allowed to supply the token when creating access
    * points and areas.
    * To enable the use of the commands SetAccessPoint and SetArea, the value must be set to true.
    */
-  clientSuppliedTokenSupported?: boolean;
+  clientSuppliedTokenSupported?: boolean
   /**
    * Indicates that the client can perform CRUD operations (create, read, update and delete)
    * on access points. To enable the use of the commands GetAccessPoints, GetAccessPointList,
    * CreateAccessPoint, ModifyAccessPoint, DeleteAccessPoint, SetAccessPointAuthenticationProfile
    * and DeleteAccessPointAuthenticationProfile, the value must be set to true.
    */
-  accessPointManagementSupported?: boolean;
+  accessPointManagementSupported?: boolean
   /**
    * Indicates that the client can perform CRUD operations (create, read, update and delete)
    * on areas. To enable the use of the commands GetAreas, GetAreaList, CreateArea, ModifyArea
    * and DeleteArea, the value must be set to true.
    */
-  areaManagementSupported?: boolean;
+  areaManagementSupported?: boolean
 }
 /** Used as extension base for AccessPointInfo. */
 export interface AccessPointInfoBase extends DataEntity {
   /** A user readable name. It shall be up to 64 characters. */
-  name?: Name;
+  name?: Name
   /**
    * Optional user readable description for the AccessPoint. It shall
    * be up to 1024 characters.
    */
-  description?: Description;
+  description?: Description
   /** Optional reference to the Area from which access is requested. */
-  areaFrom?: ReferenceToken;
+  areaFrom?: ReferenceToken
   /** Optional reference to the Area to which access is requested. */
-  areaTo?: ReferenceToken;
+  areaTo?: ReferenceToken
   /**
    * Optional entity type; if missing, a Door type as defined by [ONVIF Door Control
    * Service Specification] should be assumed. This can also be represented by the
@@ -97,13 +97,13 @@ export interface AccessPointInfoBase extends DataEntity {
    * extensions; it will allow an access point being extended to cover entity types
    * other than doors as well.
    */
-  entityType?: unknown;
+  entityType?: unknown
   /**
    * Reference to the entity used to control access; the entity type
    * may be specified by the optional EntityType field explained below but is
    * typically a Door.
    */
-  entity?: ReferenceToken;
+  entity?: ReferenceToken
 }
 /**
  * The AccessPointInfo structure contains basic information about an access point instance.
@@ -115,7 +115,7 @@ export interface AccessPointInfoBase extends DataEntity {
  */
 export interface AccessPointInfo extends AccessPointInfoBase {
   /** The capabilities for the AccessPoint. */
-  capabilities?: AccessPointCapabilities;
+  capabilities?: AccessPointCapabilities
 }
 /**
  * The AccessPoint structure shall include all properties of the AccessPointInfo structure,
@@ -126,8 +126,8 @@ export interface AccessPoint extends AccessPointInfo {
    * A reference to an authentication profile which defines the authentication
    * behavior of the access point.
    */
-  authenticationProfileToken?: ReferenceToken;
-  extension?: AccessPointExtension;
+  authenticationProfileToken?: ReferenceToken
+  extension?: AccessPointExtension
 }
 export interface AccessPointExtension {}
 /**
@@ -141,27 +141,27 @@ export interface AccessPointCapabilities {
    * Indicates whether or not this AccessPoint instance supports EnableAccessPoint
    * and DisableAccessPoint commands.
    */
-  disableAccessPoint: boolean;
+  disableAccessPoint: boolean
   /** Indicates whether or not this AccessPoint instance supports generation of duress events. */
-  duress?: boolean;
+  duress?: boolean
   /**
    * Indicates whether or not this AccessPoint has a REX switch or other input that
    * allows anonymous access.
    */
-  anonymousAccess?: boolean;
+  anonymousAccess?: boolean
   /**
    * Indicates whether or not this AccessPoint instance supports generation of
    * AccessTaken and AccessNotTaken events. If AnonymousAccess and AccessTaken are both true, it
    * indicates that the Anonymous versions of AccessTaken and AccessNotTaken are supported.
    */
-  accessTaken?: boolean;
+  accessTaken?: boolean
   /**
    * Indicates whether or not this AccessPoint instance supports the
    * ExternalAuthorization operation and the generation of Request events. If AnonymousAccess and
    * ExternalAuthorization are both true, it indicates that the Anonymous version is supported as
    * well.
    */
-  externalAuthorization?: boolean;
+  externalAuthorization?: boolean
   /**
    * A list of recognition types that the device supports. This field is only relevant for devices
    * that are not aware of security levels (see [ONVIF Authentication Behavior Service Specification]).
@@ -171,7 +171,7 @@ export interface AccessPointCapabilities {
    * types as defined in pt:RecognitionType. For custom defined identifier types, free text
    * can be used.
    */
-  supportedRecognitionTypes?: StringList;
+  supportedRecognitionTypes?: StringList
   /**
    * Indicates whether or not this access point supports the AccessControl/Request/Identifier
    * event to request external authorization.
@@ -180,13 +180,13 @@ export interface AccessPointCapabilities {
    * knowledge of credential tokens. When IdentifierAccess is set to true then the device
    * must support the identifier events.
    */
-  identifierAccess?: boolean;
+  identifierAccess?: boolean
   /**
    * List of supported feedback types. Feedback types starting with the prefix pt:
    * are reserved to define ONVIF-specific types as defined in tac:FeedbackType.
    * For custom defined feedback types, free text can be used.
    */
-  supportedFeedbackTypes?: StringList;
+  supportedFeedbackTypes?: StringList
   /**
    * A list of security level tokens that this access point supports.
    * See [Authentication Behavior Service Specification].
@@ -195,19 +195,19 @@ export interface AccessPointCapabilities {
    * Please note that when an access point is updated, then any previously supported
    * security levels are replaced with the new list.
    */
-  supportedSecurityLevels?: ReferenceToken[];
-  extension?: SupportedSecurityLevelsExtension;
+  supportedSecurityLevels?: ReferenceToken[]
+  extension?: SupportedSecurityLevelsExtension
 }
 export interface SupportedSecurityLevelsExtension {}
 /** Basic information about an Area. Used as extension base. */
 export interface AreaInfoBase extends DataEntity {
   /** User readable name. It shall be up to 64 characters. */
-  name?: Name;
+  name?: Name
   /**
    * User readable description for the Area. It shall be up to 1024
    * characters.
    */
-  description?: Description;
+  description?: Description
 }
 /**
  * The AreaInfo structure contains basic information about an Area.
@@ -219,7 +219,7 @@ export interface AreaInfo extends AreaInfoBase {}
  * a parent area token, an OccupancyControl structure and/or an Antipassback structure.
  */
 export interface Area extends AreaInfo {
-  extension?: AreaExtension;
+  extension?: AreaExtension
 }
 export interface AreaExtension {}
 /**
@@ -231,7 +231,7 @@ export interface AccessPointState {
    * Indicates that the AccessPoint is enabled. By default this field value
    * shall be True, if the DisableAccessPoint capabilities is not supported.
    */
-  enabled?: boolean;
+  enabled?: boolean
 }
 export interface GetServiceCapabilities {}
 export interface GetServiceCapabilitiesResponse {
@@ -239,7 +239,7 @@ export interface GetServiceCapabilitiesResponse {
    * The capability response message contains the requested Access Control
    * service capabilities using a hierarchical XML capability structure.
    */
-  capabilities?: ServiceCapabilities;
+  capabilities?: ServiceCapabilities
 }
 export interface GetAccessPointInfoList {
   /**
@@ -247,29 +247,29 @@ export interface GetAccessPointInfoList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAccessPointInfoListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of AccessPointInfo items. */
-  accessPointInfo?: AccessPointInfo[];
+  accessPointInfo?: AccessPointInfo[]
 }
 export interface GetAccessPointInfo {
   /** Tokens of AccessPointInfo items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAccessPointInfoResponse {
   /** List of AccessPointInfo items. */
-  accessPointInfo?: AccessPointInfo[];
+  accessPointInfo?: AccessPointInfo[]
 }
 export interface GetAccessPointList {
   /**
@@ -277,63 +277,63 @@ export interface GetAccessPointList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAccessPointListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of AccessPoint items. */
-  accessPoint?: AccessPoint[];
+  accessPoint?: AccessPoint[]
 }
 export interface GetAccessPoints {
   /** Tokens of AccessPoint items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAccessPointsResponse {
   /** List of AccessPoint items. */
-  accessPoint?: AccessPoint[];
+  accessPoint?: AccessPoint[]
 }
 export interface CreateAccessPoint {
   /** AccessPoint item to create */
-  accessPoint?: AccessPoint;
+  accessPoint?: AccessPoint
 }
 export interface CreateAccessPointResponse {
   /** Token of created AccessPoint item */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface SetAccessPoint {
   /** AccessPoint item to create or modify */
-  accessPoint?: AccessPoint;
+  accessPoint?: AccessPoint
 }
 export interface SetAccessPointResponse {}
 export interface ModifyAccessPoint {
   /** AccessPoint item to modify */
-  accessPoint?: AccessPoint;
+  accessPoint?: AccessPoint
 }
 export interface ModifyAccessPointResponse {}
 export interface DeleteAccessPoint {
   /** Token of AccessPoint item to delete. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface DeleteAccessPointResponse {}
 export interface SetAccessPointAuthenticationProfile {
   /** Token of the AccessPoint. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
   /** Token of the AuthenticationProfile. */
-  authenticationProfileToken?: ReferenceToken;
+  authenticationProfileToken?: ReferenceToken
 }
 export interface SetAccessPointAuthenticationProfileResponse {}
 export interface DeleteAccessPointAuthenticationProfile {
   /** Token of the AccessPoint. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface DeleteAccessPointAuthenticationProfileResponse {}
 export interface GetAreaInfoList {
@@ -342,29 +342,29 @@ export interface GetAreaInfoList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAreaInfoListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of AreaInfo items. */
-  areaInfo?: AreaInfo[];
+  areaInfo?: AreaInfo[]
 }
 export interface GetAreaInfo {
   /** Tokens of AreaInfo items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAreaInfoResponse {
   /** List of AreaInfo items. */
-  areaInfo?: AreaInfo[];
+  areaInfo?: AreaInfo[]
 }
 export interface GetAreaList {
   /**
@@ -372,85 +372,85 @@ export interface GetAreaList {
    * or higher than what the device supports, the number of items is determined by the
    * device.
    */
-  limit?: number;
+  limit?: number
   /**
    * Start returning entries from this start reference. If not specified,
    * entries shall start from the beginning of the dataset.
    */
-  startReference?: string;
+  startReference?: string
 }
 export interface GetAreaListResponse {
   /**
    * StartReference to use in next call to get the following items. If
    * absent, no more items to get.
    */
-  nextStartReference?: string;
+  nextStartReference?: string
   /** List of Area items. */
-  area?: Area[];
+  area?: Area[]
 }
 export interface GetAreas {
   /** Tokens of Area items to get. */
-  token?: ReferenceToken[];
+  token?: ReferenceToken[]
 }
 export interface GetAreasResponse {
   /** List of Area items. */
-  area?: Area[];
+  area?: Area[]
 }
 export interface CreateArea {
   /** Area item to create */
-  area?: Area;
+  area?: Area
 }
 export interface CreateAreaResponse {
   /** Token of created Area item */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface SetArea {
   /** Area item to create or modify */
-  area?: Area;
+  area?: Area
 }
 export interface SetAreaResponse {}
 export interface ModifyArea {
   /** Area item to modify */
-  area?: Area;
+  area?: Area
 }
 export interface ModifyAreaResponse {}
 export interface DeleteArea {
   /** Token of Area item to delete. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface DeleteAreaResponse {}
 export interface GetAccessPointState {
   /** Token of AccessPoint instance to get AccessPointState for. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface GetAccessPointStateResponse {
   /** AccessPointState item. */
-  accessPointState?: AccessPointState;
+  accessPointState?: AccessPointState
 }
 export interface EnableAccessPoint {
   /** Token of the AccessPoint instance to enable. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface EnableAccessPointResponse {}
 export interface DisableAccessPoint {
   /** Token of the AccessPoint instance to disable. */
-  token?: ReferenceToken;
+  token?: ReferenceToken
 }
 export interface DisableAccessPointResponse {}
 export interface ExternalAuthorization {
   /** Token of the Access Point instance. */
-  accessPointToken?: ReferenceToken;
+  accessPointToken?: ReferenceToken
   /** Optional token of the Credential involved. */
-  credentialToken?: ReferenceToken;
+  credentialToken?: ReferenceToken
   /** Optional reason for decision. */
-  reason?: string;
+  reason?: string
   /** Decision - Granted or Denied. */
-  decision?: Decision;
+  decision?: Decision
 }
 export interface ExternalAuthorizationResponse {}
 export interface Feedback {
   /** Token of the access point to control. */
-  accessPointToken?: ReferenceToken;
+  accessPointToken?: ReferenceToken
   /**
    * The feedback type to use. Feedback types starting with the prefix pt:
    * are reserved to define ONVIF-specific types as defined in tac:FeedbackType.
@@ -458,17 +458,17 @@ export interface Feedback {
    * If feedback type is set to pt:RequireIdentifier, the RecognitionType field shall provide the required type(s).
    * If the feedback type is not supported, it shall be ignored.
    */
-  feedbackType?: string;
+  feedbackType?: string
   /**
    * Optional list of recognition types requested by a client to get closer to making a decision.
    * Used if FeedbackType is set to pt:RequireIdentifier.
    * If a recognition type is not supported, it shall be ignored.
    */
-  recognitionType?: string[];
+  recognitionType?: string[]
   /**
    * Optional textual feedback message.
    * If not supported by the access point it shall be ignored.
    */
-  textMessage?: string;
+  textMessage?: string
 }
 export interface FeedbackResponse {}

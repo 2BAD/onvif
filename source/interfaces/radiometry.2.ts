@@ -1,53 +1,53 @@
-import { FloatRange } from './onvif.ts';
-import { ReferenceToken, Vector, PTZVector, Rectangle } from './common.ts';
+import { FloatRange } from './onvif.ts'
+import { ReferenceToken, Vector, PTZVector, Rectangle } from './common.ts'
 
-export type TemperatureCondition = 'LessThan' | 'MoreThan' | 'EqualTo' | 'Change';
-export type TemperatureType = 'MaxTemp' | 'MinTemp' | 'AverageTemp' | 'StdDeviation' | 'MedianTemp' | 'ISOCoverage';
+export type TemperatureCondition = 'LessThan' | 'MoreThan' | 'EqualTo' | 'Change'
+export type TemperatureType = 'MaxTemp' | 'MinTemp' | 'AverageTemp' | 'StdDeviation' | 'MedianTemp' | 'ISOCoverage'
 export interface RadiometryModuleConfigOptions {
   /**
    * The total number of temperature measurement modules that can be created on the
    * device, screen based or geolocated, of any type (spots or boxes).
    */
-  maxMeasurementModules?: number;
+  maxMeasurementModules?: number
   /**
    * The total number of spot measurement modules that can be loaded simultaneously on the
    * screen by the device. A value of 0 shall be used to indicate no support for Spots.
    */
-  maxScreenSpots?: number;
+  maxScreenSpots?: number
   /**
    * The total number of box measurement modules that can be loaded simultaneously on the
    * screen by the device. A value of 0 shall be used to indicate no support for Boxes.
    */
-  maxScreenBoxes?: number;
+  maxScreenBoxes?: number
   /** Specifies valid ranges for the different radiometry parameters used for temperature calculation. */
-  radiometryParameterOptions?: RadiometryParameterOptions;
+  radiometryParameterOptions?: RadiometryParameterOptions
 }
 /** Describes valid ranges for the different radiometry parameters used for accurate temperature calculation. */
 export interface RadiometryParameterOptions {
   /** Valid range of temperature values, in Kelvin. */
-  reflectedAmbientTemperature?: FloatRange;
+  reflectedAmbientTemperature?: FloatRange
   /** Valid range of emissivity values for the objects to measure. */
-  emissivity?: FloatRange;
+  emissivity?: FloatRange
   /** Valid range of distance between camera and object for a valid temperature reading, in meters. */
-  distanceToObject?: FloatRange;
+  distanceToObject?: FloatRange
   /** Valid range of relative humidity values, in percentage. */
-  relativeHumidity?: FloatRange;
+  relativeHumidity?: FloatRange
   /** Valid range of temperature values, in Kelvin. */
-  atmosphericTemperature?: FloatRange;
+  atmosphericTemperature?: FloatRange
   /** Valid range of atmospheric transmittance values. */
-  atmosphericTransmittance?: FloatRange;
+  atmosphericTransmittance?: FloatRange
   /** Valid range of temperature values, in Kelvin. */
-  extOpticsTemperature?: FloatRange;
+  extOpticsTemperature?: FloatRange
   /** Valid range of external optics transmittance. */
-  extOpticsTransmittance?: FloatRange;
+  extOpticsTransmittance?: FloatRange
 }
 export interface RadiometrySpotModuleConfig {
   /** Unique identifier for this Spot Temperature Measurement Analytics Module. */
-  itemID?: ReferenceToken;
+  itemID?: ReferenceToken
   /** Indicates if the Temperature Measurement Item is enabled to provide temperature readings. */
-  active?: boolean;
+  active?: boolean
   /** Screen coordinates, if spot is currently on screen. Assumes normalized screen limits (-1.0, 1.0). */
-  screenCoords?: Vector;
+  screenCoords?: Vector
   /**
    * Absolute orientation of the PTZ Vector with the Spot on screen. If no PTZVector is present
    * the spot shall behave as a screen element, and stay on the same screen coordinates as the PTZ
@@ -55,17 +55,17 @@ export interface RadiometrySpotModuleConfig {
    * display only when contained in the Field of View. In this case SpotScreenCoords shall be
    * reported as relative to PTZVector.
    */
-  absoluteCoords?: PTZVector;
+  absoluteCoords?: PTZVector
   /** Not present parameter means the Device shall use its value from Global Parameters in Thermal Service. */
-  radiometryParameters?: RadiometryParameters;
+  radiometryParameters?: RadiometryParameters
 }
 export interface RadiometryBoxModuleConfig {
   /** Unique identifier for this Box Temperature Measurement Analytics Module. */
-  itemID?: ReferenceToken;
+  itemID?: ReferenceToken
   /** Indicates if the Temperature Measurement Item is enabled to provide temperature readings. */
-  active?: boolean;
+  active?: boolean
   /** Screen coordinates, if box is currently on screen. Assumes normalized screen limits (-1.0, 1.0). */
-  screenCoords?: Rectangle;
+  screenCoords?: Rectangle
   /**
    * Absolute orientation of the PTZ Vector with the Box on screen. If no PTZVector is present
    * the box shall behave as a screen element, and stay on the same screen coordinates as the PTZ
@@ -73,69 +73,69 @@ export interface RadiometryBoxModuleConfig {
    * display only when contained in the Field of View. In this case BoxScreenCoords shall be
    * reported as relative to PTZVector.
    */
-  absoluteCoords?: PTZVector;
+  absoluteCoords?: PTZVector
   /** Not present parameter means the Device shall use its value from Global Parameters in Thermal Service. */
-  radiometryParameters?: RadiometryParameters;
+  radiometryParameters?: RadiometryParameters
 }
 export interface SpotTemperatureReading {
-  itemID?: ReferenceToken;
-  spotTemperature: number;
+  itemID?: ReferenceToken
+  spotTemperature: number
   /** Not present means Global Parameters from Thermal Service are being used. */
-  radiometryParameters?: RadiometryParameters;
+  radiometryParameters?: RadiometryParameters
 }
 export interface BoxTemperatureReading {
-  itemID: ReferenceToken;
-  maxTemperature: number;
-  minTemperature: number;
-  averageTemperature?: number;
-  medianTemperature?: number;
+  itemID: ReferenceToken
+  maxTemperature: number
+  minTemperature: number
+  averageTemperature?: number
+  medianTemperature?: number
   /** Not present means Global Parameters from Thermal Service are being used. */
-  radiometryParameters?: RadiometryParameters;
+  radiometryParameters?: RadiometryParameters
 }
 export interface RadiometryParameters {
-  reflectedAmbientTemperature?: number;
-  emissivity?: number;
-  distanceToObject?: number;
-  relativeHumidity?: number;
-  atmosphericTemperature?: number;
-  atmosphericTransmittance?: number;
-  extOpticsTemperature?: number;
-  extOpticsTransmittance?: number;
+  reflectedAmbientTemperature?: number
+  emissivity?: number
+  distanceToObject?: number
+  relativeHumidity?: number
+  atmosphericTemperature?: number
+  atmosphericTransmittance?: number
+  extOpticsTemperature?: number
+  extOpticsTransmittance?: number
 }
 export interface RadiometryRuleConfigOptions {
   /** Specifies valid ranges for thresholds and reference parameters used for triggering radiometric rules. */
-  radiometryRuleOptions?: RadiometryRuleOptions;
+  radiometryRuleOptions?: RadiometryRuleOptions
   /** Specifies valid rule conditions for temperature comparisions in radiometric rules. */
-  temperatureConditionOptions?: TemperatureCondition[];
+  temperatureConditionOptions?: TemperatureCondition[]
   /** Specifies temperature measurement types provided by radiometry analytics modules in the device. */
-  temperatureTypeOptions?: TemperatureType[];
+  temperatureTypeOptions?: TemperatureType[]
 }
 /** Describes valid ranges for radiometric rule condition thresholds and reference parameters. */
 export interface RadiometryRuleOptions {
   /** Valid range of temperature values, in Kelvin. */
-  thresholdTemperature?: FloatRange;
+  thresholdTemperature?: FloatRange
   /** Valid range of hysteresis time interval for temperature conditions, in seconds. */
-  thresholdTime?: FloatRange;
+  thresholdTime?: FloatRange
   /** Valid range of temperature hysteresis values, in Kelvin. */
-  hysteresisTemperature?: FloatRange;
+  hysteresisTemperature?: FloatRange
 }
 export interface RadiometryTemperatureRuleConfig {
   /** Reference Token to the Temperature Measurement Analytics Module providing the Temperature on which rule is defined. */
-  radiometryModuleID?: ReferenceToken;
+  radiometryModuleID?: ReferenceToken
   /** Indicates if the Temperature Rule is enabled to provide temperature alarm events. */
-  enabled?: boolean;
+  enabled?: boolean
   /**
    * Indicates which of the temperature values provided by the input Analytics Module
    * shall be used by the rule. In the case of Analytics Modules providing a single
    * Temperature Value (e.g. Spot) this parameter is ignored, and is therefore optional.
    */
-  temperatureType?: TemperatureType;
+  temperatureType?: TemperatureType
   /** Indicates the type of temperature condition to check. */
-  ruleCondition?: TemperatureCondition;
+  ruleCondition?: TemperatureCondition
   /** Indicates the temperature reference value the rule shall be checked against. */
-  thresholdTemperature?: number;
+  thresholdTemperature?: number
   /** Indicates the time interval during which the rule condition shall be met to trigger an event. */
-  thresholdTime?: unknown;
+  thresholdTime?: unknown
   /** Indicates the width in Kelvin of the temerature hysteresis band to be considered by the rule. */
-  hysteresisTemperature?: number;
+  hysteresisTemperature?: number
 }
