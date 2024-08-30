@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import xml2js from 'xml2js'
-import { guid, linerase, parseSOAPString } from './utils.ts'
+import { guid, linerase, parseSOAPString } from './xml.ts'
 
 describe('linerase', () => {
   it('should parse a simple object', () => {

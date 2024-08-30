@@ -74,7 +74,7 @@ export function guid(): string {
   return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
 }
 
-export type CamResponse = Promise<[Record<string, unknown>, string]>
+export type CamResponse = [Record<string, unknown>, string]
 
 /**
  * Parse SOAP response
@@ -83,7 +83,7 @@ export type CamResponse = Promise<[Record<string, unknown>, string]>
  * @returns A promise that resolves to a tuple containing the parsed body and the filtered XML string
  * @throws {Error} If the SOAP response is invalid or contains a fault
  */
-export async function parseSOAPString(rawXml: string): CamResponse {
+export async function parseSOAPString<T>(rawXml: string): Promise<T | CamResponse> {
   // Filter out XML namespaces
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 

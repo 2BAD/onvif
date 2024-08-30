@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events'
 import os from 'node:os'
 import { URL } from 'node:url'
 import { Onvif } from './onvif.ts'
-import { guid, linerase, parseSOAPString } from './utils.ts'
+import { guid, linerase, parseSOAPString } from './utils/xml.ts'
 
 /**
  * Options for discovery process

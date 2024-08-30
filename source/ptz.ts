@@ -3,7 +3,7 @@ import type { Duration, MoveStatus, ReferenceToken, Vector1D, Vector2D } from '.
 import type { PTZConfiguration, PTZSpeed, Space1DDescription, Space2DDescription } from './interfaces/onvif.ts'
 import type { GetConfigurationsResponse } from './interfaces/ptz.2.ts'
 import type { Onvif } from './onvif.ts'
-import { linerase } from './utils.ts'
+import { linerase } from './utils/xml.ts'
 
 /**
  * Represents the supported PTZ preset tour options.

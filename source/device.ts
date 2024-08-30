@@ -20,7 +20,7 @@ import type {
   Scope
 } from './interfaces/onvif.ts'
 import type { Onvif, OnvifServices, SetSystemDateAndTimeOptions } from './onvif.ts'
-import { linerase } from './utils.ts'
+import { linerase } from './utils/xml.ts'
 
 /**
  * Device methods

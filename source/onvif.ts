@@ -9,7 +9,7 @@ import type { GetDeviceInformationResponse } from './interfaces/deviceManagement
 import type { Capabilities, DateTime, Profile } from './interfaces/onvif.ts'
 import { Media } from './media.ts'
 import { PTZ } from './ptz.ts'
-import { linerase, parseSOAPString } from './utils.ts'
+import { linerase, parseSOAPString } from './utils/xml.ts'
 
 /**
  * Cam constructor options

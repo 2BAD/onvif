@@ -28,7 +28,7 @@ import type {
   VideoSource
 } from './interfaces/onvif.ts'
 import type { Onvif } from './onvif.ts'
-import { linerase } from './utils.ts'
+import { linerase } from './utils/xml.ts'
 
 export type GetStreamUriOptions = {
   profileToken?: ReferenceToken
