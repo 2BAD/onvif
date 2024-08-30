@@ -449,7 +449,7 @@ export class PTZ {
     })
     this.#presets = {}
     // @ts-expect-error TODO this has to be fixed and type checked
-    const result = linerase(data[0].getPresetsResponse[0].preset) as PTZPreset[] | PTZPreset
+    const result = linerase(data.getPresetsResponse.preset) as PTZPreset[] | PTZPreset
     if (Array.isArray(result)) {
       result.forEach((preset: PTZPreset) => {
         this.#presets[preset.token] = preset
@@ -522,7 +522,7 @@ export class PTZ {
       `
     })
     // @ts-expect-error TODO this has to be fixed and type checked
-    return linerase(data[0].setPresetResponse) as SetPresetResponse
+    return linerase(data.setPresetResponse) as SetPresetResponse
   }
 
   /**

@@ -130,12 +130,12 @@ export class Device {
     })
 
     // @ts-expect-error TODO: this request client sucks big time...
-    if (!data?.[0]?.getCapabilitiesResponse?.[0]?.capabilities?.[0]) {
+    if (!data?.getCapabilitiesResponse?.capabilities) {
       throw new Error('Invalid response structure')
     }
 
     // @ts-expect-error TODO: this request client sucks big time...
-    this.onvif.capabilities = linerase(data[0].getCapabilitiesResponse[0].capabilities[0]) as Capabilities
+    this.onvif.capabilities = linerase(data.getCapabilitiesResponse.capabilities) as Capabilities
 
     const serviceNames = ['PTZ', 'media', 'imaging', 'events', 'device', 'analytics'] as const
     type ServiceName = (typeof serviceNames)[number]
@@ -257,7 +257,7 @@ export class Device {
         body: '<SystemReboot xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
       })
       // @ts-expect-error TODO: improve later
-      .then(([data]) => data[0].systemRebootResponse[0].message[0])
+      .then(([data]) => data.systemRebootResponse.message)
   }
 
   /**
@@ -270,7 +270,7 @@ export class Device {
       body: '<GetNTP xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
     // @ts-expect-error TODO: improve later
-    this.#NTP = linerase(data[0].getNTPResponse[0].NTPInformation[0]) as NTPInformation
+    this.#NTP = linerase(data.getNTPResponse.NTPInformation) as NTPInformation
     if (this.#NTP?.NTPManual && !Array.isArray(this.#NTP.NTPManual)) {
       this.#NTP.NTPManual = [this.#NTP.NTPManual]
     }
@@ -315,7 +315,7 @@ export class Device {
     })
 
     // @ts-expect-error TODO: improve later
-    return linerase(data[0].setNTPResponse)
+    return linerase(data.setNTPResponse)
   }
 
   /**
@@ -328,7 +328,7 @@ export class Device {
       body: '<GetDNS xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
     // @ts-expect-error TODO: improve later
-    this.#DNS = linerase(data[0].getDNSResponse[0].DNSInformation) as DNSInformation
+    this.#DNS = linerase(data.getDNSResponse.DNSInformation) as DNSInformation
     if (this.#DNS?.DNSManual && !Array.isArray(this.#DNS.DNSManual)) {
       this.#DNS.DNSManual = [this.#DNS.DNSManual]
     }
@@ -348,7 +348,7 @@ export class Device {
       body: '<GetNetworkInterfaces xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
     // @ts-expect-error TODO: improve later
-    const networkInterfaces = linerase(data[0].getNetworkInterfacesResponse[0].networkInterfaces) as NetworkInterface
+    const networkInterfaces = linerase(data.getNetworkInterfacesResponse.networkInterfaces) as NetworkInterface
     // networkInterfaces is an array of network interfaces, but linerase remove the array if there is only one element inside
     // so we convert it back to an array
     if (!Array.isArray(networkInterfaces)) {

@@ -72,7 +72,7 @@ export class Media {
       // Slight difference in Media1 and Media2 reply XML
       // Generate a reply that looks like a Media1 reply for existing library users
       // @ts-expect-error TODO: this request client sucks big time...
-      this.profiles = data[0].getProfilesResponse[0].profiles.map((profile: Record<string, unknown>) => {
+      this.profiles = data.getProfilesResponse.profiles.map((profile: Record<string, unknown>) => {
         const tmp = linerase(profile) as MediaProfile
         const conf = tmp.configurations as ConfigurationSet
         const newProfile: Profile = {
@@ -128,7 +128,7 @@ export class Media {
       body: '<GetProfiles xmlns="http://www.onvif.org/ver10/media/wsdl"/>'
     })
     // @ts-expect-error TODO: this request client sucks big time...
-    this.profiles = data[0].getProfilesResponse[0].profiles.map(linerase)
+    this.profiles = data.getProfilesResponse.profiles.map(linerase)
     return this.profiles
   }
 
@@ -138,8 +138,19 @@ export class Media {
       body: '<GetVideoSources xmlns="http://www.onvif.org/ver10/media/wsdl"/>'
     })
     // @ts-expect-error TODO: this request client sucks big time...
-    const videoSourcesResponse = linerase(data, { array: ['videoSources'] }).getVideoSourcesResponse
-    this.videoSources = videoSourcesResponse.videoSources
+    const videoSourcesResponse = linerase(data, { array: ['videoSources'] })
+      .getVideoSourcesResponse as GetVideoSourcesResponse
+
+    if (Array.isArray(videoSourcesResponse.videoSources)) {
+      videoSourcesResponse.videoSources.forEach((videoSource: VideoSource) => {
+        this.videoSources.push(videoSource)
+      })
+    } else {
+      if (videoSourcesResponse.videoSources) {
+        this.videoSources.push(videoSourcesResponse.videoSources)
+      }
+    }
+
     return videoSourcesResponse
   }
 
@@ -326,7 +337,7 @@ export class Media {
     })
     // this.videoSources = linerase(data).getVideoSourcesResponse.videoSources;
     // @ts-expect-error TODO: this request client sucks big time...
-    return linerase(data[0].getOSDsResponse[0], { array: ['OSDs'] })
+    return linerase(data.getOSDsResponse, { array: ['OSDs'] })
   }
 
   async getOSDOptions({ configurationToken }: GetOSDOptions = {}): Promise<GetOSDOptionsResponse> {

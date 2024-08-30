@@ -67,12 +67,12 @@ describe('parseSOAPString', () => {
   it('should parse a valid SOAP response', async () => {
     expect.assertions(2)
     const mockXml = '<envelope><body><result>Success</result></body></envelope>'
-    const mockParsedResult = { envelope: { body: [{ result: ['Success'] }] } }
+    const mockParsedResult = { envelope: { body: { result: 'Success' } } }
 
     vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue(mockParsedResult)
 
     const [result, xml] = await parseSOAPString(mockXml)
-    expect(result).toStrictEqual({ result: ['Success'] })
+    expect(result).toStrictEqual({ result: 'Success' })
     expect(xml).toBe(mockXml.replace(/xmlns([^=]*?)=(".*?")/g, ''))
   })
 
@@ -89,15 +89,11 @@ describe('parseSOAPString', () => {
     const mockXml = '<envelope><body><fault><reason><text>Error occurred</text></reason></fault></body></envelope>'
     const mockParsedResult = {
       envelope: {
-        body: [
-          {
-            fault: [
-              {
-                reason: [{ text: [{ _: 'Error occurred' }] }]
-              }
-            ]
+        body: {
+          fault: {
+            reason: { text: { _: 'Error occurred' } }
           }
-        ]
+        }
       }
     }
 

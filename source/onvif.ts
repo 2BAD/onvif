@@ -290,7 +290,7 @@ export class Onvif extends EventEmitter {
 
   private setupSystemDateAndTime(data: Record<string, unknown>): Date {
     // @ts-expect-error TODO: improve type signature
-    const systemDateAndTime = data[0]?.getSystemDateAndTimeResponse?.[0]?.systemDateAndTime?.[0]
+    const systemDateAndTime = data?.getSystemDateAndTimeResponse?.systemDateAndTime
     if (!systemDateAndTime) {
       throw new Error('Invalid data structure: systemDateAndTime not found')
     }
@@ -303,7 +303,7 @@ export class Onvif extends EventEmitter {
       // Fallback to current time if dateTime is undefined
       time = new Date()
     } else {
-      const dt = linerase(dateTime[0]) as DateTime
+      const dt = linerase(dateTime) as DateTime
       if (
         !dt.date ||
         !dt.time ||

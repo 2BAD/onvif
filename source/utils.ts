@@ -88,6 +88,7 @@ export async function parseSOAPString(rawXml: string): CamResponse {
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 
   const result = await xml2js.parseStringPromise(xml, {
+    explicitArray: false,
     tagNameProcessors: [
       (tag: string) => {
         const str = tag.replace(prefixMatch, '')
@@ -100,25 +101,27 @@ export async function parseSOAPString(rawXml: string): CamResponse {
     ]
   })
 
+  console.log(result)
+
   if (!result?.envelope?.body) {
     throw new Error('Invalid ONVIF SOAP response')
   }
 
-  const body = result.envelope.body[0]
+  const body = result.envelope.body
 
   if (body.fault) {
-    const fault = body.fault[0]
+    const fault = body.fault
     let reason = ''
     let detail = ''
 
     try {
-      reason = fault.reason[0].text[0]._ || JSON.stringify(linerase(fault.code[0]))
+      reason = fault.reason.text._ || JSON.stringify(linerase(fault.code))
     } catch (e) {
       // Ignore error if reason extraction fails
     }
 
     try {
-      ;[detail] = fault.detail[0].text
+      ;[detail] = fault.detail.text
     } catch (e) {
       // Ignore error if detail extraction fails
     }
