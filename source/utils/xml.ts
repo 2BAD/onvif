@@ -74,8 +74,6 @@ export function guid(): string {
   return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
 }
 
-export type CamResponse = [Record<string, unknown>, string]
-
 /**
  * Parse SOAP response
  *
@@ -83,7 +81,7 @@ export type CamResponse = [Record<string, unknown>, string]
  * @returns A promise that resolves to a tuple containing the parsed body and the filtered XML string
  * @throws {Error} If the SOAP response is invalid or contains a fault
  */
-export async function parseSOAPString<T>(rawXml: string): Promise<T | CamResponse> {
+export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
   // Filter out XML namespaces
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 
@@ -100,8 +98,6 @@ export async function parseSOAPString<T>(rawXml: string): Promise<T | CamRespons
       }
     ]
   })
-
-  console.log(result)
 
   if (!result?.envelope?.body) {
     throw new Error('Invalid ONVIF SOAP response')

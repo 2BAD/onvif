@@ -1,15 +1,14 @@
-import { Buffer } from 'node:buffer'
-import crypto from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import http from 'node:http'
-import https, { type Agent, type RequestOptions } from 'node:https'
+import type { Agent } from 'node:https'
 import type { SecureContextOptions } from 'node:tls'
+import { HttpClient, type HttpClientOptions, type RequestOptions } from './client/http.ts'
 import { Device } from './device.ts'
-import type { GetDeviceInformationResponse } from './interfaces/deviceManagement.ts'
+import type { GetDeviceInformationResponse, GetSystemDateAndTimeResponse } from './interfaces/deviceManagement.ts'
 import type { Capabilities, DateTime, Profile } from './interfaces/onvif.ts'
 import { Media } from './media.ts'
 import { PTZ } from './ptz.ts'
-import { linerase, parseSOAPString } from './utils/xml.ts'
+import { linerase } from './utils/xml.ts'
 
 /**
  * Cam constructor options
@@ -62,12 +61,6 @@ export type OnvifRequestOptions = {
   ptz?: boolean
 } & RequestOptions
 
-type RequestError = {
-  code: string
-  errno: string
-  syscall: string
-} & Error
-
 /**
  * Information about active video source
  */
@@ -107,36 +100,6 @@ export type SetSystemDateAndTimeOptions = {
 
 export class Onvif extends EventEmitter {
   /**
-   * Indicates raw xml request to device.
-   *
-   * @event rawRequest
-   * @example
-   * ```typescript
-   * onvif.on('rawRequest', (xml) => { console.log('-> request was', xml); });
-   * ```
-   */
-  static rawRequest = 'rawRequest' as const
-  /**
-   * Indicates raw xml response from device.
-   *
-   * @event rawResponse
-   * @example
-   * ```typescript
-   * onvif.on('rawResponse', (xml) => { console.log('<- response was', xml); });
-   * ```
-   */
-  static rawResponse = 'rawResponse' as const
-  /**
-   * Indicates any warnings
-   *
-   * @event warn
-   * @example
-   * ```typescript
-   * onvif.on('warn', console.warn);
-   * ```
-   */
-  static warn = 'warn' as const
-  /**
    * Indicates any errors
    *
    * @param error - Error object
@@ -160,6 +123,7 @@ export class Onvif extends EventEmitter {
   public readonly device: Device
   public readonly media: Media
   public readonly ptz: PTZ
+  private readonly httpClient: HttpClient
   public useSecure: boolean
   public secureOptions: SecureContextOptions
   public hostname: string
@@ -196,23 +160,25 @@ export class Onvif extends EventEmitter {
     this.urn = options.urn
     this.agent = options.agent ?? false
     this.preserveAddress = options.preserveAddress ?? false
-    // this.events = {}
     this.uri = {}
     this.capabilities = {}
+
+    const httpClientOptions: HttpClientOptions = {
+      hostname: this.hostname,
+      port: this.port,
+      basePath: this.path,
+      // @ts-expect-error TODO fix later
+      uriMap: this.uri,
+      timeout: this.timeout,
+      useSecure: this.useSecure,
+      secureOptions: this.secureOptions
+    }
+    this.httpClient = new HttpClient(httpClientOptions)
 
     this.device = new Device(this)
     this.media = new Media(this)
     this.ptz = new PTZ(this)
 
-    /** Bind event handling to the `event` event */
-    this.on('newListener', (name) => {
-      // if this is the first listener, start pulling subscription
-      if (name === 'event' && this.listeners(name).length === 0) {
-        setImmediate(() => {
-          // this._eventRequest(); TODO bring back
-        })
-      }
-    })
     if (options.autoConnect) {
       setImmediate(() => {
         this.connect().catch((error) => this.emit('error', error))
@@ -223,7 +189,7 @@ export class Onvif extends EventEmitter {
   /**
    * Envelope header for all SOAP messages
    *
-   * @param openHeader
+   * @param openHeader - If true, will insert the opening header tag
    */
   private envelopeHeader(openHeader = false): string {
     const headerStart = `
@@ -278,7 +244,7 @@ export class Onvif extends EventEmitter {
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 4, 4)
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 8, 4)
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 12, 4)
-    const cryptoDigest = crypto.createHash('sha1')
+    const cryptoDigest = createHash('sha1')
     cryptoDigest.update(Buffer.concat([nonce, Buffer.from(timestamp, 'ascii'), Buffer.from(this.password, 'ascii')]))
     const passDigest = cryptoDigest.digest('base64')
     return {
@@ -288,8 +254,7 @@ export class Onvif extends EventEmitter {
     }
   }
 
-  private setupSystemDateAndTime(data: Record<string, unknown>): Date {
-    // @ts-expect-error TODO: improve type signature
+  private setupSystemDateAndTime(data: GetSystemDateAndTimeResponse): Date {
     const systemDateAndTime = data?.getSystemDateAndTimeResponse?.systemDateAndTime
     if (!systemDateAndTime) {
       throw new Error('Invalid data structure: systemDateAndTime not found')
@@ -329,95 +294,13 @@ export class Onvif extends EventEmitter {
     return time
   }
 
-  private async rawRequest(options: OnvifRequestOptions): Promise<[Record<string, any>, string]> {
-    return await new Promise((resolve, reject) => {
-      let alreadyReturned = false
-      const requestOptions: RequestOptions = {
-        ...options,
-        hostname: this.hostname,
-        path: options.service
-          ? this.uri[options.service]
-            ? this.uri[options.service]!.pathname
-            : this.path
-          : this.path,
-        port: this.port,
-        agent: this.agent, // Supports things like https://www.npmjs.com/package/proxy-agent which provide SOCKS5 and other connections}
-        timeout: this.timeout
-      }
-      requestOptions.headers = {
-        'Content-Type': 'application/soap+xml',
-        'Content-Length': Buffer.byteLength(options.body, 'utf8'),
-        charset: 'utf-8'
-      }
-      requestOptions.method = 'POST'
-      const httpLibrary = this.useSecure ? https : http
-      if (this.useSecure) {
-        Object.assign(requestOptions, this.secureOptions)
-      }
-      const request = httpLibrary.request(requestOptions, (response) => {
-        const buf: Buffer[] = []
-        let length = 0
-
-        response.on('data', (chunk) => {
-          buf.push(chunk)
-          length += chunk.length
-        })
-
-        response.on('end', () => {
-          if (alreadyReturned) {
-            return
-          }
-          alreadyReturned = true
-          const xml = Buffer.concat(buf, length).toString('utf8')
-          /**
-           * Indicates raw xml response from device.
-           *
-           * @event Onvif#rawResponse
-           */
-          this.emit('rawResponse', xml)
-          resolve(parseSOAPString(xml))
-        })
-      })
-
-      request.setTimeout(this.timeout, () => {
-        if (alreadyReturned) {
-          return
-        }
-        alreadyReturned = true
-        request.destroy()
-        reject(new Error('Network timeout'))
-      })
-
-      request.on('error', (error: RequestError) => {
-        if (alreadyReturned) {
-          return
-        }
-        alreadyReturned = true
-        /* address, port number or IPCam error */
-        if (error.code === 'ECONNREFUSED' && error.errno === 'ECONNREFUSED' && error.syscall === 'connect') {
-          reject(error)
-          /* network error */
-        } else if (error.code === 'ECONNRESET' && error.errno === 'ECONNRESET' && error.syscall === 'read') {
-          reject(error)
-        } else {
-          reject(error)
-        }
-      })
-
-      this.emit('rawRequest', options.body, requestOptions)
-      request.write(options.body)
-      request.end()
-    })
-  }
-
-  public request<T>(options: OnvifRequestOptions): Promise<[T, string]> {
+  public async request<T>(options: RequestOptions): Promise<[T, string]> {
     if (!options.body) {
       throw new Error("There is no 'body' field in request options")
     }
-    return this.rawRequest({
-      ...options,
-      body: `${this.envelopeHeader()}${options.body}${this.envelopeFooter()}`
-    }) as Promise<[T, string]>
+
+    const fullBody = options.raw ? options.body : `${this.envelopeHeader()}${options.body}${this.envelopeFooter()}`
+    return await this.httpClient.request<T>({ ...options, body: fullBody })
   }
 
   /**
@@ -452,8 +335,9 @@ export class Onvif extends EventEmitter {
     // authenticated getSystemDateAndTime. So for these devices we need to do an authenticated getSystemDateAndTime.
     // As 'timeShift' is not set, the local clock MUST be set to the correct time AND the NVT/Camera MUST be set
     // to the correct time if the camera implements Replay Attack Protection (e.g. Axis)
-    const [data, xml] = await this.rawRequest({
+    const [data, xml] = await this.request<GetSystemDateAndTimeResponse>({
       // Try the Unauthenticated Request first. Do not use this._envelopeHeader() as we don't have timeShift yet.
+      raw: true,
       body:
         '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">' +
         '<s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">' +
@@ -466,10 +350,9 @@ export class Onvif extends EventEmitter {
     } catch (error) {
       if (xml?.toLowerCase().includes('sender not authorized')) {
         // Try again with a Username and Password
-        const [data] = await this.request({
+        const [data] = await this.request<GetSystemDateAndTimeResponse>({
           body: '<GetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl"/>}'
         })
-        // @ts-expect-error this should be typed by request function
         return this.setupSystemDateAndTime(data)
       }
       // @TODO: fix later
