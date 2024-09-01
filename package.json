@@ -2,9 +2,7 @@
   "name": "@2bad/onvif",
   "version": "1.0.0",
   "description": "",
-  "keywords": [
-    "onvif"
-  ],
+  "keywords": ["onvif"],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {
     "url": "https://github.com/2BAD/onvif/issues"
@@ -25,9 +23,7 @@
   "type": "module",
   "exports": "./build/index.js",
   "typings": "./build/index.d.ts",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "scripts": {
     "prebuild": "rimraf build",
     "build": "run-p build:*",
@@ -35,12 +31,12 @@
     "build:swc": "swc ./source -d ./build --strip-leading-paths",
     "build:types": "tsc --project tsconfig.build.json",
     "check": "run-p check:*",
-    "check:code": "eslint . --report-unused-disable-directives --max-warnings 0",
-    "check:format": "biome format ./source",
+    "check:eslint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "check:biome": "biome check ./source",
     "fix": "run-s fix:code fix:format",
     "fix:alias": "tsc-alias -p tsconfig.build.json",
-    "fix:code": "run-s 'check:code -- --fix'",
-    "fix:ext": "./fix-ext.sh",
+    "fix:code": "run-s 'check:eslint -- --fix'",
+    "fix:ext": "tsfix",
     "fix:format": "biome format --write ./source",
     "prepublishOnly": "run-s build",
     "preversion": "run-s check test build",
@@ -51,6 +47,7 @@
   "devDependencies": {
     "@2bad/eslint-config": "1.0.0-beta.2",
     "@2bad/tsconfig": "3.0.1",
+    "@2bad/tsfix": "0.1.0",
     "@biomejs/biome": "1.8.3",
     "@swc/cli": "0.4.0",
     "@swc/core": "1.7.18",
