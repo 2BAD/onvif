@@ -1,5 +1,5 @@
 import type { SecureContextOptions } from 'node:tls'
-import { parseSOAPString } from '~/utils/xml.ts'
+import { parseSOAPString } from '../utils/xml.ts'
 
 export type HttpClientOptions = {
   hostname: string
@@ -26,7 +26,6 @@ export class HttpClient {
   }
 
   private createUrl(service?: string): string {
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const path = service ? this.options.uriMap[service]?.pathname || this.options.basePath : this.options.basePath
     return new URL(path, this.baseUrl).toString()
   }

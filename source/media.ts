@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { AnyURI } from './interfaces/basics.ts'
 import type { ReferenceToken } from './interfaces/common.ts'
 import type {
@@ -66,7 +65,10 @@ export class Media {
       // for backwards compatibility with existing users of this library
       const [data] = await this.onvif.request({
         service: 'media2',
-        body: '<GetProfiles xmlns="http://www.onvif.org/ver20/media/wsdl"><Type>All</Type></GetProfiles>'
+        body: `
+          <GetProfiles xmlns="http://www.onvif.org/ver20/media/wsdl">
+            <Type>All</Type>
+          </GetProfiles>`
       })
 
       // Slight difference in Media1 and Media2 reply XML
@@ -191,10 +193,15 @@ export class Media {
   }
 
   /**
-   * If device supports Media 2.0 returns an array of VideoEncoder2Configuration. Otherwise VideoEncoderConfiguration
+   * Retrieves video encoder configurations.
    *
-   * @param configurationToken
-   * @param profileToken
+   * @param options - Configuration options
+   * @param [options.configurationToken] - Specific configuration token to retrieve
+   * @param [options.profileToken] - Profile token to filter configurations
+   * @returns
+   *          Video encoder configurations. Returns VideoEncoder2Configuration array if device
+   *          supports Media 2.0, otherwise VideoEncoderConfiguration array.
+   * @throws {Error} On request failure or invalid response
    */
   async getVideoEncoderConfigurations({
     configurationToken,
@@ -238,7 +245,7 @@ export class Media {
    * - RTP over RTSP over HTTP over TCP: StreamType = "RTP_unicast", TransportProtocol = "HTTP"
    * - RTP over RTSP over TCP: StreamType = "RTP_unicast", TransportProtocol = "RTSP"
    *
-   * @param options
+   * @param options - GetStreamUriOptions
    */
   async getStreamUri(options: GetStreamUriOptions = {}): Promise<MediaUri | string> {
     const { profileToken, stream = 'RTP-Unicast' } = options
@@ -267,11 +274,11 @@ export class Media {
       // Profile T request using Media2
       const [data] = await this.onvif.request({
         service: 'media2',
-        body:
-          '<GetStreamUri xmlns="http://www.onvif.org/ver20/media/wsdl">' +
-          `<Protocol>${protocol}</Protocol>` +
-          `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-          '</GetStreamUri>'
+        body: `
+          <GetStreamUri xmlns="http://www.onvif.org/ver20/media/wsdl">
+            <Protocol>${protocol}</Protocol>
+            <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
+          </GetStreamUri>`
       })
       // @ts-expect-error TODO: this request client sucks big time...
       return linerase(data).getStreamUriResponse
@@ -279,45 +286,49 @@ export class Media {
     // Original (v.1.0)  ONVIF Specification for Media (used in Profile S)
     const [data] = await this.onvif.request({
       service: 'media',
-      body:
-        '<GetStreamUri xmlns="http://www.onvif.org/ver10/media/wsdl">' +
-        '<StreamSetup>' +
-        `<Stream xmlns="http://www.onvif.org/ver10/schema">${stream}</Stream>` +
-        '<Transport xmlns="http://www.onvif.org/ver10/schema">' +
-        `<Protocol>${protocol || 'RTSP'}</Protocol>` +
-        '</Transport>' +
-        '</StreamSetup>' +
-        `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-        '</GetStreamUri>'
+      body: `
+        <GetStreamUri xmlns="http://www.onvif.org/ver10/media/wsdl">
+          <StreamSetup>
+            <Stream xmlns="http://www.onvif.org/ver10/schema">${stream}</Stream>
+            <Transport xmlns="http://www.onvif.org/ver10/schema">
+              <Protocol>${protocol || 'RTSP'}</Protocol>
+            </Transport>
+          </StreamSetup>
+          <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
+        </GetStreamUri>`
     })
     // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data).getStreamUriResponse.mediaUri
   }
 
   /**
-   * Receive snapshot URI
+   * Retrieves the snapshot URI for a given profile.
    *
-   * @param profileToken
+   * @param options - Options for the snapshot request
+   * @param [options.profileToken] - Token of the profile to get the snapshot URI for.
+   *                                 If not provided, uses the active source's profile token.
+   * @returns Object containing the snapshot URI
+   * @throws {Error} On request failure or invalid response
    */
   async getSnapshotUri({ profileToken }: GetSnapshotUri = {}): Promise<{ uri: AnyURI }> {
     if (this.onvif.device.media2Support) {
       // Profile T request using Media2
       const [data] = await this.onvif.request({
         service: 'media2',
-        body:
-          '<GetSnapshotUri xmlns="http://www.onvif.org/ver20/media/wsdl">' +
-          `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-          '</GetSnapshotUri>'
+        body: `
+          <GetSnapshotUri xmlns="http://www.onvif.org/ver20/media/wsdl">
+            <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
+          </GetSnapshotUri>`
       })
       // @ts-expect-error TODO: this request client sucks big time...
       return linerase(data).getSnapshotUriResponse
     }
     const [data] = await this.onvif.request({
       service: 'media',
-      body:
-        '<GetSnapshotUri xmlns="http://www.onvif.org/ver10/media/wsdl">' +
-        `<ProfileToken>${profileToken || this.onvif.activeSource!.profileToken}</ProfileToken>` +
-        '</GetSnapshotUri>'
+      body: `
+        <GetSnapshotUri xmlns="http://www.onvif.org/ver10/media/wsdl">
+          <ProfileToken>${profileToken || this.onvif.activeSource?.profileToken}</ProfileToken>
+        </GetSnapshotUri>`
     })
     // @ts-expect-error TODO: this request client sucks big time...
     return linerase(data).getSnapshotUriResponse.mediaUri
@@ -348,10 +359,10 @@ export class Media {
 
     const [data] = await this.onvif.request({
       service: mediaService,
-      body:
-        `<GetOSDOptions xmlns="${mediaNS}" >` +
-        `<ConfigurationToken>${configurationToken ?? this.onvif.activeSource!.videoSourceConfigurationToken}</ConfigurationToken>` +
-        '</GetOSDOptions>'
+      body: `
+        <GetOSDOptions xmlns="${mediaNS}" >
+          <ConfigurationToken>${configurationToken ?? this.onvif.activeSource?.videoSourceConfigurationToken}</ConfigurationToken>
+        </GetOSDOptions>`
     })
     // @ts-expect-error TODO: this request client sucks big time...
     const result = linerase(data).getOSDOptionsResponse

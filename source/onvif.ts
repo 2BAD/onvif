@@ -155,7 +155,6 @@ export class Onvif extends EventEmitter {
     this.password = options.password
     this.port = options.port ?? (options.useSecure ? 443 : 80)
     this.path = options.path ?? '/onvif/device_service'
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     this.timeout = options.timeout || 120000
     this.urn = options.urn
     this.agent = options.agent ?? false
@@ -180,8 +179,8 @@ export class Onvif extends EventEmitter {
     this.ptz = new PTZ(this)
 
     if (options.autoConnect) {
-      setImmediate(() => {
-        this.connect().catch((error) => this.emit('error', error))
+      setImmediate(async () => {
+        await this.connect()
       })
     }
   }
@@ -227,7 +226,6 @@ export class Onvif extends EventEmitter {
    * Envelope footer for all SOAP messages
    *
    */
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private envelopeFooter(): string {
     return '</s:Body></s:Envelope>'
   }
@@ -237,7 +235,6 @@ export class Onvif extends EventEmitter {
       throw new Error('Password is undefined')
     }
 
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const timestamp = new Date(process.uptime() * 1000 + (this.timeShift || 0)).toISOString()
     const nonce = Buffer.allocUnsafe(16)
     nonce.writeUIntLE(Math.ceil(Math.random() * 0x100000000), 0, 4)
@@ -262,7 +259,6 @@ export class Onvif extends EventEmitter {
 
     const dateTime = systemDateAndTime.UTCDateTime || systemDateAndTime.localDateTime
 
-    // eslint-disable-next-line @typescript-eslint/init-declarations
     let time: Date
     if (!dateTime) {
       // Fallback to current time if dateTime is undefined
@@ -282,7 +278,6 @@ export class Onvif extends EventEmitter {
         throw new Error('Invalid date or time structure')
       }
       time = new Date(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         Date.UTC(dt.date.year, dt.date.month - 1, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second)
       )
     }
@@ -304,9 +299,11 @@ export class Onvif extends EventEmitter {
   }
 
   /**
-   * Parse url with an eye on `preserveAddress` property
+   * Parses a URL, potentially modifying it based on the `preserveAddress` setting.
    *
-   * @param address
+   * @param address - The URL to parse
+   * @returns Parsed URL object, potentially modified if `preserveAddress` is true
+   * @throws {Error} If the input is not a valid URL
    */
   public parseUrl(address: string): URL {
     const parsedAddress = new URL(address)
@@ -355,14 +352,13 @@ export class Onvif extends EventEmitter {
         })
         return this.setupSystemDateAndTime(data)
       }
-      // @TODO: fix later
-      throw error as Error
+      throw error
     }
   }
   /**
    * Set the device system date and time
    *
-   * @param options
+   * @param options - Options for setting the date and time
    */
   async setSystemDateAndTime(options: SetSystemDateAndTimeOptions): Promise<Date> {
     if (!['Manual', 'NTP'].includes(options.dateTimeType)) {

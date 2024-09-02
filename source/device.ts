@@ -1,4 +1,3 @@
-import url from 'node:url'
 import type {
   DeviceServiceCapabilities,
   GetCapabilities,
@@ -66,9 +65,10 @@ export class Device {
   }
 
   /**
-   * Returns information about services of the device.
+   * Retrieves information about device services.
    *
-   * @param root0
+   * @param options - Request options
+   * @param [options.includeCapability] - Include capability information
    */
   async getServices({ includeCapability }: GetServices = { includeCapability: true }): Promise<GetServicesResponse> {
     const [data] = await this.onvif.request({
@@ -95,9 +95,9 @@ export class Device {
         if (!service.namespace || !service.XAddr) {
           return
         }
-        const parsedNamespace = url.parse(service.namespace)
-        if (parsedNamespace.hostname === 'www.onvif.org' && parsedNamespace.path) {
-          const namespaceSplitted = parsedNamespace.path.substring(1).split('/') // remove leading Slash, then split
+        const parsedNamespace = new URL(service.namespace)
+        if (parsedNamespace.hostname === 'www.onvif.org' && parsedNamespace.pathname) {
+          const namespaceSplitted = parsedNamespace.pathname.substring(1).split('/') // remove leading Slash, then split
           if (namespaceSplitted[1] === 'media' && namespaceSplitted[0] === 'ver20') {
             // special case for Media and Media2 where cameras supporting Profile S and Profile T (2020/2021 models) have two media services
             this.media2Support = true
@@ -114,10 +114,18 @@ export class Device {
   }
 
   /**
-   * This method has been replaced by the more generic {@link Device.getServices | GetServices} method.
-   * For capabilities of individual services refer to the GetServiceCapabilities methods.
+   * Retrieves device capabilities.
    *
-   * @param options
+   * This method also updates the onvif.capabilities and onvif.uri properties of the instance.
+   * It includes a workaround for Profile G NVRs that may not properly report recording capabilities.
+   *
+   * @deprecated This method has been replaced by the more generic {@link Device.getServices} method.
+   *             For capabilities of individual services, refer to the GetServiceCapabilities methods.
+   *
+   * @param [options] - Options for the capabilities request
+   * @param [options.category] - Categories of capabilities to retrieve
+   * @returns Object containing device capabilities
+   * @throws {Error} On request failure, invalid response structure, or other errors
    */
   async getCapabilities(options?: Partial<GetCapabilities>): Promise<GetCapabilitiesResponse> {
     const category = options?.category ?? ['All']
@@ -141,10 +149,9 @@ export class Device {
     type ServiceName = (typeof serviceNames)[number]
 
     serviceNames.forEach((name) => {
-      // @ts-expect-error goddammit
+      // @ts-expect-error TODO fix later
       const capability = this.onvif.capabilities[name.toLowerCase() as Lowercase<ServiceName>]
       if (capability && 'XAddr' in capability && typeof capability.XAddr === 'string') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this.onvif.uri[name] = this.onvif.parseUrl(capability.XAddr)
       }
     })
@@ -251,13 +258,13 @@ export class Device {
    * This operation reboots the device
    */
   async systemReboot(): Promise<string> {
-    return await this.onvif
-      .request({
-        service: 'device', // or 'deviceIO' ?
-        body: '<SystemReboot xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
-      })
-      // @ts-expect-error TODO: improve later
-      .then(([data]) => data.systemRebootResponse.message)
+    const [data] = await this.onvif.request({
+      service: 'device', // or 'deviceIO' ?
+      body: '<SystemReboot xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
+    })
+
+    // @ts-expect-error TODO: improve later
+    return data.systemRebootResponse.message
   }
 
   /**
@@ -287,6 +294,7 @@ export class Device {
    */
   async setNTP(options: SetNTP): Promise<NTPInformation> {
     const ntpManualEntries =
+      /* eslint-disable @stylistic/indent */
       options.NTPManual && Array.isArray(options.NTPManual)
         ? options.NTPManual.map((NTPManual) => {
             if (!NTPManual.type) return ''
@@ -301,6 +309,7 @@ export class Device {
         `
           }).join('')
         : ''
+    /* eslint-enable @stylistic/indent */
 
     const body = `
     <SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">

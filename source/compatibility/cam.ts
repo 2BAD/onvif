@@ -8,7 +8,7 @@ import type { SetNTP } from '../interfaces/deviceManagement.ts'
 import type { GetOSDs } from '../interfaces/media.2.ts'
 import type { NetworkHostType } from '../interfaces/onvif.ts'
 import type { GetSnapshotUriOptions, GetStreamUriOptions } from '../media.ts'
-import { Onvif, type OnvifRequestOptions, type SetSystemDateAndTimeOptions } from '../onvif.ts'
+import { Onvif, type OnvifOptions, type OnvifRequestOptions, type SetSystemDateAndTimeOptions } from '../onvif.ts'
 import type {
   AbsoluteMoveOptions,
   ContinuousMoveOptions,
@@ -36,7 +36,7 @@ type CompatibilityContinuousMoveOptions = {
 
 export class Cam extends EventEmitter {
   private readonly onvif: Onvif
-  constructor(options: any, callback: Callback) {
+  constructor(options: OnvifOptions, callback: Callback) {
     super()
     this.onvif = new Onvif({
       ...options,
@@ -421,10 +421,13 @@ export class Cam extends EventEmitter {
       ...compatibilityOptions,
       position: {
         panTilt: {
-          x: compatibilityOptions.x!,
-          y: compatibilityOptions.y!
+          // @ts-expect-error TODO has to be fixed
+          x: compatibilityOptions.x,
+          // @ts-expect-error TODO has to be fixed
+          y: compatibilityOptions.y
         },
-        zoom: { x: compatibilityOptions.zoom! }
+        // @ts-expect-error TODO has to be fixed
+        zoom: { x: compatibilityOptions.zoom }
       }
     }
     if (callback) {
@@ -444,10 +447,13 @@ export class Cam extends EventEmitter {
       ...compatibilityOptions,
       translation: {
         panTilt: {
-          x: compatibilityOptions.x!,
-          y: compatibilityOptions.y!
+          // @ts-expect-error TODO has to be fixed
+          x: compatibilityOptions.x,
+          // @ts-expect-error TODO has to be fixed
+          y: compatibilityOptions.y
         },
-        zoom: { x: compatibilityOptions.zoom! }
+        // @ts-expect-error TODO has to be fixed
+        zoom: { x: compatibilityOptions.zoom }
       }
     }
     if (callback) {

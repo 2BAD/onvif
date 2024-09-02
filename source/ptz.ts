@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { Duration, MoveStatus, ReferenceToken, Vector1D, Vector2D } from './interfaces/common.ts'
 import type { PTZConfiguration, PTZSpeed, Space1DDescription, Space2DDescription } from './interfaces/onvif.ts'
 import type { GetConfigurationsResponse } from './interfaces/ptz.2.ts'

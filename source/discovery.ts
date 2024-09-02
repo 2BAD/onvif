@@ -97,7 +97,6 @@ export class DiscoverySingleton extends EventEmitter {
     return await new Promise((resolve, reject) => {
       const cams = new Map<string, Onvif | Record<string, unknown>>()
       const errors: Error[] = []
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       const messageID = `urn:uuid:${options.messageId || guid()}`
       const request = Buffer.from(`
         <Envelope xmlns="http://www.w3.org/2003/05/soap-envelope" xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
@@ -142,7 +141,6 @@ export class DiscoverySingleton extends EventEmitter {
             return
           }
 
-          // eslint-disable-next-line @typescript-eslint/init-declarations
           let cam: Onvif | Record<string, unknown>
 
           if (options.resolve !== false) {
@@ -191,12 +189,10 @@ export class DiscoverySingleton extends EventEmitter {
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       socket.on('message', listener)
       socket.send(request, 0, request.length, 3702, '239.255.255.250')
 
       setTimeout(() => {
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         socket.removeListener('message', listener)
         socket.close()
         if (errors.length === 0) {
