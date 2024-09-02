@@ -2,7 +2,9 @@
   "name": "@2bad/onvif",
   "version": "1.0.0",
   "description": "",
-  "keywords": ["onvif"],
+  "keywords": [
+    "onvif"
+  ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {
     "url": "https://github.com/2BAD/onvif/issues"
@@ -23,7 +25,9 @@
   "type": "module",
   "exports": "./build/index.js",
   "typings": "./build/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "scripts": {
     "prebuild": "rimraf build",
     "build": "run-p build:*",
@@ -44,8 +48,11 @@
     "test:integration": "vitest run integration --coverage",
     "test:unit": "vitest run unit --coverage"
   },
+  "dependencies": {
+    "xml2js": "0.6.2"
+  },
   "devDependencies": {
-    "@2bad/eslint-config": "1.0.0-beta.2",
+    "@2bad/axiom": "1.0.0-beta.3",
     "@2bad/tsconfig": "3.0.1",
     "@2bad/tsfix": "0.1.0",
     "@biomejs/biome": "1.8.3",
@@ -68,8 +75,5 @@
   "volta": {
     "node": "22.7.0",
     "npm": "10.8.3"
-  },
-  "dependencies": {
-    "xml2js": "0.6.2"
   }
 }

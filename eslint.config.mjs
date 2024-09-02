@@ -1,4 +1,3 @@
-import * as tb from '@2bad/eslint-config'
-import * as plugins from '@2bad/eslint-config/plugins'
+import { axiom } from '@2bad/axiom'
 
-export default [tb.setup(import.meta.dirname), tb.configs.strict, ...Object.values(plugins)].flat()
+export default axiom(import.meta.dirname)
