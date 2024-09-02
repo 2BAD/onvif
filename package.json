@@ -50,8 +50,8 @@
     "@2bad/tsfix": "0.1.0",
     "@biomejs/biome": "1.8.3",
     "@swc/cli": "0.4.0",
-    "@swc/core": "1.7.18",
-    "@types/node": "20.16.1",
+    "@swc/core": "1.7.22",
+    "@types/node": "20.16.3",
     "@types/xml2js": "0.4.14",
     "@vitest/coverage-v8": "2.0.5",
     "npm-run-all2": "6.2.2",
@@ -61,13 +61,13 @@
     "vite-tsconfig-paths": "5.0.1",
     "vitest": "2.0.5"
   },
-  "packageManager": "npm@10.8.2",
+  "packageManager": "npm@10.8.3",
   "engines": {
     "node": ">=20"
   },
   "volta": {
     "node": "22.7.0",
-    "npm": "10.8.2"
+    "npm": "10.8.3"
   },
   "dependencies": {
     "xml2js": "0.6.2"
