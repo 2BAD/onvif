@@ -252,7 +252,7 @@ export class Onvif extends EventEmitter {
   }
 
   private setupSystemDateAndTime(data: GetSystemDateAndTimeResponse): Date {
-    const systemDateAndTime = data?.getSystemDateAndTimeResponse?.systemDateAndTime
+    const systemDateAndTime = data?.systemDateAndTime
     if (!systemDateAndTime) {
       throw new Error('Invalid data structure: systemDateAndTime not found')
     }
@@ -332,7 +332,7 @@ export class Onvif extends EventEmitter {
     // authenticated getSystemDateAndTime. So for these devices we need to do an authenticated getSystemDateAndTime.
     // As 'timeShift' is not set, the local clock MUST be set to the correct time AND the NVT/Camera MUST be set
     // to the correct time if the camera implements Replay Attack Protection (e.g. Axis)
-    const [data, xml] = await this.request<GetSystemDateAndTimeResponse>({
+    const [data, xml] = await this.request<{ getSystemDateAndTimeResponse: GetSystemDateAndTimeResponse }>({
       // Try the Unauthenticated Request first. Do not use this._envelopeHeader() as we don't have timeShift yet.
       raw: true,
       body:
@@ -343,14 +343,14 @@ export class Onvif extends EventEmitter {
         '</s:Envelope>'
     })
     try {
-      return this.setupSystemDateAndTime(data)
+      return this.setupSystemDateAndTime(data.getSystemDateAndTimeResponse)
     } catch (error) {
       if (xml?.toLowerCase().includes('sender not authorized')) {
         // Try again with a Username and Password
-        const [data] = await this.request<GetSystemDateAndTimeResponse>({
+        const [data] = await this.request<{ getSystemDateAndTimeResponse: GetSystemDateAndTimeResponse }>({
           body: '<GetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl"/>}'
         })
-        return this.setupSystemDateAndTime(data)
+        return this.setupSystemDateAndTime(data.getSystemDateAndTimeResponse)
       }
       throw error
     }

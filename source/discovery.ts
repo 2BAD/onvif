@@ -128,6 +128,7 @@ export class DiscoverySingleton extends EventEmitter {
       const listener = async (msg: Buffer, rinfo: RemoteInfo): Promise<void> => {
         try {
           const [data, xml] = await parseSOAPString(msg.toString())
+          // @ts-expect-error TODO fix later
           if (!data['probeMatches']) {
             throw new Error(`Wrong SOAP message from ${rinfo.address}:${rinfo.port}\n${xml}`)
           }
