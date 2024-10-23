@@ -85,6 +85,7 @@ export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
   // Filter out XML namespaces
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 
+  // eslint-disable-next-line import-x/no-named-as-default-member
   const result = await xml2js.parseStringPromise(xml, {
     explicitArray: false,
     tagNameProcessors: [
