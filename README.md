@@ -1,6 +1,10 @@
 # @2bad/onvif
 
 [![NPM version](https://img.shields.io/npm/v/@2bad/onvif.svg)](https://www.npmjs.com/package/@2bad/onvif)
+[![License](https://img.shields.io/npm/l/@2bad/onvif)](https://opensource.org/license/MIT)
+[![GitHub Build Status](https://img.shields.io/github/actions/workflow/status/2BAD/onvif/build.yml)](https://github.com/2BAD/onvif/actions/workflows/build.yml)
+[![Code coverage](https://img.shields.io/codecov/c/github/2BAD/onvif)](https://codecov.io/gh/2BAD/onvif)
+[![Written in TypeScript](https://img.shields.io/github/languages/top/2BAD/onvif)](https://www.typescriptlang.org/)
 
 A TypeScript implementation of the ONVIF Client protocol supporting Profile S (Live Streaming) and Profile G (Replay). This is a stable, typed fork of the original [onvif](https://github.com/agsh/onvif) package.
 
