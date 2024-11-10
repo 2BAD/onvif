@@ -39,8 +39,8 @@ npm install @2bad/onvif
 ```typescript
 import { Onvif } from '@2bad/onvif';
 
-// Connect to a camera
-const cam = new Onvif({
+// Connect to a device
+const device = new Onvif({
   hostname: '192.168.1.123',
   username: 'admin',
   password: 'password',

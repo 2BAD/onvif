@@ -259,28 +259,30 @@ export class Onvif extends EventEmitter {
 
     const dateTime = systemDateAndTime.UTCDateTime || systemDateAndTime.localDateTime
 
-    let time: Date
     if (!dateTime) {
       // Fallback to current time if dateTime is undefined
-      time = new Date()
-    } else {
-      const dt = linerase(dateTime) as DateTime
-      if (
-        !dt.date ||
-        !dt.time ||
-        !dt.date.year ||
-        !dt.date.month ||
-        !dt.date.day ||
-        !dt.time.hour ||
-        !dt.time.minute ||
-        !dt.time.second
-      ) {
-        throw new Error('Invalid date or time structure')
+      const time = new Date()
+      if (!this.timeShift) {
+        this.timeShift = time.getTime() - process.uptime() * 1000
       }
-      time = new Date(
-        Date.UTC(dt.date.year, dt.date.month - 1, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second)
-      )
+      return time
     }
+
+    const dt = linerase(dateTime) as DateTime
+    if (!dt.date?.year || !dt.date?.month || !dt.date?.day) {
+      throw new Error('Invalid date structure: year, month, and day are required')
+    }
+
+    const time = new Date(
+      Date.UTC(
+        dt.date.year,
+        dt.date.month - 1,
+        dt.date.day,
+        dt.time?.hour ?? 0,
+        dt.time?.minute ?? 0,
+        dt.time?.second ?? 0
+      )
+    )
 
     if (!this.timeShift) {
       this.timeShift = time.getTime() - process.uptime() * 1000
