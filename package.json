@@ -52,28 +52,28 @@
     "xml2js": "0.6.2"
   },
   "devDependencies": {
-    "@2bad/axiom": "1.0.0-beta.9",
+    "@2bad/axiom": "1.0.0-beta.15",
     "@2bad/tsconfig": "3.0.1",
     "@2bad/tsfix": "0.1.0",
     "@biomejs/biome": "1.9.4",
-    "@swc/cli": "0.5.2",
-    "@swc/core": "1.10.4",
-    "@types/node": "22.10.2",
+    "@swc/cli": "0.7.3",
+    "@swc/core": "1.11.22",
+    "@types/node": "22.15.2",
     "@types/xml2js": "0.4.14",
-    "@vitest/coverage-v8": "2.1.8",
+    "@vitest/coverage-v8": "2.1.9",
     "npm-run-all2": "7.0.2",
     "rimraf": "6.0.1",
-    "tsc-alias": "1.8.10",
-    "typescript": "5.7.2",
+    "tsc-alias": "1.8.15",
+    "typescript": "5.8.3",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "2.1.8"
+    "vitest": "2.1.9"
   },
   "packageManager": "npm@10.9.2",
   "engines": {
     "node": ">=22"
   },
   "volta": {
-    "node": "22.12.0",
+    "node": "22.15.0",
     "npm": "10.9.2"
   }
 }
