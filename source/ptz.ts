@@ -399,10 +399,10 @@ export class PTZ {
     this.#configurations = {}
     // TODO check if this is correct
     if (Array.isArray(data.PTZConfiguration)) {
-      data.PTZConfiguration.forEach((configuration) => {
+      for (const configuration of data.PTZConfiguration) {
         const result = linerase(configuration) as PTZConfiguration
         this.#configurations[result.token] = result
-      })
+      }
     }
     return this.#configurations
   }
@@ -450,9 +450,9 @@ export class PTZ {
     // @ts-expect-error TODO this has to be fixed and type checked
     const result = linerase(data.getPresetsResponse.preset) as PTZPreset[] | PTZPreset
     if (Array.isArray(result)) {
-      result.forEach((preset: PTZPreset) => {
+      for (const preset of result) {
         this.#presets[preset.token] = preset
-      })
+      }
     } else if (result) {
       this.#presets[result.token] = result
     }

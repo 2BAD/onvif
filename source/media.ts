@@ -144,13 +144,11 @@ export class Media {
       .getVideoSourcesResponse as GetVideoSourcesResponse
 
     if (Array.isArray(videoSourcesResponse.videoSources)) {
-      videoSourcesResponse.videoSources.forEach((videoSource: VideoSource) => {
+      for (const videoSource of videoSourcesResponse.videoSources) {
         this.videoSources.push(videoSource)
-      })
-    } else {
-      if (videoSourcesResponse.videoSources) {
-        this.videoSources.push(videoSourcesResponse.videoSources)
       }
+    } else if (videoSourcesResponse.videoSources) {
+      this.videoSources.push(videoSourcesResponse.videoSources)
     }
 
     return videoSourcesResponse
@@ -336,13 +334,13 @@ export class Media {
 
   async getOSDs({ configurationToken, OSDToken }: GetOSDs = {}): Promise<GetOSDsResponse> {
     const mediaService = this.onvif.device.media2Support ? 'media2' : 'media'
-    const mediaNS = this.onvif.device.media2Support
+    const mediaNs = this.onvif.device.media2Support
       ? 'http://www.onvif.org/ver20/media/wsdl'
       : 'http://www.onvif.org/ver10/media/wsdl'
 
     const [data] = await this.onvif.request({
       service: mediaService,
-      body: `<GetOSDs xmlns="${mediaNS}" >${
+      body: `<GetOSDs xmlns="${mediaNs}" >${
         configurationToken ? `<ConfigurationToken>${configurationToken}</ConfigurationToken>` : ''
       }${OSDToken ? `<OSDToken>${configurationToken}</OSDToken>` : ''}</GetOSDs>`
     })
@@ -353,14 +351,14 @@ export class Media {
 
   async getOSDOptions({ configurationToken }: GetOSDOptions = {}): Promise<GetOSDOptionsResponse> {
     const mediaService = this.onvif.device.media2Support ? 'media2' : 'media'
-    const mediaNS = this.onvif.device.media2Support
+    const mediaNs = this.onvif.device.media2Support
       ? 'http://www.onvif.org/ver20/media/wsdl'
       : 'http://www.onvif.org/ver10/media/wsdl'
 
     const [data] = await this.onvif.request({
       service: mediaService,
       body: `
-        <GetOSDOptions xmlns="${mediaNS}" >
+        <GetOSDOptions xmlns="${mediaNs}" >
           <ConfigurationToken>${configurationToken ?? this.onvif.activeSource?.videoSourceConfigurationToken}</ConfigurationToken>
         </GetOSDOptions>`
     })

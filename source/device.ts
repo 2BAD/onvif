@@ -85,7 +85,7 @@ export class Device {
     // two media entries in the ServicesResponse, one for Media (ver10/media) and one for Media2 (ver20/media)
     // This is so that existing VMS software can still access the video via the original ONVIF Media API
     // fill Cam#uri property
-    this.#services.forEach((service) => {
+    for (const service of this.services) {
       // Look for services with namespaces and XAddr values
       if (
         Object.prototype.hasOwnProperty.call(service, 'namespace') &&
@@ -93,7 +93,7 @@ export class Device {
       ) {
         // Only parse ONVIF namespaces. Axis cameras return Axis namespaces in GetServices
         if (!service.namespace || !service.XAddr) {
-          return
+          continue
         }
         const parsedNamespace = new URL(service.namespace)
         if (parsedNamespace.hostname === 'www.onvif.org' && parsedNamespace.pathname) {
@@ -109,7 +109,7 @@ export class Device {
           this.onvif.uri[namespaceSplitted[1] as keyof OnvifServices] = this.onvif.parseUrl(service.XAddr)
         }
       }
-    })
+    }
     return result
   }
 
@@ -148,20 +148,20 @@ export class Device {
     const serviceNames = ['PTZ', 'media', 'imaging', 'events', 'device', 'analytics'] as const
     type ServiceName = (typeof serviceNames)[number]
 
-    serviceNames.forEach((name) => {
+    for (const name of serviceNames) {
       // @ts-expect-error TODO fix later
       const capability = this.onvif.capabilities[name.toLowerCase() as Lowercase<ServiceName>]
       if (capability && 'XAddr' in capability && typeof capability.XAddr === 'string') {
         this.onvif.uri[name] = this.onvif.parseUrl(capability.XAddr)
       }
-    })
+    }
 
     if (this.onvif.capabilities.extension) {
-      Object.entries(this.onvif.capabilities.extension).forEach(([ext, value]) => {
+      for (const [ext, value] of Object.entries(this.onvif.capabilities.extension)) {
         if (value && typeof value === 'object' && 'XAddr' in value && typeof value.XAddr === 'string') {
           this.onvif.uri[ext as keyof CapabilitiesExtension] = new URL(value.XAddr)
         }
-      })
+      }
 
       // HACK for a Profile G NVR that has 'replay' but did not have 'recording' in GetCapabilities
       if (this.onvif.uri.replay && !this.onvif.uri.recording) {
@@ -182,7 +182,7 @@ export class Device {
       body: '<GetDeviceInformation xmlns="http://www.onvif.org/ver10/device/wsdl"/>'
     })
     // @ts-expect-error TODO improve later
-    this.onvif.deviceInformation = linerase(data).getDeviceInformationResponse as getDeviceInformationResponse
+    this.onvif.deviceInformation = linerase(data).getDeviceInformationResponse
     if (!this.onvif.deviceInformation) {
       throw new Error('Invalid response structure')
     }
@@ -296,15 +296,17 @@ export class Device {
     const ntpManualEntries =
       /* eslint-disable @stylistic/indent */
       options.NTPManual && Array.isArray(options.NTPManual)
-        ? options.NTPManual.map((NTPManual) => {
-            if (!NTPManual.type) return ''
+        ? options.NTPManual.map((ntpManual) => {
+            if (!ntpManual.type) {
+              return ''
+            }
             return `
           <NTPManual>
-            <Type xmlns="http://www.onvif.org/ver10/schema">${NTPManual.type}</Type>
-            ${NTPManual.IPv4Address ? `<IPv4Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv4Address}</IPv4Address>` : ''}
-            ${NTPManual.IPv6Address ? `<IPv6Address xmlns="http://www.onvif.org/ver10/schema">${NTPManual.IPv6Address}</IPv6Address>` : ''}
-            ${NTPManual.DNSname ? `<DNSname>${NTPManual.DNSname}</DNSname>` : ''}
-            ${NTPManual.extension ? `<Extension>${NTPManual.extension ? JSON.stringify(NTPManual.extension) : ''}</Extension>` : ''}
+            <Type xmlns="http://www.onvif.org/ver10/schema">${ntpManual.type}</Type>
+            ${ntpManual.IPv4Address ? `<IPv4Address xmlns="http://www.onvif.org/ver10/schema">${ntpManual.IPv4Address}</IPv4Address>` : ''}
+            ${ntpManual.IPv6Address ? `<IPv6Address xmlns="http://www.onvif.org/ver10/schema">${ntpManual.IPv6Address}</IPv6Address>` : ''}
+            ${ntpManual.DNSname ? `<DNSname>${ntpManual.DNSname}</DNSname>` : ''}
+            ${ntpManual.extension ? `<Extension>${ntpManual.extension ? JSON.stringify(ntpManual.extension) : ''}</Extension>` : ''}
           </NTPManual>
         `
           }).join('')
@@ -360,10 +362,10 @@ export class Device {
     const networkInterfaces = linerase(data.getNetworkInterfacesResponse.networkInterfaces) as NetworkInterface
     // networkInterfaces is an array of network interfaces, but linerase remove the array if there is only one element inside
     // so we convert it back to an array
-    if (!Array.isArray(networkInterfaces)) {
-      this.#networkInterfaces = [networkInterfaces]
-    } else {
+    if (Array.isArray(networkInterfaces)) {
       this.#networkInterfaces = networkInterfaces
+    } else {
+      this.#networkInterfaces = [networkInterfaces]
     }
     return this.#networkInterfaces
   }

@@ -20,8 +20,10 @@ export type RequestOptions = {
 
 export class HttpClient {
   private readonly baseUrl: string
+  private readonly options: HttpClientOptions
 
-  constructor(private readonly options: HttpClientOptions) {
+  constructor(options: HttpClientOptions) {
+    this.options = options
     const { hostname, port, useSecure } = options
     this.baseUrl = `${useSecure ? 'https' : 'http'}://${hostname}:${port}`
   }

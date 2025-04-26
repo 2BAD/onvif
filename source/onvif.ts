@@ -428,13 +428,17 @@ export class Onvif extends EventEmitter {
         )
 
         if (appropriateProfiles.length === 0 || appropriateProfiles[0] === undefined) {
-          if (idx === 0) throw new Error('Unrecognized configuration')
+          if (idx === 0) {
+            throw new Error('Unrecognized configuration')
+          }
           return null
         }
 
         const defaultProfile = appropriateProfiles[0]
 
-        if (idx === 0) this.defaultProfile = defaultProfile
+        if (idx === 0) {
+          this.defaultProfile = defaultProfile
+        }
         this.defaultProfiles[idx] = defaultProfile
 
         const activeSource: ActiveSource = {
@@ -460,7 +464,9 @@ export class Onvif extends EventEmitter {
           activeSource.bitrate = encoderConfig.rateControl?.bitrateLimit
         }
 
-        if (idx === 0) this.activeSource = activeSource
+        if (idx === 0) {
+          this.activeSource = activeSource
+        }
 
         const ptzConfig = defaultProfile.PTZConfiguration
         if (ptzConfig) {
@@ -483,7 +489,7 @@ export class Onvif extends EventEmitter {
     // Try to get services (new approach). If not, get capabilities
     try {
       await this.device.getServices()
-    } catch (error) {
+    } catch (_error) {
       await this.device.getCapabilities()
     }
     await Promise.all([this.media.getProfiles(), this.media.getVideoSources()])

@@ -1,7 +1,7 @@
 import xml2js from 'xml2js'
 
-const numberRE = /^-?([1-9]\d*|0)(\.\d*)?$/
-const dateRE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?Z$/
+const numberRe = /^-?([1-9]\d*|0)(\.\d*)?$/
+const dateRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?Z$/
 const prefixMatch = /(?!xmlns)^.*:/
 
 type LineRaseOptions = {
@@ -26,14 +26,14 @@ export function linerase(xml: unknown, options: LineRaseOptions = { array: [] })
 
   if (typeof xml === 'object' && xml !== null) {
     const obj: Record<string, unknown> = {}
-    Object.entries(xml).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(xml)) {
       if (key === '$') {
         // for xml attributes
         Object.assign(obj, linerase(value, options))
       } else {
         obj[key] = linerase(value, { ...options, name: key })
       }
-    })
+    }
     return obj
   }
 
@@ -44,10 +44,10 @@ export function linerase(xml: unknown, options: LineRaseOptions = { array: [] })
     return false
   }
   if (typeof xml === 'string') {
-    if (numberRE.test(xml)) {
+    if (numberRe.test(xml)) {
       return Number.parseFloat(xml)
     }
-    if (dateRE.test(xml)) {
+    if (dateRe.test(xml)) {
       return new Date(xml)
     }
   }
@@ -113,13 +113,13 @@ export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
 
     try {
       reason = fault.reason.text._ || JSON.stringify(linerase(fault.code))
-    } catch (e) {
+    } catch (_e) {
       // Ignore error if reason extraction fails
     }
 
     try {
       ;[detail] = fault.detail.text
-    } catch (e) {
+    } catch (_e) {
       // Ignore error if detail extraction fails
     }
 

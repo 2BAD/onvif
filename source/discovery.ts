@@ -179,11 +179,11 @@ export class DiscoverySingleton extends EventEmitter {
         const interfaces = os.networkInterfaces()
         const deviceInterfaces = interfaces[options.device]
         if (deviceInterfaces) {
-          deviceInterfaces.forEach((iface) => {
+          for (const iface of deviceInterfaces) {
             if (iface.family === 'IPv4') {
               socket.bind(options.listeningPort, iface.address)
             }
-          })
+          }
         } else {
           reject(new Error(`Device ${options.device} not found`))
           return
