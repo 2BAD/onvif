@@ -50,13 +50,13 @@
     "xml2js": "0.6.2"
   },
   "devDependencies": {
-    "@2bad/axiom": "1.0.0-beta.15",
+    "@2bad/axiom": "1.0.0",
     "@2bad/tsconfig": "3.0.1",
     "@2bad/tsfix": "1.1.1",
     "@biomejs/biome": "1.9.4",
     "@swc/cli": "0.7.7",
-    "@swc/core": "1.12.7",
-    "@types/node": "22.15.34",
+    "@swc/core": "1.12.9",
+    "@types/node": "22.16.0",
     "@types/xml2js": "0.4.14",
     "@vitest/coverage-v8": "3.2.4",
     "npm-run-all2": "7.0.2",
