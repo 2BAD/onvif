@@ -50,17 +50,17 @@
     "xml2js": "0.6.2"
   },
   "devDependencies": {
-    "@2bad/axiom": "1.0.1",
-    "@2bad/tsconfig": "3.0.1",
-    "@2bad/tsfix": "1.1.1",
+    "@2bad/axiom": "1.0.3",
+    "@2bad/tsconfig": "3.0.2",
+    "@2bad/tsfix": "1.1.2",
     "@biomejs/biome": "1.9.4",
     "@swc/cli": "0.7.8",
-    "@swc/core": "1.13.5",
-    "@types/node": "22.18.11",
+    "@swc/core": "1.14.0",
+    "@types/node": "22.19.0",
     "@types/xml2js": "0.4.14",
     "@vitest/coverage-v8": "3.2.4",
     "npm-run-all2": "7.0.2",
-    "rimraf": "6.0.1",
+    "rimraf": "6.1.0",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.4"
@@ -70,7 +70,7 @@
     "node": ">=22"
   },
   "volta": {
-    "node": "22.20.0",
+    "node": "22.21.1",
     "npm": "10.9.4"
   }
 }
