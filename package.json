@@ -54,7 +54,7 @@
     "@2bad/tsconfig": "3.0.2",
     "@2bad/tsfix": "1.1.2",
     "@biomejs/biome": "1.9.4",
-    "@swc/cli": "0.8.0",
+    "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/node": "22.19.15",
     "@types/xml2js": "0.4.14",
@@ -71,6 +71,6 @@
   },
   "volta": {
     "node": "22.22.2",
-    "npm": "10.9.7"
+    "npm": "10.9.8"
   }
 }
