@@ -145,7 +145,9 @@ export class DiscoverySingleton extends EventEmitter {
           let cam: Onvif | Record<string, unknown>
 
           if (options.resolve !== false) {
-            const camUris = parsedData?.probeMatches?.probeMatch?.XAddrs?.split(' ').map((uri: string) => new URL(uri))
+            const camUris = parsedData?.probeMatches?.probeMatch?.XAddrs?.split(' ')
+              .filter((uri: string) => uri.length > 0)
+              .map((uri: string) => new URL(uri))
 
             if (!camUris?.length) {
               throw new Error(`No XAddrs found for ${rinfo.address}`)
@@ -158,7 +160,7 @@ export class DiscoverySingleton extends EventEmitter {
 
             cam = new Onvif({
               hostname: camUri.hostname,
-              port: Number(camUri.port),
+              port: Number(camUri.port) || (camUri.protocol === 'https:' ? 443 : 80),
               path: camUri.pathname,
               urn: camAddr
             })
