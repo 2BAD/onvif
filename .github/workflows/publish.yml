@@ -22,7 +22,6 @@ jobs:
           node-version-file: package.json
           registry-url: https://registry.npmjs.org
 
+      - run: npm install -g npm@11
       - run: npm ci
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --access public
