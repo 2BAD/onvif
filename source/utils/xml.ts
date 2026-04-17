@@ -1,4 +1,4 @@
-import xml2js from 'xml2js'
+import { XMLParser } from 'fast-xml-parser'
 
 const numberRe = /^-?([1-9]\d*|0)(\.\d*)?$/
 const dateRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?Z$/
@@ -85,20 +85,22 @@ export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
   // Filter out XML namespaces
   const xml = rawXml.replace(/xmlns([^=]*?)=(".*?")/g, '')
 
-  // eslint-disable-next-line import-x/no-named-as-default-member
-  const result = await xml2js.parseStringPromise(xml, {
-    explicitArray: false,
-    tagNameProcessors: [
-      (tag: string) => {
-        const str = tag.replace(prefixMatch, '')
-        const secondLetter = str.charAt(1)
-        if (secondLetter && secondLetter.toUpperCase() !== secondLetter) {
-          return str.charAt(0).toLowerCase() + str.slice(1)
-        }
-        return str
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '',
+    attributesGroupName: '$',
+    textNodeName: '_',
+    transformTagName: (tag: string) => {
+      const str = tag.replace(prefixMatch, '')
+      const secondLetter = str.charAt(1)
+      if (secondLetter && secondLetter.toUpperCase() !== secondLetter) {
+        return str.charAt(0).toLowerCase() + str.slice(1)
       }
-    ]
+      return str
+    }
   })
+
+  const result = parser.parse(xml)
 
   if (!result?.envelope?.body) {
     throw new Error('Invalid ONVIF SOAP response')
@@ -112,7 +114,8 @@ export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
     let detail = ''
 
     try {
-      reason = fault.reason.text._ || JSON.stringify(linerase(fault.code))
+      const text = fault.reason.text
+      reason = (typeof text === 'object' ? text._ : text) || JSON.stringify(linerase(fault.code))
     } catch (_e) {
       // Ignore error if reason extraction fails
     }

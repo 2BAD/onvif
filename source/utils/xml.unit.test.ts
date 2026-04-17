@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
-import xml2js from 'xml2js'
+import { describe, expect, it } from 'vitest'
 import { guid, linerase, parseSOAPString } from './xml.ts'
 
 describe('linerase', () => {
@@ -67,9 +66,6 @@ describe('parseSOAPString', () => {
   it('should parse a valid SOAP response', async () => {
     expect.assertions(2)
     const mockXml = '<envelope><body><result>Success</result></body></envelope>'
-    const mockParsedResult = { envelope: { body: { result: 'Success' } } }
-
-    vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue(mockParsedResult)
 
     const [result, xml] = await parseSOAPString(mockXml)
     expect(result).toStrictEqual({ result: 'Success' })
@@ -79,7 +75,6 @@ describe('parseSOAPString', () => {
   it('should throw an error for invalid SOAP response', async () => {
     expect.assertions(1)
     const mockXml = '<invalid>XML</invalid>'
-    vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue({})
 
     await expect(parseSOAPString(mockXml)).rejects.toThrow('Invalid ONVIF SOAP response')
   })
@@ -87,17 +82,6 @@ describe('parseSOAPString', () => {
   it('should throw an error for SOAP fault', async () => {
     expect.assertions(1)
     const mockXml = '<envelope><body><fault><reason><text>Error occurred</text></reason></fault></body></envelope>'
-    const mockParsedResult = {
-      envelope: {
-        body: {
-          fault: {
-            reason: { text: { _: 'Error occurred' } }
-          }
-        }
-      }
-    }
-
-    vi.spyOn(xml2js, 'parseStringPromise').mockResolvedValue(mockParsedResult)
 
     await expect(parseSOAPString(mockXml)).rejects.toThrow('ONVIF SOAP Fault: Error occurred')
   })
