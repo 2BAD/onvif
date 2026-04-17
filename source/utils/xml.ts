@@ -90,6 +90,11 @@ export async function parseSOAPString<T>(rawXml: string): Promise<[T, string]> {
     attributeNamePrefix: '',
     attributesGroupName: '$',
     textNodeName: '_',
+    /**
+     * Strip namespace prefix and lowercase first letter.
+     *
+     * @param tag - The XML tag name to transform
+     */
     transformTagName: (tag: string) => {
       const str = tag.replace(prefixMatch, '')
       const secondLetter = str.charAt(1)
