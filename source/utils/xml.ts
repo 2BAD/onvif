@@ -1,7 +1,7 @@
 import { XMLParser } from 'fast-xml-parser'
 
 const numberRe = /^-?([1-9]\d*|0)(\.\d*)?$/
-const dateRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?Z$/
+const dateRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/
 const prefixMatch = /(?!xmlns)^.*:/
 
 type LineRaseOptions = {
