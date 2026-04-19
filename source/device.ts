@@ -294,7 +294,6 @@ export class Device {
    */
   async setNTP(options: SetNTP): Promise<NTPInformation> {
     const ntpManualEntries =
-      /* eslint-disable @stylistic/indent */
       options.NTPManual && Array.isArray(options.NTPManual)
         ? options.NTPManual.map((ntpManual) => {
             if (!ntpManual.type) {
@@ -311,7 +310,6 @@ export class Device {
         `
           }).join('')
         : ''
-    /* eslint-enable @stylistic/indent */
 
     const body = `
     <SetNTP xmlns="http://www.onvif.org/ver10/device/wsdl">
