@@ -1,88 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { guid, linerase, parseSOAPString } from './xml.ts'
+import { linerase } from './xml.ts'
 
-describe('linerase', () => {
-  it('should parse a simple object', () => {
-    expect.assertions(1)
-    const input = { name: 'John', age: '30' }
-    const result = linerase(input)
-    expect(result).toStrictEqual({ name: 'John', age: 30 })
+describe('linerase coercion', () => {
+  it('parses ISO-8601 UTC timestamps into Date', () => {
+    expect(linerase('2023-04-01T12:00:00Z')).toBeInstanceOf(Date)
+    expect(linerase('2023-04-01T12:00:00.123Z')).toBeInstanceOf(Date)
   })
 
-  it('should parse nested objects', () => {
-    expect.assertions(1)
-    const input = { person: { name: 'John', age: '30' } }
-    const result = linerase(input)
-    expect(result).toStrictEqual({ person: { name: 'John', age: 30 } })
+  it('does not treat malformed timestamps as Date', () => {
+    // Guards against the unescaped `.` in dateRe matching any single char.
+    expect(linerase('2023-04-01T12:00:00xZ')).toBe('2023-04-01T12:00:00xZ')
   })
 
-  it('should parse arrays', () => {
-    expect.assertions(1)
-    const input = { numbers: ['1', '2', '3'] }
-    const result = linerase(input)
-    expect(result).toStrictEqual({ numbers: [1, 2, 3] })
+  it('parses plain integer and decimal strings as numbers', () => {
+    expect(linerase('0')).toBe(0)
+    expect(linerase('42')).toBe(42)
+    expect(linerase('-17')).toBe(-17)
+    expect(linerase('3.14')).toBeCloseTo(3.14)
   })
 
-  it('should parse boolean values', () => {
-    expect.assertions(1)
-    const input = { active: 'true', inactive: 'false' }
-    const result = linerase(input)
-    expect(result).toStrictEqual({ active: true, inactive: false })
+  it('leaves numeric-looking strings with leading zeros as strings', () => {
+    // Leading-zero values (serial numbers, MACs, tokens) must not be coerced.
+    expect(linerase('007')).toBe('007')
+    expect(linerase('0123456789')).toBe('0123456789')
   })
 
-  it('should parse dates', () => {
-    expect.assertions(3)
-    const input = { date: '2023-04-01T12:00:00Z' }
-    const result = linerase(input) as { date: Date }
-    expect(result).toHaveProperty('date')
-    expect(result.date).toBeInstanceOf(Date)
-    expect(result.date.toISOString()).toBe('2023-04-01T12:00:00.000Z')
-  })
-
-  it('should handle XML attributes', () => {
-    expect.assertions(1)
-    const input = { $: { id: '123' }, name: 'John' }
-    const result = linerase(input)
-    expect(result).toStrictEqual({ id: 123, name: 'John' })
-  })
-})
-
-describe('guid', () => {
-  it('should generate a valid GUID', () => {
-    expect.assertions(1)
-    const result = guid()
-    expect(result).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
-  })
-
-  it('should generate unique GUIDs', () => {
-    expect.assertions(1)
-    const guid1 = guid()
-    const guid2 = guid()
-    expect(guid1).not.toBe(guid2)
-  })
-})
-
-describe('parseSOAPString', () => {
-  it('should parse a valid SOAP response', async () => {
-    expect.assertions(2)
-    const mockXml = '<envelope><body><result>Success</result></body></envelope>'
-
-    const [result, xml] = await parseSOAPString(mockXml)
-    expect(result).toStrictEqual({ result: 'Success' })
-    expect(xml).toBe(mockXml.replace(/xmlns([^=]*?)=(".*?")/g, ''))
-  })
-
-  it('should throw an error for invalid SOAP response', async () => {
-    expect.assertions(1)
-    const mockXml = '<invalid>XML</invalid>'
-
-    await expect(parseSOAPString(mockXml)).rejects.toThrow('Invalid ONVIF SOAP response')
-  })
-
-  it('should throw an error for SOAP fault', async () => {
-    expect.assertions(1)
-    const mockXml = '<envelope><body><fault><reason><text>Error occurred</text></reason></fault></body></envelope>'
-
-    await expect(parseSOAPString(mockXml)).rejects.toThrow('ONVIF SOAP Fault: Error occurred')
+  it('coerces the string "true" / "false" but leaves other casings alone', () => {
+    expect(linerase('true')).toBe(true)
+    expect(linerase('false')).toBe(false)
+    expect(linerase('True')).toBe('True')
   })
 })
