@@ -419,7 +419,9 @@ export class PTZ {
    */
   async getConfigurationOptions({
     configurationToken
-  }: { configurationToken: ReferenceToken }): Promise<PTZConfigurationOptions> {
+  }: {
+    configurationToken: ReferenceToken
+  }): Promise<PTZConfigurationOptions> {
     const [data] = await this.onvif.request({
       service: 'PTZ',
       body: `
