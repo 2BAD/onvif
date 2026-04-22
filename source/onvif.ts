@@ -492,11 +492,7 @@ export class Onvif extends EventEmitter {
     } catch (_error) {
       await this.device.getCapabilities()
     }
-    await Promise.all([
-      this.device.getDeviceInformation(),
-      this.media.getProfiles(),
-      this.media.getVideoSources()
-    ])
+    await Promise.all([this.device.getDeviceInformation(), this.media.getProfiles(), this.media.getVideoSources()])
     await this.getActiveSources()
     this.emit('connect')
     return this
