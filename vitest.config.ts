@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    tsconfigPaths: true
+  },
   test: {
     exclude: ['build', 'node_modules'],
     coverage: {
@@ -12,8 +14,7 @@ export default defineConfig({
     },
     env: loadDotenv('.env'),
     testTimeout: 30000
-  },
-  plugins: [tsconfigPaths()]
+  }
 })
 
 function loadDotenv(path: string): Record<string, string> {
