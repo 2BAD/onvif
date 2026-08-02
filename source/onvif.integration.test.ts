@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { Onvif } from './onvif.ts'
 
-const host = process.env.ONVIF_TEST_HOST
-const username = process.env.ONVIF_TEST_USER
-const password = process.env.ONVIF_TEST_PASS
+const host = process.env['ONVIF_TEST_HOST']
+const username = process.env['ONVIF_TEST_USER']
+const password = process.env['ONVIF_TEST_PASS']
 
 const connect = async (): Promise<Onvif> => {
   if (!host) throw new Error('ONVIF_TEST_HOST is not set')
-  const cam = new Onvif({ hostname: host, username, password })
+  const cam = new Onvif({
+    hostname: host,
+    ...(username === undefined ? {} : { username }),
+    ...(password === undefined ? {} : { password })
+  })
   await cam.connect()
   return cam
 }
@@ -42,7 +46,8 @@ describe.skipIf(!host)('Onvif (live device)', () => {
     const cam = await getCam()
     const token = cam.defaultProfile?.token
     if (!token) throw new Error('expected a default profile with a token')
-    const { uri } = await cam.media.getStreamUri({ profileToken: token })
+    const streamUri = await cam.media.getStreamUri({ profileToken: token })
+    const uri = typeof streamUri === 'string' ? streamUri : streamUri.uri
     expect(uri).toMatch(/^rtsp:\/\//)
     expect(uri).toContain(host)
   })
