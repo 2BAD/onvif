@@ -39,6 +39,7 @@
     "check": "run-p check:**",
     "check:code": "oxlint ./source",
     "check:format": "oxfmt --check ./source",
+    "check:types": "tsc --noEmit",
     "fix": "run-p fix:**",
     "fix:code": "oxlint --fix ./source",
     "fix:format": "oxfmt ./source",
@@ -52,25 +53,25 @@
     "fast-xml-parser": "5.10.1"
   },
   "devDependencies": {
-    "@2bad/axiom": "2.0.0",
-    "@2bad/tsconfig": "3.0.2",
+    "@2bad/axiom": "2.1.0",
+    "@2bad/tsconfig": "4.0.0",
     "@arethetypeswrong/cli": "0.18.5",
-    "@types/node": "25.9.5",
+    "@types/node": "26.1.2",
     "@vitest/coverage-v8": "4.1.10",
-    "npm-run-all2": "8.0.4",
-    "oxfmt": "0.60.0",
-    "oxlint": "1.75.0",
+    "npm-run-all2": "9.0.3",
+    "oxfmt": "0.61.0",
+    "oxlint": "1.76.0",
     "publint": "0.3.22",
     "tsdown": "0.22.14",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.18.0",
   "engines": {
     "node": ">=26"
   },
   "volta": {
-    "node": "26.5.0",
-    "pnpm": "11.17.0"
+    "node": "26.5.1",
+    "pnpm": "11.18.0"
   }
 }
