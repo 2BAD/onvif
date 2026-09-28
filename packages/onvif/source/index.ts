@@ -18,5 +18,5 @@ export {
   TransportError
 } from '#errors.ts'
 export * as DeviceManagement from '#generated/device.ts'
-export type { Operation } from '#soap/codec.ts'
+export type { Operation, Schema } from '#soap/codec.ts'
 export type { TlsOptions } from '#transport/http.ts'
