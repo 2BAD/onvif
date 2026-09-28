@@ -13,12 +13,12 @@ export type TlsOptions = Pick<ConnectionOptions, 'ca' | 'cert' | 'key' | 'reject
 }
 
 export type HttpTransportOptions = {
-  timeoutMs?: number
-  maxResponseBytes?: number
+  timeoutMs?: number | undefined
+  maxResponseBytes?: number | undefined
   maxSockets?: number
-  tls?: TlsOptions
+  tls?: TlsOptions | undefined
   /** Answer HTTP Digest challenges with these credentials. */
-  digest?: Credentials
+  digest?: Credentials | undefined
 }
 
 export type HttpResponse = {
@@ -28,12 +28,12 @@ export type HttpResponse = {
 }
 
 export type PostOptions = {
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
   context?: ErrorContext
   /** SOAP 1.2 action, sent as the `action` parameter of `Content-Type`. */
-  action?: string
+  action?: string | undefined
   /** Overrides the transport timeout for this request. */
-  timeoutMs?: number
+  timeoutMs?: number | undefined
 }
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()

@@ -49,7 +49,7 @@ export type ConnectOptions = {
 }
 
 export type CallOptions = {
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
   /**
    * Address or endpoint reference reported by the device for this call, such as a subscription reference. The address
    * policy applies to where the request goes; `wsa:To` carries the address as the device issued it, and the reference
@@ -59,7 +59,7 @@ export type CallOptions = {
   /** Send WS-Addressing `MessageID`, `To` and `Action` headers. */
   addressing?: boolean
   /** Overrides the connection timeout for this call, such as for a long poll. */
-  timeoutMs?: number
+  timeoutMs?: number | undefined
 }
 
 export type Clock = {
@@ -119,10 +119,10 @@ export class Device {
     this.#credentials = username === undefined ? undefined : { username, password }
     this.#policy = options.serviceAddresses ?? 'rewrite'
     this.#transport = new HttpTransport({
-      ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
-      ...(options.maxResponseBytes === undefined ? {} : { maxResponseBytes: options.maxResponseBytes }),
-      ...(options.tls === undefined ? {} : { tls: options.tls }),
-      ...(this.#credentials === undefined ? {} : { digest: this.#credentials })
+      timeoutMs: options.timeoutMs,
+      maxResponseBytes: options.maxResponseBytes,
+      tls: options.tls,
+      digest: this.#credentials
     })
     this.#services.set(DEVICE_NAMESPACE, this.address)
   }
@@ -167,10 +167,10 @@ export class Device {
     const started = Date.now()
     let response
     try {
-      response = await this.#call(GetSystemDateAndTime, {}, signal ? { signal } : {}, false)
+      response = await this.#call(GetSystemDateAndTime, {}, { signal }, false)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
-      response = await this.#call(GetSystemDateAndTime, {}, signal ? { signal } : {}, true)
+      response = await this.#call(GetSystemDateAndTime, {}, { signal }, true)
     }
     const midpoint = (started + Date.now()) / 2
     const utc = response.systemDateAndTime.utcDateTime
@@ -258,14 +258,14 @@ export class Device {
   async #verifyCredentials(signal?: AbortSignal): Promise<void> {
     if (!this.#credentials) return
     try {
-      await this.call(GetDeviceInformation, {}, signal ? { signal } : {})
+      await this.call(GetDeviceInformation, {}, { signal })
     } catch (error) {
       if (error instanceof AuthError || !(error instanceof SoapFaultError)) throw error
     }
   }
 
   async #discoverServices(signal?: AbortSignal): Promise<void> {
-    const options = signal ? { signal } : {}
+    const options = { signal }
     let addresses: [string, string][]
     try {
       const { service } = await this.call(GetServices, { includeCapability: false }, options)
@@ -338,13 +338,19 @@ export class Device {
     }
     const namespaces = operation.namespaces === true
 
+    const send = async (action: string | undefined): Promise<Envelope> => {
+      const { signal, timeoutMs } = options
+      const response = await this.#transport.post(url, envelopeFor(), { context, signal, timeoutMs, action })
+      return this.#read(response, context, namespaces)
+    }
+
     const action = this.#sendAction ? operation.action : undefined
     let envelope
     try {
-      envelope = this.#read(await this.#post(url, envelopeFor(), action, options, context), context, namespaces)
+      envelope = await send(action)
     } catch (error) {
       if (action === undefined || !isActionRejection(error)) throw error
-      envelope = this.#read(await this.#post(url, envelopeFor(), undefined, options, context), context, namespaces)
+      envelope = await send(undefined)
       this.#sendAction = false
     }
 
@@ -355,28 +361,13 @@ export class Device {
     return decode(operation.schema, operation.response.type, result, context) as Response
   }
 
-  #post(
-    url: URL,
-    body: string,
-    action: string | undefined,
-    options: CallOptions,
-    context: ErrorContext
-  ): Promise<HttpResponse> {
-    const { signal, timeoutMs } = options
-    return this.#transport.post(url, body, {
-      context,
-      ...(signal ? { signal } : {}),
-      ...(timeoutMs === undefined ? {} : { timeoutMs }),
-      ...(action === undefined ? {} : { action })
-    })
-  }
-
   #read(response: HttpResponse, context: ErrorContext, namespaces: boolean): Envelope {
-    const soap = response.body.trimStart().startsWith('<')
-    const success = response.status >= 200 && response.status < 300
-    if (response.status === 401) {
+    const { status, body } = response
+    const soap = body.trimStart().startsWith('<')
+    const success = status >= 200 && status < 300
+    if (status === 401) {
       try {
-        if (soap) parseEnvelope(response.body, context)
+        if (soap) parseEnvelope(body, context)
       } catch (error) {
         if (error instanceof AuthError) throw error
         if (error instanceof SoapFaultError) {
@@ -386,16 +377,9 @@ export class Device {
       }
       throw new AuthError('Not authorized (HTTP 401)', context)
     }
-    if (success && response.body.length === 0) {
-      throw new TransportError('Empty response', context, { status: response.status })
-    }
-    if (!soap) {
-      throw new TransportError(`Unexpected HTTP ${response.status} response`, context, { status: response.status })
-    }
-    const envelope = parseEnvelope(response.body, context, undefined, { namespaces })
-    if (!success) {
-      throw new TransportError(`Unexpected HTTP ${response.status} response`, context, { status: response.status })
-    }
+    if (success && body.length === 0) throw new TransportError('Empty response', context, { status })
+    const envelope = soap ? parseEnvelope(body, context, undefined, { namespaces }) : undefined
+    if (!success || !envelope) throw new TransportError(`Unexpected HTTP ${status} response`, context, { status })
     return envelope
   }
 }

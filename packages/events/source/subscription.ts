@@ -168,7 +168,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     const response = await this.#device.call(
       CreatePullPointSubscription,
       { initialTerminationTime: duration(this.#terminationMs) },
-      signal ? { signal } : {}
+      { signal }
     )
     this.#device.resolveAddress(response.subscriptionReference.address.value)
     this.#reference = response.subscriptionReference

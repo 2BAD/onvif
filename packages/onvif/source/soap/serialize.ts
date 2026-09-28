@@ -1,5 +1,4 @@
 import { OnvifError } from '#errors.ts'
-import { isAllowedCodePoint } from '#soap/parse.ts'
 
 export type XmlElement = {
   name: string
@@ -20,12 +19,10 @@ const escapes: Record<string, string> = {
   '\r': '&#13;'
 }
 
+const invalidCharacter = /[^\t\n\r\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u
+
 const checkCharacters = (value: string): void => {
-  for (const character of value) {
-    if (!isAllowedCodePoint(character.codePointAt(0) ?? 0)) {
-      throw new OnvifError('Value contains a character that XML cannot represent')
-    }
-  }
+  if (invalidCharacter.test(value)) throw new OnvifError('Value contains a character that XML cannot represent')
 }
 
 export const escapeText = (value: string): string => {

@@ -83,7 +83,7 @@ const isWhitespace = (code: number): boolean => code === 0x20 || code === 0x0a |
 const isNameEnd = (code: number): boolean =>
   isWhitespace(code) || code === 0x3e || code === 0x2f || code === 0x3d || Number.isNaN(code)
 
-export const isAllowedCodePoint = (codePoint: number): boolean =>
+const isAllowedCodePoint = (codePoint: number): boolean =>
   codePoint === 0x09 ||
   codePoint === 0x0a ||
   codePoint === 0x0d ||

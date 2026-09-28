@@ -56,18 +56,15 @@ const textOf = (value: XmlValue): string => {
 }
 
 const decodePrimitive = (primitive: string, text: string, path: string, context: ErrorContext): unknown => {
+  if (primitive === 'string') return text
+  const trimmed = text.trim()
   switch (primitive) {
-    case 'string':
-      return text
-    case 'integer': {
-      const trimmed = text.trim()
+    case 'integer':
       if (!integerPattern.test(trimmed)) {
         throw new DecodeError(`Invalid integer '${trimmed.slice(0, 32)}'`, path, context)
       }
       return Number(trimmed)
-    }
-    case 'decimal': {
-      const trimmed = text.trim()
+    case 'decimal':
       if (trimmed === 'INF') return Number.POSITIVE_INFINITY
       if (trimmed === '-INF') return Number.NEGATIVE_INFINITY
       if (trimmed === 'NaN') return Number.NaN
@@ -75,22 +72,20 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
         throw new DecodeError(`Invalid number '${trimmed.slice(0, 32)}'`, path, context)
       }
       return Number(trimmed)
-    }
-    case 'boolean': {
-      const trimmed = text.trim()
+    case 'boolean':
       if (trimmed === 'true' || trimmed === '1') return true
       if (trimmed === 'false' || trimmed === '0') return false
       throw new DecodeError(`Invalid boolean '${trimmed.slice(0, 32)}'`, path, context)
-    }
     case 'dateTime': {
-      const trimmed = text.trim()
       // ONVIF times are UTC; Date would read a dateTime without a zone as local time
       const date = new Date(zonelessDateTimePattern.test(trimmed) ? `${trimmed}Z` : trimmed)
-      if (Number.isNaN(date.getTime())) throw new DecodeError(`Invalid dateTime '${text.slice(0, 32)}'`, path, context)
+      if (Number.isNaN(date.getTime())) {
+        throw new DecodeError(`Invalid dateTime '${trimmed.slice(0, 32)}'`, path, context)
+      }
       return date
     }
     case 'base64':
-      return new Uint8Array(Buffer.from(text.trim(), 'base64'))
+      return new Uint8Array(Buffer.from(trimmed, 'base64'))
     default:
       throw new OnvifError(`Unknown primitive ${primitive}`)
   }
