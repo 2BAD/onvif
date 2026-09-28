@@ -52,6 +52,18 @@ describe('parseXml', () => {
 })
 
 describe('parseXml rejects', () => {
+  const long = 'n'.repeat(100_000)
+
+  it.each([
+    ['an unterminated tag', `<${long}`],
+    ['a missing =', `<a ${long}/>`],
+    ['a duplicate attribute', `<a ${long}="1" ${long}="2"/>`],
+    ['an unclosed element', `<${long}>`]
+  ])('%s with a short message for a huge name', (_name, xml) => {
+    expect(() => parseXml(xml)).toThrow(ParseError)
+    expect(() => parseXml(xml)).toThrow(/^.{1,200}$/)
+  })
+
   it.each([
     ['entity expansion (billion laughs)', '<!DOCTYPE a [<!ENTITY x "xx">]><a>&x;</a>', /DOCTYPE/],
     ['external entities', '<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>', /DOCTYPE/],

@@ -246,14 +246,18 @@ export class Device {
       throw new OnvifError(`Invalid service address '${address.slice(0, 200)}'`, { host: this.address.host })
     }
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      throw new OnvifError(`Unsupported service address protocol ${url.protocol}`, { host: this.address.host })
+      throw new OnvifError(`Unsupported service address protocol ${url.protocol.slice(0, 32)}`, {
+        host: this.address.host
+      })
     }
     if (url.origin === this.address.origin) return url
     const sameHost = url.hostname === this.address.hostname
     const downgrade = this.address.protocol === 'https:' && url.protocol === 'http:'
     if (this.#policy === 'sameHost' && sameHost && !downgrade) return url
     if (this.#policy === 'reject') {
-      throw new OnvifError(`Service address ${url.origin} is not the configured origin`, { host: this.address.host })
+      throw new OnvifError(`Service address ${url.origin.slice(0, 200)} is not the configured origin`, {
+        host: this.address.host
+      })
     }
     return new URL(`${url.pathname}${url.search}`, this.address.origin)
   }

@@ -36,7 +36,11 @@ const textOf = (value: XmlValue | undefined): string => {
   return ''
 }
 
-const localName = (qualified: string): string => qualified.slice(qualified.indexOf(':') + 1).trim()
+const localName = (qualified: string): string =>
+  qualified
+    .slice(qualified.indexOf(':') + 1)
+    .trim()
+    .slice(0, 64)
 
 const readFault = (fault: XmlObject): SoapFault => {
   if (fault['Code'] !== undefined) {
@@ -51,10 +55,14 @@ const readFault = (fault: XmlObject): SoapFault => {
     return {
       code: localName(textOf(isObject(code) ? code['Value'] : undefined)),
       subcodes,
-      reason: textOf(isObject(reason) ? reason['Text'] : undefined)
+      reason: textOf(isObject(reason) ? reason['Text'] : undefined).slice(0, 512)
     }
   }
-  return { code: localName(textOf(fault['faultcode'])), subcodes: [], reason: textOf(fault['faultstring']) }
+  return {
+    code: localName(textOf(fault['faultcode'])),
+    subcodes: [],
+    reason: textOf(fault['faultstring']).slice(0, 512)
+  }
 }
 
 /**

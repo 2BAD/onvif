@@ -80,6 +80,9 @@ describe('referenceParameterHeaders', () => {
     expect(() => referenceParameterHeaders(reference('<dom0:Id u:x="1">1</dom0:Id>'))).toThrow(
       'Reference parameter attribute x has an undeclared prefix'
     )
+    expect(() => referenceParameterHeaders(reference(`<dom0:Id u:${'x'.repeat(100_000)}="1">1</dom0:Id>`))).toThrow(
+      /^.{1,200}$/
+    )
   })
 })
 

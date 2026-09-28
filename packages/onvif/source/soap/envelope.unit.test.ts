@@ -71,6 +71,21 @@ describe('parseEnvelope', () => {
     }
   )
 
+  it('bounds fault codes and reasons from the device', () => {
+    const error = thrown(() => parseEnvelope(soap12Fault([`ter:${'c'.repeat(100_000)}`], 'r'.repeat(100_000))))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    const { message, reason, subcodes } = error as SoapFaultError
+    expect(reason).toHaveLength(512)
+    expect(subcodes[0]).toHaveLength(64)
+    expect(message.length).toBeLessThan(700)
+    const soap11 = thrown(() =>
+      parseEnvelope(
+        `<Envelope><Body><Fault><faultcode>${'c'.repeat(100_000)}</faultcode><faultstring>${'r'.repeat(100_000)}</faultstring></Fault></Body></Envelope>`
+      )
+    )
+    expect((soap11 as SoapFaultError).message.length).toBeLessThan(700)
+  })
+
   it('reads SOAP 1.1 faults', () => {
     const xml =
       '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><SOAP-ENV:Fault>' +

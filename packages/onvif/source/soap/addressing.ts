@@ -43,7 +43,7 @@ class Copier {
         const prefixed = info.attributes !== undefined && local in info.attributes
         const namespace = prefixed ? info.attributes?.[local] : undefined
         if (prefixed && namespace === undefined) {
-          throw new OnvifError(`Reference parameter attribute ${local} has an undeclared prefix`)
+          throw new OnvifError(`Reference parameter attribute ${local.slice(0, 64)} has an undeclared prefix`)
         }
         attributes[this.#qualify(local, namespace)] = String(attributeValue)
       }

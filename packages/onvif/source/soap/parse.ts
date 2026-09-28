@@ -329,7 +329,7 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: X
         cursor += 2
         break
       }
-      if (Number.isNaN(code)) throw new ParseError(`Unterminated tag '${qualifiedName}'`, lessThan)
+      if (Number.isNaN(code)) throw new ParseError(`Unterminated tag '${qualifiedName.slice(0, 64)}'`, lessThan)
       if (!isWhitespace(xml.charCodeAt(cursor - 1))) {
         throw new ParseError('Expected whitespace before attribute', cursor)
       }
@@ -338,7 +338,9 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: X
       while (!isNameEnd(xml.charCodeAt(cursor))) cursor++
       const attributeName = xml.slice(nameStart, cursor)
       while (isWhitespace(xml.charCodeAt(cursor))) cursor++
-      if (xml.charCodeAt(cursor) !== 0x3d) throw new ParseError(`Expected '=' after '${attributeName}'`, cursor)
+      if (xml.charCodeAt(cursor) !== 0x3d) {
+        throw new ParseError(`Expected '=' after '${attributeName.slice(0, 64)}'`, cursor)
+      }
       cursor++
       while (isWhitespace(xml.charCodeAt(cursor))) cursor++
       const quote = xml.charCodeAt(cursor)
@@ -351,7 +353,7 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: X
       cursor = valueEnd + 1
 
       if (attributeNames.includes(attributeName)) {
-        throw new ParseError(`Duplicate attribute '${attributeName}'`, nameStart)
+        throw new ParseError(`Duplicate attribute '${attributeName.slice(0, 64)}'`, nameStart)
       }
       if (attributeNames.push(attributeName) > limits.maxAttributes) {
         throw new ParseError(`Element exceeds ${limits.maxAttributes} attributes`, nameStart)
@@ -386,7 +388,7 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: X
     position = cursor
   }
 
-  if (current !== root) throw new ParseError(`Unclosed element '${current.qualifiedName}'`, xml.length)
+  if (current !== root) throw new ParseError(`Unclosed element '${current.qualifiedName.slice(0, 64)}'`, xml.length)
   if (!seenRoot || root.children === undefined) throw new ParseError('No root element', xml.length)
   return root.children
 }

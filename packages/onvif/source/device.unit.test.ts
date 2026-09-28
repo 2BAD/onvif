@@ -285,6 +285,12 @@ describe('service addresses', () => {
     const device = await connect(await camera())
     expect(() => device.resolveAddress('not a url')).toThrow("Invalid service address 'not a url'")
     expect(() => device.resolveAddress('ftp://127.0.0.1/x')).toThrow('Unsupported service address protocol ftp:')
+    expect(() => device.resolveAddress(`${'a'.repeat(100_000)}://x`)).toThrow(/^.{1,200}$/)
+  })
+
+  it('keeps the message short for a huge host under the reject policy', async () => {
+    const device = await connect(await camera(), { serviceAddresses: 'reject' })
+    expect(() => device.resolveAddress(`http://${'h'.repeat(100_000)}.com/`)).toThrow(/^.{1,300}$/)
   })
 })
 
