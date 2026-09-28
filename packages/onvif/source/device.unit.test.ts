@@ -1,3 +1,8 @@
+import { once } from 'node:events'
+import { readFileSync } from 'node:fs'
+import { createServer as createHttpsServer } from 'node:https'
+import type { AddressInfo } from 'node:net'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { type MockCamera, type MockCameraOptions, startMockCamera } from '../../../tools/mock-camera/server.ts'
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
@@ -198,23 +203,70 @@ describe('service addresses', () => {
     const device = await connect(mock, { serviceAddresses: 'reject' })
     expect(device.services.has(MEDIA)).toBe(false)
     expect(device.services.has(DEVICE_NAMESPACE)).toBe(true)
-    expect(() => device.resolveAddress('http://10.0.0.5:8080/onvif/Media')).toThrow('is not the configured host')
+    expect(() => device.resolveAddress('http://10.0.0.5:8080/onvif/Media')).toThrow('is not the configured origin')
+    const host = new URL(mock.url).hostname
+    expect(() => device.resolveAddress(`http://${host}:1/onvif/Media`)).toThrow('is not the configured origin')
   })
 
-  it('keeps them under the trust policy', async () => {
-    const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
-    const device = await connect(mock, { serviceAddresses: 'trust' })
-    expect(device.services.get(MEDIA)?.href).toBe('http://10.0.0.5:8080/onvif/Media')
-  })
-
-  it('keeps a different port on the configured host', async () => {
+  it('rewrites another port or protocol on the configured host by default', async () => {
     const mock = await camera()
     const device = await connect(mock)
+    const host = new URL(mock.url).hostname
+    expect(device.resolveAddress(`https://${host}:8443/onvif/events?id=1`).href).toBe(`${mock.url}/onvif/events?id=1`)
+    expect(device.resolveAddress(`http://${host}:1/onvif/Media`).href).toBe(`${mock.url}/onvif/Media`)
+  })
+
+  it('keeps another port or HTTPS on the configured host under the sameHost policy', async () => {
+    const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
+    const device = await connect(mock, { serviceAddresses: 'sameHost' })
+    expect(device.services.get(MEDIA)?.href).toBe(`${mock.url}/onvif/Media`)
     const host = new URL(mock.url).hostname
     expect(device.resolveAddress(`https://${host}:8443/onvif/events?id=1`).href).toBe(
       `https://${host}:8443/onvif/events?id=1`
     )
   })
+
+  it.each(['rewrite', 'sameHost'] as const)(
+    'never turns the configured HTTPS into HTTP under the %s policy',
+    async (serviceAddresses) => {
+      const tls = join(import.meta.dirname, '../../../fixtures/tls')
+      let target = ''
+      const front = createHttpsServer(
+        { cert: readFileSync(join(tls, 'cert.pem')), key: readFileSync(join(tls, 'key.pem')) },
+        async (request, response) => {
+          const chunks: Buffer[] = []
+          for await (const chunk of request) chunks.push(chunk as Buffer)
+          const reply = await fetch(`${target}${request.url}`, {
+            method: 'POST',
+            headers: { 'Content-Type': request.headers['content-type'] ?? '' },
+            body: Buffer.concat(chunks)
+          })
+          response.writeHead(reply.status, { 'Content-Type': reply.headers.get('content-type') ?? '' })
+          response.end(await reply.text())
+        }
+      )
+      front.listen(0, '127.0.0.1')
+      await once(front, 'listening')
+      cleanups.push(() => {
+        front.closeAllConnections()
+        front.close()
+      })
+      const port = (front.address() as AddressInfo).port
+      const mock = await camera({ advertisedHost: `127.0.0.1:${port}` })
+      target = mock.url
+      const device = await Device.connect({
+        hostname: '127.0.0.1',
+        port,
+        secure: true,
+        tls: { fingerprint256: '06DDB27F5670AFCAF42981271E663404B3FB0B54693AC176337D57880EA6D0DB' },
+        username: 'admin',
+        password: 'password',
+        serviceAddresses
+      })
+      cleanups.push(() => device.close())
+      expect(device.services.get(MEDIA)?.href).toBe(`https://127.0.0.1:${port}/onvif/Media`)
+    }
+  )
 
   it('resolves an address without a host to the configured device (RaySharp)', async () => {
     const mock = await camera()

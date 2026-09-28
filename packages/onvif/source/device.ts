@@ -20,11 +20,12 @@ const CLOCK_TOLERANCE_MS = 1_000
 const RESYNC_INTERVAL_MS = 60_000
 
 /**
- * What to do with service addresses the device reports for a host other than the one the client was configured with:
- * `rewrite` keeps path and query but uses the configured origin (devices behind NAT or port forwarding report their
- * internal address), `reject` refuses to call them, `trust` uses them as given.
+ * What to do with service addresses the device reports for an origin (protocol, host and port) other than the configured
+ * one: `rewrite` keeps path and query but uses the configured origin (devices behind NAT, port forwarding or TLS
+ * report their internal address), `reject` refuses to call them, `sameHost` keeps another port or HTTPS on the
+ * configured host and rewrites the rest. No policy follows another host or turns HTTPS into HTTP.
  */
-export type ServiceAddressPolicy = 'rewrite' | 'reject' | 'trust'
+export type ServiceAddressPolicy = 'rewrite' | 'reject' | 'sameHost'
 
 export type ConnectOptions = {
   hostname: string
@@ -96,8 +97,6 @@ const extensionNamespaces = {
 const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
-
-const sameHost = (left: URL, right: URL): boolean => left.hostname.toLowerCase() === right.hostname.toLowerCase()
 
 export class Device {
   /** Address of the device service. */
@@ -220,7 +219,7 @@ export class Device {
    *
    * @param address - Absolute URL from a device response
    * @returns The URL to send requests to
-   * @throws {OnvifError} If the address is invalid or points to another host under the `reject` policy
+   * @throws {OnvifError} If the address is invalid or points to another origin under the `reject` policy
    */
   resolveAddress(address: string): URL {
     // an address without a host (RaySharp: `http:///onvif/...`) can only mean the device itself
@@ -235,9 +234,12 @@ export class Device {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       throw new OnvifError(`Unsupported service address protocol ${url.protocol}`, { host: this.address.host })
     }
-    if (sameHost(url, this.address) || this.#policy === 'trust') return url
+    if (url.origin === this.address.origin) return url
+    const sameHost = url.hostname === this.address.hostname
+    const downgrade = this.address.protocol === 'https:' && url.protocol === 'http:'
+    if (this.#policy === 'sameHost' && sameHost && !downgrade) return url
     if (this.#policy === 'reject') {
-      throw new OnvifError(`Service address ${url.host} is not the configured host`, { host: this.address.host })
+      throw new OnvifError(`Service address ${url.origin} is not the configured origin`, { host: this.address.host })
     }
     return new URL(`${url.pathname}${url.search}`, this.address.origin)
   }
