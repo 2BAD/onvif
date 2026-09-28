@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ParseError } from '#errors.ts'
-import { parseXml } from '#soap/parse.ts'
+import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 
@@ -98,5 +98,51 @@ describe('parseXml rejects', () => {
   it('elements over the attribute limit', () => {
     const attributes = Array.from({ length: 5 }, (_, index) => `a${index}="1"`).join(' ')
     expect(() => parseXml(`<a ${attributes}/>`, { maxAttributes: 4 })).toThrow(/exceeds 4 attributes/)
+  })
+})
+
+describe('parseXml with namespaces', () => {
+  const parse = (xml: string) => parseXml(xml, undefined, { namespaces: true })
+  const child = (node: unknown, name: string) => (node as XmlObject)[name] as XmlObject
+
+  it('keeps the shape of the default mode, with every element as an object', () => {
+    expect(plain(parse('<s:E xmlns:s="urn:s"><s:B a="1">text</s:B><s:C/></s:E>'))).toEqual({
+      E: { B: { $: { a: '1' }, _: 'text' }, C: {} }
+    })
+  })
+
+  it('resolves element namespaces from declarations in scope, including the default namespace', () => {
+    const root = parse(
+      '<s:E xmlns:s="urn:s" xmlns="urn:d"><s:B><Plain/><x:Own xmlns:x="urn:x">1</x:Own><N xmlns=""/></s:B></s:E>'
+    )
+    const body = child(child(root, 'E'), 'B')
+    expect(namespaceInfo(child(root, 'E'))?.namespace).toBe('urn:s')
+    expect(namespaceInfo(child(body, 'Plain'))?.namespace).toBe('urn:d')
+    expect(namespaceInfo(child(body, 'Own'))).toMatchObject({
+      namespace: 'urn:x',
+      namespaces: { s: 'urn:s', '': 'urn:d', x: 'urn:x', xml: 'http://www.w3.org/XML/1998/namespace' }
+    })
+    expect(namespaceInfo(child(body, 'N'))?.namespace).toBeUndefined()
+    expect(namespaceInfo(child(root, 'E'))?.namespaces).not.toHaveProperty('x')
+  })
+
+  it('records namespaces of prefixed attributes and leaves undeclared prefixes unresolved', () => {
+    const root = parse('<a xmlns:w="urn:w" w:ref="true" plain="1"><u:b u:x="2"/></a>')
+    expect(namespaceInfo(child(root, 'a'))?.attributes).toEqual({ ref: 'urn:w' })
+    expect(namespaceInfo(child(child(root, 'a'), 'b'))).toMatchObject({
+      namespace: undefined,
+      attributes: { x: undefined }
+    })
+  })
+
+  it('decodes entities in declarations and keeps them in objects without a prototype', () => {
+    const root = parse('<a xmlns:p="urn:a&amp;b" xmlns:__proto__="urn:bad"><p:b/></a>')
+    expect(namespaceInfo(child(child(root, 'a'), 'b'))?.namespace).toBe('urn:a&b')
+    expect(Object.getPrototypeOf(namespaceInfo(child(root, 'a'))?.namespaces)).toBeNull()
+  })
+
+  it('attaches nothing in the default mode', () => {
+    expect(namespaceInfo(parseXml('<a xmlns="urn:a"><b x="1"/></a>'))).toBeUndefined()
+    expect(namespaceInfo(child(parseXml('<a xmlns="urn:a"><b x="1"/></a>'), 'a'))).toBeUndefined()
   })
 })

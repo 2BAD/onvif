@@ -18,7 +18,12 @@ test.for(cases)('$name', async ({ documents }, { bench }) => {
     }),
     bench('custom', () => {
       for (const xml of documents) custom(xml)
+    }),
+    bench('custom with namespaces', () => {
+      for (const xml of documents) custom(xml, undefined, { namespaces: true })
     })
   )
-  expect(results.get('custom').throughput.mean).toBeGreaterThan(results.get('fast-xml-parser').throughput.mean)
+  const reference = results.get('fast-xml-parser').throughput.mean
+  expect(results.get('custom').throughput.mean).toBeGreaterThan(reference)
+  expect(results.get('custom with namespaces').throughput.mean).toBeGreaterThan(reference)
 })

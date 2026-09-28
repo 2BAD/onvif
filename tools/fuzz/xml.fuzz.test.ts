@@ -26,10 +26,12 @@ const byteOrderMark = String.fromCharCode(0xfeff)
 const prototypeKeyCount = Object.getOwnPropertyNames(Object.prototype).length
 
 const parsesOrRejects = (xml: string): void => {
-  try {
-    parseXml(xml, { maxLength: 1024 * 1024 })
-  } catch (error) {
-    if (!(error instanceof ParseError)) throw error
+  for (const namespaces of [false, true]) {
+    try {
+      parseXml(xml, { maxLength: 1024 * 1024 }, { namespaces })
+    } catch (error) {
+      if (!(error instanceof ParseError)) throw error
+    }
   }
   if (Object.getOwnPropertyNames(Object.prototype).length !== prototypeKeyCount || 'polluted' in {}) {
     throw new Error('Object.prototype was modified')
@@ -45,6 +47,9 @@ const hostileSnippets = [
   '<__proto__><polluted>1</polluted></__proto__>',
   '<constructor><prototype><polluted>1</polluted></prototype></constructor>',
   ' __proto__="1"',
+  ' xmlns:__proto__="urn:polluted"',
+  ' xmlns="urn:x"',
+  ' xmlns:="urn:x"',
   '<?php ?>',
   '<![CDATA[',
   ']]>',
@@ -112,6 +117,21 @@ const serialize = (node: Tree): string => {
 
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 
+// namespace mode keeps text-only elements as objects so they can carry their namespace
+const collapseLeaves = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(collapseLeaves)
+  if (typeof value !== 'object' || value === null) return value
+  const keys = Object.keys(value)
+  if (keys.length === 0) return ''
+  if (keys.length === 1 && keys[0] === '_') return (value as { _: string })._
+  return Object.fromEntries(
+    keys.map((key) => [
+      key,
+      key === '$' ? (value as Record<string, unknown>)[key] : collapseLeaves((value as Record<string, unknown>)[key])
+    ])
+  )
+}
+
 describe('xml parser fuzzing', () => {
   it(
     'only throws ParseError on arbitrary input',
@@ -145,6 +165,20 @@ describe('xml parser fuzzing', () => {
         property(treeOfDepth(4), (root) => {
           const xml = serialize(root)
           expect(plain(parseXml(xml))).toEqual(plain(fxp(xml)))
+        }),
+        { numRuns }
+      )
+    },
+    timeout
+  )
+
+  it(
+    'parses to the same values with and without namespaces',
+    () => {
+      assert(
+        property(treeOfDepth(4), (root) => {
+          const xml = serialize(root)
+          expect(collapseLeaves(plain(parseXml(xml, undefined, { namespaces: true })))).toEqual(plain(parseXml(xml)))
         }),
         { numRuns }
       )

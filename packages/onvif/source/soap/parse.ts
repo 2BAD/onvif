@@ -1,4 +1,5 @@
 import { ParseError } from '#errors.ts'
+import { XML_NAMESPACE } from '#soap/namespaces.ts'
 
 export type XmlLimits = {
   maxLength: number
@@ -9,6 +10,23 @@ export type XmlLimits = {
 
 export type XmlObject = { [key: string]: XmlValue }
 export type XmlValue = string | XmlObject | XmlValue[]
+
+/** Prefix to namespace URI; the default namespace is under the empty prefix. */
+export type XmlNamespaces = Readonly<Record<string, string>>
+
+export type XmlNamespaceInfo = {
+  /** Namespace of the element, `undefined` when it has none or its prefix is not declared. */
+  namespace: string | undefined
+  /** Declarations in scope at the element. */
+  namespaces: XmlNamespaces
+  /** Namespaces of prefixed attributes, by local name. */
+  attributes: Readonly<Record<string, string | undefined>> | undefined
+}
+
+export type XmlOptions = {
+  /** Keep the namespace of every element, readable with `namespaceInfo()`. Elements are then always objects. */
+  namespaces?: boolean
+}
 
 const defaultLimits: XmlLimits = {
   maxLength: 4 * 1024 * 1024,
@@ -24,12 +42,40 @@ const forbiddenNames = new Set(['__proto__', 'constructor', 'prototype'])
 const ParsedNode = function ParsedNode() {} as unknown as new () => XmlObject
 ParsedNode.prototype = Object.create(null)
 
+const infoKey = Symbol('namespaces')
+
+type WithInfo = { [infoKey]?: XmlNamespaceInfo }
+
+/**
+ * Namespace details of an element parsed with `namespaces: true`, or of an object decoded from one.
+ *
+ * @param node - A parsed element or a decoded object
+ * @returns The namespace details, `undefined` for elements parsed without namespaces
+ */
+export const namespaceInfo = (node: object): XmlNamespaceInfo | undefined => (node as WithInfo)[infoKey]
+
+/**
+ * Attach the namespace details of a parsed element to an object decoded from it.
+ *
+ * @param target - The decoded object
+ * @param info - Namespace details of the element it came from
+ */
+export const setNamespaceInfo = (target: object, info: XmlNamespaceInfo): void => {
+  Object.defineProperty(target, infoKey, { value: info })
+}
+
+const rootNamespaces: XmlNamespaces = Object.assign(Object.create(null) as Record<string, string>, {
+  xml: XML_NAMESPACE
+})
+
 type Frame = {
   qualifiedName: string
   localName: string
   attributes: XmlObject | undefined
   children: XmlObject | undefined
   text: string
+  namespaces: XmlNamespaces
+  info: XmlNamespaceInfo | undefined
 }
 
 const isWhitespace = (code: number): boolean => code === 0x20 || code === 0x0a || code === 0x09 || code === 0x0d
@@ -121,11 +167,28 @@ const appendChild = (parent: Frame, name: string, value: XmlValue): void => {
 
 const finalize = (frame: Frame): XmlValue => {
   const text = frame.text.trim()
-  if (frame.children === undefined && frame.attributes === undefined) return text
+  if (frame.children === undefined && frame.attributes === undefined && frame.info === undefined) return text
   const node = frame.children ?? new ParsedNode()
   if (frame.attributes !== undefined) node['$'] = frame.attributes
   if (text.length > 0) node['_'] = text
+  if (frame.info !== undefined) (node as WithInfo)[infoKey] = frame.info
   return node
+}
+
+const prefixOf = (qualifiedName: string): string => {
+  const colon = qualifiedName.indexOf(':')
+  return colon === -1 ? '' : qualifiedName.slice(0, colon)
+}
+
+const resolveNamespaces = (frame: Frame, prefixedAttributes: string[] | undefined): XmlNamespaceInfo => {
+  const { namespaces } = frame
+  const declared = namespaces[prefixOf(frame.qualifiedName)]
+  let attributes: Record<string, string | undefined> | undefined
+  if (prefixedAttributes !== undefined) {
+    attributes = Object.create(null) as Record<string, string | undefined>
+    for (const name of prefixedAttributes) attributes[name.slice(name.indexOf(':') + 1)] = namespaces[prefixOf(name)]
+  }
+  return { namespace: declared === '' ? undefined : declared, namespaces, attributes }
 }
 
 /**
@@ -136,18 +199,32 @@ const finalize = (frame: Frame): XmlValue => {
  * arrays. DOCTYPE, processing instructions (other than the XML declaration) and entities other than the five
  * predefined ones and character references are rejected.
  *
+ * With `namespaces: true` the declarations are kept as well: every element becomes an object (text under `_`) whose
+ * namespace, in-scope declarations and attribute namespaces `namespaceInfo()` returns. An undeclared prefix leaves the
+ * namespace `undefined` instead of failing, so one sloppy vendor element does not lose a whole response.
+ *
  * @param xml - The document to parse
  * @param overrides - Resource limits, merged with the defaults
+ * @param options - Parser options
  * @returns The root element keyed by its local name
  * @throws {ParseError} If the document is malformed, uses a forbidden construct or exceeds a limit
  */
-export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject {
+export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: XmlOptions = {}): XmlObject {
+  const trackNamespaces = options.namespaces === true
   const limits = overrides ? { ...defaultLimits, ...overrides } : defaultLimits
   if (xml.length > limits.maxLength) {
     throw new ParseError(`Document exceeds ${limits.maxLength} characters`, limits.maxLength)
   }
 
-  const root: Frame = { qualifiedName: '', localName: '', attributes: undefined, children: undefined, text: '' }
+  const root: Frame = {
+    qualifiedName: '',
+    localName: '',
+    attributes: undefined,
+    children: undefined,
+    text: '',
+    namespaces: rootNamespaces,
+    info: undefined
+  }
   const stack: Frame[] = [root]
   let current = root
   let nodes = 0
@@ -226,8 +303,17 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
     if (++nodes > limits.maxNodes) throw new ParseError(`Document exceeds ${limits.maxNodes} elements`, lessThan)
     if (stack.length > limits.maxDepth) throw new ParseError(`Document exceeds depth ${limits.maxDepth}`, lessThan)
 
-    const frame: Frame = { qualifiedName, localName: elementName, attributes: undefined, children: undefined, text: '' }
+    const frame: Frame = {
+      qualifiedName,
+      localName: elementName,
+      attributes: undefined,
+      children: undefined,
+      text: '',
+      namespaces: current.namespaces,
+      info: undefined
+    }
     const attributeNames: string[] = []
+    let prefixedAttributes: string[] | undefined
     let selfClosing = false
 
     for (;;) {
@@ -270,13 +356,26 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
       if (attributeNames.push(attributeName) > limits.maxAttributes) {
         throw new ParseError(`Element exceeds ${limits.maxAttributes} attributes`, nameStart)
       }
-      if (attributeName === 'xmlns' || attributeName.startsWith('xmlns:')) continue
+      if (attributeName === 'xmlns' || attributeName.startsWith('xmlns:')) {
+        if (trackNamespaces) {
+          if (frame.namespaces === current.namespaces) {
+            frame.namespaces = Object.assign(Object.create(null) as Record<string, string>, current.namespaces)
+          }
+          ;(frame.namespaces as Record<string, string>)[attributeName === 'xmlns' ? '' : attributeName.slice(6)] =
+            decodeEntities(rawValue, valueStart)
+        }
+        continue
+      }
 
       const attributeLocalName = localName(attributeName, nameStart)
+      if (trackNamespaces && attributeLocalName.length !== attributeName.length) {
+        ;(prefixedAttributes ??= []).push(attributeName)
+      }
       const attributes = (frame.attributes ??= new ParsedNode())
       attributes[attributeLocalName] ??= decodeEntities(rawValue, valueStart)
     }
 
+    if (trackNamespaces) frame.info = resolveNamespaces(frame, prefixedAttributes)
     if (current === root) seenRoot = true
     if (selfClosing) {
       appendChild(current, elementName, finalize(frame))
