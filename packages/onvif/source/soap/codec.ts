@@ -40,7 +40,8 @@ export type Operation<Request, Response> = {
 const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime', 'base64', 'any'])
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
-const zonelessDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/
+const dateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
+const base64Pattern = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
 const typeOf = (schema: Schema, name: string): TypeSchema => {
@@ -60,7 +61,7 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
   const trimmed = text.trim()
   switch (primitive) {
     case 'integer':
-      if (!integerPattern.test(trimmed)) {
+      if (!integerPattern.test(trimmed) || !Number.isSafeInteger(Number(trimmed))) {
         throw new DecodeError(`Invalid integer '${trimmed.slice(0, 32)}'`, path, context)
       }
       return Number(trimmed)
@@ -77,15 +78,20 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
       if (trimmed === 'false' || trimmed === '0') return false
       throw new DecodeError(`Invalid boolean '${trimmed.slice(0, 32)}'`, path, context)
     case 'dateTime': {
+      const [, year, month, day, zone] = dateTimePattern.exec(trimmed) ?? []
       // ONVIF times are UTC; Date would read a dateTime without a zone as local time
-      const date = new Date(zonelessDateTimePattern.test(trimmed) ? `${trimmed}Z` : trimmed)
-      if (Number.isNaN(date.getTime())) {
+      const date = new Date(zone === undefined ? `${trimmed}Z` : trimmed)
+      const calendarDay = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).getUTCDate()
+      if (day === undefined || Number.isNaN(date.getTime()) || calendarDay !== Number(day)) {
         throw new DecodeError(`Invalid dateTime '${trimmed.slice(0, 32)}'`, path, context)
       }
       return date
     }
-    case 'base64':
-      return new Uint8Array(Buffer.from(trimmed, 'base64'))
+    case 'base64': {
+      const compact = trimmed.replaceAll(/\s/g, '')
+      if (!base64Pattern.test(compact)) throw new DecodeError('Invalid base64 value', path, context)
+      return new Uint8Array(Buffer.from(compact, 'base64'))
+    }
     default:
       throw new OnvifError(`Unknown primitive ${primitive}`)
   }

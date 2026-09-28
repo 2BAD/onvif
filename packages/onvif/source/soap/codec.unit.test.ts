@@ -144,6 +144,26 @@ describe('decode', () => {
     expect(when('2026-09-28T06:01:39+02:00')).toBe('2026-09-28T04:01:39.000Z')
   })
 
+  it.each(['1', 'March 7, 2020', '2026-09-28', '2026-02-31T00:00:00Z', '2026-09-28 04:01:39Z', '2026-13-01T00:00:00Z'])(
+    'rejects %j as a dateTime',
+    (value) => {
+      const xml = `<Sample token="t"><Name>a</Name><When>${value}</When></Sample>`
+      expect(() => decode(schema, 'Sample', parsed(xml))).toThrow(`Invalid dateTime '${value}' at Sample.When`)
+    }
+  )
+
+  it('reads base64 with line breaks and padding', () => {
+    const blob = (value: string) =>
+      (
+        decode(schema, 'Sample', parsed(`<Sample token="t"><Name>a</Name><Blob>${value}</Blob></Sample>`)) as {
+          Blob: Uint8Array
+        }
+      ).Blob
+    expect(blob('AQ\n ID')).toEqual(new Uint8Array([1, 2, 3]))
+    expect(blob('AQ==')).toEqual(new Uint8Array([1]))
+    expect(blob('')).toEqual(new Uint8Array([]))
+  })
+
   it('carries the namespaces of an element parsed with namespaces to the decoded object', () => {
     const root = parseXml(
       '<t:Sample xmlns:t="urn:t" xmlns:tns1="urn:topics" token="x"><t:Name>a</t:Name><t:Text>tns1:A</t:Text></t:Sample>',
@@ -165,6 +185,16 @@ describe('decode', () => {
       'an invalid integer',
       '<Sample token="t"><Name>a</Name><Count>1.5</Count></Sample>',
       "Invalid integer '1.5' at Sample.Count"
+    ],
+    [
+      'an integer outside the safe range',
+      '<Sample token="t"><Name>a</Name><Count>18446744073709551615</Count></Sample>',
+      "Invalid integer '18446744073709551615' at Sample.Count"
+    ],
+    [
+      'invalid base64',
+      '<Sample token="t"><Name>a</Name><Blob>!!!not base64!!!</Blob></Sample>',
+      'Invalid base64 value at Sample.Blob'
     ],
     [
       'an invalid number',
