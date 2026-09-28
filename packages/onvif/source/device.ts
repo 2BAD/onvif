@@ -303,36 +303,44 @@ export class Device {
       service: prefixes[operation.request.namespace] ?? operation.request.namespace,
       action: operation.name
     }
-    const header: XmlNode[] = []
-    if (options.addressing) header.push(...addressingHeaders(operation.action, url.href))
-    if (authenticated && this.#credentials) header.push(usernameToken(this.#credentials, this.#now()))
-    const body = buildEnvelope(encodeRequest(operation, request), header)
+    const element = encodeRequest(operation, request)
+    const envelopeFor = (): string => {
+      const header: XmlNode[] = []
+      if (options.addressing) header.push(...addressingHeaders(operation.action, url.href))
+      if (authenticated && this.#credentials) header.push(usernameToken(this.#credentials, this.#now()))
+      return buildEnvelope(element, header)
+    }
 
-    let response = await this.#post(url, body, operation.action, options, context)
+    const action = this.#sendAction ? operation.action : undefined
     let envelope
     try {
-      envelope = this.#read(response, context)
+      envelope = this.#read(await this.#post(url, envelopeFor(), action, options, context), context)
     } catch (error) {
-      if (!this.#sendAction || !isActionRejection(error)) throw error
+      if (action === undefined || !isActionRejection(error)) throw error
+      envelope = this.#read(await this.#post(url, envelopeFor(), undefined, options, context), context)
       this.#sendAction = false
-      response = await this.#post(url, body, operation.action, options, context)
-      envelope = this.#read(response, context)
     }
 
-    const element = envelope.body[operation.response.name]
-    if (element === undefined) {
+    const result = envelope.body[operation.response.name]
+    if (result === undefined) {
       throw new DecodeError(`Missing ${operation.response.name} in the response body`, 'Body', context)
     }
-    return decode(operation.schema, operation.response.type, element, context) as Response
+    return decode(operation.schema, operation.response.type, result, context) as Response
   }
 
-  #post(url: URL, body: string, action: string, options: CallOptions, context: ErrorContext): Promise<HttpResponse> {
+  #post(
+    url: URL,
+    body: string,
+    action: string | undefined,
+    options: CallOptions,
+    context: ErrorContext
+  ): Promise<HttpResponse> {
     const { signal, timeoutMs } = options
     return this.#transport.post(url, body, {
       context,
       ...(signal ? { signal } : {}),
       ...(timeoutMs === undefined ? {} : { timeoutMs }),
-      ...(this.#sendAction ? { action } : {})
+      ...(action === undefined ? {} : { action })
     })
   }
 

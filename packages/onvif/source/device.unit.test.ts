@@ -231,6 +231,23 @@ describe('Device.call', () => {
     )
   })
 
+  it('retries without the action with a fresh nonce and keeps the action when that fails too', async () => {
+    const body =
+      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Code><s:Value>s:Sender' +
+      '</s:Value><s:Subcode><s:Value>wsa5:ActionNotSupported</s:Value></s:Subcode></s:Code><s:Reason>' +
+      '<s:Text xml:lang="en">The [action] cannot be processed at the receiver.</s:Text></s:Reason></s:Fault></s:Body>' +
+      '</s:Envelope>'
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status: 400, body } } })
+    const device = await connect(mock)
+    await expect(device.call(GetScopes)).rejects.toMatchObject({ subcodes: ['ActionNotSupported'] })
+    expect(actions(mock).slice(-2)).toEqual(['GetScopes', 'GetScopes'])
+    const nonces = mock.requests.slice(-2).map(({ body: sent }) => /<wsse:Nonce[^>]*>([^<]+)</.exec(sent)?.[1])
+    expect(nonces[0]).toBeDefined()
+    expect(nonces[0]).not.toBe(nonces[1])
+    await device.call(GetDeviceInformation)
+    expect(mock.requests.at(-1)?.headers['content-type']).toContain('; action="')
+  })
+
   it('drops the Content-Type action for good when the device rejects it', async () => {
     const mock = await camera({ contentTypeAction: 'reject' })
     const device = await connect(mock)
