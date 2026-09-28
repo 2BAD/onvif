@@ -3,6 +3,7 @@ import { type MockCamera, type MockCameraOptions, startMockCamera } from '../../
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
 import { AuthError, DecodeError, OnvifError, SoapFaultError, TransportError } from '#errors.ts'
 import { GetDeviceInformation, GetScopes } from '#generated/device.ts'
+import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 
 const MEDIA = 'http://www.onvif.org/ver10/media/wsdl'
 const cleanups: (() => Promise<void> | void)[] = []
@@ -207,6 +208,14 @@ describe('service addresses', () => {
     )
   })
 
+  it('resolves an address without a host to the configured device (RaySharp)', async () => {
+    const mock = await camera()
+    const device = await connect(mock, { serviceAddresses: 'reject' })
+    expect(device.resolveAddress('http:///onvif/events_service?session=392').href).toBe(
+      `${mock.url}/onvif/events_service?session=392`
+    )
+  })
+
   it('rejects invalid addresses and other protocols', async () => {
     const device = await connect(await camera())
     expect(() => device.resolveAddress('not a url')).toThrow("Invalid service address 'not a url'")
@@ -279,17 +288,47 @@ describe('Device.call', () => {
     expect(actions(mock).slice(3)).toEqual(['GetDeviceInformation'])
   })
 
-  it('adds WS-Addressing headers and sends to a reported address', async () => {
+  it('adds WS-Addressing headers and sends to a reported address, keeping the address as issued in To', async () => {
     const mock = await camera()
     const device = await connect(mock)
     await device.call(GetDeviceInformation, {}, { to: 'http://10.0.0.9/onvif/device_service', addressing: true })
     const { body, path } = mock.requests.at(-1) ?? { body: '', path: '' }
     expect(path).toBe('/onvif/device_service')
     expect(body).toContain(
-      `<wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing" s:mustUnderstand="1">${mock.url}/onvif/device_service</wsa:To>`
+      '<wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing" s:mustUnderstand="1">http://10.0.0.9/onvif/device_service</wsa:To>'
     )
     expect(body).toContain('>http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation</wsa:Action>')
     expect(body).toMatch(/<wsa:MessageID[^>]*>urn:uuid:[0-9a-f-]{36}<\/wsa:MessageID>/)
+  })
+
+  it('sends the reference parameters of an endpoint reference as headers', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const parameters = parseXml(
+      '<wsa:ReferenceParameters xmlns:wsa="http://www.w3.org/2005/08/addressing">' +
+        '<dom0:SubscriptionId xmlns:dom0="http://www.axis.com/2009/event">3</dom0:SubscriptionId></wsa:ReferenceParameters>',
+      undefined,
+      { namespaces: true }
+    )['ReferenceParameters'] as XmlObject
+    const to = {
+      address: { value: 'http://10.0.0.9/onvif/device_service' },
+      referenceParameters: { $any: { SubscriptionId: parameters['SubscriptionId'] } }
+    }
+    await device.call(GetDeviceInformation, {}, { to, addressing: true })
+    const { body } = mock.requests.at(-1) ?? { body: '' }
+    expect(body).toContain('s:mustUnderstand="1">http://10.0.0.9/onvif/device_service</wsa:To>')
+    expect(body).toContain(
+      '<rp0:SubscriptionId xmlns:wsa="http://www.w3.org/2005/08/addressing" wsa:IsReferenceParameter="true" ' +
+        'xmlns:rp0="http://www.axis.com/2009/event">3</rp0:SubscriptionId>'
+    )
+  })
+
+  it('parses responses with namespaces for operations that ask for it', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const response = await device.call({ ...GetDeviceInformation, namespaces: true })
+    expect(namespaceInfo(response)?.namespace).toBe(DEVICE_NAMESPACE)
+    expect(namespaceInfo(await device.call(GetDeviceInformation))).toBeUndefined()
   })
 
   it('reports SOAP faults with context', async () => {

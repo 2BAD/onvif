@@ -1,5 +1,5 @@
 import { AuthError, type ErrorContext, ParseError, type SoapFault, SoapFaultError } from '#errors.ts'
-import { parseXml, type XmlLimits, type XmlObject, type XmlValue } from '#soap/parse.ts'
+import { parseXml, type XmlLimits, type XmlObject, type XmlOptions, type XmlValue } from '#soap/parse.ts'
 import { serialize, type XmlElement, type XmlNode } from '#soap/serialize.ts'
 
 export const SOAP_NAMESPACE = 'http://www.w3.org/2003/05/soap-envelope'
@@ -63,15 +63,21 @@ const readFault = (fault: XmlObject): SoapFault => {
  * @param xml - The response body
  * @param context - Host, service and action for error reporting
  * @param limits - Parser resource limits
+ * @param options - Parser options
  * @returns The header and body children with namespace prefixes removed
  * @throws {ParseError} If the response is not well formed or not a SOAP envelope
  * @throws {AuthError} If the fault reports failed authentication
  * @throws {SoapFaultError} For any other fault
  */
-export function parseEnvelope(xml: string, context: ErrorContext = {}, limits?: Partial<XmlLimits>): Envelope {
+export function parseEnvelope(
+  xml: string,
+  context: ErrorContext = {},
+  limits?: Partial<XmlLimits>,
+  options?: XmlOptions
+): Envelope {
   let document: XmlObject
   try {
-    document = parseXml(xml, limits)
+    document = parseXml(xml, limits, options)
   } catch (error) {
     if (error instanceof ParseError) throw new ParseError(error.reason, error.position, context)
     throw error

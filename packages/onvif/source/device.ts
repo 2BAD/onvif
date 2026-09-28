@@ -6,7 +6,7 @@ import {
   GetServices,
   GetSystemDateAndTime
 } from '#generated/device.ts'
-import { addressingHeaders } from '#soap/addressing.ts'
+import { addressingHeaders, type EndpointReference, referenceParameterHeaders } from '#soap/addressing.ts'
 import { type Operation, decode, encodeRequest } from '#soap/codec.ts'
 import { buildEnvelope, type Envelope, parseEnvelope } from '#soap/envelope.ts'
 import { prefixes } from '#soap/namespaces.ts'
@@ -47,8 +47,12 @@ export type ConnectOptions = {
 
 export type CallOptions = {
   signal?: AbortSignal
-  /** Address reported by the device for this call, such as a subscription reference. The address policy applies. */
-  to?: string
+  /**
+   * Address or endpoint reference reported by the device for this call, such as a subscription reference. The address
+   * policy applies to where the request goes; `wsa:To` carries the address as the device issued it, and the reference
+   * parameters of an endpoint reference are sent back as headers.
+   */
+  to?: string | EndpointReference
   /** Send WS-Addressing `MessageID`, `To` and `Action` headers. */
   addressing?: boolean
   /** Overrides the connection timeout for this call, such as for a long poll. */
@@ -210,6 +214,9 @@ export class Device {
    * @throws {OnvifError} If the address is invalid or points to another host under the `reject` policy
    */
   resolveAddress(address: string): URL {
+    // an address without a host (RaySharp: `http:///onvif/...`) can only mean the device itself
+    const hostless = /^https?:\/\/\//i.exec(address)
+    if (hostless) return new URL(address.slice(hostless[0].length - 1), this.address.origin)
     let url: URL
     try {
       url = new URL(address)
@@ -297,7 +304,8 @@ export class Device {
     options: CallOptions,
     authenticated: boolean
   ): Promise<Response> {
-    const url = this.#target(operation, options.to)
+    const to = typeof options.to === 'object' ? options.to.address.value : options.to
+    const url = this.#target(operation, to)
     const context: ErrorContext = {
       host: this.address.host,
       service: prefixes[operation.request.namespace] ?? operation.request.namespace,
@@ -306,18 +314,20 @@ export class Device {
     const element = encodeRequest(operation, request)
     const envelopeFor = (): string => {
       const header: XmlNode[] = []
-      if (options.addressing) header.push(...addressingHeaders(operation.action, url.href))
+      if (options.addressing) header.push(...addressingHeaders(operation.action, to ?? url.href))
+      if (typeof options.to === 'object') header.push(...referenceParameterHeaders(options.to))
       if (authenticated && this.#credentials) header.push(usernameToken(this.#credentials, this.#now()))
       return buildEnvelope(element, header)
     }
+    const namespaces = operation.namespaces === true
 
     const action = this.#sendAction ? operation.action : undefined
     let envelope
     try {
-      envelope = this.#read(await this.#post(url, envelopeFor(), action, options, context), context)
+      envelope = this.#read(await this.#post(url, envelopeFor(), action, options, context), context, namespaces)
     } catch (error) {
       if (action === undefined || !isActionRejection(error)) throw error
-      envelope = this.#read(await this.#post(url, envelopeFor(), undefined, options, context), context)
+      envelope = this.#read(await this.#post(url, envelopeFor(), undefined, options, context), context, namespaces)
       this.#sendAction = false
     }
 
@@ -344,7 +354,7 @@ export class Device {
     })
   }
 
-  #read(response: HttpResponse, context: ErrorContext): Envelope {
+  #read(response: HttpResponse, context: ErrorContext, namespaces: boolean): Envelope {
     const soap = response.body.trimStart().startsWith('<')
     const success = response.status >= 200 && response.status < 300
     if (response.status === 401) {
@@ -365,7 +375,7 @@ export class Device {
     if (!soap) {
       throw new TransportError(`Unexpected HTTP ${response.status} response`, context, { status: response.status })
     }
-    const envelope = parseEnvelope(response.body, context)
+    const envelope = parseEnvelope(response.body, context, undefined, { namespaces })
     if (!success) {
       throw new TransportError(`Unexpected HTTP ${response.status} response`, context, { status: response.status })
     }

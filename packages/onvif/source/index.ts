@@ -18,5 +18,7 @@ export {
   TransportError
 } from '#errors.ts'
 export * as DeviceManagement from '#generated/device.ts'
-export type { Operation, Schema } from '#soap/codec.ts'
+export type { EndpointReference } from '#soap/addressing.ts'
+export { decode, type Operation, type Schema } from '#soap/codec.ts'
+export { namespaceInfo, type XmlNamespaceInfo, type XmlNamespaces, type XmlValue } from '#soap/parse.ts'
 export type { TlsOptions } from '#transport/http.ts'

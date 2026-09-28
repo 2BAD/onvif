@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DecodeError, OnvifError } from '#errors.ts'
 import { type Operation, type Schema, decode, encodeRequest } from '#soap/codec.ts'
 import { XML_NAMESPACE } from '#soap/namespaces.ts'
-import { parseXml, type XmlObject } from '#soap/parse.ts'
+import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 import { serialize } from '#soap/serialize.ts'
 
 const tt = 'http://www.onvif.org/ver10/schema'
@@ -142,6 +142,20 @@ describe('decode', () => {
     expect(when('2026-09-28T04:01:39')).toBe('2026-09-28T04:01:39.000Z')
     expect(when(' 2026-09-28T04:01:39.25 ')).toBe('2026-09-28T04:01:39.250Z')
     expect(when('2026-09-28T06:01:39+02:00')).toBe('2026-09-28T04:01:39.000Z')
+  })
+
+  it('carries the namespaces of an element parsed with namespaces to the decoded object', () => {
+    const root = parseXml(
+      '<t:Sample xmlns:t="urn:t" xmlns:tns1="urn:topics" token="x"><t:Name>a</t:Name><t:Text>tns1:A</t:Text></t:Sample>',
+      undefined,
+      { namespaces: true }
+    )
+    const result = decode(schema, 'Sample', root['Sample'] as XmlObject) as { Text: object }
+    expect(namespaceInfo(result)).toMatchObject({ namespace: 'urn:t', namespaces: { tns1: 'urn:topics' } })
+    expect(namespaceInfo(result.Text)?.namespace).toBe('urn:t')
+    expect(
+      namespaceInfo(decode(schema, 'Sample', parsed('<Sample token="t"><Name>a</Name></Sample>')) as object)
+    ).toBeUndefined()
   })
 
   it.each([

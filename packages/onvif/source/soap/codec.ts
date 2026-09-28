@@ -1,6 +1,6 @@
 import { DecodeError, type ErrorContext, OnvifError } from '#errors.ts'
 import { XML_NAMESPACE, prefixes } from '#soap/namespaces.ts'
-import type { XmlObject, XmlValue } from '#soap/parse.ts'
+import { namespaceInfo, setNamespaceInfo, type XmlObject, type XmlValue } from '#soap/parse.ts'
 import type { XmlElement, XmlNode } from '#soap/serialize.ts'
 
 export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
@@ -31,6 +31,8 @@ export type Operation<Request, Response> = {
   request: { name: string; namespace: string; type: string }
   response: { name: string; type: string }
   schema: Schema
+  /** Parse the response with namespaces, for content that holds QNames or has to be echoed back. */
+  namespaces?: true
   /** Never set; carries the request and response types. */
   types?: { request: Request; response: Response }
 }
@@ -169,6 +171,9 @@ const decodeComplex = (
       context
     )
   }
+
+  const info = namespaceInfo(node)
+  if (info) setNamespaceInfo(result, info)
 
   if (type.any) {
     const names = namesOf(type)
