@@ -187,6 +187,13 @@ describe('Device.connect', () => {
     expect(ipv6).toMatchObject({ host: '[::1]:9' })
   })
 
+  it('accepts a device path without a leading slash', async () => {
+    const mock = await camera()
+    const device = await connect(mock, { path: 'onvif/device_service' })
+    expect(device.address.href).toBe(`${mock.url}/onvif/device_service`)
+    await expect(device.call(GetDeviceInformation)).resolves.toMatchObject({ manufacturer: 'DVC' })
+  })
+
   it('stops when the caller aborts', async () => {
     const mock = await camera({ overrides: { 'device.GetSystemDateAndTime': { kind: 'hang' } } })
     const controller = new AbortController()

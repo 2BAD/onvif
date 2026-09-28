@@ -125,7 +125,8 @@ export class Device {
     const { hostname, secure = false, port, path = '/onvif/device_service', username, password = '' } = options
     const protocol = secure ? 'https' : 'http'
     const host = hostname.includes(':') && !hostname.startsWith('[') ? `[${hostname}]` : hostname
-    this.address = new URL(`${protocol}://${host}${port === undefined ? '' : `:${port}`}${path}`)
+    const pathname = path.startsWith('/') ? path : `/${path}`
+    this.address = new URL(`${protocol}://${host}${port === undefined ? '' : `:${port}`}${pathname}`)
     this.#credentials = username === undefined ? undefined : { username, password }
     this.#policy = options.serviceAddresses ?? 'rewrite'
     this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
