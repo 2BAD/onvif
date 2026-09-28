@@ -132,6 +132,18 @@ describe('decode', () => {
     expect(decode(schema, 'Text', 'plain')).toEqual({ value: 'plain' })
   })
 
+  it('reads a dateTime without a zone as UTC and keeps explicit offsets', () => {
+    const when = (value: string) =>
+      (
+        decode(schema, 'Sample', parsed(`<Sample token="t"><Name>a</Name><When>${value}</When></Sample>`)) as {
+          When: Date
+        }
+      ).When.toISOString()
+    expect(when('2026-09-28T04:01:39')).toBe('2026-09-28T04:01:39.000Z')
+    expect(when(' 2026-09-28T04:01:39.25 ')).toBe('2026-09-28T04:01:39.250Z')
+    expect(when('2026-09-28T06:01:39+02:00')).toBe('2026-09-28T04:01:39.000Z')
+  })
+
   it.each([
     ['a missing required element', '<Sample token="t"/>', 'Missing required element Name at Sample'],
     ['a missing required attribute', '<Sample><Name>a</Name></Sample>', 'Missing required attribute token at Sample'],

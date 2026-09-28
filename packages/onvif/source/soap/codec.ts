@@ -38,6 +38,7 @@ export type Operation<Request, Response> = {
 const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime', 'base64', 'any'])
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
+const zonelessDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
 const typeOf = (schema: Schema, name: string): TypeSchema => {
@@ -80,7 +81,9 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
       throw new DecodeError(`Invalid boolean '${trimmed.slice(0, 32)}'`, path, context)
     }
     case 'dateTime': {
-      const date = new Date(text.trim())
+      const trimmed = text.trim()
+      // ONVIF times are UTC; Date would read a dateTime without a zone as local time
+      const date = new Date(zonelessDateTimePattern.test(trimmed) ? `${trimmed}Z` : trimmed)
       if (Number.isNaN(date.getTime())) throw new DecodeError(`Invalid dateTime '${text.slice(0, 32)}'`, path, context)
       return date
     }
