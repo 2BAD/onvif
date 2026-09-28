@@ -2,9 +2,9 @@ import { once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { createServer as createTlsServer } from 'node:https'
-import type { AddressInfo } from 'node:net'
+import { type AddressInfo, createServer as createTcpServer, type Socket } from 'node:net'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startMockCamera } from '../../../../tools/mock-camera/server.ts'
 import { TimeoutError, TransportError } from '#errors.ts'
 import { HttpTransport } from '#transport/http.ts'
@@ -266,5 +266,26 @@ describe('HttpTransport TLS', () => {
     const client = transport({ tls: { fingerprint256: 'AA'.repeat(32) } })
     await expect(client.post(url, 'secret')).rejects.toThrow(/does not match the pinned fingerprint/)
     expect(requests()).toBe(0)
+  })
+
+  it('times out and closes the connection when a pinned peer never completes the handshake', async () => {
+    const sockets = new Set<Socket>()
+    const server = createTcpServer((socket) => {
+      sockets.add(socket)
+      socket.on('close', () => sockets.delete(socket)).resume()
+    })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    cleanups.push(async () => {
+      for (const socket of sockets) socket.destroy()
+      server.close()
+      await once(server, 'close')
+    })
+    const url = new URL(`https://127.0.0.1:${(server.address() as AddressInfo).port}/`)
+    const client = transport({ timeoutMs: 100, tls: { fingerprint256: fingerprint } })
+
+    await expect(client.post(url, 'x')).rejects.toThrow(TimeoutError)
+    await expect(client.post(url, 'x', { timeoutMs: 20 })).rejects.toThrow('No response within 20 ms')
+    await vi.waitFor(() => expect(sockets.size).toBe(0))
   })
 })

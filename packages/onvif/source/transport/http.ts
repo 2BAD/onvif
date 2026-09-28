@@ -40,10 +40,12 @@ const normalizeFingerprint = (fingerprint: string): string => fingerprint.replac
 
 class PinnedAgent extends HttpsAgent {
   readonly #fingerprint: string
+  readonly #handshakeTimeoutMs: number
 
-  constructor(options: HttpsAgentOptions, fingerprint: string) {
+  constructor(options: HttpsAgentOptions, fingerprint: string, handshakeTimeoutMs: number) {
     super(options)
     this.#fingerprint = normalizeFingerprint(fingerprint)
+    this.#handshakeTimeoutMs = handshakeTimeoutMs
   }
 
   // The socket goes to the request only after the certificate matched, so nothing gets written to an unverified peer.
@@ -52,9 +54,12 @@ class PinnedAgent extends HttpsAgent {
     oncreate?: (error: Error | null, socket: Duplex) => void
   ): Duplex | undefined {
     const socket = tlsConnect({ ...(options as ConnectionOptions), rejectUnauthorized: false })
+    const onTimeout = () => socket.destroy(new Error(`TLS handshake took longer than ${this.#handshakeTimeoutMs} ms`))
+    socket.setTimeout(this.#handshakeTimeoutMs, onTimeout)
     const verify = async () => {
       try {
         await once(socket, 'secureConnect')
+        socket.setTimeout(0, onTimeout)
         const actual = normalizeFingerprint(socket.getPeerCertificate().fingerprint256 ?? '')
         if (actual !== this.#fingerprint) {
           throw new Error(`Certificate fingerprint ${actual} does not match the pinned fingerprint`)
@@ -92,7 +97,9 @@ export class HttpTransport {
     this.#httpAgent = new HttpAgent({ keepAlive: true, maxSockets })
     const { fingerprint256, ...tlsOptions } = tls
     const httpsOptions = { keepAlive: true, maxSockets, ...tlsOptions }
-    this.#httpsAgent = fingerprint256 ? new PinnedAgent(httpsOptions, fingerprint256) : new HttpsAgent(httpsOptions)
+    this.#httpsAgent = fingerprint256
+      ? new PinnedAgent(httpsOptions, fingerprint256, timeoutMs)
+      : new HttpsAgent(httpsOptions)
   }
 
   /**
@@ -210,6 +217,7 @@ export class HttpTransport {
         }
       )
       outgoing.on('error', fail)
+      combined.addEventListener('abort', fail, { once: true })
       outgoing.end(payload)
     })
   }
