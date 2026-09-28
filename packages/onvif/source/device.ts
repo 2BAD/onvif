@@ -105,8 +105,14 @@ const extensionNamespaces = {
   analyticsDevice: 'http://www.onvif.org/ver10/analyticsdevice/wsdl'
 } as const
 
-/** Milliseconds since the epoch, or `undefined` if a field is out of range and `Date.UTC` would roll it over. */
-const utcTimeOf = ({ date, time }: DateTime): number | undefined => {
+/**
+ * Read a device date and time as UTC.
+ *
+ * @param dateTime - `UTCDateTime` from `GetSystemDateAndTime`
+ * @returns Milliseconds since the epoch, or `undefined` if a field is out of range and `Date.UTC` would roll it over
+ */
+const utcTimeOf = (dateTime: DateTime): number | undefined => {
+  const { date, time } = dateTime
   const fields = [date.year, date.month, date.day, time.hour, time.minute, time.second]
   const utc = Date.UTC(date.year, date.month - 1, date.day, time.hour, time.minute, time.second)
   const parsed = new Date(utc)

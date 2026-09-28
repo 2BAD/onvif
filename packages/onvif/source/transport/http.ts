@@ -126,15 +126,15 @@ export class HttpTransport {
    *
    * @param url - Service address
    * @param body - Serialized envelope
-   * @param options - Abort signal and error context
+   * @param options - Abort signal, error context, SOAP action, timeout and deadline
    * @returns Status, headers and body
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
-  async post(url: URL, body: string, postOptions: PostOptions = {}): Promise<HttpResponse> {
-    const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = postOptions
-    const options = { ...postOptions, timeoutMs, deadline }
-    const response = await this.#send(url, body, options, this.#authorization(url))
+  async post(url: URL, body: string, options: PostOptions = {}): Promise<HttpResponse> {
+    const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
+    const attempt = { ...options, timeoutMs, deadline }
+    const response = await this.#send(url, body, attempt, this.#authorization(url))
     if (response.status !== 401 || !this.#digest) return response
 
     const challenge = parseChallenge(response.headers['www-authenticate'] ?? [])
@@ -144,7 +144,7 @@ export class HttpTransport {
     this.#challenge = challenge
     this.#nonceCount = 0
     try {
-      return await this.#send(url, body, options, this.#authorization(url))
+      return await this.#send(url, body, attempt, this.#authorization(url))
     } catch (error) {
       // some devices drop the connection instead of rejecting the digest
       if (error instanceof TransportError) return response
