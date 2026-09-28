@@ -95,6 +95,27 @@ describe('HttpTransport', () => {
     expect(requests).toBe(3)
   })
 
+  it('does not retry a reset of a reused connection once the response started', async () => {
+    const seen = new WeakSet<object>()
+    let requests = 0
+    const url = await listen(
+      serve((request, response) => {
+        requests++
+        if (seen.has(request.socket)) {
+          response.writeHead(200, { 'Content-Length': 100 })
+          response.write('partial', () => request.socket.resetAndDestroy())
+          return
+        }
+        seen.add(request.socket)
+        response.end('ok')
+      })
+    )
+    const client = transport()
+    await client.post(url, 'first')
+    await expect(client.post(url, 'second')).rejects.toThrow(TransportError)
+    expect(requests).toBe(2)
+  })
+
   it('does not retry a reset on a new connection', async () => {
     const url = await listen(serve((request) => request.socket.destroy()))
     await expect(transport().post(url, 'x', { context: { host: 'camera' } })).rejects.toMatchObject({

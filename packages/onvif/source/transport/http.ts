@@ -160,12 +160,13 @@ export class HttpTransport {
     if (authorization) headers['Authorization'] = authorization
 
     return new Promise((resolve, reject) => {
+      let responded = false
       const fail = (error: unknown) => {
         if (timeout.aborted) {
           reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
         } else if (signal?.aborted) {
           reject(signal.reason)
-        } else if (isResetOfReusedSocket(error, outgoing.reusedSocket)) {
+        } else if (!responded && isResetOfReusedSocket(error, outgoing.reusedSocket)) {
           reject(new RetryableReset())
         } else {
           const message = error instanceof Error ? error.message : String(error)
@@ -177,6 +178,7 @@ export class HttpTransport {
         url,
         { method: 'POST', headers, agent: secure ? this.#httpsAgent : this.#httpAgent, signal: combined },
         (response) => {
+          responded = true
           const declared = Number(response.headers['content-length'])
           if (declared > this.#maxResponseBytes) {
             response.destroy()
