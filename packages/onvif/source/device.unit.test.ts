@@ -43,12 +43,18 @@ const connect = async (mock: MockCamera, options: Partial<ConnectOptions> = {}):
   return device
 }
 
-// The mock camera keeps time with performance.now() too, so its skew is corrected to leave the device clock at skewMs.
+// Moves the wall and monotonic clocks of host and mock camera a minute ahead, then sets the device clock skew.
 const aMinuteLater = (mock: MockCamera, skewMs = 0): void => {
-  const now = performance.now.bind(performance)
-  const spy = vi.spyOn(performance, 'now').mockImplementation(() => now() + 60_000)
-  cleanups.push(() => spy.mockRestore())
-  mock.setClockSkew(skewMs - 60_000)
+  const monotonic = performance.now.bind(performance)
+  const wall = Date.now.bind(Date)
+  const spies = [
+    vi.spyOn(performance, 'now').mockImplementation(() => monotonic() + 60_000),
+    vi.spyOn(Date, 'now').mockImplementation(() => wall() + 60_000)
+  ]
+  cleanups.push(() => {
+    for (const spy of spies) spy.mockRestore()
+  })
+  mock.setClockSkew(skewMs)
 }
 
 const actions = (mock: MockCamera): string[] => mock.requests.map(({ action }) => action)
@@ -385,6 +391,20 @@ describe('Device.call', () => {
     aMinuteLater(mock)
     await expect(device.call(GetDeviceInformation)).rejects.toThrow(AuthError)
     expect(actions(mock).slice(2)).toEqual(['GetDeviceInformation', 'GetSystemDateAndTime'])
+  })
+
+  it('measures the clock again and retries after the host was suspended', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    mock.requests.length = 0
+    const hour = 3_600_000
+    const wall = Date.now.bind(Date)
+    const spy = vi.spyOn(Date, 'now').mockImplementation(() => wall() + hour)
+    cleanups.push(() => spy.mockRestore())
+    mock.setClockSkew(hour)
+    await expect(device.call(GetDeviceInformation)).resolves.toMatchObject({ manufacturer: 'DVC' })
+    expect(actions(mock)).toEqual(['GetDeviceInformation', 'GetSystemDateAndTime', 'GetDeviceInformation'])
+    expect(Math.abs(device.clock.skewMs)).toBeLessThan(1_500)
   })
 
   it('measures the clock again at most once a minute for rejected credentials', async () => {

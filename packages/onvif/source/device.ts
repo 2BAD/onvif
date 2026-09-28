@@ -140,7 +140,7 @@ export class Device {
   readonly #timeoutMs: number
   readonly #services = new Map<string, URL>()
   #clock: Clock = { skewMs: 0, source: 'local' }
-  #synchronizedAt = { device: Date.now(), monotonic: performance.now() }
+  #synchronizedAt = { device: Date.now(), wall: Date.now(), monotonic: performance.now() }
   #sendAction = true
   #resynchronizing: Promise<void> | undefined
 
@@ -223,7 +223,8 @@ export class Device {
       deviceTime === undefined
         ? { skewMs: 0, source: 'local' }
         : { skewMs: Math.round(deviceTime - midpoint), source: 'device' }
-    this.#synchronizedAt = { device: midpoint + this.#clock.skewMs, monotonic: performance.now() }
+    const wall = Date.now()
+    this.#synchronizedAt = { device: wall + this.#clock.skewMs, wall, monotonic: performance.now() }
   }
 
   /**
@@ -232,8 +233,8 @@ export class Device {
    * @param operation - Generated operation
    * @param args - Request (optional when every field is optional) and call options
    * @returns The decoded response
-   * @throws {AuthError} If the credentials are rejected; retried once if the device clock moved, measured again at
-   *   most once a minute
+   * @throws {AuthError} If the credentials are rejected; retried once if measuring the device clock again shows the
+   *   estimate was off, measured again at most once a minute unless the host was suspended or its clock jumped
    * @throws {SoapFaultError} If the device answers with a fault
    * @throws {DecodeError} If the response does not match the schema
    * @throws {TransportError} On connection problems or unexpected HTTP responses
@@ -245,15 +246,21 @@ export class Device {
   ): Promise<Response> {
     const [request = {} as Request, options = {}] = args
     const deadline = performance.now() + (options.timeoutMs ?? this.#timeoutMs)
-    const clock = this.#clock
+    const synchronized = this.#synchronizedAt
     try {
       return await this.#call(operation, request, options, deadline, true)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
-      if (this.#clock === clock && performance.now() - this.#synchronizedAt.monotonic >= RESYNC_INTERVAL_MS) {
+      const monotonicElapsed = performance.now() - synchronized.monotonic
+      const wallElapsed = Date.now() - synchronized.wall
+      const due =
+        monotonicElapsed >= RESYNC_INTERVAL_MS || Math.abs(wallElapsed - monotonicElapsed) >= CLOCK_TOLERANCE_MS
+      if (this.#synchronizedAt === synchronized && due) {
         await this.#awaitResynchronization(options, deadline, this.#contextOf(operation))
       }
-      if (Math.abs(this.#clock.skewMs - clock.skewMs) < CLOCK_TOLERANCE_MS) throw error
+      const current = this.#synchronizedAt
+      const estimate = synchronized.device + (current.monotonic - synchronized.monotonic)
+      if (Math.abs(current.device - estimate) < CLOCK_TOLERANCE_MS) throw error
       return await this.#call(operation, request, options, deadline, true)
     }
   }
