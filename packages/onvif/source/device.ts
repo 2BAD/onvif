@@ -1,4 +1,12 @@
-import { AuthError, DecodeError, type ErrorContext, OnvifError, SoapFaultError, TransportError } from '#errors.ts'
+import {
+  AuthError,
+  DecodeError,
+  type ErrorContext,
+  OnvifError,
+  SoapFaultError,
+  TimeoutError,
+  TransportError
+} from '#errors.ts'
 import {
   type Capabilities,
   GetCapabilities,
@@ -27,6 +35,8 @@ const RESYNC_INTERVAL_MS = 60_000
  */
 export type ServiceAddressPolicy = 'rewrite' | 'reject' | 'sameHost'
 
+const DEFAULT_TIMEOUT_MS = 10_000
+
 export type ConnectOptions = {
   hostname: string
   port?: number
@@ -35,7 +45,7 @@ export type ConnectOptions = {
   path?: string
   username?: string
   password?: string
-  /** Per request timeout in milliseconds, 10 000 by default. */
+  /** Time allowed for each call in milliseconds, retries included, 10 000 by default. */
   timeoutMs?: number
   maxResponseBytes?: number
   tls?: TlsOptions
@@ -59,7 +69,7 @@ export type CallOptions = {
   to?: string | EndpointReference
   /** Send WS-Addressing `MessageID`, `To` and `Action` headers. */
   addressing?: boolean
-  /** Overrides the connection timeout for this call, such as for a long poll. */
+  /** Overrides the connection timeout for this call, retries included, such as for a long poll. */
   timeoutMs?: number | undefined
 }
 
@@ -104,6 +114,7 @@ export class Device {
   readonly #transport: HttpTransport
   readonly #credentials: Credentials | undefined
   readonly #policy: ServiceAddressPolicy
+  readonly #timeoutMs: number
   readonly #services = new Map<string, URL>()
   #clock: Clock = { skewMs: 0, source: 'local' }
   #synchronizedAt = { device: Date.now(), monotonic: performance.now() }
@@ -117,8 +128,9 @@ export class Device {
     this.address = new URL(`${protocol}://${host}${port === undefined ? '' : `:${port}`}${path}`)
     this.#credentials = username === undefined ? undefined : { username, password }
     this.#policy = options.serviceAddresses ?? 'rewrite'
+    this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
     this.#transport = new HttpTransport({
-      timeoutMs: options.timeoutMs,
+      timeoutMs: this.#timeoutMs,
       maxResponseBytes: options.maxResponseBytes,
       tls: options.tls,
       digest: this.#credentials
@@ -164,12 +176,13 @@ export class Device {
    */
   async synchronizeClock(signal?: AbortSignal): Promise<void> {
     const started = Date.now()
+    const deadline = performance.now() + this.#timeoutMs
     let response
     try {
-      response = await this.#call(GetSystemDateAndTime, {}, { signal }, false)
+      response = await this.#call(GetSystemDateAndTime, {}, { signal }, deadline, false)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
-      response = await this.#call(GetSystemDateAndTime, {}, { signal }, true)
+      response = await this.#call(GetSystemDateAndTime, {}, { signal }, deadline, true)
     }
     const midpoint = (started + Date.now()) / 2
     const utc = response.systemDateAndTime.utcDateTime
@@ -201,16 +214,17 @@ export class Device {
     ...args: CallArguments<Request>
   ): Promise<Response> {
     const [request = {} as Request, options = {}] = args
+    const deadline = performance.now() + (options.timeoutMs ?? this.#timeoutMs)
     const clock = this.#clock
     try {
-      return await this.#call(operation, request, options, true)
+      return await this.#call(operation, request, options, deadline, true)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
       if (this.#clock === clock && performance.now() - this.#synchronizedAt.monotonic >= RESYNC_INTERVAL_MS) {
-        await (this.#resynchronizing ??= this.#resynchronize())
+        await this.#awaitResynchronization(options, deadline, this.#contextOf(operation))
       }
       if (Math.abs(this.#clock.skewMs - clock.skewMs) < CLOCK_TOLERANCE_MS) throw error
-      return await this.#call(operation, request, options, true)
+      return await this.#call(operation, request, options, deadline, true)
     }
   }
 
@@ -247,6 +261,22 @@ export class Device {
   /** Close idle connections. The device can still be used afterwards. */
   close(): void {
     this.#transport.close()
+  }
+
+  async #awaitResynchronization(options: CallOptions, deadline: number, context: ErrorContext): Promise<void> {
+    const timeout = AbortSignal.timeout(Math.max(0, Math.ceil(deadline - performance.now())))
+    const stop = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
+    stop.throwIfAborted()
+    const stopped = new Promise<never>((_resolve, reject) => {
+      const onStop = () =>
+        reject(
+          timeout.aborted
+            ? new TimeoutError(`No response within ${options.timeoutMs ?? this.#timeoutMs} ms`, context)
+            : stop.reason
+        )
+      stop.addEventListener('abort', onStop, { once: true })
+    })
+    await Promise.race([(this.#resynchronizing ??= this.#resynchronize()), stopped])
   }
 
   async #resynchronize(): Promise<void> {
@@ -305,6 +335,14 @@ export class Device {
     return new Date(this.#synchronizedAt.device + (performance.now() - this.#synchronizedAt.monotonic))
   }
 
+  #contextOf<Request, Response>(operation: Operation<Request, Response>): ErrorContext {
+    return {
+      host: this.address.host,
+      service: prefixes[operation.request.namespace] ?? operation.request.namespace,
+      action: operation.name
+    }
+  }
+
   #target<Request, Response>(operation: Operation<Request, Response>, to: string | undefined): URL {
     if (to !== undefined) return this.resolveAddress(to)
     const url = this.#services.get(operation.request.namespace)
@@ -321,15 +359,12 @@ export class Device {
     operation: Operation<Request, Response>,
     request: Request,
     options: CallOptions,
+    deadline: number,
     authenticated: boolean
   ): Promise<Response> {
     const to = typeof options.to === 'object' ? options.to.address.value : options.to
     const url = this.#target(operation, to)
-    const context: ErrorContext = {
-      host: this.address.host,
-      service: prefixes[operation.request.namespace] ?? operation.request.namespace,
-      action: operation.name
-    }
+    const context = this.#contextOf(operation)
     const element = encodeRequest(operation, request)
     const envelopeFor = (): string => {
       const header: XmlNode[] = []
@@ -341,8 +376,8 @@ export class Device {
     const namespaces = operation.namespaces === true
 
     const send = async (action: string | undefined): Promise<Envelope> => {
-      const { signal, timeoutMs } = options
-      const response = await this.#transport.post(url, envelopeFor(), { context, signal, timeoutMs, action })
+      const { signal, timeoutMs = this.#timeoutMs } = options
+      const response = await this.#transport.post(url, envelopeFor(), { context, signal, timeoutMs, deadline, action })
       return this.#read(response, context, namespaces)
     }
 

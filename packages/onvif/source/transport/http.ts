@@ -38,9 +38,13 @@ export type PostOptions = {
   context?: ErrorContext
   /** SOAP 1.2 action, sent as the `action` parameter of `Content-Type`. */
   action?: string | undefined
-  /** Overrides the transport timeout for this request. */
+  /** Overrides the transport timeout for this request, retries included. */
   timeoutMs?: number | undefined
+  /** `performance.now()` time by which the response must be complete, when several posts share one `timeoutMs`. */
+  deadline?: number | undefined
 }
+
+type AttemptOptions = PostOptions & { timeoutMs: number; deadline: number }
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()
 
@@ -115,10 +119,12 @@ export class HttpTransport {
    * @param body - Serialized envelope
    * @param options - Abort signal and error context
    * @returns Status, headers and body
-   * @throws {TimeoutError} If no complete response arrived within the timeout
+   * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
-  async post(url: URL, body: string, options: PostOptions = {}): Promise<HttpResponse> {
+  async post(url: URL, body: string, postOptions: PostOptions = {}): Promise<HttpResponse> {
+    const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = postOptions
+    const options = { ...postOptions, timeoutMs, deadline }
     const response = await this.#send(url, body, options, this.#authorization(url))
     if (response.status !== 401 || !this.#digest) return response
 
@@ -148,7 +154,7 @@ export class HttpTransport {
     return digestAuthorization(this.#challenge, this.#digest, 'POST', url.pathname + url.search, this.#nonceCount)
   }
 
-  async #send(url: URL, body: string, options: PostOptions, authorization?: string): Promise<HttpResponse> {
+  async #send(url: URL, body: string, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
     try {
       return await this.#attempt(url, body, options, authorization)
     } catch (error) {
@@ -157,9 +163,11 @@ export class HttpTransport {
     }
   }
 
-  #attempt(url: URL, body: string, options: PostOptions, authorization?: string): Promise<HttpResponse> {
-    const { signal, context = {}, action, timeoutMs = this.#timeoutMs } = options
-    const timeout = AbortSignal.timeout(timeoutMs)
+  #attempt(url: URL, body: string, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
+    const { signal, context = {}, action, timeoutMs, deadline } = options
+    const remainingMs = Math.ceil(deadline - performance.now())
+    if (remainingMs <= 0) return Promise.reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
+    const timeout = AbortSignal.timeout(remainingMs)
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
     const secure = url.protocol === 'https:'
     if (!secure && url.protocol !== 'http:') {

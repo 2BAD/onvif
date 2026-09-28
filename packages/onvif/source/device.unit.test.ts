@@ -4,7 +4,12 @@ import { createServer as createHttpsServer } from 'node:https'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { type MockCamera, type MockCameraOptions, startMockCamera } from '../../../tools/mock-camera/server.ts'
+import {
+  type ActionOverride,
+  type MockCamera,
+  type MockCameraOptions,
+  startMockCamera
+} from '../../../tools/mock-camera/server.ts'
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
 import { AuthError, DecodeError, OnvifError, SoapFaultError, TransportError } from '#errors.ts'
 import { GetDeviceInformation, GetScopes } from '#generated/device.ts'
@@ -377,6 +382,32 @@ describe('Device.call', () => {
     expect(results.every(({ manufacturer }) => manufacturer === 'DVC')).toBe(true)
     expect(actions(mock).filter((action) => action === 'GetSystemDateAndTime')).toHaveLength(1)
     expect(actions(mock).filter((action) => action === 'GetDeviceInformation')).toHaveLength(10)
+  })
+
+  it('limits a call to its timeout across retries', async () => {
+    const mock = await camera({
+      auth: 'digest',
+      unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'],
+      overrides: { 'device.GetScopes': { kind: 'delay', ms: 70 } }
+    })
+    const device = await connect(mock, { password: 'wrong', verifyCredentials: false })
+    await expect(device.call(GetScopes, {}, { timeoutMs: 100 })).rejects.toThrow('No response within 100 ms')
+    expect(actions(mock).slice(2)).toEqual(['GetScopes', 'GetScopes'])
+  })
+
+  it('stops waiting for a shared clock resynchronization at the deadline or abort of the call', async () => {
+    const overrides: Record<string, ActionOverride> = {}
+    const mock = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'], overrides })
+    const device = await connect(mock, { password: 'wrong', verifyCredentials: false, timeoutMs: 2_000 })
+    overrides['device.GetSystemDateAndTime'] = { kind: 'hang' }
+    aMinuteLater(mock)
+    const started = performance.now()
+    await expect(device.call(GetDeviceInformation, {}, { timeoutMs: 200 })).rejects.toThrow('No response within 200 ms')
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(new Error('cancelled')), 50)
+    await expect(device.call(GetDeviceInformation, {}, { signal: controller.signal })).rejects.toThrow('cancelled')
+    expect(performance.now() - started).toBeLessThan(1_000)
+    expect(actions(mock).filter((action) => action === 'GetSystemDateAndTime')).toHaveLength(2)
   })
 
   it('keeps valid timestamps when the local clock jumps after connecting', async () => {

@@ -229,6 +229,26 @@ describe('HttpTransport digest authentication', () => {
     expect((await client.post(url, 'x')).status).toBe(401)
   })
 
+  it('counts the digest retry against the same timeout', async () => {
+    let requests = 0
+    const url = await listen(
+      serve((_request, response) => {
+        requests++
+        setTimeout(() => {
+          response.writeHead(401, { 'WWW-Authenticate': `Digest realm="r", nonce="n${requests}", qop="auth"` })
+          response.end()
+        }, 70)
+      })
+    )
+    const client = transport({ timeoutMs: 100, digest: { username: 'a', password: 'b' } })
+    await expect(client.post(url, 'x')).rejects.toThrow('No response within 100 ms')
+    expect(requests).toBe(2)
+    await expect(client.post(url, 'x', { deadline: performance.now() - 1, timeoutMs: 5 })).rejects.toThrow(
+      'No response within 5 ms'
+    )
+    expect(requests).toBe(2)
+  })
+
   it('returns the 401 when the device drops the connection on the digest retry', async () => {
     let requests = 0
     const url = await listen(
