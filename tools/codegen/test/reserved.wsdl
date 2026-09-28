@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:r="urn:test:reserved" targetNamespace="urn:test:reserved">
+  <wsdl:types>
+    <xs:schema targetNamespace="urn:test:reserved" elementFormDefault="qualified">
+      <xs:complexType name="Date">
+        <xs:sequence>
+          <xs:element name="Year" type="xs:int"/>
+          <xs:element name="When" type="xs:dateTime"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="GetDate"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+      <xs:element name="GetDateResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Calendar" type="r:Date"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="GetDateRequest"><wsdl:part name="parameters" element="r:GetDate"/></wsdl:message>
+  <wsdl:message name="GetDateResponse"><wsdl:part name="parameters" element="r:GetDateResponse"/></wsdl:message>
+  <wsdl:portType name="Service">
+    <wsdl:operation name="GetDate">
+      <wsdl:input message="r:GetDateRequest"/>
+      <wsdl:output message="r:GetDateResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>

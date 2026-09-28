@@ -63,6 +63,24 @@ const comment = (text: string | undefined, indent: string): string => {
   return `${indent}/**\n${lines.map((entry) => `${indent} * ${entry}`).join('\n')}\n${indent} */\n`
 }
 
+// generated types can't shadow these globals or codec types
+const reservedNames = new Set([
+  'Array',
+  'Boolean',
+  'Date',
+  'Error',
+  'Map',
+  'Number',
+  'Object',
+  'Operation',
+  'Promise',
+  'Record',
+  'Schema',
+  'Set',
+  'String',
+  'Uint8Array'
+])
+
 class Names {
   readonly #complex = new Map<ComplexModel, string>()
   readonly #simple = new Map<string, string>()
@@ -83,7 +101,7 @@ class Names {
     for (const [name, list] of candidates) {
       list.forEach(({ model, namespace }, index) => {
         let unique = name
-        if (list.length > 1) {
+        if (list.length > 1 || reservedNames.has(name)) {
           const prefix = pascal(this.namespace(namespace) ?? '')
           unique =
             list.filter((entry) => entry.namespace === namespace).length > 1
