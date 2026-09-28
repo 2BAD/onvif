@@ -22,7 +22,10 @@ export type SubscribeOptions = {
   onError: (error: OnvifError) => void
   /** Closes the subscription when aborted, and aborts `subscribe()` itself. */
   signal?: AbortSignal
-  /** How long one PullMessages waits on the device for events, 10 000 ms by default. */
+  /**
+   * How long one PullMessages waits on the device for events, 10 000 ms by default. Halved when the device keeps
+   * resetting long polls, and doubled back after 10 minutes without a reset.
+   */
   pullTimeoutMs?: number
   /** Most notifications per PullMessages, 100 by default. */
   messageLimit?: number
@@ -33,6 +36,7 @@ export type SubscribeOptions = {
 const RESPONSE_MARGIN_MS = 10_000
 const RENEW_MARGIN_MS = 5_000
 const MIN_PULL_TIMEOUT_MS = 1_000
+const RESTORE_PULL_TIMEOUT_AFTER_MS = 10 * 60_000
 const MAX_BACKOFF_MS = 60_000
 const UNSUBSCRIBE_TIMEOUT_MS = 5_000
 
@@ -61,6 +65,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   readonly #onError: (error: OnvifError) => void
   readonly #messageLimit: number
   readonly #terminationMs: number
+  readonly #configuredPullTimeoutMs: number
   readonly #controller = new AbortController()
   readonly #buffer: Notification[] = []
   #pullTimeoutMs: number
@@ -69,6 +74,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   #renew = true
   #failures = 0
   #resets = 0
+  #pullTimeoutSince = 0
   #closed = false
   #closing: Promise<void> | undefined
   #queue: Promise<void> = Promise.resolve()
@@ -103,6 +109,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     this.#device = device
     this.#onError = options.onError
     this.#pullTimeoutMs = options.pullTimeoutMs ?? 10_000
+    this.#configuredPullTimeoutMs = this.#pullTimeoutMs
     this.#messageLimit = options.messageLimit ?? 100
     this.#terminationMs = options.terminationMs ?? 60_000
   }
@@ -154,7 +161,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
           await this.#pull()
           this.#failures = 0
         } else {
-          await this.#create()
+          await this.#create(this.#controller.signal)
         }
       } catch (error) {
         if (this.#closed) break
@@ -195,6 +202,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
       throw error
     }
     this.#resets = 0
+    this.#restorePullTimeout()
     this.#track(response.terminationTime, response.currentTime)
     const context = { host: this.#device.address.host, service: 'tev', action: 'PullMessages' }
     for (const holder of response.notificationMessage ?? []) {
@@ -247,7 +255,15 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   #adaptToResets(error: unknown, elapsedMs: number): void {
     if (!(error instanceof TransportError) || elapsedMs >= this.#pullTimeoutMs) return
     this.#resets++
+    this.#pullTimeoutSince = performance.now()
     if (this.#resets >= 2) this.#pullTimeoutMs = Math.max(MIN_PULL_TIMEOUT_MS, Math.floor(this.#pullTimeoutMs / 2))
+  }
+
+  #restorePullTimeout(): void {
+    if (this.#pullTimeoutMs >= this.#configuredPullTimeoutMs) return
+    if (performance.now() - this.#pullTimeoutSince < RESTORE_PULL_TIMEOUT_AFTER_MS) return
+    this.#pullTimeoutMs = Math.min(this.#configuredPullTimeoutMs, this.#pullTimeoutMs * 2)
+    this.#pullTimeoutSince = performance.now()
   }
 
   async #recover(error: unknown): Promise<void> {

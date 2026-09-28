@@ -1,7 +1,12 @@
 import { AuthError, Device, OnvifError, SoapFaultError } from '@2bad/onvif'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { motionNotification } from '../../../tools/mock-camera/events.ts'
-import { type MockCamera, type MockCameraOptions, startMockCamera } from '../../../tools/mock-camera/server.ts'
+import {
+  type ActionOverride,
+  type MockCamera,
+  type MockCameraOptions,
+  startMockCamera
+} from '../../../tools/mock-camera/server.ts'
 import { motionOf, type Notification, subscribe, type SubscribeOptions, type Subscription } from '#index.ts'
 
 const cleanups: (() => Promise<void> | void)[] = []
@@ -254,6 +259,32 @@ describe('subscribe', () => {
     expect(errors.map((error) => error.name)).toContain('TransportError')
   })
 
+  it('raises a shortened pull timeout again after 10 minutes without a reset (TP-Link)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const overrides: Record<string, ActionOverride> = { 'events.PullMessages': { kind: 'destroy' } }
+    const mock = await camera({ auth: 'none', overrides })
+    const { subscription, errors } = await open(await connect(mock), { pullTimeoutMs: 4_000 })
+    const timeouts = () =>
+      requests(mock, 'PullMessages').map((request) => /<tev:Timeout>([^<]+)</.exec(request.body)?.[1])
+    const first = subscription.next()
+    await vi.waitFor(() => expect(errors).toHaveLength(2), { timeout: 3_000 })
+    delete overrides['events.PullMessages']
+    await first
+    const shortened = timeouts().length
+    expect(timeouts().at(-1)).toBe('PT2S')
+
+    const tenMinutes = 10 * 60_000
+    const now = performance.now.bind(performance)
+    vi.spyOn(performance, 'now').mockImplementation(() => now() + tenMinutes)
+    mock.setClockSkew(-tenMinutes)
+    await take(subscription, 6)
+    mock.emitEvent(motionNotification(true))
+    await take(subscription, 1)
+    mock.emitEvent(motionNotification(false))
+    await take(subscription, 1)
+    expect(timeouts().slice(shortened)).toEqual(['PT2S', 'PT4S'])
+  })
+
   it('reports a message that cannot be decoded and still delivers the others', async () => {
     const mock = await camera()
     const { subscription, errors } = await open(await connect(mock))
@@ -323,6 +354,31 @@ describe('close', () => {
     await second.close()
     expect(mock.pullPoints()).toEqual([])
     await expect(open(device, { signal: AbortSignal.abort() })).rejects.toThrow('This operation was aborted')
+  })
+
+  it('stops a pull point rebuild at once when closed', async () => {
+    const overrides: Record<string, ActionOverride> = {}
+    const mock = await camera({ overrides })
+    const { subscription } = await open(await connect(mock))
+    await take(subscription, 7)
+    overrides['events.CreatePullPointSubscription'] = { kind: 'hang' }
+    mock.expirePullPoints()
+    const pending = subscription.next()
+    await vi.waitFor(() => expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2))
+    const started = performance.now()
+    await subscription.close()
+    expect(performance.now() - started).toBeLessThan(500)
+    expect(await pending).toEqual({ value: undefined, done: true })
+  })
+
+  it('reports a failed Unsubscribe after the signal aborts', async () => {
+    const mock = await camera({ overrides: { 'events.Unsubscribe': { kind: 'status', status: 500 } } })
+    const controller = new AbortController()
+    const { subscription, errors } = await open(await connect(mock), { signal: controller.signal })
+    await take(subscription, 1)
+    controller.abort()
+    await vi.waitFor(() => expect(errors.map((error) => error.name)).toEqual(['SoapFaultError']))
+    expect(await subscription.next()).toEqual({ value: undefined, done: true })
   })
 
   it('stops a backoff wait at once', async () => {
