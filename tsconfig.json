@@ -1,14 +1,9 @@
 {
   "extends": "@2bad/tsconfig",
-  "include": ["source/**/*", "tools/**/*", "vitest.config.ts"],
+  "include": ["packages/*/source/**/*", "packages/*/tsdown.config.ts", "tools/**/*", "vitest.config.ts"],
   "compilerOptions": {
-    "outDir": "build",
+    "noEmit": true,
     "types": ["node"],
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "allowImportingTsExtensions": true,
-    "paths": {
-      "~/*": ["./source/*"]
-    }
+    "allowImportingTsExtensions": true
   }
 }

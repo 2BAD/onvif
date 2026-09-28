@@ -1,3 +1,5 @@
+import { ParseError } from '../errors.ts'
+
 export type XmlLimits = {
   maxLength: number
   maxDepth: number
@@ -7,16 +9,6 @@ export type XmlLimits = {
 
 export type XmlObject = { [key: string]: XmlValue }
 export type XmlValue = string | XmlObject | XmlValue[]
-
-export class XmlParseError extends Error {
-  readonly position: number
-
-  constructor(message: string, position: number) {
-    super(`${message} at position ${position}`)
-    this.name = 'XmlParseError'
-    this.position = position
-  }
-}
 
 const defaultLimits: XmlLimits = {
   maxLength: 4 * 1024 * 1024,
@@ -29,8 +21,8 @@ const forbiddenNames = new Set(['__proto__', 'constructor', 'prototype'])
 
 // The prototype chain never reaches Object.prototype, so names like `toString` or `__proto__` can't hit inherited
 // members, and V8 still keeps these objects in fast mode.
-const XmlNode = function XmlNode() {} as unknown as new () => XmlObject
-XmlNode.prototype = Object.create(null)
+const ParsedNode = function ParsedNode() {} as unknown as new () => XmlObject
+ParsedNode.prototype = Object.create(null)
 
 type Frame = {
   qualifiedName: string
@@ -45,7 +37,7 @@ const isWhitespace = (code: number): boolean => code === 0x20 || code === 0x0a |
 const isNameEnd = (code: number): boolean =>
   isWhitespace(code) || code === 0x3e || code === 0x2f || code === 0x3d || Number.isNaN(code)
 
-const isAllowedCodePoint = (codePoint: number): boolean =>
+export const isAllowedCodePoint = (codePoint: number): boolean =>
   codePoint === 0x09 ||
   codePoint === 0x0a ||
   codePoint === 0x0d ||
@@ -61,7 +53,7 @@ const decodeEntities = (value: string, offset: number): string => {
   while (ampersand !== -1) {
     const semicolon = value.indexOf(';', ampersand + 1)
     if (semicolon === -1 || semicolon - ampersand > 10) {
-      throw new XmlParseError('Unterminated entity reference', offset + ampersand)
+      throw new ParseError('Unterminated entity reference', offset + ampersand)
     }
     const entity = value.slice(ampersand + 1, semicolon)
     let decoded: string
@@ -83,14 +75,14 @@ const decodeEntities = (value: string, offset: number): string => {
         break
       default: {
         if (entity.charCodeAt(0) !== 0x23) {
-          throw new XmlParseError(`Unknown entity '&${entity};'`, offset + ampersand)
+          throw new ParseError(`Unknown entity '&${entity};'`, offset + ampersand)
         }
         const hex = entity.charCodeAt(1) === 0x78
         const digits = entity.slice(hex ? 2 : 1)
         const codePoint =
           digits.length > 0 && /^[0-9a-fA-F]+$/.test(digits) ? Number.parseInt(digits, hex ? 16 : 10) : Number.NaN
         if ((!hex && !/^\d+$/.test(digits)) || !isAllowedCodePoint(codePoint)) {
-          throw new XmlParseError(`Invalid character reference '&${entity};'`, offset + ampersand)
+          throw new ParseError(`Invalid character reference '&${entity};'`, offset + ampersand)
         }
         decoded = String.fromCodePoint(codePoint)
       }
@@ -107,16 +99,16 @@ const namePattern =
 
 const localName = (qualifiedName: string, position: number): string => {
   if (!namePattern.test(qualifiedName)) {
-    throw new XmlParseError(`Invalid name '${qualifiedName.slice(0, 64)}'`, position)
+    throw new ParseError(`Invalid name '${qualifiedName.slice(0, 64)}'`, position)
   }
   const colon = qualifiedName.indexOf(':')
   const name = colon === -1 ? qualifiedName : qualifiedName.slice(colon + 1)
-  if (forbiddenNames.has(name)) throw new XmlParseError(`Forbidden name '${name}'`, position)
+  if (forbiddenNames.has(name)) throw new ParseError(`Forbidden name '${name}'`, position)
   return name
 }
 
 const appendChild = (parent: Frame, name: string, value: XmlValue): void => {
-  const children = (parent.children ??= new XmlNode())
+  const children = (parent.children ??= new ParsedNode())
   const existing = children[name]
   if (existing === undefined) {
     children[name] = value
@@ -130,7 +122,7 @@ const appendChild = (parent: Frame, name: string, value: XmlValue): void => {
 const finalize = (frame: Frame): XmlValue => {
   const text = frame.text.trim()
   if (frame.children === undefined && frame.attributes === undefined) return text
-  const node = frame.children ?? new XmlNode()
+  const node = frame.children ?? new ParsedNode()
   if (frame.attributes !== undefined) node['$'] = frame.attributes
   if (text.length > 0) node['_'] = text
   return node
@@ -147,12 +139,12 @@ const finalize = (frame: Frame): XmlValue => {
  * @param xml - The document to parse
  * @param overrides - Resource limits, merged with the defaults
  * @returns The root element keyed by its local name
- * @throws {XmlParseError} If the document is malformed, uses a forbidden construct or exceeds a limit
+ * @throws {ParseError} If the document is malformed, uses a forbidden construct or exceeds a limit
  */
 export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject {
   const limits = overrides ? { ...defaultLimits, ...overrides } : defaultLimits
   if (xml.length > limits.maxLength) {
-    throw new XmlParseError(`Document exceeds ${limits.maxLength} characters`, limits.maxLength)
+    throw new ParseError(`Document exceeds ${limits.maxLength} characters`, limits.maxLength)
   }
 
   const root: Frame = { qualifiedName: '', localName: '', attributes: undefined, children: undefined, text: '' }
@@ -169,7 +161,7 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
     if (textEnd > position) {
       const text = xml.slice(position, textEnd)
       if (current === root) {
-        if (text.trim().length > 0) throw new XmlParseError('Text outside of the root element', position)
+        if (text.trim().length > 0) throw new ParseError('Text outside of the root element', position)
       } else {
         current.text += decodeEntities(text, position)
       }
@@ -180,13 +172,13 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
 
     if (next === 0x3f) {
       if (lessThan !== 0 && !(lessThan === 1 && position === 1)) {
-        throw new XmlParseError('Processing instructions are not allowed', lessThan)
+        throw new ParseError('Processing instructions are not allowed', lessThan)
       }
       if (!xml.startsWith('<?xml', lessThan) || !isWhitespace(xml.charCodeAt(lessThan + 5))) {
-        throw new XmlParseError('Processing instructions are not allowed', lessThan)
+        throw new ParseError('Processing instructions are not allowed', lessThan)
       }
       const end = xml.indexOf('?>', lessThan + 5)
-      if (end === -1) throw new XmlParseError('Unterminated XML declaration', lessThan)
+      if (end === -1) throw new ParseError('Unterminated XML declaration', lessThan)
       position = end + 2
       continue
     }
@@ -194,27 +186,27 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
     if (next === 0x21) {
       if (xml.startsWith('<!--', lessThan)) {
         const end = xml.indexOf('-->', lessThan + 4)
-        if (end === -1) throw new XmlParseError('Unterminated comment', lessThan)
+        if (end === -1) throw new ParseError('Unterminated comment', lessThan)
         position = end + 3
         continue
       }
       if (xml.startsWith('<![CDATA[', lessThan)) {
-        if (current === root) throw new XmlParseError('CDATA outside of the root element', lessThan)
+        if (current === root) throw new ParseError('CDATA outside of the root element', lessThan)
         const end = xml.indexOf(']]>', lessThan + 9)
-        if (end === -1) throw new XmlParseError('Unterminated CDATA section', lessThan)
+        if (end === -1) throw new ParseError('Unterminated CDATA section', lessThan)
         current.text += xml.slice(lessThan + 9, end)
         position = end + 3
         continue
       }
-      throw new XmlParseError('DOCTYPE and markup declarations are not allowed', lessThan)
+      throw new ParseError('DOCTYPE and markup declarations are not allowed', lessThan)
     }
 
     if (next === 0x2f) {
       const end = xml.indexOf('>', lessThan + 2)
-      if (end === -1) throw new XmlParseError('Unterminated closing tag', lessThan)
+      if (end === -1) throw new ParseError('Unterminated closing tag', lessThan)
       const name = xml.slice(lessThan + 2, end).trimEnd()
       if (current === root || name !== current.qualifiedName) {
-        throw new XmlParseError(`Unexpected closing tag '${name.slice(0, 64)}'`, lessThan)
+        throw new ParseError(`Unexpected closing tag '${name.slice(0, 64)}'`, lessThan)
       }
       stack.pop()
       const parent = stack[stack.length - 1] as Frame
@@ -224,15 +216,15 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
       continue
     }
 
-    if (current === root && seenRoot) throw new XmlParseError('Multiple root elements', lessThan)
+    if (current === root && seenRoot) throw new ParseError('Multiple root elements', lessThan)
 
     let cursor = lessThan + 1
     while (!isNameEnd(xml.charCodeAt(cursor))) cursor++
     const qualifiedName = xml.slice(lessThan + 1, cursor)
     const elementName = localName(qualifiedName, lessThan)
 
-    if (++nodes > limits.maxNodes) throw new XmlParseError(`Document exceeds ${limits.maxNodes} elements`, lessThan)
-    if (stack.length > limits.maxDepth) throw new XmlParseError(`Document exceeds depth ${limits.maxDepth}`, lessThan)
+    if (++nodes > limits.maxNodes) throw new ParseError(`Document exceeds ${limits.maxNodes} elements`, lessThan)
+    if (stack.length > limits.maxDepth) throw new ParseError(`Document exceeds depth ${limits.maxDepth}`, lessThan)
 
     const frame: Frame = { qualifiedName, localName: elementName, attributes: undefined, children: undefined, text: '' }
     const attributeNames: string[] = []
@@ -246,42 +238,42 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
         break
       }
       if (code === 0x2f) {
-        if (xml.charCodeAt(cursor + 1) !== 0x3e) throw new XmlParseError("Expected '>' after '/'", cursor)
+        if (xml.charCodeAt(cursor + 1) !== 0x3e) throw new ParseError("Expected '>' after '/'", cursor)
         selfClosing = true
         cursor += 2
         break
       }
-      if (Number.isNaN(code)) throw new XmlParseError(`Unterminated tag '${qualifiedName}'`, lessThan)
+      if (Number.isNaN(code)) throw new ParseError(`Unterminated tag '${qualifiedName}'`, lessThan)
       if (!isWhitespace(xml.charCodeAt(cursor - 1))) {
-        throw new XmlParseError('Expected whitespace before attribute', cursor)
+        throw new ParseError('Expected whitespace before attribute', cursor)
       }
 
       const nameStart = cursor
       while (!isNameEnd(xml.charCodeAt(cursor))) cursor++
       const attributeName = xml.slice(nameStart, cursor)
       while (isWhitespace(xml.charCodeAt(cursor))) cursor++
-      if (xml.charCodeAt(cursor) !== 0x3d) throw new XmlParseError(`Expected '=' after '${attributeName}'`, cursor)
+      if (xml.charCodeAt(cursor) !== 0x3d) throw new ParseError(`Expected '=' after '${attributeName}'`, cursor)
       cursor++
       while (isWhitespace(xml.charCodeAt(cursor))) cursor++
       const quote = xml.charCodeAt(cursor)
-      if (quote !== 0x22 && quote !== 0x27) throw new XmlParseError('Expected quoted attribute value', cursor)
+      if (quote !== 0x22 && quote !== 0x27) throw new ParseError('Expected quoted attribute value', cursor)
       const valueEnd = xml.indexOf(quote === 0x22 ? '"' : "'", cursor + 1)
-      if (valueEnd === -1) throw new XmlParseError('Unterminated attribute value', cursor)
+      if (valueEnd === -1) throw new ParseError('Unterminated attribute value', cursor)
       const rawValue = xml.slice(cursor + 1, valueEnd)
-      if (rawValue.includes('<')) throw new XmlParseError("'<' in attribute value", cursor)
+      if (rawValue.includes('<')) throw new ParseError("'<' in attribute value", cursor)
       const valueStart = cursor + 1
       cursor = valueEnd + 1
 
       if (attributeNames.includes(attributeName)) {
-        throw new XmlParseError(`Duplicate attribute '${attributeName}'`, nameStart)
+        throw new ParseError(`Duplicate attribute '${attributeName}'`, nameStart)
       }
       if (attributeNames.push(attributeName) > limits.maxAttributes) {
-        throw new XmlParseError(`Element exceeds ${limits.maxAttributes} attributes`, nameStart)
+        throw new ParseError(`Element exceeds ${limits.maxAttributes} attributes`, nameStart)
       }
       if (attributeName === 'xmlns' || attributeName.startsWith('xmlns:')) continue
 
       const attributeLocalName = localName(attributeName, nameStart)
-      const attributes = (frame.attributes ??= new XmlNode())
+      const attributes = (frame.attributes ??= new ParsedNode())
       attributes[attributeLocalName] ??= decodeEntities(rawValue, valueStart)
     }
 
@@ -295,7 +287,7 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>): XmlObject
     position = cursor
   }
 
-  if (current !== root) throw new XmlParseError(`Unclosed element '${current.qualifiedName}'`, xml.length)
-  if (!seenRoot || root.children === undefined) throw new XmlParseError('No root element', xml.length)
+  if (current !== root) throw new ParseError(`Unclosed element '${current.qualifiedName}'`, xml.length)
+  if (!seenRoot || root.children === undefined) throw new ParseError('No root element', xml.length)
   return root.children
 }

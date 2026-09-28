@@ -15,8 +15,9 @@ import {
   uniqueArray
 } from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { parseXml as fxp } from '../bench/candidates/fxp.ts'
-import { parseXml, XmlParseError } from '../bench/candidates/xml.ts'
+import { ParseError } from '../../packages/onvif/source/errors.ts'
+import { parseXml } from '../../packages/onvif/source/soap/parse.ts'
+import { parseXml as fxp } from '../bench/fxp.ts'
 import { corpus } from '../fixtures/corpus.ts'
 
 const numRuns = Number(process.env['FUZZ_RUNS'] ?? 2000)
@@ -28,7 +29,7 @@ const parsesOrRejects = (xml: string): void => {
   try {
     parseXml(xml, { maxLength: 1024 * 1024 })
   } catch (error) {
-    if (!(error instanceof XmlParseError)) throw error
+    if (!(error instanceof ParseError)) throw error
   }
   if (Object.getOwnPropertyNames(Object.prototype).length !== prototypeKeyCount || 'polluted' in {}) {
     throw new Error('Object.prototype was modified')
@@ -113,7 +114,7 @@ const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 
 describe('xml parser fuzzing', () => {
   it(
-    'only throws XmlParseError on arbitrary input',
+    'only throws ParseError on arbitrary input',
     () => {
       expect(() => {
         assert(property(string({ unit: 'binary', maxLength: 512 }), parsesOrRejects), { numRuns })
@@ -123,7 +124,7 @@ describe('xml parser fuzzing', () => {
   )
 
   it(
-    'only throws XmlParseError on mutated fixtures',
+    'only throws ParseError on mutated fixtures',
     () => {
       const documents = constantFrom(...corpus.map((entry) => entry.xml))
       const mutations = array(mutation, { minLength: 1, maxLength: 8 })

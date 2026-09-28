@@ -1,60 +1,23 @@
 {
-  "name": "@2bad/onvif",
-  "version": "1.0.0-beta.6",
-  "description": "",
-  "keywords": [
-    "onvif"
-  ],
-  "homepage": "https://github.com/2BAD/onvif#readme",
-  "bugs": {
-    "url": "https://github.com/2BAD/onvif/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/2BAD/onvif.git"
-  },
-  "license": "MIT",
-  "author": "2BAD (https://github.com/2BAD)",
-  "contributors": [
-    {
-      "name": "Jason Hyde",
-      "email": "github@2bad.me",
-      "url": "https://github.com/mrhyde"
-    }
-  ],
+  "name": "@2bad/onvif-workspace",
+  "private": true,
   "type": "module",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./build/index.d.ts",
-        "default": "./build/index.js"
-      }
-    }
-  },
-  "files": [
-    "build"
-  ],
   "scripts": {
     "bench": "vitest bench --run --reporter=verbose",
     "bench:memory": "node --expose-gc --import tsx tools/bench/memory.ts",
-    "build": "tsdown",
+    "build": "pnpm --recursive --filter './packages/*' run build",
     "check": "run-p check:**",
-    "check:code": "oxlint ./source ./tools",
-    "check:format": "oxfmt --check ./source ./tools",
+    "check:code": "oxlint ./packages ./tools",
+    "check:format": "oxfmt --check ./packages ./tools",
     "check:types": "tsc --noEmit",
     "fix": "run-p fix:**",
-    "fix:code": "oxlint --fix ./source ./tools",
-    "fix:format": "oxfmt ./source ./tools",
+    "fix:code": "oxlint --fix ./packages ./tools",
+    "fix:format": "oxfmt ./packages ./tools",
     "fixtures:capture": "tsx --env-file=.env tools/fixtures/capture.ts",
-    "prepublishOnly": "run-s build",
-    "preversion": "run-s check test build",
     "test": "vitest run",
     "test:fuzz": "vitest run fuzz",
     "test:integration": "vitest run integration --coverage",
     "test:unit": "vitest run unit --coverage"
-  },
-  "dependencies": {
-    "fast-xml-parser": "5.11.1"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",
@@ -63,6 +26,7 @@
     "@types/node": "26.6.2",
     "@vitest/coverage-v8": "5.0.2",
     "fast-check": "4.10.2",
+    "fast-xml-parser": "5.11.1",
     "npm-run-all2": "9.0.3",
     "oxfmt": "0.70.0",
     "oxlint": "1.85.0",

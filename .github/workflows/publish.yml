@@ -28,7 +28,7 @@ jobs:
       - name: determine dist-tag
         id: dist-tag
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./packages/onvif/package.json').version")
           if [[ "$VERSION" =~ -([a-zA-Z]+) ]]; then
             echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
@@ -37,4 +37,4 @@ jobs:
       - name: publish
         env:
           NPM_TAG: ${{ steps.dist-tag.outputs.tag }}
-        run: pnpm publish --provenance --access public --no-git-checks --tag "$NPM_TAG"
+        run: pnpm --filter @2bad/onvif publish --provenance --access public --no-git-checks --tag "$NPM_TAG"

@@ -2,15 +2,18 @@ import { readFileSync } from 'node:fs'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  resolve: {
-    tsconfigPaths: true
-  },
   test: {
-    exclude: ['build', 'node_modules'],
+    exclude: ['**/build', '**/node_modules'],
     coverage: {
-      include: ['source/**/*.{ts,tsx}'],
-      exclude: ['build', ...coverageConfigDefaults.exclude],
-      provider: 'v8'
+      include: ['packages/*/source/**/*.ts'],
+      exclude: ['**/build', ...coverageConfigDefaults.exclude],
+      provider: 'v8',
+      thresholds: {
+        branches: 90,
+        functions: 90,
+        lines: 90,
+        statements: 90
+      }
     },
     env: loadDotenv('.env'),
     testTimeout: 30000

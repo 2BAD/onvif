@@ -1,7 +1,6 @@
 import { expect, test } from 'vitest'
-import { parseSOAPString } from '../../source/utils/xml.ts'
-import { parseXml as fxp } from './candidates/fxp.ts'
-import { parseXml as custom } from './candidates/xml.ts'
+import { parseXml as custom } from '../../packages/onvif/source/soap/parse.ts'
+import { parseXml as fxp } from './fxp.ts'
 import { successCorpus, workloads } from './workloads.ts'
 
 const cases = [
@@ -14,9 +13,6 @@ const cases = [
 
 test.for(cases)('$name', async ({ documents }, { bench }) => {
   const results = await bench.compare(
-    bench('current pipeline', async () => {
-      for (const xml of documents) await parseSOAPString(xml)
-    }),
     bench('fast-xml-parser', () => {
       for (const xml of documents) fxp(xml)
     }),

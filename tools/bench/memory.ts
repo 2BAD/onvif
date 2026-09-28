@@ -1,6 +1,6 @@
 import { GCProfiler } from 'node:v8'
-import { parseXml as fxp } from './candidates/fxp.ts'
-import { parseXml as custom } from './candidates/xml.ts'
+import { parseXml as custom } from '../../packages/onvif/source/soap/parse.ts'
+import { parseXml as fxp } from './fxp.ts'
 import { successCorpus, workloads } from './workloads.ts'
 
 const collectGarbage = globalThis.gc

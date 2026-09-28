@@ -1,0 +1,49 @@
+{
+  "name": "@2bad/onvif",
+  "version": "2.0.0-alpha.0",
+  "description": "ONVIF client for Node.js built for performance, security and reliability",
+  "keywords": [
+    "camera",
+    "ip camera",
+    "onvif",
+    "soap",
+    "ws-discovery"
+  ],
+  "homepage": "https://github.com/2BAD/onvif#readme",
+  "bugs": {
+    "url": "https://github.com/2BAD/onvif/issues"
+  },
+  "license": "MIT",
+  "author": "2BAD (https://github.com/2BAD)",
+  "contributors": [
+    {
+      "name": "Jason Hyde",
+      "email": "github@2bad.me",
+      "url": "https://github.com/mrhyde"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2BAD/onvif.git",
+    "directory": "packages/onvif"
+  },
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepublishOnly": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

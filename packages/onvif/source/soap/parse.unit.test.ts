@@ -1,15 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { corpus } from '../../fixtures/corpus.ts'
-import { parseXml as fxp } from './fxp.ts'
-import { parseXml, XmlParseError } from './xml.ts'
+import { ParseError } from '../errors.ts'
+import { parseXml } from './parse.ts'
 
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
-
-describe('conformance with fast-xml-parser', () => {
-  it.each(corpus.map((entry) => [entry.name, entry.xml]))('%s', (_name, xml) => {
-    expect(plain(parseXml(xml))).toEqual(plain(fxp(xml)))
-  })
-})
 
 describe('parseXml', () => {
   it('strips namespace prefixes and xmlns declarations', () => {
@@ -85,7 +78,7 @@ describe('parseXml rejects', () => {
     ['unterminated comments', '<a><!-- x</a>', /Unterminated comment/],
     ['unterminated CDATA', '<a><![CDATA[x</a>', /Unterminated CDATA/]
   ] as const)('%s', (_name, xml, message) => {
-    expect(() => parseXml(xml)).toThrow(XmlParseError)
+    expect(() => parseXml(xml)).toThrow(ParseError)
     expect(() => parseXml(xml)).toThrow(message)
   })
 
