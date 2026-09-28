@@ -5,6 +5,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
+import { MockEvents, type MockEventsOptions, type PullPointState } from '#tools/mock-camera/events.ts'
 
 type Manifest = { responses: Record<string, { status: number; contentType: string }> }
 
@@ -33,6 +34,8 @@ export type MockCameraOptions = {
   contentTypeAction?: 'require' | 'reject'
   /** Host written into service addresses instead of the mock's own, to simulate NAT. */
   advertisedHost?: string
+  /** Pull point behavior; subscriptions are simulated whatever these options are. */
+  events?: MockEventsOptions
   overrides?: Record<string, ActionOverride>
 }
 
@@ -49,11 +52,25 @@ export type MockCamera = {
   requests: RecordedRequest[]
   /** Change the device clock, relative to the real time. */
   setClockSkew: (skewMs: number) => void
+  /** Queue a `wsnt:NotificationMessage` on every pull point. */
+  emitEvent: (notification: string) => void
+  /** Pull points that currently exist on the device. */
+  pullPoints: () => PullPointState[]
+  /** Drop every pull point, as a reboot would. */
+  expirePullPoints: () => void
   close: () => Promise<void>
 }
 
 const defaultFixtures = join(import.meta.dirname, '../../fixtures/live/dvc/dcn-bm2220lpr')
 const capturedHost = '192.0.2.14:80'
+
+const simulatedEventActions = new Set([
+  'CreatePullPointSubscription',
+  'PullMessages',
+  'Renew',
+  'SetSynchronizationPoint',
+  'Unsubscribe'
+])
 
 const servicesByPath: Record<string, string> = {
   '/onvif/device_service': 'device',
@@ -142,6 +159,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     advertisedHost,
     overrides = {}
   } = options
+  const events = new MockEvents(readFileSync(join(fixtureDirectory, 'events.PullMessages.xml'), 'utf8'), options.events)
   let clockSkewMs = options.clockSkewMs ?? 0
   const manifest = JSON.parse(readFileSync(join(fixtureDirectory, 'manifest.json'), 'utf8')) as Manifest
   const requests: RecordedRequest[] = []
@@ -194,7 +212,8 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
 
   const handle = async (request: IncomingMessage, response: ServerResponse, body: string) => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname
-    const service = servicesByPath[path] ?? (path.startsWith('/onvif/event/') ? 'events' : 'unknown')
+    const service =
+      servicesByPath[path] ?? (path.startsWith('/onvif/event/') || path === '/onvif/services' ? 'events' : 'unknown')
 
     let envelope: XmlObject
     try {
@@ -253,6 +272,12 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       return
     }
 
+    if (service === 'events' && simulatedEventActions.has(action)) {
+      const reply = await events.handle(action, path, advertisedHost ?? host, envelope, () => realNow() + clockSkewMs)
+      if (!response.destroyed) send(response, reply.status, reply.body)
+      return
+    }
+
     const name = `${service}.${action}`
     const recorded = manifest.responses[name]
     if (!recorded) {
@@ -295,7 +320,11 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     setClockSkew: (skewMs) => {
       clockSkewMs = skewMs
     },
+    emitEvent: (notification) => events.emit(notification),
+    pullPoints: () => events.pullPoints,
+    expirePullPoints: () => events.expireAll(),
     close: async () => {
+      events.close()
       server.closeAllConnections()
       server.close()
       await once(server, 'close')

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
+import { motionNotification } from '#tools/mock-camera/events.ts'
 import { type MockCamera, type MockCameraOptions, startMockCamera } from '#tools/mock-camera/server.ts'
 
 const tds = 'xmlns="http://www.onvif.org/ver10/device/wsdl"'
@@ -30,6 +31,19 @@ const start = async (options?: MockCameraOptions): Promise<MockCamera> => {
 
 const post = (url: string, body: string, headers: Record<string, string> = {}) =>
   fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/soap+xml', ...headers }, body })
+
+const create = (termination?: string): string =>
+  '<CreatePullPointSubscription xmlns="http://www.onvif.org/ver10/events/wsdl">' +
+  `${termination ? `<InitialTerminationTime>${termination}</InitialTerminationTime>` : ''}</CreatePullPointSubscription>`
+
+const pull = (timeout = 'PT1S', limit = 10): string =>
+  '<PullMessages xmlns="http://www.onvif.org/ver10/events/wsdl">' +
+  `<Timeout>${timeout}</Timeout><MessageLimit>${limit}</MessageLimit></PullMessages>`
+
+const createPullPoint = async (url: string, termination?: string): Promise<string> => {
+  const xml = await (await post(`${url}/onvif/Events`, envelope(create(termination)))).text()
+  return /<wsa5:Address>([^<]+)</.exec(xml)?.[1] ?? ''
+}
 
 afterEach(async () => {
   await camera?.close()
@@ -116,16 +130,99 @@ describe('mock camera', () => {
 
   it('requires WS-Addressing on subscription endpoints when asked to', async () => {
     const { url } = await start({ auth: 'none', requireAddressing: true })
-    const body = envelope('<PullMessages xmlns="http://www.onvif.org/ver10/events/wsdl"/>')
-    const response = await post(`${url}/onvif/event/subsription_0`, body)
+    const address = await createPullPoint(url)
+    const response = await post(address, envelope(pull()))
     expect(response.status).toBe(400)
     expect(await response.text()).toContain('wsa5__To')
 
-    const addressed = envelope(
-      '<PullMessages xmlns="http://www.onvif.org/ver10/events/wsdl"/>',
-      `<a:To xmlns:a="http://www.w3.org/2005/08/addressing">${url}/onvif/event/subsription_0</a:To>`
-    )
-    expect((await post(`${url}/onvif/event/subsription_0`, addressed)).status).toBe(200)
+    const addressed = envelope(pull(), `<a:To xmlns:a="http://www.w3.org/2005/08/addressing">${address}</a:To>`)
+    expect((await post(address, addressed)).status).toBe(200)
+  })
+
+  describe('pull points', () => {
+    it('delivers the initial property events, then waits for new ones until the timeout', async () => {
+      const mock = await start({ auth: 'none' })
+      const address = await createPullPoint(mock.url, 'PT5S')
+      const first = await (await post(address, envelope(pull('PT1S', 100)))).text()
+      expect(first.match(/<wsnt:NotificationMessage>/g)).toHaveLength(7)
+
+      const started = performance.now()
+      const idle = await (await post(address, envelope(pull('PT0.2S')))).text()
+      expect(performance.now() - started).toBeGreaterThanOrEqual(150)
+      expect(idle).not.toContain('NotificationMessage')
+
+      setTimeout(() => mock.emitEvent(motionNotification(true)), 50)
+      expect(await (await post(address, envelope(pull('PT5S')))).text()).toContain('Name="IsMotion" Value="true"')
+    })
+
+    it('extends the termination time on pulls unless asked not to', async () => {
+      const extending = await start({ auth: 'none', events: { terminationMs: 10_000 } })
+      await post(await createPullPoint(extending.url), envelope(pull('PT0S')))
+      expect(extending.pullPoints()[0]?.terminationAt).toBeGreaterThan(Date.now() + 9_000)
+      await extending.close()
+
+      const fixed = await start({ auth: 'none', events: { terminationMs: 300, extendOnPull: false } })
+      const address = await createPullPoint(fixed.url)
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      const expired = await post(address, envelope(pull('PT0S')))
+      expect(await expired.text()).toContain('ResourceUnknownFault')
+      expect(fixed.pullPoints()).toEqual([])
+    })
+
+    it('renews, synchronizes and unsubscribes', async () => {
+      const mock = await start({ auth: 'none', events: { extendOnPull: false } })
+      const address = await createPullPoint(mock.url, 'PT1S')
+      const renewed = await (
+        await post(
+          address,
+          envelope('<Renew xmlns="http://docs.oasis-open.org/wsn/b-2"><TerminationTime>PT1M</TerminationTime></Renew>')
+        )
+      ).text()
+      expect(renewed).toContain('<wsnt:RenewResponse>')
+      expect(mock.pullPoints()[0]?.terminationAt).toBeGreaterThan(Date.now() + 50_000)
+
+      await post(address, envelope(pull('PT0S', 100)))
+      await post(address, envelope('<SetSynchronizationPoint xmlns="http://www.onvif.org/ver10/events/wsdl"/>'))
+      const again = await (await post(address, envelope(pull('PT0S', 100)))).text()
+      expect(again.match(/PropertyOperation="Initialized"/g)).toHaveLength(7)
+
+      await post(address, envelope('<Unsubscribe xmlns="http://docs.oasis-open.org/wsn/b-2"/>'))
+      expect(mock.pullPoints()).toEqual([])
+    })
+
+    it('simulates Axis reference parameters, hostless addresses, missing Renew and a pull point limit', async () => {
+      const axis = await start({ auth: 'none', events: { referenceParameters: true, renew: false, maxPullPoints: 1 } })
+      const created = await (await post(`${axis.url}/onvif/Events`, envelope(create()))).text()
+      expect(created).toContain(`<wsa5:Address>${axis.url}/onvif/services</wsa5:Address>`)
+      expect(created).toContain(
+        '<dom0:SubscriptionId xmlns:dom0="http://www.axis.com/2009/event">1</dom0:SubscriptionId>'
+      )
+      expect(await (await post(`${axis.url}/onvif/Events`, envelope(create()))).text()).toContain(
+        'SubscribeCreationFailed'
+      )
+      const services = `${axis.url}/onvif/services`
+      expect(await (await post(services, envelope(pull('PT0S')))).text()).toContain('ResourceUnknownFault')
+      const id = '<SubscriptionId xmlns="http://www.axis.com/2009/event">1</SubscriptionId>'
+      expect((await post(services, envelope(pull('PT0S'), id))).status).toBe(200)
+      const renew = envelope(
+        '<Renew xmlns="http://docs.oasis-open.org/wsn/b-2"><TerminationTime>PT1M</TerminationTime></Renew>',
+        id
+      )
+      expect(await (await post(services, renew)).text()).toContain('ActionNotSupported')
+      await axis.close()
+
+      const raysharp = await start({ auth: 'none', events: { hostlessAddress: true } })
+      expect(await (await post(`${raysharp.url}/onvif/Events`, envelope(create()))).text()).toContain(
+        '<wsa5:Address>http:///onvif/event/subsription_1</wsa5:Address>'
+      )
+    })
+
+    it('drops every pull point on request, as a reboot would', async () => {
+      const mock = await start({ auth: 'none' })
+      await createPullPoint(mock.url)
+      mock.expirePullPoints()
+      expect(mock.pullPoints()).toEqual([])
+    })
   })
 
   describe('fault injection', () => {
