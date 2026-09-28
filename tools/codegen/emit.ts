@@ -6,6 +6,10 @@ export type EmitOptions = {
   commit: string
   codecImport: string
   operations: OperationModel[]
+  /** Types of global elements that no operation references, such as the content of an `xs:any`. */
+  elements?: ComplexModel[]
+  /** Operations whose responses are parsed with namespaces. */
+  namespaces?: string[]
 }
 
 const tsPrimitives: Record<SimpleModel['primitive'], string> = {
@@ -166,7 +170,7 @@ const collectEnumerations = (complexTypes: ComplexModel[]): SimpleModel[] => {
   return [...seen.values()]
 }
 
-const reachable = (operations: OperationModel[]): ComplexModel[] => {
+const reachable = (operations: OperationModel[], elements: ComplexModel[]): ComplexModel[] => {
   const found = new Set<ComplexModel>()
   const visit = (model: ComplexModel) => {
     if (found.has(model)) return
@@ -177,18 +181,19 @@ const reachable = (operations: OperationModel[]): ComplexModel[] => {
     visit(operation.request.type)
     visit(operation.response.type)
   }
+  for (const element of elements) visit(element)
   return [...found]
 }
 
 /**
  * Render the types, schema table and operations of one generated module.
  *
- * @param options - Operations and the codec import path
+ * @param options - Operations, extra element types and the codec import path
  * @returns TypeScript source
  */
 export function emit(options: EmitOptions): string {
-  const { commit, codecImport, operations } = options
-  const complexTypes = reachable(operations)
+  const { commit, codecImport, operations, elements = [], namespaces = [] } = options
+  const complexTypes = reachable(operations, elements)
   const enumerations = collectEnumerations(complexTypes)
   const names = new Names(complexTypes, enumerations)
 
@@ -248,6 +253,7 @@ export function emit(options: EmitOptions): string {
       `  action: '${operation.action}',\n` +
       `  request: { name: '${operation.request.element.local}', namespace: ${names.namespace(operation.request.element.namespace)}, type: '${request}' },\n` +
       `  response: { name: '${operation.response.element.local}', type: '${response}' },\n` +
+      (namespaces.includes(operation.name) ? '  namespaces: true,\n' : '') +
       '  schema\n' +
       '}\n\n'
   }

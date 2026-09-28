@@ -10,8 +10,11 @@ type Target = {
   output: string
   codecImport: string
   wsdl: string
-  portType: { namespace: string; local: string }
-  operations: string[]
+  portTypes: { namespace: string; local: string; operations: string[] }[]
+  /** Global elements outside the operations, with the schema that defines them. */
+  elements?: { schema: string; namespace: string; local: string }[]
+  /** Operations whose responses hold QNames or endpoint references and are parsed with namespaces. */
+  namespaces?: string[]
 }
 
 const root = join(import.meta.dirname, '../..')
@@ -21,17 +24,22 @@ const targets: Target[] = [
     output: 'packages/onvif/source/generated/device.ts',
     codecImport: '#soap/codec.ts',
     wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
-    portType: { namespace: 'http://www.onvif.org/ver10/device/wsdl', local: 'Device' },
-    operations: [
-      'GetSystemDateAndTime',
-      'GetServices',
-      'GetServiceCapabilities',
-      'GetCapabilities',
-      'GetDeviceInformation',
-      'GetScopes',
-      'GetHostname',
-      'GetNetworkInterfaces',
-      'SystemReboot'
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver10/device/wsdl',
+        local: 'Device',
+        operations: [
+          'GetSystemDateAndTime',
+          'GetServices',
+          'GetServiceCapabilities',
+          'GetCapabilities',
+          'GetDeviceInformation',
+          'GetScopes',
+          'GetHostname',
+          'GetNetworkInterfaces',
+          'SystemReboot'
+        ]
+      }
     ]
   }
 ]
@@ -43,14 +51,20 @@ const commit = readFileSync(join(specsDirectory, 'onvif', 'COMMIT'), 'utf8')
 const generate = (target: Target): string => {
   const registry = new Registry()
   registry.load(join(specsDirectory, 'onvif', target.wsdl))
-  const available = new Map(registry.operations(target.portType).map((operation) => [operation.name, operation]))
   const builder = new ModelBuilder(registry)
-  const operations = target.operations.map((name) => {
-    const operation = available.get(name)
-    if (!operation?.output) throw new Error(`Operation ${name} not found in ${target.wsdl}`)
-    return builder.operation(name, operation.action, operation.input, operation.output)
+  const operations = target.portTypes.flatMap((portType) => {
+    const available = new Map(registry.operations(portType).map((operation) => [operation.name, operation]))
+    return portType.operations.map((name) => {
+      const operation = available.get(name)
+      if (!operation?.output) throw new Error(`Operation ${name} not found in ${portType.local} of ${target.wsdl}`)
+      return builder.operation(name, operation.action, operation.input, operation.output)
+    })
   })
-  return emit({ commit, codecImport: target.codecImport, operations })
+  const elements = (target.elements ?? []).map(({ schema, ...element }) => {
+    registry.load(join(specsDirectory, 'onvif', schema))
+    return builder.element(element)
+  })
+  return emit({ commit, codecImport: target.codecImport, operations, elements, namespaces: target.namespaces ?? [] })
 }
 
 const format = (files: string[]): void => {

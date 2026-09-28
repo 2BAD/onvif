@@ -115,6 +115,10 @@ export class ModelBuilder {
     }
   }
 
+  element(name: QName): ComplexModel {
+    return this.#globalElementType(name, name.local)
+  }
+
   #globalElementType(element: QName, suggestedName: string): ComplexModel {
     const { node, context } = this.#registry.component('element', element)
     const type = this.#elementType(node, context, suggestedName)
@@ -205,7 +209,7 @@ export class ModelBuilder {
       qname,
       suggestedName,
       fields: [],
-      text: undefined,
+      text: node.attributes['mixed'] === 'true' ? this.#builtin('string') : undefined,
       any: false,
       documentation: documentationOf(node)
     }

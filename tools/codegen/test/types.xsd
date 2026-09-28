@@ -17,6 +17,21 @@
     <xs:restriction base="xs:float"><xs:minInclusive value="0"/></xs:restriction>
   </xs:simpleType>
   <xs:element name="Shared" type="xs:dateTime"/>
+  <xs:complexType name="Remark" mixed="true">
+    <xs:sequence>
+      <xs:any minOccurs="0" processContents="lax"/>
+    </xs:sequence>
+    <xs:attribute name="Dialect" type="xs:anyURI" use="required"/>
+  </xs:complexType>
+  <xs:element name="Notice">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Detail" type="tt:Status"/>
+        <xs:element name="Remark" type="tt:Remark" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="At" type="xs:dateTime" use="required"/>
+    </xs:complexType>
+  </xs:element>
   <xs:attribute name="shared" type="xs:boolean"/>
   <xs:attributeGroup name="Tokens">
     <xs:attribute name="token" type="xs:string" use="required"/>

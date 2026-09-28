@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { type Operation, decode, encodeRequest } from '#onvif/soap/codec.ts'
+import { type Operation, type Schema, decode, encodeRequest } from '#onvif/soap/codec.ts'
 import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
 import { serialize } from '#onvif/soap/serialize.ts'
 import { emit } from '#tools/codegen/emit.ts'
@@ -98,6 +98,17 @@ describe('emit', () => {
     await expect(source).toMatchFileSnapshot('test/__snapshots__/service.ts.snap')
   })
 
+  it('marks operations whose responses are parsed with namespaces', () => {
+    expect(source).not.toContain('namespaces: true')
+    const marked = emit({
+      commit: 'test',
+      codecImport: '#soap/codec.ts',
+      operations: [model],
+      namespaces: ['SetThing']
+    })
+    expect(marked).toContain("response: { name: 'SetThingResponse', type: 'SetThingResponse' },\n  namespaces: true,\n")
+  })
+
   it('prefixes colliding type names with their namespace', () => {
     expect(source).toMatch(/export type Ns\dStatus = \{\n {2}code: number/)
     expect(source).toMatch(/export type Ns\dStatus = \{\n {2}text: string/)
@@ -139,6 +150,37 @@ describe('emit', () => {
     expect(xml).toContain('ns2:shared="true"')
     const element = parseXml(xml)['SetThing'] as XmlObject
     expect(decode(generated.SetThing.schema, generated.SetThing.request.type, element)).toEqual(request)
+  })
+})
+
+describe('elements', () => {
+  it('emits the types of global elements that no operation uses', () => {
+    const registry = new Registry()
+    registry.load(join(testDirectory, 'service.wsdl'))
+    const notice = new ModelBuilder(registry).element({ namespace: 'urn:test:types', local: 'Notice' })
+    const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [], elements: [notice] })
+    expect(source).toMatch(/export type Notice = \{\n {2}detail: Status\n {2}remark\?: Remark\n {2}at: Date\n\}/)
+    expect(source).toContain(
+      "Notice: { fields: [{ name: 'Detail', property: 'detail', type: 'Status', namespace: ns1 }"
+    )
+  })
+})
+
+describe('mixed content', () => {
+  it('decodes the text of a mixed type as its value', async () => {
+    const registry = new Registry()
+    registry.load(join(testDirectory, 'service.wsdl'))
+    const notice = new ModelBuilder(registry).element({ namespace: 'urn:test:types', local: 'Notice' })
+    const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [], elements: [notice] })
+    expect(source).toMatch(/export type Remark = \{\n {2}dialect: string\n {2}value: string\n/)
+    const file = join(scratch, 'notice.ts')
+    writeFileSync(file, source.replace("'#soap/codec.ts'", `'${pathToFileURL(codecPath).href}'`))
+    const { schema } = (await import(pathToFileURL(file).href)) as { schema: Schema }
+    const xml =
+      '<Notice At="2026-01-01T00:00:00Z"><Detail><Code>1</Code></Detail><Remark Dialect="urn:d">a:b/c</Remark></Notice>'
+    expect(decode(schema, 'Notice', parseXml(xml)['Notice'] as XmlObject)).toMatchObject({
+      remark: { dialect: 'urn:d', value: 'a:b/c' }
+    })
   })
 })
 
