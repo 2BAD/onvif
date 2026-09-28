@@ -1,6 +1,6 @@
-import { prefixes } from '../../packages/onvif/source/soap/namespaces.ts'
-import type { ComplexModel, FieldModel, OperationModel, SimpleModel } from './model.ts'
-import { keyOf } from './registry.ts'
+import { prefixes } from '#onvif/soap/namespaces.ts'
+import type { ComplexModel, FieldModel, OperationModel, SimpleModel } from '#tools/codegen/model.ts'
+import { keyOf } from '#tools/codegen/registry.ts'
 
 export type EmitOptions = {
   commit: string

@@ -1,5 +1,5 @@
-import { keyOf, type Registry, type SchemaContext, XS } from './registry.ts'
-import { type QName, resolveQName, type SchemaNode } from './xml.ts'
+import { keyOf, type Registry, type SchemaContext, XS } from '#tools/codegen/registry.ts'
+import { type QName, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
 
 export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
 

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
-import { type MockCamera, type MockCameraOptions, startMockCamera } from './server.ts'
+import { type MockCamera, type MockCameraOptions, startMockCamera } from '#tools/mock-camera/server.ts'
 
 const tds = 'xmlns="http://www.onvif.org/ver10/device/wsdl"'
 

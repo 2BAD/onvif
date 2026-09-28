@@ -7,4 +7,4 @@ export {
   SoapFaultError,
   TimeoutError,
   TransportError
-} from './errors.ts'
+} from '#errors.ts'

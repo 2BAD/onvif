@@ -1,4 +1,4 @@
-import { ParseError } from '../errors.ts'
+import { ParseError } from '#errors.ts'
 
 export type XmlLimits = {
   maxLength: number

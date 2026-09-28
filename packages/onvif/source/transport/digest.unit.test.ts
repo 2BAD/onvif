@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { digestAuthorization, parseChallenge } from './digest.ts'
+import { digestAuthorization, parseChallenge } from '#transport/digest.ts'
 
 const fieldsOf = (header: string): Record<string, string> =>
   Object.fromEntries(

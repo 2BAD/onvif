@@ -6,8 +6,8 @@ import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { startMockCamera } from '../../../../tools/mock-camera/server.ts'
-import { TimeoutError, TransportError } from '../errors.ts'
-import { HttpTransport } from './http.ts'
+import { TimeoutError, TransportError } from '#errors.ts'
+import { HttpTransport } from '#transport/http.ts'
 
 const tlsDirectory = join(import.meta.dirname, '../../../../fixtures/tls')
 const certificate = readFileSync(join(tlsDirectory, 'cert.pem'))

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ParseError } from '../errors.ts'
-import { parseXml } from './parse.ts'
+import { ParseError } from '#errors.ts'
+import { parseXml } from '#soap/parse.ts'
 
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 

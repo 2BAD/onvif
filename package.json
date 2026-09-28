@@ -2,6 +2,10 @@
   "name": "@2bad/onvif-workspace",
   "private": true,
   "type": "module",
+  "imports": {
+    "#onvif/*": "./packages/onvif/source/*",
+    "#tools/*": "./tools/*"
+  },
   "scripts": {
     "bench": "vitest bench --run --reporter=verbose",
     "bench:memory": "node --expose-gc --import tsx tools/bench/memory.ts",

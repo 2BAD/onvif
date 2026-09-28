@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { Agent, createServer, request } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, expect, test } from 'vitest'
-import { workloads } from './workloads.ts'
+import { workloads } from '#tools/bench/workloads.ts'
 
 const envelope = (body: string): string =>
   `<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>${body}</s:Body></s:Envelope>`

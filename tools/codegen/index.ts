@@ -2,9 +2,9 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
-import { emit } from './emit.ts'
-import { ModelBuilder } from './model.ts'
-import { Registry, specsDirectory } from './registry.ts'
+import { emit } from '#tools/codegen/emit.ts'
+import { ModelBuilder } from '#tools/codegen/model.ts'
+import { Registry, specsDirectory } from '#tools/codegen/registry.ts'
 
 type Target = {
   output: string
@@ -19,7 +19,7 @@ const root = join(import.meta.dirname, '../..')
 const targets: Target[] = [
   {
     output: 'packages/onvif/source/generated/device.ts',
-    codecImport: '../soap/codec.ts',
+    codecImport: '#soap/codec.ts',
     wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
     portType: { namespace: 'http://www.onvif.org/ver10/device/wsdl', local: 'Device' },
     operations: [

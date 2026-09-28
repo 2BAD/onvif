@@ -1,5 +1,5 @@
-import { OnvifError } from '../errors.ts'
-import { isAllowedCodePoint } from './parse.ts'
+import { OnvifError } from '#errors.ts'
+import { isAllowedCodePoint } from '#soap/parse.ts'
 
 export type XmlElement = {
   name: string

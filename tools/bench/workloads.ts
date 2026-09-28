@@ -1,4 +1,4 @@
-import { corpus, fixture } from '../fixtures/corpus.ts'
+import { corpus, fixture } from '#tools/fixtures/corpus.ts'
 
 const live = 'live/dvc/dcn-bm2220lpr'
 

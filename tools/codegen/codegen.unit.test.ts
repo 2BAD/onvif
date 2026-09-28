@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { type Operation, decode, encodeRequest } from '../../packages/onvif/source/soap/codec.ts'
-import { parseXml, type XmlObject } from '../../packages/onvif/source/soap/parse.ts'
-import { serialize } from '../../packages/onvif/source/soap/serialize.ts'
-import { emit } from './emit.ts'
-import { ModelBuilder } from './model.ts'
-import { Registry } from './registry.ts'
-import { resolveQName } from './xml.ts'
+import { type Operation, decode, encodeRequest } from '#onvif/soap/codec.ts'
+import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
+import { serialize } from '#onvif/soap/serialize.ts'
+import { emit } from '#tools/codegen/emit.ts'
+import { ModelBuilder } from '#tools/codegen/model.ts'
+import { Registry } from '#tools/codegen/registry.ts'
+import { resolveQName } from '#tools/codegen/xml.ts'
 
 const testDirectory = join(import.meta.dirname, 'test')
 const codecPath = join(import.meta.dirname, '../../packages/onvif/source/soap/codec.ts')
@@ -91,7 +91,7 @@ describe('ModelBuilder', () => {
 
 describe('emit', () => {
   const { model } = build()
-  const source = emit({ commit: 'test', codecImport: '../soap/codec.ts', operations: [model] })
+  const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [model] })
 
   it('matches the snapshot', async () => {
     await expect(source).toMatchFileSnapshot('test/__snapshots__/service.ts.snap')
@@ -104,7 +104,7 @@ describe('emit', () => {
 
   it('produces a module that encodes and decodes through the codec', async () => {
     const file = join(scratch, 'service.ts')
-    writeFileSync(file, source.replace("'../soap/codec.ts'", `'${pathToFileURL(codecPath).href}'`))
+    writeFileSync(file, source.replace("'#soap/codec.ts'", `'${pathToFileURL(codecPath).href}'`))
     const generated = (await import(pathToFileURL(file).href)) as { SetThing: Operation<unknown, unknown> }
     const request = {
       Thing: {

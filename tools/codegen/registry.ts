@@ -1,5 +1,5 @@
 import { dirname, join, resolve } from 'node:path'
-import { type QName, readSchemaFile, resolveQName, type SchemaNode } from './xml.ts'
+import { type QName, readSchemaFile, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
 
 export const XS = 'http://www.w3.org/2001/XMLSchema'
 const WSDL = 'http://schemas.xmlsoap.org/wsdl/'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { parseXml } from '../../packages/onvif/source/soap/parse.ts'
-import { corpus } from '../fixtures/corpus.ts'
-import { parseXml as fxp } from './fxp.ts'
+import { parseXml } from '#onvif/soap/parse.ts'
+import { corpus } from '#tools/fixtures/corpus.ts'
+import { parseXml as fxp } from '#tools/bench/fxp.ts'
 
 const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 

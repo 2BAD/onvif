@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
-import { parseXml as custom } from '../../packages/onvif/source/soap/parse.ts'
-import { parseXml as fxp } from './fxp.ts'
-import { successCorpus, workloads } from './workloads.ts'
+import { parseXml as custom } from '#onvif/soap/parse.ts'
+import { parseXml as fxp } from '#tools/bench/fxp.ts'
+import { successCorpus, workloads } from '#tools/bench/workloads.ts'
 
 const cases = [
   ...Object.entries(workloads).map(([name, xml]) => ({

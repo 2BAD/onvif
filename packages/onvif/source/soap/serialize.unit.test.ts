@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { OnvifError } from '../errors.ts'
-import { parseXml } from './parse.ts'
-import { escapeAttribute, escapeText, serialize } from './serialize.ts'
+import { OnvifError } from '#errors.ts'
+import { parseXml } from '#soap/parse.ts'
+import { escapeAttribute, escapeText, serialize } from '#soap/serialize.ts'
 
 describe('serialize', () => {
   it('writes elements, attributes and text', () => {

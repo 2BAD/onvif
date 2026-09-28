@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { corpus } from '../../../../tools/fixtures/corpus.ts'
-import { decode } from '../soap/codec.ts'
-import { parseEnvelope } from '../soap/envelope.ts'
-import * as device from './device.ts'
+import { decode } from '#soap/codec.ts'
+import { parseEnvelope } from '#soap/envelope.ts'
+import * as device from '#generated/device.ts'
 
 const operations = [
   device.GetSystemDateAndTime,

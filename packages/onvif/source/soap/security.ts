@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { XmlElement } from './serialize.ts'
+import type { XmlElement } from '#soap/serialize.ts'
 
 const WSSE = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'
 const WSU = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'

@@ -1,6 +1,6 @@
-import { AuthError, type ErrorContext, ParseError, type SoapFault, SoapFaultError } from '../errors.ts'
-import { parseXml, type XmlLimits, type XmlObject, type XmlValue } from './parse.ts'
-import { serialize, type XmlElement, type XmlNode } from './serialize.ts'
+import { AuthError, type ErrorContext, ParseError, type SoapFault, SoapFaultError } from '#errors.ts'
+import { parseXml, type XmlLimits, type XmlObject, type XmlValue } from '#soap/parse.ts'
+import { serialize, type XmlElement, type XmlNode } from '#soap/serialize.ts'
 
 export const SOAP_NAMESPACE = 'http://www.w3.org/2003/05/soap-envelope'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fixture } from '../../../../tools/fixtures/corpus.ts'
-import { AuthError, ParseError, SoapFaultError } from '../errors.ts'
-import { buildEnvelope, parseEnvelope } from './envelope.ts'
+import { AuthError, ParseError, SoapFaultError } from '#errors.ts'
+import { buildEnvelope, parseEnvelope } from '#soap/envelope.ts'
 
 const live = 'live/dvc/dcn-bm2220lpr'
 

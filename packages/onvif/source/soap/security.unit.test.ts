@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { parseXml, type XmlObject } from './parse.ts'
-import { usernameToken } from './security.ts'
-import { serialize } from './serialize.ts'
+import { parseXml, type XmlObject } from '#soap/parse.ts'
+import { usernameToken } from '#soap/security.ts'
+import { serialize } from '#soap/serialize.ts'
 
 const tokenOf = (xml: string) => (parseXml(xml)['Security'] as XmlObject)['UsernameToken'] as XmlObject
 const textOf = (value: unknown): string => (value as XmlObject)['_'] as string

@@ -1,7 +1,7 @@
-import { DecodeError, type ErrorContext, OnvifError } from '../errors.ts'
-import { XML_NAMESPACE, prefixes } from './namespaces.ts'
-import type { XmlObject, XmlValue } from './parse.ts'
-import type { XmlElement, XmlNode } from './serialize.ts'
+import { DecodeError, type ErrorContext, OnvifError } from '#errors.ts'
+import { XML_NAMESPACE, prefixes } from '#soap/namespaces.ts'
+import type { XmlObject, XmlValue } from '#soap/parse.ts'
+import type { XmlElement, XmlNode } from '#soap/serialize.ts'
 
 export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
 

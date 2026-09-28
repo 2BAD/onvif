@@ -15,10 +15,10 @@ import {
   uniqueArray
 } from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { ParseError } from '../../packages/onvif/source/errors.ts'
-import { parseXml } from '../../packages/onvif/source/soap/parse.ts'
-import { parseXml as fxp } from '../bench/fxp.ts'
-import { corpus } from '../fixtures/corpus.ts'
+import { ParseError } from '#onvif/errors.ts'
+import { parseXml } from '#onvif/soap/parse.ts'
+import { parseXml as fxp } from '#tools/bench/fxp.ts'
+import { corpus } from '#tools/fixtures/corpus.ts'
 
 const numRuns = Number(process.env['FUZZ_RUNS'] ?? 2000)
 const timeout = Math.max(30_000, numRuns * 20)

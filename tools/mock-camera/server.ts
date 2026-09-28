@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
-import { parseXml, type XmlObject } from '../../packages/onvif/source/soap/parse.ts'
+import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
 
 type Manifest = { responses: Record<string, { status: number; contentType: string }> }
 

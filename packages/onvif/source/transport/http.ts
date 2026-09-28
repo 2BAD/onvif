@@ -3,9 +3,9 @@ import { Agent as HttpAgent, request as httpRequest, type RequestOptions } from 
 import { Agent as HttpsAgent, type AgentOptions as HttpsAgentOptions, request as httpsRequest } from 'node:https'
 import type { Duplex } from 'node:stream'
 import { connect as tlsConnect, type ConnectionOptions } from 'node:tls'
-import { type ErrorContext, TimeoutError, TransportError } from '../errors.ts'
-import type { Credentials } from '../soap/security.ts'
-import { type DigestChallenge, digestAuthorization, parseChallenge } from './digest.ts'
+import { type ErrorContext, TimeoutError, TransportError } from '#errors.ts'
+import type { Credentials } from '#soap/security.ts'
+import { type DigestChallenge, digestAuthorization, parseChallenge } from '#transport/digest.ts'
 
 export type TlsOptions = Pick<ConnectionOptions, 'ca' | 'cert' | 'key' | 'rejectUnauthorized'> & {
   /** SHA-256 fingerprint of the device certificate, hex with or without colons. Accepts self signed certificates. */

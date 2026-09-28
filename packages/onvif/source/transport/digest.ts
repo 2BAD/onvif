@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { Credentials } from '../soap/security.ts'
+import type { Credentials } from '#soap/security.ts'
 
 export type DigestChallenge = {
   realm: string

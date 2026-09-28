@@ -1,7 +1,7 @@
 import { GCProfiler } from 'node:v8'
-import { parseXml as custom } from '../../packages/onvif/source/soap/parse.ts'
-import { parseXml as fxp } from './fxp.ts'
-import { successCorpus, workloads } from './workloads.ts'
+import { parseXml as custom } from '#onvif/soap/parse.ts'
+import { parseXml as fxp } from '#tools/bench/fxp.ts'
+import { successCorpus, workloads } from '#tools/bench/workloads.ts'
 
 const collectGarbage = globalThis.gc
 if (!collectGarbage) throw new Error('Run with node --expose-gc')
