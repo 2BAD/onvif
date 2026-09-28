@@ -10,6 +10,7 @@ import {
   type MockCameraOptions,
   startMockCamera
 } from '../../../tools/mock-camera/server.ts'
+import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
 import { AuthError, DecodeError, OnvifError, SoapFaultError, TransportError } from '#errors.ts'
 import { GetDeviceInformation, GetScopes } from '#generated/device.ts'
@@ -121,6 +122,26 @@ describe('Device.connect', () => {
     const device = await connect(mock)
     expect(device.clock).toEqual({ skewMs: 0, source: 'local' })
     await expect(device.call(GetDeviceInformation)).resolves.toMatchObject({ manufacturer: 'DVC' })
+  })
+
+  it.each([
+    ['month 13', 'Month', '13'],
+    ['September 31', 'Day', '31'],
+    ['hour 24', 'Hour', '24'],
+    ['second 60', 'Second', '60']
+  ])('rejects a device UTC time with %s instead of rolling it over', async (_name, field, value) => {
+    const xml = fixture('live/dvc/dcn-bm2220lpr/device.GetSystemDateAndTime.xml').xml
+    const body = xml.replace(/<tt:UTCDateTime>[\s\S]*?<\/tt:UTCDateTime>/, (block) =>
+      block.replace(new RegExp(`<tt:${field}>\\d+</tt:${field}>`), `<tt:${field}>${value}</tt:${field}>`)
+    )
+    expect(body).not.toBe(xml)
+    const mock = await camera({ overrides: { 'device.GetSystemDateAndTime': { kind: 'status', status: 200, body } } })
+    const error = await rejection(() => connect(mock))
+    expect(error).toBeInstanceOf(DecodeError)
+    expect(error).toMatchObject({
+      path: 'GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime',
+      action: 'GetSystemDateAndTime'
+    })
   })
 
   it('falls back to GetCapabilities when GetServices fails', async () => {

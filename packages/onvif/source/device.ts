@@ -9,6 +9,7 @@ import {
 } from '#errors.ts'
 import {
   type Capabilities,
+  type DateTime,
   GetCapabilities,
   GetDeviceInformation,
   GetServices,
@@ -104,6 +105,22 @@ const extensionNamespaces = {
   analyticsDevice: 'http://www.onvif.org/ver10/analyticsdevice/wsdl'
 } as const
 
+/** Milliseconds since the epoch, or `undefined` if a field is out of range and `Date.UTC` would roll it over. */
+const utcTimeOf = ({ date, time }: DateTime): number | undefined => {
+  const fields = [date.year, date.month, date.day, time.hour, time.minute, time.second]
+  const utc = Date.UTC(date.year, date.month - 1, date.day, time.hour, time.minute, time.second)
+  const parsed = new Date(utc)
+  const read = [
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth() + 1,
+    parsed.getUTCDate(),
+    parsed.getUTCHours(),
+    parsed.getUTCMinutes(),
+    parsed.getUTCSeconds()
+  ]
+  return read.every((value, index) => value === fields[index]) ? utc : undefined
+}
+
 const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
@@ -187,11 +204,17 @@ export class Device {
     }
     const midpoint = (started + Date.now()) / 2
     const utc = response.systemDateAndTime.utcDateTime
-    const deviceTime = utc
-      ? Date.UTC(utc.date.year, utc.date.month - 1, utc.date.day, utc.time.hour, utc.time.minute, utc.time.second)
-      : undefined
+    const deviceTime = utc ? utcTimeOf(utc) : undefined
+    if (utc && deviceTime === undefined) {
+      const { date, time } = utc
+      throw new DecodeError(
+        `Invalid date ${date.year}-${date.month}-${date.day} ${time.hour}:${time.minute}:${time.second}`,
+        'GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime',
+        this.#contextOf(GetSystemDateAndTime)
+      )
+    }
     this.#clock =
-      deviceTime === undefined || Number.isNaN(deviceTime)
+      deviceTime === undefined
         ? { skewMs: 0, source: 'local' }
         : { skewMs: Math.round(deviceTime - midpoint), source: 'device' }
     this.#synchronizedAt = { device: midpoint + this.#clock.skewMs, monotonic: performance.now() }
