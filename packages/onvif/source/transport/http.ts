@@ -30,6 +30,8 @@ export type HttpResponse = {
 export type PostOptions = {
   signal?: AbortSignal
   context?: ErrorContext
+  /** SOAP 1.2 action, sent as the `action` parameter of `Content-Type`. */
+  action?: string
 }
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()
@@ -111,7 +113,13 @@ export class HttpTransport {
 
     this.#challenge = challenge
     this.#nonceCount = 0
-    return await this.#send(url, body, options, this.#authorization(url))
+    try {
+      return await this.#send(url, body, options, this.#authorization(url))
+    } catch (error) {
+      // some devices drop the connection instead of rejecting the digest
+      if (error instanceof TransportError) return response
+      throw error
+    }
   }
 
   close(): void {
@@ -135,7 +143,7 @@ export class HttpTransport {
   }
 
   #attempt(url: URL, body: string, options: PostOptions, authorization?: string): Promise<HttpResponse> {
-    const { signal, context = {} } = options
+    const { signal, context = {}, action } = options
     const timeout = AbortSignal.timeout(this.#timeoutMs)
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
     const secure = url.protocol === 'https:'
@@ -144,7 +152,7 @@ export class HttpTransport {
     }
     const payload = Buffer.from(body, 'utf8')
     const headers: Record<string, string | number> = {
-      'Content-Type': 'application/soap+xml; charset=utf-8',
+      'Content-Type': `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`,
       'Content-Length': payload.length
     }
     if (authorization) headers['Authorization'] = authorization

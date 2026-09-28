@@ -59,6 +59,12 @@ describe('HttpTransport', () => {
     expect((await client.post(url, 'fault')).status).toBe(500)
   })
 
+  it('sends the SOAP action as a Content-Type parameter', async () => {
+    const url = await listen(serve((request, response) => response.end(request.headers['content-type'])))
+    const { body } = await transport().post(url, 'x', { action: 'urn:a"b' })
+    expect(body).toBe('application/soap+xml; charset=utf-8; action="urn:a%22b"')
+  })
+
   it('reuses the connection between requests', async () => {
     const server = serve((_request, response) => response.end('ok'))
     let connections = 0
@@ -174,6 +180,24 @@ describe('HttpTransport digest authentication', () => {
     cleanups.push(() => camera.close())
     expect((await transport().post(new URL(`${camera.url}/onvif/device_service`), envelope)).status).toBe(401)
     expect(camera.requests).toHaveLength(1)
+  })
+
+  it('returns the 401 when the device drops the connection on the digest retry', async () => {
+    let requests = 0
+    const url = await listen(
+      serve((request, response) => {
+        requests++
+        if (request.headers.authorization) {
+          request.socket.destroy()
+          return
+        }
+        response.writeHead(401, { 'WWW-Authenticate': 'Digest realm="r", nonce="n", qop="auth"' })
+        response.end('denied')
+      })
+    )
+    const response = await transport({ digest: { username: 'a', password: 'b' } }).post(url, 'x')
+    expect(response).toMatchObject({ status: 401, body: 'denied' })
+    expect(requests).toBe(3)
   })
 })
 
