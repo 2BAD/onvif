@@ -32,6 +32,14 @@ const connect = async (mock: MockCamera, options: Partial<ConnectOptions> = {}):
   return device
 }
 
+// The mock camera keeps time with performance.now() too, so its skew is corrected to leave the device clock at skewMs.
+const aMinuteLater = (mock: MockCamera, skewMs = 0): void => {
+  const now = performance.now.bind(performance)
+  const spy = vi.spyOn(performance, 'now').mockImplementation(() => now() + 60_000)
+  cleanups.push(() => spy.mockRestore())
+  mock.setClockSkew(skewMs - 60_000)
+}
+
 const actions = (mock: MockCamera): string[] => mock.requests.map(({ action }) => action)
 
 const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
@@ -274,10 +282,49 @@ describe('Device.call', () => {
   it('resynchronizes the clock once when the device clock changed', async () => {
     const mock = await camera()
     const device = await connect(mock)
-    mock.setClockSkew(15 * 60 * 1000)
+    aMinuteLater(mock, 15 * 60 * 1000)
     await expect(device.call(GetDeviceInformation)).resolves.toMatchObject({ manufacturer: 'DVC' })
     expect(actions(mock).slice(3)).toEqual(['GetDeviceInformation', 'GetSystemDateAndTime', 'GetDeviceInformation'])
     expect(Math.abs(device.clock.skewMs - 15 * 60 * 1000)).toBeLessThan(1_500)
+  })
+
+  it('does not retry rejected credentials when the resynchronized clock did not move', async () => {
+    const mock = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'] })
+    const device = await connect(mock, { password: 'wrong', verifyCredentials: false })
+    aMinuteLater(mock)
+    await expect(device.call(GetDeviceInformation)).rejects.toThrow(AuthError)
+    expect(actions(mock).slice(2)).toEqual(['GetDeviceInformation', 'GetSystemDateAndTime'])
+  })
+
+  it('measures the clock again at most once a minute for rejected credentials', async () => {
+    const mock = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'] })
+    const device = await connect(mock, { password: 'wrong', verifyCredentials: false })
+    for (let index = 0; index < 3; index++) await expect(device.call(GetDeviceInformation)).rejects.toThrow(AuthError)
+    expect(actions(mock).slice(2)).toEqual(['GetDeviceInformation', 'GetDeviceInformation', 'GetDeviceInformation'])
+  })
+
+  it('shares one resynchronization between concurrent calls rejected with the same clock', async () => {
+    const mock = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'] })
+    const wrong = await connect(mock, { password: 'wrong', verifyCredentials: false })
+    aMinuteLater(mock)
+    const failures = await Promise.allSettled(Array.from({ length: 10 }, () => wrong.call(GetDeviceInformation)))
+    expect(failures.every(({ status }) => status === 'rejected')).toBe(true)
+    expect(
+      actions(mock)
+        .slice(2)
+        .filter((action) => action === 'GetSystemDateAndTime')
+    ).toHaveLength(1)
+  })
+
+  it('shares one resynchronization between concurrent calls after the device clock changed', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    mock.requests.length = 0
+    aMinuteLater(mock, 15 * 60 * 1000)
+    const results = await Promise.all(Array.from({ length: 5 }, () => device.call(GetDeviceInformation)))
+    expect(results.every(({ manufacturer }) => manufacturer === 'DVC')).toBe(true)
+    expect(actions(mock).filter((action) => action === 'GetSystemDateAndTime')).toHaveLength(1)
+    expect(actions(mock).filter((action) => action === 'GetDeviceInformation')).toHaveLength(10)
   })
 
   it('keeps valid timestamps when the local clock jumps after connecting', async () => {

@@ -16,6 +16,9 @@ import { HttpTransport, type HttpResponse, type TlsOptions } from '#transport/ht
 
 export const DEVICE_NAMESPACE = 'http://www.onvif.org/ver10/device/wsdl'
 
+const CLOCK_TOLERANCE_MS = 1_000
+const RESYNC_INTERVAL_MS = 60_000
+
 /**
  * What to do with service addresses the device reports for a host other than the one the client was configured with:
  * `rewrite` keeps path and query but uses the configured origin (devices behind NAT or port forwarding report their
@@ -106,6 +109,7 @@ export class Device {
   #clock: Clock = { skewMs: 0, source: 'local' }
   #synchronizedAt = { device: Date.now(), monotonic: performance.now() }
   #sendAction = true
+  #resynchronizing: Promise<void> | undefined
 
   private constructor(options: ConnectOptions) {
     const { hostname, secure = false, port, path = '/onvif/device_service', username, password = '' } = options
@@ -186,7 +190,8 @@ export class Device {
    * @param operation - Generated operation
    * @param args - Request (optional when every field is optional) and call options
    * @returns The decoded response
-   * @throws {AuthError} If the credentials are rejected after one clock resynchronization
+   * @throws {AuthError} If the credentials are rejected; retried once if the device clock moved, measured again at
+   *   most once a minute
    * @throws {SoapFaultError} If the device answers with a fault
    * @throws {DecodeError} If the response does not match the schema
    * @throws {TransportError} On connection problems or unexpected HTTP responses
@@ -197,11 +202,15 @@ export class Device {
     ...args: CallArguments<Request>
   ): Promise<Response> {
     const [request = {} as Request, options = {}] = args
+    const clock = this.#clock
     try {
       return await this.#call(operation, request, options, true)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
-      await this.synchronizeClock(options.signal)
+      if (this.#clock === clock && performance.now() - this.#synchronizedAt.monotonic >= RESYNC_INTERVAL_MS) {
+        await (this.#resynchronizing ??= this.#resynchronize())
+      }
+      if (Math.abs(this.#clock.skewMs - clock.skewMs) < CLOCK_TOLERANCE_MS) throw error
       return await this.#call(operation, request, options, true)
     }
   }
@@ -236,6 +245,14 @@ export class Device {
   /** Close idle connections. The device can still be used afterwards. */
   close(): void {
     this.#transport.close()
+  }
+
+  async #resynchronize(): Promise<void> {
+    try {
+      await this.synchronizeClock()
+    } finally {
+      this.#resynchronizing = undefined
+    }
   }
 
   async #verifyCredentials(signal?: AbortSignal): Promise<void> {
