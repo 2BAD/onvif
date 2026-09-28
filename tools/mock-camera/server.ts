@@ -24,6 +24,15 @@ export type MockCameraOptions = {
   clockSkewMs?: number
   replayWindowMs?: number
   requireAddressing?: boolean
+  /** `service.Action` names answered without credentials. Only `GetSystemDateAndTime` by default; an empty list
+   * makes the clock need auth, as on some Panasonic and Vivotek devices. */
+  unauthenticated?: string[]
+  /** Leave `UTCDateTime` out of `GetSystemDateAndTime`, as some cheap devices do. */
+  utcTime?: boolean
+  /** `require`: answer an empty 200 without a Content-Type action (Pelco). `reject`: fault when one is sent (Illustra). */
+  contentTypeAction?: 'require' | 'reject'
+  /** Host written into service addresses instead of the mock's own, to simulate NAT. */
+  advertisedHost?: string
   overrides?: Record<string, ActionOverride>
 }
 
@@ -38,6 +47,8 @@ export type RecordedRequest = {
 export type MockCamera = {
   url: string
   requests: RecordedRequest[]
+  /** Change the device clock, relative to the real time. */
+  setClockSkew: (skewMs: number) => void
   close: () => Promise<void>
 }
 
@@ -89,8 +100,11 @@ const parseDigestHeader = (header: string): Record<string, string> => {
   return fields
 }
 
+// device clock runs on the monotonic clock, so tests can move the client's wall clock on its own
+const realNow = (): number => performance.timeOrigin + performance.now()
+
 const shiftDeviceTime = (xml: string, skewMs: number): string => {
-  const now = new Date(Date.now() + skewMs)
+  const now = new Date(realNow() + skewMs)
   const values: Record<string, number> = {
     Hour: now.getUTCHours(),
     Minute: now.getUTCMinutes(),
@@ -120,11 +134,15 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     password = 'password',
     auth = 'ws-security',
     digestAlgorithm = 'MD5',
-    clockSkewMs = 0,
     replayWindowMs = 5 * 60 * 1000,
     requireAddressing = false,
+    unauthenticated = ['device.GetSystemDateAndTime'],
+    utcTime = true,
+    contentTypeAction,
+    advertisedHost,
     overrides = {}
   } = options
+  let clockSkewMs = options.clockSkewMs ?? 0
   const manifest = JSON.parse(readFileSync(join(fixtureDirectory, 'manifest.json'), 'utf8')) as Manifest
   const requests: RecordedRequest[] = []
   const usedNonces = new Set<string>()
@@ -132,7 +150,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   let host = ''
 
   const fixture = (name: string): string =>
-    readFileSync(join(fixtureDirectory, `${name}.xml`), 'utf8').replaceAll(capturedHost, host)
+    readFileSync(join(fixtureDirectory, `${name}.xml`), 'utf8').replaceAll(capturedHost, advertisedHost ?? host)
 
   const send = (response: ServerResponse, status: number, body: string, headers: Record<string, string> = {}) => {
     response.writeHead(status, { 'Content-Type': 'application/soap+xml; charset=utf-8', ...headers })
@@ -147,7 +165,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     const nonce = text(child(token, 'Nonce'))
     const created = text(child(token, 'Created'))
     if (!user || !digest || !nonce || !created) return 'incomplete UsernameToken'
-    const deviceNow = Date.now() + clockSkewMs
+    const deviceNow = realNow() + clockSkewMs
     if (Math.abs(Date.parse(created) - deviceNow) > replayWindowMs) return 'Created outside of the replay window'
     if (usedNonces.has(nonce)) return 'nonce reused'
     const expected = createHash('sha1')
@@ -201,21 +219,32 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       return
     }
 
+    const contentType = request.headers['content-type'] ?? ''
+    if (contentTypeAction === 'require' && !/;\s*action=/.test(contentType)) {
+      response.writeHead(200)
+      response.end()
+      return
+    }
+    if (contentTypeAction === 'reject' && /;\s*action=/.test(contentType)) {
+      send(response, 400, soapFault('wsa5:ActionNotSupported', 'The [action] cannot be processed at the receiver.'))
+      return
+    }
+
     const header = child(envelope['Envelope'], 'Header')
     if (requireAddressing && service === 'events' && path.startsWith('/onvif/event/') && !text(child(header, 'To'))) {
       send(response, 400, soapFault('ter:InvalidArgVal', 'The requested wsa5__To or wsa__To does not exist.'))
       return
     }
 
-    const unauthenticated = service === 'device' && action === 'GetSystemDateAndTime'
-    if (auth === 'ws-security' && !unauthenticated) {
+    const preAuth = unauthenticated.includes(`${service}.${action}`)
+    if (auth === 'ws-security' && !preAuth) {
       const problem = checkWsSecurity(header)
       if (problem) {
         send(response, 400, soapFault('ter:NotAuthorized', `Sender not Authorized: ${problem}`))
         return
       }
     }
-    if (auth === 'digest' && !unauthenticated && !checkDigest(request)) {
+    if (auth === 'digest' && !preAuth && !checkDigest(request)) {
       const nonce = randomBytes(16).toString('hex')
       digestNonces.add(nonce)
       send(response, 401, soapFault('ter:NotAuthorized', 'HTTP Error: 401 Unauthorized'), {
@@ -231,7 +260,10 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       return
     }
     let xml = fixture(name)
-    if (name === 'device.GetSystemDateAndTime') xml = shiftDeviceTime(xml, clockSkewMs)
+    if (name === 'device.GetSystemDateAndTime') {
+      xml = shiftDeviceTime(xml, clockSkewMs)
+      if (!utcTime) xml = xml.replace(/<tt:UTCDateTime>[\s\S]*?<\/tt:UTCDateTime>/, '')
+    }
 
     if (override?.kind === 'truncate') {
       response.writeHead(recorded.status, {
@@ -260,6 +292,9 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   return {
     url: `http://${host}`,
     requests,
+    setClockSkew: (skewMs) => {
+      clockSkewMs = skewMs
+    },
     close: async () => {
       server.closeAllConnections()
       server.close()
