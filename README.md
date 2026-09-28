@@ -9,7 +9,7 @@ ONVIF client for Node.js. Rewritten from scratch with three goals: performance, 
 
 | Package | Status |
 |---|---|
-| [`@2bad/onvif`](packages/onvif) | in progress: SOAP layer, WS-Security, HTTP transport |
+| [`@2bad/onvif`](packages/onvif) | in progress: connect, device management, SOAP layer, WS-Security, HTTP transport |
 | `@2bad/onvif-events` | planned |
 | `@2bad/onvif-media` | planned |
 
