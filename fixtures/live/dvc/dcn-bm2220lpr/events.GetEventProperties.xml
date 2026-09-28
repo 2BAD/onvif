@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsdd="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:wsa5="http://www.w3.org/2005/08/addressing" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:tpa="http://www.onvif.org/ver10/pacs" xmlns:xmime="http://tempuri.org/xmime.xsd" xmlns:xop="http://www.w3.org/2004/08/xop/include" xmlns:wsrfbf="http://docs.oasis-open.org/wsrf/bf-2" xmlns:tt="http://www.onvif.org/ver10/schema" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsrfr="http://docs.oasis-open.org/wsrf/r-2" xmlns:tac="http://www.onvif.org/ver10/accesscontrol/wsdl" xmlns:tad="http://www.onvif.org/ver10/analyticsdevice/wsdl" xmlns:tae="http://www.onvif.org/ver10/actionengine/wsdl" xmlns:tana="http://www.onvif.org/ver20/analytics/wsdl/AnalyticsEngineBinding" xmlns:tanr="http://www.onvif.org/ver20/analytics/wsdl/RuleEngineBinding" xmlns:tan="http://www.onvif.org/ver20/analytics/wsdl" xmlns:tar="http://www.onvif.org/ver10/accessrules/wsdl" xmlns:tasa="http://www.onvif.org/ver10/advancedsecurity/wsdl/AdvancedSecurityServiceBinding" xmlns:tasd="http://www.onvif.org/ver10/advancedsecurity/wsdl/Dot1XBinding" xmlns:task="http://www.onvif.org/ver10/advancedsecurity/wsdl/KeystoreBinding" xmlns:tast="http://www.onvif.org/ver10/advancedsecurity/wsdl/TLSServerBinding" xmlns:tas="http://www.onvif.org/ver10/advancedsecurity/wsdl" xmlns:tds="http://www.onvif.org/ver10/device/wsdl" xmlns:tec="http://www.onvif.org/ver10/events/wsdl/CreatePullPointBinding" xmlns:tee="http://www.onvif.org/ver10/events/wsdl/EventBinding" xmlns:tenc="http://www.onvif.org/ver10/events/wsdl/NotificationConsumerBinding" xmlns:tenp="http://www.onvif.org/ver10/events/wsdl/NotificationProducerBinding" xmlns:tep="http://www.onvif.org/ver10/events/wsdl/PullPointBinding" xmlns:tepa="http://www.onvif.org/ver10/events/wsdl/PausableSubscriptionManagerBinding" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" xmlns:tepu="http://www.onvif.org/ver10/events/wsdl/PullPointSubscriptionBinding" xmlns:tev="http://www.onvif.org/ver10/events/wsdl" xmlns:tesm="http://www.onvif.org/ver10/events/wsdl/SubscriptionManagerBinding" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl" xmlns:tls="http://www.onvif.org/ver10/display/wsdl" xmlns:tmd="http://www.onvif.org/ver10/deviceIO/wsdl" xmlns:tndl="http://www.onvif.org/ver10/network/wsdl/DiscoveryLookupBinding" xmlns:tdn="http://www.onvif.org/ver10/network/wsdl" xmlns:tnrd="http://www.onvif.org/ver10/network/wsdl/RemoteDiscoveryBinding" xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl" xmlns:trc="http://www.onvif.org/ver10/recording/wsdl" xmlns:trp="http://www.onvif.org/ver10/replay/wsdl" xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:trt2="http://www.onvif.org/ver20/media/wsdl" xmlns:trv="http://www.onvif.org/ver10/receiver/wsdl" xmlns:tse="http://www.onvif.org/ver10/search/wsdl" xmlns:tss="http://www.onvif.org/ver10/schedule/wsdl" xmlns:tth="http://www.onvif.org/ver10/thermal/wsdl" xmlns:tns1="http://www.onvif.org/ver10/topics" xmlns:ter="http://www.onvif.org/ver10/error"><SOAP-ENV:Header><wsa5:Action SOAP-ENV:mustUnderstand="true">http://www.onvif.org/ver10/events/wsdl/EventPortType/GetEventPropertiesResponse</wsa5:Action></SOAP-ENV:Header><SOAP-ENV:Body><tev:GetEventPropertiesResponse><tev:TopicNamespaceLocation>http://www.onvif.org/onvif/ver10/topics/topicns.xml</tev:TopicNamespaceLocation><wsnt:FixedTopicSet>true</wsnt:FixedTopicSet><wstop:TopicSet><tns1:Device wstop:topic="true">
+    <Trigger wstop:topic="true">
+        <DigitalInput wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="InputToken" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="LogicalState" Type="xsd:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </DigitalInput>
+    </Trigger>
+</tns1:Device>
+<tns1:Device wstop:topic="true">
+    <Trigger wstop:topic="true">
+        <Relay wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="RelayToken" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="LogicalState" Type="tt:RelayLogicalState"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </Relay>
+    </Trigger>
+</tns1:Device>
+<tns1:Configuration wstop:topic="true">
+    <Profile wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:Profile"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </Profile>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <VideoEncoderConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:VideoEncoderConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </VideoEncoderConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <VideoSourceConfiguration wstop:topic="true">
+        <MediaService wstop:topic="true">
+            <tt:MessageDescription IsProperty="false">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:ElementItemDescription Name="Configuration" Type="tt:VideoSourceConfiguration"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </MediaService>
+    </VideoSourceConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <AudioEncoderConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:AudioEncoderConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </AudioEncoderConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <AudioSourceConfiguration wstop:topic="true">
+        <MediaService wstop:topic="true">
+            <tt:MessageDescription IsProperty="false">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:ElementItemDescription Name="Configuration" Type="tt:AudioSourceConfiguration"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </MediaService>
+    </AudioSourceConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <AudioOutputConfiguration wstop:topic="true">
+        <MediaService wstop:topic="true">
+            <tt:MessageDescription IsProperty="false">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:ElementItemDescription Name="Configuration" Type="tt:AudioOutputConfiguration"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </MediaService>
+    </AudioOutputConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <MetadataConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:MetadataConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </MetadataConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <PTZConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:PTZConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </PTZConfiguration>
+</tns1:Configuration>
+<tns1:Configuration wstop:topic="true">
+    <VideoAnalyticsConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:VideoAnalyticsConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </VideoAnalyticsConfiguration>
+</tns1:Configuration>
+<tns1:Media wstop:topic="true">
+    <ProfileChanged wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+            </tt:Source>
+        </tt:MessageDescription>
+    </ProfileChanged>
+</tns1:Media>
+<tns1:Media xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <ConfigurationChanged wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
+                <tt:SimpleItemDescription Name="Type" Type="xs:string"/>
+            </tt:Source>
+        </tt:MessageDescription>
+    </ConfigurationChanged>
+</tns1:Media>
+<tns1:RecordingConfig xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <JobState wstop:topic="true">
+        <tt:MessageDescription IsProperty="true">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingJobToken" Type="tt:RecordingJobReference"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:SimpleItemDescription Name="State" Type="xs:string"/>
+                <tt:ElementItemDescription Name="Information" Type="tt:RecordingJobStateInformation"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </JobState>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <RecordingConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:RecordingConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </RecordingConfiguration>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <TrackConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+                <tt:SimpleItemDescription Name="TrackToken" Type="tt:TrackReference"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:TrackConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </TrackConfiguration>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <RecordingJobConfiguration wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingJobToken" Type="tt:RecordingJobReference"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:ElementItemDescription Name="Configuration" Type="tt:RecordingJobConfiguration"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </RecordingJobConfiguration>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <DeleteTrackData wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+                <tt:SimpleItemDescription Name="TrackToken" Type="tt:TrackReference"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:SimpleItemDescription Name="StartTime" Type="xs:dateTime"/>
+                <tt:SimpleItemDescription Name="EndTime" Type="xs:dateTime"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </DeleteTrackData>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <CreateRecording wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+            </tt:Source>
+        </tt:MessageDescription>
+    </CreateRecording>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <DeleteRecording wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+            </tt:Source>
+        </tt:MessageDescription>
+    </DeleteRecording>
+</tns1:RecordingConfig>
+<tns1:RecordingConfig wstop:topic="true">
+    <DeleteTrack wstop:topic="true">
+        <tt:MessageDescription IsProperty="false">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
+                <tt:SimpleItemDescription Name="TrackToken" Type="tt:TrackReference"/>
+            </tt:Source>
+        </tt:MessageDescription>
+    </DeleteTrack>
+</tns1:RecordingConfig>
+<tns1:RecordingHistory xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <Recording wstop:topic="true">
+        <State wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="RecordingToken" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="IsRecording" Type="xs:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </State>
+    </Recording>
+</tns1:RecordingHistory>
+<tns1:RecordingHistory xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <Track wstop:topic="true">
+        <State wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="RecordingToken" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="IsDataPresent" Type="xs:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </State>
+    </Track>
+</tns1:RecordingHistory>
+<tns1:VideoSource wstop:topic="true">
+    <MotionAlarm wstop:topic="true">
+        <tt:MessageDescription IsProperty="true">
+            <tt:Source>
+                <tt:SimpleItemDescription Name="Source" Type="tt:ReferenceToken"/>
+            </tt:Source>
+            <tt:Data>
+                <tt:SimpleItemDescription Name="State" Type="xsd:boolean"/>
+            </tt:Data>
+        </tt:MessageDescription>
+    </MotionAlarm>
+</tns1:VideoSource>
+<tns1:VideoSource wstop:topic="true">
+    <GlobalSceneChange wstop:topic="true">
+        <AnalyticsService wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="Source" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="State" Type="xsd:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </AnalyticsService>
+    </GlobalSceneChange>
+</tns1:VideoSource>
+<tns1:VideoSource wstop:topic="true">
+    <ImageTooBlurry wstop:topic="true">
+        <AnalyticsService wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="Source" Type="tt:ReferenceToken"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="State" Type="xsd:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </AnalyticsService>
+    </ImageTooBlurry>
+</tns1:VideoSource>
+<tns1:RuleEngine xmlns:xs="http://www.w3.org/2001/XMLSchema" wstop:topic="true">
+    <CellMotionDetector wstop:topic="true">
+        <Motion wstop:topic="true">
+            <tt:MessageDescription IsProperty="true">
+                <tt:Source>
+                    <tt:SimpleItemDescription Name="VideoSourceConfigurationToken" Type="tt:ReferenceToken"/>
+                    <tt:SimpleItemDescription Name="VideoAnalyticsConfigurationToken" Type="tt:ReferenceToken"/>
+                    <tt:SimpleItemDescription Name="Rule" Type="xs:string"/>
+                </tt:Source>
+                <tt:Data>
+                    <tt:SimpleItemDescription Name="IsMotion" Type="xs:boolean"/>
+                </tt:Data>
+            </tt:MessageDescription>
+        </Motion>
+    </CellMotionDetector>
+</tns1:RuleEngine>
+</wstop:TopicSet><wsnt:TopicExpressionDialect>http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet</wsnt:TopicExpressionDialect><wsnt:TopicExpressionDialect>http://docs.oasis-open.org/wsn/t-1/TopicExpression/Concrete</wsnt:TopicExpressionDialect><tev:MessageContentFilterDialect>http://www.onvif.org/ver10/tev/messageContentFilter/ItemFilter</tev:MessageContentFilterDialect><tev:ProducerPropertiesFilterDialect>http://docs.oasis-open.org/wsn/t-1/TopicExpression/Concrete</tev:ProducerPropertiesFilterDialect><tev:MessageContentSchemaLocation>http://www.onvif.org/onvif/ver10/schema/onvif.xsd</tev:MessageContentSchemaLocation></tev:GetEventPropertiesResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>
