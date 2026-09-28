@@ -1,0 +1,12 @@
+{
+  "extends": "@2bad/tsconfig",
+  "include": ["source/**/*"],
+  "exclude": ["source/**/*.test.ts"],
+  "compilerOptions": {
+    "outDir": "build",
+    "types": ["node"],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true
+  }
+}

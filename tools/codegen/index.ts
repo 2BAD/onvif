@@ -41,6 +41,26 @@ const targets: Target[] = [
         ]
       }
     ]
+  },
+  {
+    output: 'packages/events/source/generated/events.ts',
+    codecImport: '@2bad/onvif',
+    wsdl: 'ver10/events/wsdl/event.wsdl',
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver10/events/wsdl',
+        local: 'EventPortType',
+        operations: ['GetServiceCapabilities', 'CreatePullPointSubscription', 'GetEventProperties']
+      },
+      {
+        namespace: 'http://www.onvif.org/ver10/events/wsdl',
+        local: 'PullPointSubscription',
+        operations: ['PullMessages', 'SetSynchronizationPoint', 'Unsubscribe']
+      },
+      { namespace: 'http://docs.oasis-open.org/wsn/bw-2', local: 'SubscriptionManager', operations: ['Renew'] }
+    ],
+    elements: [{ schema: 'ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' }],
+    namespaces: ['CreatePullPointSubscription', 'PullMessages']
   }
 ]
 
