@@ -51,6 +51,8 @@ export type CallOptions = {
   to?: string
   /** Send WS-Addressing `MessageID`, `To` and `Action` headers. */
   addressing?: boolean
+  /** Overrides the connection timeout for this call, such as for a long poll. */
+  timeoutMs?: number
 }
 
 export type Clock = {
@@ -306,14 +308,14 @@ export class Device {
     if (authenticated && this.#credentials) header.push(usernameToken(this.#credentials, this.#now()))
     const body = buildEnvelope(encodeRequest(operation, request), header)
 
-    let response = await this.#post(url, body, operation.action, options.signal, context)
+    let response = await this.#post(url, body, operation.action, options, context)
     let envelope
     try {
       envelope = this.#read(response, context)
     } catch (error) {
       if (!this.#sendAction || !isActionRejection(error)) throw error
       this.#sendAction = false
-      response = await this.#post(url, body, operation.action, options.signal, context)
+      response = await this.#post(url, body, operation.action, options, context)
       envelope = this.#read(response, context)
     }
 
@@ -324,16 +326,12 @@ export class Device {
     return decode(operation.schema, operation.response.type, element, context) as Response
   }
 
-  #post(
-    url: URL,
-    body: string,
-    action: string,
-    signal: AbortSignal | undefined,
-    context: ErrorContext
-  ): Promise<HttpResponse> {
+  #post(url: URL, body: string, action: string, options: CallOptions, context: ErrorContext): Promise<HttpResponse> {
+    const { signal, timeoutMs } = options
     return this.#transport.post(url, body, {
       context,
       ...(signal ? { signal } : {}),
+      ...(timeoutMs === undefined ? {} : { timeoutMs }),
       ...(this.#sendAction ? { action } : {})
     })
   }

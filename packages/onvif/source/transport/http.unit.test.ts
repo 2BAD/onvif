@@ -108,6 +108,16 @@ describe('HttpTransport', () => {
     await expect(transport({ timeoutMs: 100 }).post(url, 'x')).rejects.toThrow(TimeoutError)
   })
 
+  it('uses the timeout of the request over the transport timeout', async () => {
+    const url = await listen(serve((_request, response) => setTimeout(() => response.end('late'), 150)))
+    await expect(transport({ timeoutMs: 100 }).post(url, 'x', { timeoutMs: 1000 })).resolves.toMatchObject({
+      body: 'late'
+    })
+    await expect(transport({ timeoutMs: 1000 }).post(url, 'x', { timeoutMs: 50 })).rejects.toThrow(
+      'No response within 50 ms'
+    )
+  })
+
   it('rejects with the abort reason when the caller aborts', async () => {
     const url = await listen(serve(() => {}))
     const controller = new AbortController()

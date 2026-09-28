@@ -32,6 +32,8 @@ export type PostOptions = {
   context?: ErrorContext
   /** SOAP 1.2 action, sent as the `action` parameter of `Content-Type`. */
   action?: string
+  /** Overrides the transport timeout for this request. */
+  timeoutMs?: number
 }
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()
@@ -143,8 +145,8 @@ export class HttpTransport {
   }
 
   #attempt(url: URL, body: string, options: PostOptions, authorization?: string): Promise<HttpResponse> {
-    const { signal, context = {}, action } = options
-    const timeout = AbortSignal.timeout(this.#timeoutMs)
+    const { signal, context = {}, action, timeoutMs = this.#timeoutMs } = options
+    const timeout = AbortSignal.timeout(timeoutMs)
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
     const secure = url.protocol === 'https:'
     if (!secure && url.protocol !== 'http:') {
@@ -160,7 +162,7 @@ export class HttpTransport {
     return new Promise((resolve, reject) => {
       const fail = (error: unknown) => {
         if (timeout.aborted) {
-          reject(new TimeoutError(`No response within ${this.#timeoutMs} ms`, context))
+          reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
         } else if (signal?.aborted) {
           reject(signal.reason)
         } else if (isResetOfReusedSocket(error, outgoing.reusedSocket)) {

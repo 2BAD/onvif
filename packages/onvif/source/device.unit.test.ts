@@ -150,6 +150,13 @@ describe('Device.connect', () => {
     await expect(connect(mock, { maxResponseBytes: 1024 })).rejects.toThrow(/exceeds 1024/)
   })
 
+  it('applies the timeout of a call over the connection timeout', async () => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'delay', ms: 200 } } })
+    const device = await connect(mock, { timeoutMs: 100 })
+    await expect(device.call(GetScopes, {}, { timeoutMs: 2_000 })).resolves.toHaveProperty('scopes')
+    await expect(device.call(GetScopes, {}, { timeoutMs: 50 })).rejects.toThrow('No response within 50 ms')
+  })
+
   it('connects over HTTPS with TLS options and formats IPv6 hosts', async () => {
     const mock = await camera()
     const port = Number(new URL(mock.url).port)
