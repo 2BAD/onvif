@@ -1,5 +1,11 @@
 import { once } from 'node:events'
-import { Agent as HttpAgent, request as httpRequest, type RequestOptions } from 'node:http'
+import {
+  type ClientRequest,
+  Agent as HttpAgent,
+  type IncomingMessage,
+  request as httpRequest,
+  type RequestOptions
+} from 'node:http'
 import { Agent as HttpsAgent, type AgentOptions as HttpsAgentOptions, request as httpsRequest } from 'node:https'
 import type { Duplex } from 'node:stream'
 import { connect as tlsConnect, type ConnectionOptions } from 'node:tls'
@@ -167,13 +173,14 @@ export class HttpTransport {
     if (authorization) headers['Authorization'] = authorization
 
     return new Promise((resolve, reject) => {
+      let outgoing: ClientRequest | undefined
       let responded = false
       const fail = (error: unknown) => {
         if (timeout.aborted) {
           reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
         } else if (signal?.aborted) {
           reject(signal.reason)
-        } else if (!responded && isResetOfReusedSocket(error, outgoing.reusedSocket)) {
+        } else if (!responded && isResetOfReusedSocket(error, outgoing?.reusedSocket === true)) {
           reject(new RetryableReset())
         } else {
           const message = error instanceof Error ? error.message : String(error)
@@ -181,41 +188,49 @@ export class HttpTransport {
         }
       }
 
-      const outgoing = (secure ? httpsRequest : httpRequest)(
-        url,
-        { method: 'POST', headers, agent: secure ? this.#httpsAgent : this.#httpAgent, signal: combined },
-        (response) => {
-          responded = true
-          const declared = Number(response.headers['content-length'])
-          if (declared > this.#maxResponseBytes) {
+      const onResponse = (response: IncomingMessage) => {
+        responded = true
+        const declared = Number(response.headers['content-length'])
+        if (declared > this.#maxResponseBytes) {
+          response.destroy()
+          reject(new TransportError(`Response of ${declared} bytes exceeds ${this.#maxResponseBytes}`, context))
+          return
+        }
+        const chunks: Buffer[] = []
+        let received = 0
+        response.on('data', (chunk: Buffer) => {
+          received += chunk.length
+          if (received > this.#maxResponseBytes) {
             response.destroy()
-            reject(new TransportError(`Response of ${declared} bytes exceeds ${this.#maxResponseBytes}`, context))
+            reject(new TransportError(`Response exceeds ${this.#maxResponseBytes} bytes`, context))
             return
           }
-          const chunks: Buffer[] = []
-          let received = 0
-          response.on('data', (chunk: Buffer) => {
-            received += chunk.length
-            if (received > this.#maxResponseBytes) {
-              response.destroy()
-              reject(new TransportError(`Response exceeds ${this.#maxResponseBytes} bytes`, context))
-              return
-            }
-            chunks.push(chunk)
+          chunks.push(chunk)
+        })
+        response.on('error', fail)
+        response.on('close', () => {
+          if (!response.complete) fail(new Error('Connection closed before the response was complete'))
+        })
+        response.on('end', () => {
+          resolve({
+            status: response.statusCode ?? 0,
+            headers: response.headersDistinct,
+            body: Buffer.concat(chunks).toString('utf8')
           })
-          response.on('error', fail)
-          response.on('close', () => {
-            if (!response.complete) fail(new Error('Connection closed before the response was complete'))
-          })
-          response.on('end', () => {
-            resolve({
-              status: response.statusCode ?? 0,
-              headers: response.headersDistinct,
-              body: Buffer.concat(chunks).toString('utf8')
-            })
-          })
-        }
-      )
+        })
+      }
+
+      const agent = secure ? this.#httpsAgent : this.#httpAgent
+      try {
+        outgoing = (secure ? httpsRequest : httpRequest)(
+          url,
+          { method: 'POST', headers, agent, signal: combined },
+          onResponse
+        )
+      } catch (error) {
+        fail(error)
+        return
+      }
       outgoing.on('error', fail)
       combined.addEventListener('abort', fail, { once: true })
       outgoing.end(payload)

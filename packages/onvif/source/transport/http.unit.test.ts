@@ -213,6 +213,22 @@ describe('HttpTransport digest authentication', () => {
     expect(camera.requests).toHaveLength(1)
   })
 
+  it('rejects header values Node refuses to send as a TransportError without the value', async () => {
+    const url = await listen(
+      serve((_request, response) => {
+        response.writeHead(401, { 'WWW-Authenticate': 'Digest realm="r", nonce="n", qop="auth"' })
+        response.end()
+      })
+    )
+    const request = transport().post(url, 'x', { action: 'urn:secret\nX-Injected: 1', context: { host: 'camera' } })
+    await expect(request).rejects.toThrow(TransportError)
+    await expect(request).rejects.toMatchObject({ host: 'camera' })
+    await expect(request).rejects.not.toThrow(/secret|Injected/)
+
+    const client = transport({ digest: { username: 'admin\r\nX-Injected: 1', password: 'secret' } })
+    expect((await client.post(url, 'x')).status).toBe(401)
+  })
+
   it('returns the 401 when the device drops the connection on the digest retry', async () => {
     let requests = 0
     const url = await listen(
