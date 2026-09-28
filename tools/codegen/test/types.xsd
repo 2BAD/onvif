@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tt="urn:test:types" targetNamespace="urn:test:types" elementFormDefault="qualified">
+  <xs:simpleType name="Mode">
+    <xs:annotation><xs:documentation>Operating <b>mode</b>.</xs:documentation></xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Auto"/>
+      <xs:enumeration value="Manual"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Levels">
+    <xs:list itemType="xs:int"/>
+  </xs:simpleType>
+  <xs:simpleType name="Mixed">
+    <xs:union memberTypes="xs:int xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="Percent">
+    <xs:restriction base="xs:float"><xs:minInclusive value="0"/></xs:restriction>
+  </xs:simpleType>
+  <xs:element name="Shared" type="xs:dateTime"/>
+  <xs:attribute name="shared" type="xs:boolean"/>
+  <xs:attributeGroup name="Tokens">
+    <xs:attribute name="token" type="xs:string" use="required"/>
+    <xs:attribute ref="tt:shared"/>
+  </xs:attributeGroup>
+  <xs:group name="Extras">
+    <xs:sequence>
+      <xs:element name="Note" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="Base">
+    <xs:sequence>
+      <xs:element name="Name" type="xs:string"/>
+    </xs:sequence>
+    <xs:attributeGroup ref="tt:Tokens"/>
+  </xs:complexType>
+  <xs:complexType name="Thing">
+    <xs:annotation><xs:documentation>A thing with everything.</xs:documentation></xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="tt:Base">
+        <xs:sequence>
+          <xs:element name="Mode" type="tt:Mode"/>
+          <xs:element name="Levels" type="tt:Levels" minOccurs="0"/>
+          <xs:element name="Mixed" type="tt:Mixed" minOccurs="0"/>
+          <xs:element name="Percent" type="tt:Percent" minOccurs="0"/>
+          <xs:element ref="tt:Shared" minOccurs="0"/>
+          <xs:choice>
+            <xs:element name="Width" type="xs:unsignedInt"/>
+            <xs:element name="Height" type="xs:unsignedInt"/>
+          </xs:choice>
+          <xs:sequence maxOccurs="unbounded">
+            <xs:element name="Pair" type="xs:string"/>
+          </xs:sequence>
+          <xs:group ref="tt:Extras"/>
+          <xs:element name="Label" minOccurs="0">
+            <xs:complexType>
+              <xs:simpleContent>
+                <xs:extension base="xs:string">
+                  <xs:attribute name="lang" type="xs:language"/>
+                </xs:extension>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="Payload" type="xs:base64Binary" minOccurs="0"/>
+          <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="lax"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="Status">
+    <xs:sequence>
+      <xs:element name="Code" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

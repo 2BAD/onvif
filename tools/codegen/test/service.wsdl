@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:svc="urn:test:service" targetNamespace="urn:test:service">
+  <wsdl:types>
+    <xs:schema targetNamespace="urn:test:service" xmlns:tt="urn:test:types" elementFormDefault="qualified">
+      <xs:import namespace="urn:test:types" schemaLocation="types.xsd"/>
+      <xs:complexType name="Status">
+        <xs:sequence>
+          <xs:element name="Text" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="SetThing">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Thing" type="tt:Thing"/>
+            <xs:element name="Enabled" type="xs:boolean" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="SetThingResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Status" type="svc:Status"/>
+            <xs:element name="Detail" type="tt:Status" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="SetThingRequest"><wsdl:part name="parameters" element="svc:SetThing"/></wsdl:message>
+  <wsdl:message name="SetThingResponse"><wsdl:part name="parameters" element="svc:SetThingResponse"/></wsdl:message>
+  <wsdl:portType name="Service">
+    <wsdl:operation name="SetThing">
+      <wsdl:input message="svc:SetThingRequest"/>
+      <wsdl:output message="svc:SetThingResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ServiceBinding" type="svc:Service">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="SetThing">
+      <soap:operation soapAction="urn:test:service/SetThing"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+</wsdl:definitions>

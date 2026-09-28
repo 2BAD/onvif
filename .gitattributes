@@ -1,1 +1,2 @@
 fixtures/** -text
+tools/codegen/specs/** -text
