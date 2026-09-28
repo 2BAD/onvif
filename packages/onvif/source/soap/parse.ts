@@ -370,11 +370,12 @@ export function parseXml(xml: string, overrides?: Partial<XmlLimits>, options: X
       }
 
       const attributeLocalName = localName(attributeName, nameStart)
+      const attributes = (frame.attributes ??= new ParsedNode())
+      if (attributes[attributeLocalName] !== undefined) continue
+      attributes[attributeLocalName] = decodeEntities(rawValue, valueStart)
       if (trackNamespaces && attributeLocalName.length !== attributeName.length) {
         ;(prefixedAttributes ??= []).push(attributeName)
       }
-      const attributes = (frame.attributes ??= new ParsedNode())
-      attributes[attributeLocalName] ??= decodeEntities(rawValue, valueStart)
     }
 
     if (trackNamespaces) frame.info = resolveNamespaces(frame, prefixedAttributes)

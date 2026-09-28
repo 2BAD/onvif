@@ -64,6 +64,16 @@ describe('referenceParameterHeaders', () => {
     ])
   })
 
+  it('echoes a repeated attribute name with the namespace of the value it keeps', () => {
+    const [prefixed] = referenceParameters('<dom0:Id xmlns:a="urn:a" xmlns:b="urn:b" a:x="1" b:x="2">7</dom0:Id>')
+    expect(prefixed).toContain('xmlns:rp0="urn:a"')
+    expect(prefixed).toContain(' rp0:x="1">7</rp1:Id>')
+    expect(prefixed).not.toContain('urn:b')
+    const [plain] = referenceParameters('<dom0:Id xmlns:b="urn:b" x="1" b:x="2">7</dom0:Id>')
+    expect(plain).toContain(' x="1">7</rp0:Id>')
+    expect(plain).not.toContain('urn:b')
+  })
+
   it('escapes echoed values so a device cannot add elements to the request', () => {
     const [header] = referenceParameters('<dom0:SubscriptionId a="&quot;/&gt;">&lt;x/&gt;</dom0:SubscriptionId>')
     expect(header).toContain('a="&quot;/&gt;">&lt;x/&gt;</rp0:SubscriptionId>')

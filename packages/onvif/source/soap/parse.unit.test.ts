@@ -147,6 +147,19 @@ describe('parseXml with namespaces', () => {
     })
   })
 
+  it('records the namespace of the attribute whose value is kept when local names repeat', () => {
+    const root = parse(
+      '<r xmlns:a="urn:a" xmlns:b="urn:b"><e a:x="1" b:x="2"/><f x="1" b:x="2"/><g b:x="1" x="2"/></r>'
+    )
+    const [e, f, g] = ['e', 'f', 'g'].map((name) => child(child(root, 'r'), name))
+    expect(e?.['$']).toEqual({ x: '1' })
+    expect(namespaceInfo(e as object)?.attributes).toEqual({ x: 'urn:a' })
+    expect(f?.['$']).toEqual({ x: '1' })
+    expect(namespaceInfo(f as object)?.attributes).toBeUndefined()
+    expect(g?.['$']).toEqual({ x: '1' })
+    expect(namespaceInfo(g as object)?.attributes).toEqual({ x: 'urn:b' })
+  })
+
   it('decodes entities in declarations and keeps them in objects without a prototype', () => {
     const root = parse('<a xmlns:p="urn:a&amp;b" xmlns:__proto__="urn:bad"><p:b/></a>')
     expect(namespaceInfo(child(child(root, 'a'), 'b'))?.namespace).toBe('urn:a&b')
