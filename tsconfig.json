@@ -4,6 +4,9 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@2bad/onvif": ["./packages/onvif/source/index.ts"]
+    }
   }
 }

@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    alias: [{ find: /^@2bad\/onvif$/, replacement: `${import.meta.dirname}/packages/onvif/source/index.ts` }]
+  },
   test: {
     exclude: ['**/build', '**/node_modules'],
     coverage: {
