@@ -22,6 +22,8 @@ export type HttpTransportOptions = {
   timeoutMs?: number | undefined
   maxResponseBytes?: number | undefined
   maxSockets?: number
+  /** Close a kept-alive connection after this long unused, before the device does. 4 000 by default. */
+  idleTimeoutMs?: number
   tls?: TlsOptions | undefined
   /** Answer HTTP Digest challenges with these credentials. */
   digest?: Credentials | undefined
@@ -100,13 +102,20 @@ export class HttpTransport {
   #nonceCount = 0
 
   constructor(options: HttpTransportOptions = {}) {
-    const { timeoutMs = 10_000, maxResponseBytes = 4 * 1024 * 1024, maxSockets = 4, tls = {}, digest } = options
+    const {
+      timeoutMs = 10_000,
+      maxResponseBytes = 4 * 1024 * 1024,
+      maxSockets = 4,
+      idleTimeoutMs = 4_000,
+      tls = {},
+      digest
+    } = options
     this.#timeoutMs = timeoutMs
     this.#maxResponseBytes = maxResponseBytes
     this.#digest = digest
-    this.#httpAgent = new HttpAgent({ keepAlive: true, maxSockets })
+    this.#httpAgent = new HttpAgent({ keepAlive: true, maxSockets, timeout: idleTimeoutMs })
     const { fingerprint256, ...tlsOptions } = tls
-    const httpsOptions = { keepAlive: true, maxSockets, ...tlsOptions }
+    const httpsOptions = { keepAlive: true, maxSockets, timeout: idleTimeoutMs, ...tlsOptions }
     this.#httpsAgent = fingerprint256
       ? new PinnedAgent(httpsOptions, fingerprint256, timeoutMs)
       : new HttpsAgent(httpsOptions)

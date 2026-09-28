@@ -75,6 +75,24 @@ describe('HttpTransport', () => {
     expect(connections).toBe(1)
   })
 
+  it('closes a kept-alive connection once it was idle, but not while a response is pending', async () => {
+    const server = serve((_request, response, body) => setTimeout(() => response.end('ok'), body === 'slow' ? 300 : 0))
+    server.keepAliveTimeout = 60_000
+    let connections = 0
+    let closed = 0
+    server.on('connection', (socket) => {
+      connections++
+      socket.on('close', () => closed++)
+    })
+    const url = await listen(server)
+    const client = transport({ idleTimeoutMs: 100 })
+    expect((await client.post(url, 'slow')).body).toBe('ok')
+    expect(closed).toBe(0)
+    await vi.waitFor(() => expect(closed).toBe(1))
+    await client.post(url, 'x')
+    expect(connections).toBe(2)
+  })
+
   it('retries once when a reused connection was reset before the response', async () => {
     const seen = new WeakSet<object>()
     let requests = 0
@@ -295,6 +313,17 @@ describe('HttpTransport TLS', () => {
     const client = transport({ tls: { fingerprint256: fingerprint.toLowerCase().replaceAll(':', '') } })
     expect((await client.post(url, 'x')).body).toBe('secure')
     expect((await client.post(url, 'x')).body).toBe('secure')
+  })
+
+  it('closes an idle pinned connection', async () => {
+    const server = createTlsServer({ cert: certificate, key: privateKey }, (_request, response) => response.end('ok'))
+    server.keepAliveTimeout = 60_000
+    let closed = 0
+    server.on('secureConnection', (socket) => socket.on('close', () => closed++))
+    const url = await listen(server, 'https')
+    const client = transport({ idleTimeoutMs: 100, tls: { fingerprint256: fingerprint } })
+    expect((await client.post(url, 'x')).body).toBe('ok')
+    await vi.waitFor(() => expect(closed).toBe(1))
   })
 
   it('sends nothing to a peer whose certificate does not match the pin', async () => {
