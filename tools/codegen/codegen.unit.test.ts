@@ -143,7 +143,7 @@ describe('emit', () => {
 })
 
 describe('reserved names', () => {
-  it('prefixes types that would shadow JavaScript globals', () => {
+  it('adds a Type suffix to types that would shadow JavaScript globals', () => {
     const registry = new Registry()
     registry.load(join(testDirectory, 'reserved.wsdl'))
     const [operation] = registry.operations({ namespace: 'urn:test:reserved', local: 'Service' })
@@ -155,8 +155,8 @@ describe('reserved names', () => {
       operation.output
     )
     const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [model] })
-    expect(source).toMatch(/export type Ns1Date = \{\n {2}year: number\n {2}when: Date\n\}/)
-    expect(source).toContain('calendar: Ns1Date')
+    expect(source).toMatch(/export type DateType = \{\n {2}year: number\n {2}when: Date\n\}/)
+    expect(source).toContain('calendar: DateType')
   })
 })
 

@@ -100,13 +100,14 @@ class Names {
 
     for (const [name, list] of candidates) {
       list.forEach(({ model, namespace }, index) => {
-        let unique = name
-        if (list.length > 1 || reservedNames.has(name)) {
+        const base = reservedNames.has(name) ? `${name}Type` : name
+        let unique = base
+        if (list.length > 1) {
           const prefix = pascal(this.namespace(namespace) ?? '')
           unique =
             list.filter((entry) => entry.namespace === namespace).length > 1
-              ? `${prefix}${name}${index}`
-              : `${prefix}${name}`
+              ? `${prefix}${base}${index}`
+              : `${prefix}${base}`
         }
         if (model.kind === 'complex') this.#complex.set(model, unique)
         else if (model.qname) this.#simple.set(keyOf(model.qname), unique)

@@ -80,7 +80,15 @@ export type CapabilitiesExtension2 = {
 
 export type DateTime = {
   time: Time
-  date: TtDate
+  date: DateType
+}
+
+export type DateType = {
+  year: number
+  /** Range is 1 to 12. */
+  month: number
+  /** Range is 1 to 31. */
+  day: number
 }
 
 export type DeviceCapabilities = {
@@ -752,14 +760,6 @@ export type TimeZone = {
   TZ: string
 }
 
-export type TtDate = {
-  year: number
-  /** Range is 1 to 12. */
-  month: number
-  /** Range is 1 to 31. */
-  day: number
-}
-
 export type TtNetworkCapabilities = {
   /** Indicates whether or not IP filtering is supported. */
   ipFilter?: boolean
@@ -811,8 +811,8 @@ export type TtSystemCapabilities = {
   extension?: SystemCapabilitiesExtension
 }
 
-const tt = 'http://www.onvif.org/ver10/schema'
 const tds = 'http://www.onvif.org/ver10/device/wsdl'
+const tt = 'http://www.onvif.org/ver10/schema'
 
 export const schema: Schema = {
   AnalyticsCapabilities: {
@@ -865,7 +865,14 @@ export const schema: Schema = {
   DateTime: {
     fields: [
       { name: 'Time', property: 'time', type: 'Time', namespace: tt },
-      { name: 'Date', property: 'date', type: 'TtDate', namespace: tt }
+      { name: 'Date', property: 'date', type: 'DateType', namespace: tt }
+    ]
+  },
+  DateType: {
+    fields: [
+      { name: 'Year', property: 'year', type: 'integer', namespace: tt },
+      { name: 'Month', property: 'month', type: 'integer', namespace: tt },
+      { name: 'Day', property: 'day', type: 'integer', namespace: tt }
     ]
   },
   DeviceCapabilities: {
@@ -1457,13 +1464,6 @@ export const schema: Schema = {
     ]
   },
   TimeZone: { fields: [{ name: 'TZ', type: 'string', namespace: tt }] },
-  TtDate: {
-    fields: [
-      { name: 'Year', property: 'year', type: 'integer', namespace: tt },
-      { name: 'Month', property: 'month', type: 'integer', namespace: tt },
-      { name: 'Day', property: 'day', type: 'integer', namespace: tt }
-    ]
-  },
   TtNetworkCapabilities: {
     fields: [
       { name: 'IPFilter', property: 'ipFilter', type: 'boolean', namespace: tt, optional: true },
