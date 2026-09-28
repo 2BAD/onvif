@@ -44,7 +44,7 @@ describe('generated device operations', () => {
       'GetSystemDateAndTimeResponse',
       body['GetSystemDateAndTimeResponse'] ?? ''
     ) as device.GetSystemDateAndTimeResponse
-    expect(result.SystemDateAndTime.DaylightSavings).toBe(false)
-    expect(result.SystemDateAndTime.UTCDateTime?.Date.Year).toBeTypeOf('number')
+    expect(result.systemDateAndTime.daylightSavings).toBe(false)
+    expect(result.systemDateAndTime.utcDateTime?.date.year).toBeTypeOf('number')
   })
 })

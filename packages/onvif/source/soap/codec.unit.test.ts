@@ -28,6 +28,12 @@ const schema: Schema = {
     any: true
   },
   Item: { fields: [{ name: 'Value', type: 'integer', namespace: tt }] },
+  Renamed: {
+    fields: [
+      { name: 'Id', property: 'id', type: 'integer', attribute: true },
+      { name: 'HwAddress', property: 'hwAddress', type: 'string', namespace: tt }
+    ]
+  },
   Text: {
     fields: [{ name: 'lang', type: 'string', attribute: true, namespace: XML_NAMESPACE, optional: true }],
     text: 'string'
@@ -170,6 +176,14 @@ describe('decode', () => {
     expect(decode(schema, 'Sample', parsed(xml))).toMatchObject({ Name: 'a', Levels: [1] })
   })
 
+  it('stores fields under their property names and reports errors with spec names', () => {
+    const node = parseXml('<Renamed Id="3"><HwAddress>02:00:00:00:00:01</HwAddress></Renamed>')['Renamed'] as XmlObject
+    expect(decode(schema, 'Renamed', node)).toEqual({ id: 3, hwAddress: '02:00:00:00:00:01' })
+    expect(() => decode(schema, 'Renamed', parseXml('<Renamed Id="3"/>')['Renamed'] as XmlObject)).toThrow(
+      'Missing required element HwAddress at Renamed'
+    )
+  })
+
   it('rejects unknown schema types', () => {
     expect(() => decode(schema, 'Missing', '')).toThrow(OnvifError)
   })
@@ -232,6 +246,17 @@ describe('encodeRequest', () => {
     ['NaN', { Sample: { token: 't', Name: 'a', Ratio: Number.NaN } }, 'Invalid decimal value at SetSample.Sample.Ratio']
   ])('rejects %s', (_name, request, message) => {
     expect(() => encodeRequest(operation, request)).toThrow(message)
+  })
+
+  it('reads fields from their property names and writes spec names', () => {
+    const renamed: Operation<Record<string, unknown>, unknown> = {
+      ...operation,
+      request: { name: 'SetRenamed', namespace: tds, type: 'Renamed' }
+    }
+    expect(serialize(encodeRequest(renamed, { id: 3, hwAddress: 'a' }))).toBe(
+      `<tds:SetRenamed xmlns:tds="${tds}" xmlns:tt="${tt}" Id="3"><tt:HwAddress>a</tt:HwAddress></tds:SetRenamed>`
+    )
+    expect(() => encodeRequest(renamed, { id: 3 })).toThrow('Missing required hwAddress at SetRenamed')
   })
 
   it('escapes values so they cannot add elements', () => {

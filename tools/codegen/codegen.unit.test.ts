@@ -50,6 +50,7 @@ describe('ModelBuilder', () => {
       'Levels',
       'Mixed',
       'Percent',
+      'MTU',
       'Shared',
       'Width',
       'Height',
@@ -98,8 +99,19 @@ describe('emit', () => {
   })
 
   it('prefixes colliding type names with their namespace', () => {
-    expect(source).toMatch(/export type Ns\dStatus = \{\n {2}Code: number/)
-    expect(source).toMatch(/export type Ns\dStatus = \{\n {2}Text: string/)
+    expect(source).toMatch(/export type Ns\dStatus = \{\n {2}code: number/)
+    expect(source).toMatch(/export type Ns\dStatus = \{\n {2}text: string/)
+  })
+
+  it('converts field names to camelCase, keeps all caps names and records the spec name in the schema', () => {
+    expect(source).toContain("{ name: 'Name', property: 'name', type: 'string', namespace: ns2 }")
+    expect(source).toContain("{ name: 'token', type: 'string', attribute: true }")
+    expect(source).toContain("{ name: 'MTU', type: 'integer', namespace: ns2, optional: true }")
+  })
+
+  it('keeps spec names for fields whose camelCase names collide', () => {
+    expect(source).toMatch(/^ {2}shared\?: boolean$/m)
+    expect(source).toMatch(/^ {2}Shared\?: Date$/m)
   })
 
   it('produces a module that encodes and decodes through the codec', async () => {
@@ -107,19 +119,20 @@ describe('emit', () => {
     writeFileSync(file, source.replace("'#soap/codec.ts'", `'${pathToFileURL(codecPath).href}'`))
     const generated = (await import(pathToFileURL(file).href)) as { SetThing: Operation<unknown, unknown> }
     const request = {
-      Thing: {
-        Name: 'n',
+      thing: {
+        name: 'n',
         token: 't',
         shared: true,
-        Mode: 'Auto',
-        Levels: [1, 2],
+        mode: 'Auto',
+        levels: [1, 2],
         Shared: new Date('2026-01-01T00:00:00.000Z'),
-        Height: 5,
-        Pair: ['a', 'b'],
-        Label: { lang: 'en', value: 'label' },
-        Payload: new Uint8Array([255])
+        MTU: 1500,
+        height: 5,
+        pair: ['a', 'b'],
+        label: { lang: 'en', value: 'label' },
+        payload: new Uint8Array([255])
       },
-      Enabled: false
+      enabled: false
     }
     const xml = serialize(encodeRequest(generated.SetThing, request))
     expect(xml).toContain('<ns1:SetThing xmlns:ns1="urn:test:service" xmlns:ns2="urn:test:types">')

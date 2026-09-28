@@ -27,19 +27,19 @@ export type SetDateTimeType = 'Manual' | 'NTP' | (string & Record<never, never>)
 
 export type AnalyticsCapabilities = {
   /** Analytics service URI. */
-  XAddr: string
+  xAddr: string
   /** Indicates whether or not rules are supported. */
-  RuleSupport: boolean
+  ruleSupport: boolean
   /** Indicates whether or not modules are supported. */
-  AnalyticsModuleSupport: boolean
+  analyticsModuleSupport: boolean
   $any?: Record<string, unknown>
 }
 
 export type AnalyticsDeviceCapabilities = {
-  XAddr: string
+  xAddr: string
   /** Obsolete property. */
-  RuleSupport?: boolean
-  Extension?: AnalyticsDeviceExtension
+  ruleSupport?: boolean
+  extension?: AnalyticsDeviceExtension
 }
 
 export type AnalyticsDeviceExtension = {
@@ -48,29 +48,29 @@ export type AnalyticsDeviceExtension = {
 
 export type Capabilities = {
   /** Analytics capabilities */
-  Analytics?: AnalyticsCapabilities
+  analytics?: AnalyticsCapabilities
   /** Device capabilities */
-  Device?: DeviceCapabilities
+  device?: DeviceCapabilities
   /** Event capabilities */
-  Events?: EventCapabilities
+  events?: EventCapabilities
   /** Imaging capabilities */
-  Imaging?: ImagingCapabilities
+  imaging?: ImagingCapabilities
   /** Media capabilities */
-  Media?: MediaCapabilities
+  media?: MediaCapabilities
   /** PTZ capabilities */
   PTZ?: PTZCapabilities
-  Extension?: CapabilitiesExtension
+  extension?: CapabilitiesExtension
 }
 
 export type CapabilitiesExtension = {
-  DeviceIO?: DeviceIOCapabilities
-  Display?: DisplayCapabilities
-  Recording?: RecordingCapabilities
-  Search?: SearchCapabilities
-  Replay?: ReplayCapabilities
-  Receiver?: ReceiverCapabilities
-  AnalyticsDevice?: AnalyticsDeviceCapabilities
-  Extensions?: CapabilitiesExtension2
+  deviceIO?: DeviceIOCapabilities
+  display?: DisplayCapabilities
+  recording?: RecordingCapabilities
+  search?: SearchCapabilities
+  replay?: ReplayCapabilities
+  receiver?: ReceiverCapabilities
+  analyticsDevice?: AnalyticsDeviceCapabilities
+  extensions?: CapabilitiesExtension2
   $any?: Record<string, unknown>
 }
 
@@ -79,30 +79,30 @@ export type CapabilitiesExtension2 = {
 }
 
 export type Date = {
-  Year: number
+  year: number
   /** Range is 1 to 12. */
-  Month: number
+  month: number
   /** Range is 1 to 31. */
-  Day: number
+  day: number
 }
 
 export type DateTime = {
-  Time: Time
-  Date: Date
+  time: Time
+  date: Date
 }
 
 export type DeviceCapabilities = {
   /** Device service URI. */
-  XAddr: string
+  xAddr: string
   /** Network capabilities. */
-  Network?: TtNetworkCapabilities
+  network?: TtNetworkCapabilities
   /** System capabilities. */
-  System?: TtSystemCapabilities
+  system?: TtSystemCapabilities
   /** I/O capabilities. */
   IO?: IOCapabilities
   /** Security capabilities. */
-  Security?: TtSecurityCapabilities
-  Extension?: DeviceCapabilitiesExtension
+  security?: TtSecurityCapabilities
+  extension?: DeviceCapabilitiesExtension
 }
 
 export type DeviceCapabilitiesExtension = {
@@ -110,39 +110,39 @@ export type DeviceCapabilitiesExtension = {
 }
 
 export type DeviceIOCapabilities = {
-  XAddr: string
-  VideoSources: number
-  VideoOutputs: number
-  AudioSources: number
-  AudioOutputs: number
-  RelayOutputs: number
+  xAddr: string
+  videoSources: number
+  videoOutputs: number
+  audioSources: number
+  audioOutputs: number
+  relayOutputs: number
   $any?: Record<string, unknown>
 }
 
 export type DeviceServiceCapabilities = {
   /** Network capabilities. */
-  Network: TdsNetworkCapabilities
+  network: TdsNetworkCapabilities
   /** Security capabilities. */
-  Security: TdsSecurityCapabilities
+  security: TdsSecurityCapabilities
   /** System capabilities. */
-  System: TdsSystemCapabilities
+  system: TdsSystemCapabilities
   /** Capabilities that do not fit in any of the other categories. */
-  Misc?: MiscCapabilities
+  misc?: MiscCapabilities
 }
 
 export type DisplayCapabilities = {
-  XAddr: string
+  xAddr: string
   /** Indication that the SetLayout command supports only predefined layouts. */
-  FixedLayout: boolean
+  fixedLayout: boolean
   $any?: Record<string, unknown>
 }
 
 export type Dot11Configuration = {
   SSID: string
-  Mode: Dot11StationMode
-  Alias: string
-  Priority: number
-  Security: Dot11SecurityConfiguration
+  mode: Dot11StationMode
+  alias: string
+  priority: number
+  security: Dot11SecurityConfiguration
   $any?: Record<string, unknown>
 }
 
@@ -152,15 +152,15 @@ export type Dot11PSKSet = {
    * in hex Either Key or Passphrase shall be given, if both are supplied Key shall be used by the device
    * and Passphrase ignored.
    */
-  Key?: string
+  key?: string
   /**
    * According to IEEE802.11-2007 H.4.1 a pass-phrase is a sequence of between 8 and 63 ASCII-encoded
    * characters and each character in the pass-phrase must have an encoding in the range of 32 to 126
    * (decimal),inclusive. If only Passphrase is supplied the Key shall be derived using the algorithm
    * described in IEEE802.11-2007 section H.4
    */
-  Passphrase?: string
-  Extension?: Dot11PSKSetExtension
+  passphrase?: string
+  extension?: Dot11PSKSetExtension
 }
 
 export type Dot11PSKSetExtension = {
@@ -168,11 +168,11 @@ export type Dot11PSKSetExtension = {
 }
 
 export type Dot11SecurityConfiguration = {
-  Mode: Dot11SecurityMode
-  Algorithm?: Dot11Cipher
+  mode: Dot11SecurityMode
+  algorithm?: Dot11Cipher
   PSK?: Dot11PSKSet
-  Dot1X?: string
-  Extension?: Dot11SecurityConfigurationExtension
+  dot1X?: string
+  extension?: Dot11SecurityConfigurationExtension
 }
 
 export type Dot11SecurityConfigurationExtension = {
@@ -185,53 +185,53 @@ export type Dot3Configuration = {
 
 export type EventCapabilities = {
   /** Event service URI. */
-  XAddr: string
+  xAddr: string
   /** Indicates whether or not WS Subscription policy is supported. */
-  WSSubscriptionPolicySupport: boolean
+  wsSubscriptionPolicySupport: boolean
   /** Indicates whether or not WS Pull Point is supported. */
-  WSPullPointSupport: boolean
+  wsPullPointSupport: boolean
   /** Indicates whether or not WS Pausable Subscription Manager Interface is supported. */
-  WSPausableSubscriptionManagerInterfaceSupport: boolean
+  wsPausableSubscriptionManagerInterfaceSupport: boolean
   $any?: Record<string, unknown>
 }
 
 export type GetCapabilitiesRequest = {
   /** List of categories to retrieve capability information on. */
-  Category?: CapabilityCategory[]
+  category?: CapabilityCategory[]
 }
 
 export type GetCapabilitiesResponse = {
   /** Capability information. */
-  Capabilities: Capabilities
+  capabilities: Capabilities
 }
 
 export type GetDeviceInformationRequest = Record<string, never>
 
 export type GetDeviceInformationResponse = {
   /** The manufactor of the device. */
-  Manufacturer: string
+  manufacturer: string
   /** The device model. */
-  Model: string
+  model: string
   /** The firmware version in the device. */
-  FirmwareVersion: string
+  firmwareVersion: string
   /** The serial number of the device. */
-  SerialNumber: string
+  serialNumber: string
   /** The hardware ID of the device. */
-  HardwareId: string
+  hardwareId: string
 }
 
 export type GetHostnameRequest = Record<string, never>
 
 export type GetHostnameResponse = {
   /** Contains the hostname information. */
-  HostnameInformation: HostnameInformation
+  hostnameInformation: HostnameInformation
 }
 
 export type GetNetworkInterfacesRequest = Record<string, never>
 
 export type GetNetworkInterfacesResponse = {
   /** List of network interfaces. */
-  NetworkInterfaces: NetworkInterface[]
+  networkInterfaces: NetworkInterface[]
 }
 
 export type GetScopesRequest = Record<string, never>
@@ -241,24 +241,24 @@ export type GetScopesResponse = {
    * Contains a list of URI definining the device scopes. Scope parameters can be of two types: fixed and
    * configurable. Fixed parameters can not be altered.
    */
-  Scopes: Scope[]
+  scopes: Scope[]
 }
 
 export type GetServiceCapabilitiesRequest = Record<string, never>
 
 export type GetServiceCapabilitiesResponse = {
   /** The capabilities for the device service is returned in the Capabilities element. */
-  Capabilities: DeviceServiceCapabilities
+  capabilities: DeviceServiceCapabilities
 }
 
 export type GetServicesRequest = {
   /** Indicates if the service capabilities (untyped) should be included in the response. */
-  IncludeCapability: boolean
+  includeCapability: boolean
 }
 
 export type GetServicesResponse = {
   /** Each Service element contains information about one service. */
-  Service: Service[]
+  service: Service[]
 }
 
 export type GetSystemDateAndTimeRequest = Record<string, never>
@@ -269,15 +269,15 @@ export type GetSystemDateAndTimeResponse = {
    * or off, time zone in POSIX 1003.1 format and system date and time in UTC and also local system date
    * and time.
    */
-  SystemDateAndTime: SystemDateTime
+  systemDateAndTime: SystemDateTime
 }
 
 export type HostnameInformation = {
   /** Indicates whether the hostname has been obtained from DHCP or not. */
-  FromDHCP: boolean
+  fromDHCP: boolean
   /** Indicates the device hostname or an empty string if no hostname has been assigned. */
-  Name?: string
-  Extension?: HostnameInformationExtension
+  name?: string
+  extension?: HostnameInformationExtension
 }
 
 export type HostnameInformationExtension = {
@@ -286,21 +286,21 @@ export type HostnameInformationExtension = {
 
 export type ImagingCapabilities = {
   /** Imaging service URI. */
-  XAddr: string
+  xAddr: string
 }
 
 export type IOCapabilities = {
   /** Number of input connectors. */
-  InputConnectors?: number
+  inputConnectors?: number
   /** Number of relay outputs. */
-  RelayOutputs?: number
-  Extension?: IOCapabilitiesExtension
+  relayOutputs?: number
+  extension?: IOCapabilitiesExtension
 }
 
 export type IOCapabilitiesExtension = {
-  Auxiliary?: boolean
-  AuxiliaryCommands?: string[]
-  Extension: IOCapabilitiesExtension2
+  auxiliary?: boolean
+  auxiliaryCommands?: string[]
+  extension: IOCapabilitiesExtension2
   $any?: Record<string, unknown>
 }
 
@@ -310,11 +310,11 @@ export type IOCapabilitiesExtension2 = {
 
 export type IPv4Configuration = {
   /** List of manually added IPv4 addresses. */
-  Manual?: PrefixedIPv4Address[]
+  manual?: PrefixedIPv4Address[]
   /** Link local address. */
-  LinkLocal?: PrefixedIPv4Address
+  linkLocal?: PrefixedIPv4Address
   /** IPv4 address configured by using DHCP. */
-  FromDHCP?: PrefixedIPv4Address
+  fromDHCP?: PrefixedIPv4Address
   /** Indicates whether or not DHCP is used. */
   DHCP: boolean
   $any?: Record<string, unknown>
@@ -322,25 +322,25 @@ export type IPv4Configuration = {
 
 export type IPv4NetworkInterface = {
   /** Indicates whether or not IPv4 is enabled. */
-  Enabled: boolean
+  enabled: boolean
   /** IPv4 configuration. */
-  Config: IPv4Configuration
+  config: IPv4Configuration
 }
 
 export type IPv6Configuration = {
   /** Indicates whether router advertisement is used. */
-  AcceptRouterAdvert?: boolean
+  acceptRouterAdvert?: boolean
   /** DHCP configuration. */
   DHCP: IPv6DHCPConfiguration
   /** List of manually entered IPv6 addresses. */
-  Manual?: PrefixedIPv6Address[]
+  manual?: PrefixedIPv6Address[]
   /** List of link local IPv6 addresses. */
-  LinkLocal?: PrefixedIPv6Address[]
+  linkLocal?: PrefixedIPv6Address[]
   /** List of IPv6 addresses configured by using DHCP. */
-  FromDHCP?: PrefixedIPv6Address[]
+  fromDHCP?: PrefixedIPv6Address[]
   /** List of IPv6 addresses configured by using router advertisement. */
-  FromRA?: PrefixedIPv6Address[]
-  Extension?: IPv6ConfigurationExtension
+  fromRA?: PrefixedIPv6Address[]
+  extension?: IPv6ConfigurationExtension
 }
 
 export type IPv6ConfigurationExtension = {
@@ -349,33 +349,33 @@ export type IPv6ConfigurationExtension = {
 
 export type IPv6NetworkInterface = {
   /** Indicates whether or not IPv6 is enabled. */
-  Enabled: boolean
+  enabled: boolean
   /** IPv6 configuration. */
-  Config?: IPv6Configuration
+  config?: IPv6Configuration
 }
 
 export type MediaCapabilities = {
   /** Media service URI. */
-  XAddr: string
+  xAddr: string
   /** Streaming capabilities. */
-  StreamingCapabilities: RealTimeStreamingCapabilities
-  Extension?: MediaCapabilitiesExtension
+  streamingCapabilities: RealTimeStreamingCapabilities
+  extension?: MediaCapabilitiesExtension
   $any?: Record<string, unknown>
 }
 
 export type MediaCapabilitiesExtension = {
-  ProfileCapabilities: ProfileCapabilities
+  profileCapabilities: ProfileCapabilities
   $any?: Record<string, unknown>
 }
 
 export type MiscCapabilities = {
   /** Lists of commands supported by SendAuxiliaryCommand. */
-  AuxiliaryCommands?: string[]
+  auxiliaryCommands?: string[]
 }
 
 export type NetworkCapabilitiesExtension = {
-  Dot11Configuration?: boolean
-  Extension?: NetworkCapabilitiesExtension2
+  dot11Configuration?: boolean
+  extension?: NetworkCapabilitiesExtension2
   $any?: Record<string, unknown>
 }
 
@@ -387,33 +387,33 @@ export type NetworkInterface = {
   /** Unique identifier referencing the physical entity. */
   token: string
   /** Indicates whether or not an interface is enabled. */
-  Enabled: boolean
+  enabled: boolean
   /** Network interface information */
-  Info?: NetworkInterfaceInfo
+  info?: NetworkInterfaceInfo
   /** Link configuration. */
-  Link?: NetworkInterfaceLink
+  link?: NetworkInterfaceLink
   /** IPv4 network interface configuration. */
-  IPv4?: IPv4NetworkInterface
+  ipv4?: IPv4NetworkInterface
   /** IPv6 network interface configuration. */
-  IPv6?: IPv6NetworkInterface
-  Extension?: NetworkInterfaceExtension
+  ipv6?: IPv6NetworkInterface
+  extension?: NetworkInterfaceExtension
 }
 
 export type NetworkInterfaceConnectionSetting = {
   /** Auto negotiation on/off. */
-  AutoNegotiation: boolean
+  autoNegotiation: boolean
   /** Speed. */
-  Speed: number
+  speed: number
   /** Duplex type, Half or Full. */
-  Duplex: Duplex
+  duplex: Duplex
 }
 
 export type NetworkInterfaceExtension = {
-  InterfaceType: number
+  interfaceType: number
   /** Extension point prepared for future 802.3 configuration. */
-  Dot3?: Dot3Configuration[]
-  Dot11?: Dot11Configuration[]
-  Extension?: NetworkInterfaceExtension2
+  dot3?: Dot3Configuration[]
+  dot11?: Dot11Configuration[]
+  extension?: NetworkInterfaceExtension2
   $any?: Record<string, unknown>
 }
 
@@ -423,67 +423,67 @@ export type NetworkInterfaceExtension2 = {
 
 export type NetworkInterfaceInfo = {
   /** Network interface name, for example eth0. */
-  Name?: string
+  name?: string
   /** Network interface MAC address. */
-  HwAddress: string
+  hwAddress: string
   /** Maximum transmission unit. */
   MTU?: number
 }
 
 export type NetworkInterfaceLink = {
   /** Configured link settings. */
-  AdminSettings: NetworkInterfaceConnectionSetting
+  adminSettings: NetworkInterfaceConnectionSetting
   /** Current active link settings. */
-  OperSettings: NetworkInterfaceConnectionSetting
+  operSettings: NetworkInterfaceConnectionSetting
   /** Integer indicating interface type, for example: 6 is ethernet. */
-  InterfaceType: number
+  interfaceType: number
 }
 
 export type OnvifVersion = {
   /** Major version number. */
-  Major: number
+  major: number
   /**
    * Two digit minor version number. If major version number is less than "16", X.0.1 maps to "01" and
    * X.2.1 maps to "21" where X stands for Major version number. Otherwise, minor number is month of
    * release, such as "06" for June.
    */
-  Minor: number
+  minor: number
 }
 
 export type PrefixedIPv4Address = {
   /** IPv4 address */
-  Address: string
+  address: string
   /** Prefix/submask length */
-  PrefixLength: number
+  prefixLength: number
 }
 
 export type PrefixedIPv6Address = {
   /** IPv6 address */
-  Address: string
+  address: string
   /** Prefix/submask length */
-  PrefixLength: number
+  prefixLength: number
 }
 
 export type ProfileCapabilities = {
   /** Maximum number of profiles. */
-  MaximumNumberOfProfiles: number
+  maximumNumberOfProfiles: number
   $any?: Record<string, unknown>
 }
 
 export type PTZCapabilities = {
   /** PTZ service URI. */
-  XAddr: string
+  xAddr: string
   $any?: Record<string, unknown>
 }
 
 export type RealTimeStreamingCapabilities = {
   /** Indicates whether or not RTP multicast is supported. */
-  RTPMulticast?: boolean
+  rtpMulticast?: boolean
   /** Indicates whether or not RTP over TCP is supported. */
   RTP_TCP?: boolean
   /** Indicates whether or not RTP/RTSP/TCP is supported. */
   RTP_RTSP_TCP?: boolean
-  Extension?: RealTimeStreamingCapabilitiesExtension
+  extension?: RealTimeStreamingCapabilitiesExtension
 }
 
 export type RealTimeStreamingCapabilitiesExtension = {
@@ -492,63 +492,63 @@ export type RealTimeStreamingCapabilitiesExtension = {
 
 export type ReceiverCapabilities = {
   /** The address of the receiver service. */
-  XAddr: string
+  xAddr: string
   /** Indicates whether the device can receive RTP multicast streams. */
-  RTP_Multicast: boolean
+  rtp_Multicast: boolean
   /** Indicates whether the device can receive RTP/TCP streams */
   RTP_TCP: boolean
   /** Indicates whether the device can receive RTP/RTSP/TCP streams. */
   RTP_RTSP_TCP: boolean
   /** The maximum number of receivers supported by the device. */
-  SupportedReceivers: number
+  supportedReceivers: number
   /** The maximum allowed length for RTSP URIs. */
-  MaximumRTSPURILength: number
+  maximumRTSPURILength: number
   $any?: Record<string, unknown>
 }
 
 export type RecordingCapabilities = {
-  XAddr: string
-  ReceiverSource: boolean
-  MediaProfileSource: boolean
-  DynamicRecordings: boolean
-  DynamicTracks: boolean
-  MaxStringLength: number
+  xAddr: string
+  receiverSource: boolean
+  mediaProfileSource: boolean
+  dynamicRecordings: boolean
+  dynamicTracks: boolean
+  maxStringLength: number
   $any?: Record<string, unknown>
 }
 
 export type ReplayCapabilities = {
   /** The address of the replay service. */
-  XAddr: string
+  xAddr: string
   $any?: Record<string, unknown>
 }
 
 export type Scope = {
   /** Indicates if the scope is fixed or configurable. */
-  ScopeDef: ScopeDefinition
+  scopeDef: ScopeDefinition
   /** Scope item URI. */
-  ScopeItem: string
+  scopeItem: string
 }
 
 export type SearchCapabilities = {
-  XAddr: string
-  MetadataSearch: boolean
+  xAddr: string
+  metadataSearch: boolean
   /** Indicates support for natural language based search. */
-  NLSearch?: boolean
+  nlSearch?: boolean
   /** Indicates support for image based search. */
-  ImageSearch?: boolean
+  imageSearch?: boolean
   $any?: Record<string, unknown>
 }
 
 export type SecurityCapabilitiesExtension = {
   'TLS1.0': boolean
-  Extension?: SecurityCapabilitiesExtension2
+  extension?: SecurityCapabilitiesExtension2
 }
 
 export type SecurityCapabilitiesExtension2 = {
-  Dot1X: boolean
+  dot1X: boolean
   /** EAP Methods supported by the device. The int values refer to the IANA EAP Registry. */
-  SupportedEAPMethod?: number[]
-  RemoteUserHandling: boolean
+  supportedEAPMethod?: number[]
+  remoteUserHandling: boolean
   $any?: Record<string, unknown>
 }
 
@@ -557,15 +557,15 @@ export type Service = {
    * Namespace of the service being described. This parameter allows to match the service capabilities to
    * the service. Note that only one set of capabilities is supported per namespace.
    */
-  Namespace: string
+  namespace: string
   /**
    * The transport addresses where the service can be reached. The scheme and IP part shall match the one
    * used in the request (i.e. the GetServices request).
    */
-  XAddr: string
-  Capabilities?: ServiceCapabilities
+  xAddr: string
+  capabilities?: ServiceCapabilities
   /** The version of the service (not the ONVIF core spec version). */
-  Version: OnvifVersion
+  version: OnvifVersion
   $any?: Record<string, unknown>
 }
 
@@ -574,11 +574,11 @@ export type ServiceCapabilities = {
 }
 
 export type SystemCapabilitiesExtension = {
-  HttpFirmwareUpgrade?: boolean
-  HttpSystemBackup?: boolean
-  HttpSystemLogging?: boolean
-  HttpSupportInformation?: boolean
-  Extension?: SystemCapabilitiesExtension2
+  httpFirmwareUpgrade?: boolean
+  httpSystemBackup?: boolean
+  httpSystemLogging?: boolean
+  httpSupportInformation?: boolean
+  extension?: SystemCapabilitiesExtension2
   $any?: Record<string, unknown>
 }
 
@@ -589,16 +589,16 @@ export type SystemCapabilitiesExtension2 = {
 /** General date time information returned by the GetSystemDateTime method. */
 export type SystemDateTime = {
   /** Indicates if the time is set manually or through NTP. */
-  DateTimeType: SetDateTimeType
+  dateTimeType: SetDateTimeType
   /** Informative indicator whether daylight savings is currently on/off. */
-  DaylightSavings: boolean
+  daylightSavings: boolean
   /** Timezone information in Posix format. */
-  TimeZone?: TimeZone
+  timeZone?: TimeZone
   /** Current system date and time in UTC format. This field is mandatory since version 2.0. */
-  UTCDateTime?: DateTime
+  utcDateTime?: DateTime
   /** Date and time in local format. */
-  LocalDateTime?: DateTime
-  Extension?: SystemDateTimeExtension
+  localDateTime?: DateTime
+  extension?: SystemDateTimeExtension
 }
 
 export type SystemDateTimeExtension = {
@@ -609,28 +609,28 @@ export type SystemRebootRequest = Record<string, never>
 
 export type SystemRebootResponse = {
   /** Contains the reboot message sent by the device. */
-  Message: string
+  message: string
 }
 
 export type TdsNetworkCapabilities = {
   /** Indicates support for IP filtering. */
-  IPFilter?: boolean
+  ipFilter?: boolean
   /** Indicates support for zeroconf. */
-  ZeroConfiguration?: boolean
+  zeroConfiguration?: boolean
   /** Indicates support for IPv6. */
-  IPVersion6?: boolean
+  ipVersion6?: boolean
   /** Indicates support for dynamic DNS configuration. */
-  DynDNS?: boolean
+  dynDNS?: boolean
   /** Indicates support for IEEE 802.11 configuration. */
-  Dot11Configuration?: boolean
+  dot11Configuration?: boolean
   /** Indicates the maximum number of Dot1X configurations supported by the device */
-  Dot1XConfigurations?: number
+  dot1XConfigurations?: number
   /** Indicates support for retrieval of hostname from DHCP. */
-  HostnameFromDHCP?: boolean
+  hostnameFromDHCP?: boolean
   /** Maximum number of NTP servers supported by the devices SetNTP command. */
   NTP?: number
   /** Indicates support for Stateful IPv6 DHCP. */
-  DHCPv6?: boolean
+  dhcpv6?: boolean
 }
 
 export type TdsSecurityCapabilities = {
@@ -641,108 +641,108 @@ export type TdsSecurityCapabilities = {
   /** Indicates support for TLS 1.2. */
   'TLS1.2'?: boolean
   /** Indicates support for onboard key generation. */
-  OnboardKeyGeneration?: boolean
+  onboardKeyGeneration?: boolean
   /** Indicates support for access policy configuration. */
-  AccessPolicyConfig?: boolean
+  accessPolicyConfig?: boolean
   /** Indicates support for the ONVIF default access policy. */
-  DefaultAccessPolicy?: boolean
+  defaultAccessPolicy?: boolean
   /** Indicates support for IEEE 802.1X configuration. */
-  Dot1X?: boolean
+  dot1X?: boolean
   /** Indicates support for remote user configuration. Used when accessing another device. */
-  RemoteUserHandling?: boolean
+  remoteUserHandling?: boolean
   /** Indicates support for WS-Security X.509 token. */
-  'X.509Token'?: boolean
+  'x.509Token'?: boolean
   /** Indicates support for WS-Security SAML token. */
-  SAMLToken?: boolean
+  samlToken?: boolean
   /** Indicates support for WS-Security Kerberos token. */
-  KerberosToken?: boolean
+  kerberosToken?: boolean
   /** Indicates support for WS-Security Username token. */
-  UsernameToken?: boolean
+  usernameToken?: boolean
   /** Indicates support for WS over HTTP digest authenticated communication layer. */
-  HttpDigest?: boolean
+  httpDigest?: boolean
   /** Indicates support for WS-Security REL token. */
-  RELToken?: boolean
+  relToken?: boolean
   /** Indicates support for JWT-based authentication with WS-Security Binary Security token. */
-  JsonWebToken?: boolean
+  jsonWebToken?: boolean
   /** EAP Methods supported by the device. The int values refer to the IANA EAP Registry. */
-  SupportedEAPMethods?: number[]
+  supportedEAPMethods?: number[]
   /** The maximum number of users that the device supports. */
-  MaxUsers?: number
+  maxUsers?: number
   /** Maximum number of characters supported for the username by CreateUsers. */
-  MaxUserNameLength?: number
+  maxUserNameLength?: number
   /** Maximum number of characters supported for the password by CreateUsers and SetUser. */
-  MaxPasswordLength?: number
+  maxPasswordLength?: number
   /**
    * Indicates which security policies are supported. Options are: ModifyPassword, PasswordComplexity,
    * AuthFailureWarnings
    */
-  SecurityPolicies?: string[]
+  securityPolicies?: string[]
   /** Maximum number of passwords that the device can remember for each user */
-  MaxPasswordHistory?: number
+  maxPasswordHistory?: number
   /** Supported hashing algorithms as part of HTTP and RTSP Digest authentication.Example: MD5,SHA-256 */
-  HashingAlgorithms?: string[]
+  hashingAlgorithms?: string[]
   /**
    * Whenever set to an integer greater than zero, it signals that the device supports editable user
    * roles. It indicates the maximum number of editable user roles.
    */
-  MaxUserRoles?: number
+  maxUserRoles?: number
 }
 
 export type TdsSystemCapabilities = {
   /** Indicates support for WS Discovery resolve requests. */
-  DiscoveryResolve?: boolean
+  discoveryResolve?: boolean
   /** Indicates support for WS-Discovery Bye. */
-  DiscoveryBye?: boolean
+  discoveryBye?: boolean
   /** Indicates support for remote discovery. */
-  RemoteDiscovery?: boolean
+  remoteDiscovery?: boolean
   /** Indicates support for system backup through MTOM. */
-  SystemBackup?: boolean
+  systemBackup?: boolean
   /** Indicates support for retrieval of system logging through MTOM. */
-  SystemLogging?: boolean
+  systemLogging?: boolean
   /** Indicates support for firmware upgrade through the cloud. */
-  CloudFirmwareUpgrade?: boolean
+  cloudFirmwareUpgrade?: boolean
   /** Indicates support for firmware upgrade through HTTP. */
-  HttpFirmwareUpgrade?: boolean
+  httpFirmwareUpgrade?: boolean
   /** Indicates support for system backup through HTTP. */
-  HttpSystemBackup?: boolean
+  httpSystemBackup?: boolean
   /** Indicates support for retrieval of system logging through HTTP. */
-  HttpSystemLogging?: boolean
+  httpSystemLogging?: boolean
   /** Indicates support for retrieving support information through HTTP. */
-  HttpSupportInformation?: boolean
+  httpSupportInformation?: boolean
   /** Indicates support for storage configuration interfaces. */
-  StorageConfiguration?: boolean
+  storageConfiguration?: boolean
   /** Indicates maximum number of storage configurations supported. */
-  MaxStorageConfigurations?: number
+  maxStorageConfigurations?: number
   /** Indicates support for renewal of storage configuration. */
-  StorageConfigurationRenewal?: boolean
+  storageConfigurationRenewal?: boolean
   /** If present signals support for geo location. The value signals the supported number of entries. */
-  GeoLocationEntries?: number
+  geoLocationEntries?: number
   /**
    * List of supported automatic GeoLocation adjustment supported by the device. Valid items are defined
    * by tds:AutoGeoMode.
    */
-  AutoGeo?: string[]
+  autoGeo?: string[]
   /** Enumerates the supported StorageTypes, see tds:StorageType. */
-  StorageTypesSupported?: string[]
+  storageTypesSupported?: string[]
   /** Indicates no support for network discovery. */
-  DiscoveryNotSupported?: boolean
+  discoveryNotSupported?: boolean
   /** Indicates no support for network configuration. */
-  NetworkConfigNotSupported?: boolean
+  networkConfigNotSupported?: boolean
   /** Indicates no support for user configuration. */
-  UserConfigNotSupported?: boolean
+  userConfigNotSupported?: boolean
   /** List of supported Addons by the device. */
-  Addons?: string[]
+  addons?: string[]
   /** Indicates what type of device this is. See tt:HardwareTypes for available options. */
-  HardwareType?: string
+  hardwareType?: string
 }
 
 export type Time = {
   /** Range is 0 to 23. */
-  Hour: number
+  hour: number
   /** Range is 0 to 59. */
-  Minute: number
+  minute: number
   /** Range is 0 to 61 (typically 59). */
-  Second: number
+  second: number
 }
 
 /**
@@ -762,14 +762,14 @@ export type TimeZone = {
 
 export type TtNetworkCapabilities = {
   /** Indicates whether or not IP filtering is supported. */
-  IPFilter?: boolean
+  ipFilter?: boolean
   /** Indicates whether or not zeroconf is supported. */
-  ZeroConfiguration?: boolean
+  zeroConfiguration?: boolean
   /** Indicates whether or not IPv6 is supported. */
-  IPVersion6?: boolean
+  ipVersion6?: boolean
   /** Indicates whether or not is supported. */
-  DynDNS?: boolean
-  Extension?: NetworkCapabilitiesExtension
+  dynDNS?: boolean
+  extension?: NetworkCapabilitiesExtension
 }
 
 export type TtSecurityCapabilities = {
@@ -778,37 +778,37 @@ export type TtSecurityCapabilities = {
   /** Indicates whether or not TLS 1.2 is supported. */
   'TLS1.2': boolean
   /** Indicates whether or not onboard key generation is supported. */
-  OnboardKeyGeneration: boolean
+  onboardKeyGeneration: boolean
   /** Indicates whether or not access policy configuration is supported. */
-  AccessPolicyConfig: boolean
+  accessPolicyConfig: boolean
   /** Indicates whether or not WS-Security X.509 token is supported. */
-  'X.509Token': boolean
+  'x.509Token': boolean
   /** Indicates whether or not WS-Security SAML token is supported. */
-  SAMLToken: boolean
+  samlToken: boolean
   /** Indicates whether or not WS-Security Kerberos token is supported. */
-  KerberosToken: boolean
+  kerberosToken: boolean
   /** Indicates whether or not WS-Security REL token is supported. */
-  RELToken: boolean
-  Extension?: SecurityCapabilitiesExtension
+  relToken: boolean
+  extension?: SecurityCapabilitiesExtension
   $any?: Record<string, unknown>
 }
 
 export type TtSystemCapabilities = {
   /** Indicates whether or not WS Discovery resolve requests are supported. */
-  DiscoveryResolve: boolean
+  discoveryResolve: boolean
   /** Indicates whether or not WS-Discovery Bye is supported. */
-  DiscoveryBye: boolean
+  discoveryBye: boolean
   /** Indicates whether or not remote discovery is supported. */
-  RemoteDiscovery: boolean
+  remoteDiscovery: boolean
   /** Indicates whether or not system backup is supported. */
-  SystemBackup: boolean
+  systemBackup: boolean
   /** Indicates whether or not system logging is supported. */
-  SystemLogging: boolean
+  systemLogging: boolean
   /** Indicates whether or not firmware upgrade is supported. */
-  FirmwareUpgrade: boolean
+  firmwareUpgrade: boolean
   /** Indicates supported ONVIF version(s). */
-  SupportedVersions: OnvifVersion[]
-  Extension?: SystemCapabilitiesExtension
+  supportedVersions: OnvifVersion[]
+  extension?: SystemCapabilitiesExtension
 }
 
 const tds = 'http://www.onvif.org/ver10/device/wsdl'
@@ -817,238 +817,307 @@ const tt = 'http://www.onvif.org/ver10/schema'
 export const schema: Schema = {
   AnalyticsCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'RuleSupport', type: 'boolean', namespace: tt },
-      { name: 'AnalyticsModuleSupport', type: 'boolean', namespace: tt }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'RuleSupport', property: 'ruleSupport', type: 'boolean', namespace: tt },
+      { name: 'AnalyticsModuleSupport', property: 'analyticsModuleSupport', type: 'boolean', namespace: tt }
     ],
     any: true
   },
   AnalyticsDeviceCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'RuleSupport', type: 'boolean', namespace: tt, optional: true },
-      { name: 'Extension', type: 'AnalyticsDeviceExtension', namespace: tt, optional: true }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'RuleSupport', property: 'ruleSupport', type: 'boolean', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'AnalyticsDeviceExtension', namespace: tt, optional: true }
     ]
   },
   AnalyticsDeviceExtension: { fields: [], any: true },
   Capabilities: {
     fields: [
-      { name: 'Analytics', type: 'AnalyticsCapabilities', namespace: tt, optional: true },
-      { name: 'Device', type: 'DeviceCapabilities', namespace: tt, optional: true },
-      { name: 'Events', type: 'EventCapabilities', namespace: tt, optional: true },
-      { name: 'Imaging', type: 'ImagingCapabilities', namespace: tt, optional: true },
-      { name: 'Media', type: 'MediaCapabilities', namespace: tt, optional: true },
+      { name: 'Analytics', property: 'analytics', type: 'AnalyticsCapabilities', namespace: tt, optional: true },
+      { name: 'Device', property: 'device', type: 'DeviceCapabilities', namespace: tt, optional: true },
+      { name: 'Events', property: 'events', type: 'EventCapabilities', namespace: tt, optional: true },
+      { name: 'Imaging', property: 'imaging', type: 'ImagingCapabilities', namespace: tt, optional: true },
+      { name: 'Media', property: 'media', type: 'MediaCapabilities', namespace: tt, optional: true },
       { name: 'PTZ', type: 'PTZCapabilities', namespace: tt, optional: true },
-      { name: 'Extension', type: 'CapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'Extension', property: 'extension', type: 'CapabilitiesExtension', namespace: tt, optional: true }
     ]
   },
   CapabilitiesExtension: {
     fields: [
-      { name: 'DeviceIO', type: 'DeviceIOCapabilities', namespace: tt, optional: true },
-      { name: 'Display', type: 'DisplayCapabilities', namespace: tt, optional: true },
-      { name: 'Recording', type: 'RecordingCapabilities', namespace: tt, optional: true },
-      { name: 'Search', type: 'SearchCapabilities', namespace: tt, optional: true },
-      { name: 'Replay', type: 'ReplayCapabilities', namespace: tt, optional: true },
-      { name: 'Receiver', type: 'ReceiverCapabilities', namespace: tt, optional: true },
-      { name: 'AnalyticsDevice', type: 'AnalyticsDeviceCapabilities', namespace: tt, optional: true },
-      { name: 'Extensions', type: 'CapabilitiesExtension2', namespace: tt, optional: true }
+      { name: 'DeviceIO', property: 'deviceIO', type: 'DeviceIOCapabilities', namespace: tt, optional: true },
+      { name: 'Display', property: 'display', type: 'DisplayCapabilities', namespace: tt, optional: true },
+      { name: 'Recording', property: 'recording', type: 'RecordingCapabilities', namespace: tt, optional: true },
+      { name: 'Search', property: 'search', type: 'SearchCapabilities', namespace: tt, optional: true },
+      { name: 'Replay', property: 'replay', type: 'ReplayCapabilities', namespace: tt, optional: true },
+      { name: 'Receiver', property: 'receiver', type: 'ReceiverCapabilities', namespace: tt, optional: true },
+      {
+        name: 'AnalyticsDevice',
+        property: 'analyticsDevice',
+        type: 'AnalyticsDeviceCapabilities',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Extensions', property: 'extensions', type: 'CapabilitiesExtension2', namespace: tt, optional: true }
     ],
     any: true
   },
   CapabilitiesExtension2: { fields: [], any: true },
   Date: {
     fields: [
-      { name: 'Year', type: 'integer', namespace: tt },
-      { name: 'Month', type: 'integer', namespace: tt },
-      { name: 'Day', type: 'integer', namespace: tt }
+      { name: 'Year', property: 'year', type: 'integer', namespace: tt },
+      { name: 'Month', property: 'month', type: 'integer', namespace: tt },
+      { name: 'Day', property: 'day', type: 'integer', namespace: tt }
     ]
   },
   DateTime: {
     fields: [
-      { name: 'Time', type: 'Time', namespace: tt },
-      { name: 'Date', type: 'Date', namespace: tt }
+      { name: 'Time', property: 'time', type: 'Time', namespace: tt },
+      { name: 'Date', property: 'date', type: 'Date', namespace: tt }
     ]
   },
   DeviceCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'Network', type: 'TtNetworkCapabilities', namespace: tt, optional: true },
-      { name: 'System', type: 'TtSystemCapabilities', namespace: tt, optional: true },
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'Network', property: 'network', type: 'TtNetworkCapabilities', namespace: tt, optional: true },
+      { name: 'System', property: 'system', type: 'TtSystemCapabilities', namespace: tt, optional: true },
       { name: 'IO', type: 'IOCapabilities', namespace: tt, optional: true },
-      { name: 'Security', type: 'TtSecurityCapabilities', namespace: tt, optional: true },
-      { name: 'Extension', type: 'DeviceCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'Security', property: 'security', type: 'TtSecurityCapabilities', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'DeviceCapabilitiesExtension', namespace: tt, optional: true }
     ]
   },
   DeviceCapabilitiesExtension: { fields: [], any: true },
   DeviceIOCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'VideoSources', type: 'integer', namespace: tt },
-      { name: 'VideoOutputs', type: 'integer', namespace: tt },
-      { name: 'AudioSources', type: 'integer', namespace: tt },
-      { name: 'AudioOutputs', type: 'integer', namespace: tt },
-      { name: 'RelayOutputs', type: 'integer', namespace: tt }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'VideoSources', property: 'videoSources', type: 'integer', namespace: tt },
+      { name: 'VideoOutputs', property: 'videoOutputs', type: 'integer', namespace: tt },
+      { name: 'AudioSources', property: 'audioSources', type: 'integer', namespace: tt },
+      { name: 'AudioOutputs', property: 'audioOutputs', type: 'integer', namespace: tt },
+      { name: 'RelayOutputs', property: 'relayOutputs', type: 'integer', namespace: tt }
     ],
     any: true
   },
   DeviceServiceCapabilities: {
     fields: [
-      { name: 'Network', type: 'TdsNetworkCapabilities', namespace: tds },
-      { name: 'Security', type: 'TdsSecurityCapabilities', namespace: tds },
-      { name: 'System', type: 'TdsSystemCapabilities', namespace: tds },
-      { name: 'Misc', type: 'MiscCapabilities', namespace: tds, optional: true }
+      { name: 'Network', property: 'network', type: 'TdsNetworkCapabilities', namespace: tds },
+      { name: 'Security', property: 'security', type: 'TdsSecurityCapabilities', namespace: tds },
+      { name: 'System', property: 'system', type: 'TdsSystemCapabilities', namespace: tds },
+      { name: 'Misc', property: 'misc', type: 'MiscCapabilities', namespace: tds, optional: true }
     ]
   },
   DisplayCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'FixedLayout', type: 'boolean', namespace: tt }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'FixedLayout', property: 'fixedLayout', type: 'boolean', namespace: tt }
     ],
     any: true
   },
   Dot11Configuration: {
     fields: [
       { name: 'SSID', type: 'string', namespace: tt },
-      { name: 'Mode', type: 'string', namespace: tt },
-      { name: 'Alias', type: 'string', namespace: tt },
-      { name: 'Priority', type: 'integer', namespace: tt },
-      { name: 'Security', type: 'Dot11SecurityConfiguration', namespace: tt }
+      { name: 'Mode', property: 'mode', type: 'string', namespace: tt },
+      { name: 'Alias', property: 'alias', type: 'string', namespace: tt },
+      { name: 'Priority', property: 'priority', type: 'integer', namespace: tt },
+      { name: 'Security', property: 'security', type: 'Dot11SecurityConfiguration', namespace: tt }
     ],
     any: true
   },
   Dot11PSKSet: {
     fields: [
-      { name: 'Key', type: 'string', namespace: tt, optional: true },
-      { name: 'Passphrase', type: 'string', namespace: tt, optional: true },
-      { name: 'Extension', type: 'Dot11PSKSetExtension', namespace: tt, optional: true }
+      { name: 'Key', property: 'key', type: 'string', namespace: tt, optional: true },
+      { name: 'Passphrase', property: 'passphrase', type: 'string', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'Dot11PSKSetExtension', namespace: tt, optional: true }
     ]
   },
   Dot11PSKSetExtension: { fields: [], any: true },
   Dot11SecurityConfiguration: {
     fields: [
-      { name: 'Mode', type: 'string', namespace: tt },
-      { name: 'Algorithm', type: 'string', namespace: tt, optional: true },
+      { name: 'Mode', property: 'mode', type: 'string', namespace: tt },
+      { name: 'Algorithm', property: 'algorithm', type: 'string', namespace: tt, optional: true },
       { name: 'PSK', type: 'Dot11PSKSet', namespace: tt, optional: true },
-      { name: 'Dot1X', type: 'string', namespace: tt, optional: true },
-      { name: 'Extension', type: 'Dot11SecurityConfigurationExtension', namespace: tt, optional: true }
+      { name: 'Dot1X', property: 'dot1X', type: 'string', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'Dot11SecurityConfigurationExtension',
+        namespace: tt,
+        optional: true
+      }
     ]
   },
   Dot11SecurityConfigurationExtension: { fields: [], any: true },
   Dot3Configuration: { fields: [], any: true },
   EventCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'WSSubscriptionPolicySupport', type: 'boolean', namespace: tt },
-      { name: 'WSPullPointSupport', type: 'boolean', namespace: tt },
-      { name: 'WSPausableSubscriptionManagerInterfaceSupport', type: 'boolean', namespace: tt }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'WSSubscriptionPolicySupport', property: 'wsSubscriptionPolicySupport', type: 'boolean', namespace: tt },
+      { name: 'WSPullPointSupport', property: 'wsPullPointSupport', type: 'boolean', namespace: tt },
+      {
+        name: 'WSPausableSubscriptionManagerInterfaceSupport',
+        property: 'wsPausableSubscriptionManagerInterfaceSupport',
+        type: 'boolean',
+        namespace: tt
+      }
     ],
     any: true
   },
   GetCapabilitiesRequest: {
-    fields: [{ name: 'Category', type: 'string', namespace: tds, optional: true, array: true }]
+    fields: [{ name: 'Category', property: 'category', type: 'string', namespace: tds, optional: true, array: true }]
   },
-  GetCapabilitiesResponse: { fields: [{ name: 'Capabilities', type: 'Capabilities', namespace: tds }] },
+  GetCapabilitiesResponse: {
+    fields: [{ name: 'Capabilities', property: 'capabilities', type: 'Capabilities', namespace: tds }]
+  },
   GetDeviceInformationRequest: { fields: [] },
   GetDeviceInformationResponse: {
     fields: [
-      { name: 'Manufacturer', type: 'string', namespace: tds },
-      { name: 'Model', type: 'string', namespace: tds },
-      { name: 'FirmwareVersion', type: 'string', namespace: tds },
-      { name: 'SerialNumber', type: 'string', namespace: tds },
-      { name: 'HardwareId', type: 'string', namespace: tds }
+      { name: 'Manufacturer', property: 'manufacturer', type: 'string', namespace: tds },
+      { name: 'Model', property: 'model', type: 'string', namespace: tds },
+      { name: 'FirmwareVersion', property: 'firmwareVersion', type: 'string', namespace: tds },
+      { name: 'SerialNumber', property: 'serialNumber', type: 'string', namespace: tds },
+      { name: 'HardwareId', property: 'hardwareId', type: 'string', namespace: tds }
     ]
   },
   GetHostnameRequest: { fields: [] },
-  GetHostnameResponse: { fields: [{ name: 'HostnameInformation', type: 'HostnameInformation', namespace: tds }] },
+  GetHostnameResponse: {
+    fields: [
+      { name: 'HostnameInformation', property: 'hostnameInformation', type: 'HostnameInformation', namespace: tds }
+    ]
+  },
   GetNetworkInterfacesRequest: { fields: [] },
   GetNetworkInterfacesResponse: {
-    fields: [{ name: 'NetworkInterfaces', type: 'NetworkInterface', namespace: tds, array: true }]
+    fields: [
+      {
+        name: 'NetworkInterfaces',
+        property: 'networkInterfaces',
+        type: 'NetworkInterface',
+        namespace: tds,
+        array: true
+      }
+    ]
   },
   GetScopesRequest: { fields: [] },
-  GetScopesResponse: { fields: [{ name: 'Scopes', type: 'Scope', namespace: tds, array: true }] },
+  GetScopesResponse: { fields: [{ name: 'Scopes', property: 'scopes', type: 'Scope', namespace: tds, array: true }] },
   GetServiceCapabilitiesRequest: { fields: [] },
   GetServiceCapabilitiesResponse: {
-    fields: [{ name: 'Capabilities', type: 'DeviceServiceCapabilities', namespace: tds }]
+    fields: [{ name: 'Capabilities', property: 'capabilities', type: 'DeviceServiceCapabilities', namespace: tds }]
   },
-  GetServicesRequest: { fields: [{ name: 'IncludeCapability', type: 'boolean', namespace: tds }] },
-  GetServicesResponse: { fields: [{ name: 'Service', type: 'Service', namespace: tds, array: true }] },
+  GetServicesRequest: {
+    fields: [{ name: 'IncludeCapability', property: 'includeCapability', type: 'boolean', namespace: tds }]
+  },
+  GetServicesResponse: {
+    fields: [{ name: 'Service', property: 'service', type: 'Service', namespace: tds, array: true }]
+  },
   GetSystemDateAndTimeRequest: { fields: [] },
-  GetSystemDateAndTimeResponse: { fields: [{ name: 'SystemDateAndTime', type: 'SystemDateTime', namespace: tds }] },
+  GetSystemDateAndTimeResponse: {
+    fields: [{ name: 'SystemDateAndTime', property: 'systemDateAndTime', type: 'SystemDateTime', namespace: tds }]
+  },
   HostnameInformation: {
     fields: [
-      { name: 'FromDHCP', type: 'boolean', namespace: tt },
-      { name: 'Name', type: 'string', namespace: tt, optional: true },
-      { name: 'Extension', type: 'HostnameInformationExtension', namespace: tt, optional: true }
+      { name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tt },
+      { name: 'Name', property: 'name', type: 'string', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'HostnameInformationExtension', namespace: tt, optional: true }
     ]
   },
   HostnameInformationExtension: { fields: [], any: true },
-  ImagingCapabilities: { fields: [{ name: 'XAddr', type: 'string', namespace: tt }] },
+  ImagingCapabilities: { fields: [{ name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt }] },
   IOCapabilities: {
     fields: [
-      { name: 'InputConnectors', type: 'integer', namespace: tt, optional: true },
-      { name: 'RelayOutputs', type: 'integer', namespace: tt, optional: true },
-      { name: 'Extension', type: 'IOCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'InputConnectors', property: 'inputConnectors', type: 'integer', namespace: tt, optional: true },
+      { name: 'RelayOutputs', property: 'relayOutputs', type: 'integer', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'IOCapabilitiesExtension', namespace: tt, optional: true }
     ]
   },
   IOCapabilitiesExtension: {
     fields: [
-      { name: 'Auxiliary', type: 'boolean', namespace: tt, optional: true },
-      { name: 'AuxiliaryCommands', type: 'string', namespace: tt, optional: true, array: true },
-      { name: 'Extension', type: 'IOCapabilitiesExtension2', namespace: tt }
+      { name: 'Auxiliary', property: 'auxiliary', type: 'boolean', namespace: tt, optional: true },
+      {
+        name: 'AuxiliaryCommands',
+        property: 'auxiliaryCommands',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'Extension', property: 'extension', type: 'IOCapabilitiesExtension2', namespace: tt }
     ],
     any: true
   },
   IOCapabilitiesExtension2: { fields: [], any: true },
   IPv4Configuration: {
     fields: [
-      { name: 'Manual', type: 'PrefixedIPv4Address', namespace: tt, optional: true, array: true },
-      { name: 'LinkLocal', type: 'PrefixedIPv4Address', namespace: tt, optional: true },
-      { name: 'FromDHCP', type: 'PrefixedIPv4Address', namespace: tt, optional: true },
+      { name: 'Manual', property: 'manual', type: 'PrefixedIPv4Address', namespace: tt, optional: true, array: true },
+      { name: 'LinkLocal', property: 'linkLocal', type: 'PrefixedIPv4Address', namespace: tt, optional: true },
+      { name: 'FromDHCP', property: 'fromDHCP', type: 'PrefixedIPv4Address', namespace: tt, optional: true },
       { name: 'DHCP', type: 'boolean', namespace: tt }
     ],
     any: true
   },
   IPv4NetworkInterface: {
     fields: [
-      { name: 'Enabled', type: 'boolean', namespace: tt },
-      { name: 'Config', type: 'IPv4Configuration', namespace: tt }
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tt },
+      { name: 'Config', property: 'config', type: 'IPv4Configuration', namespace: tt }
     ]
   },
   IPv6Configuration: {
     fields: [
-      { name: 'AcceptRouterAdvert', type: 'boolean', namespace: tt, optional: true },
+      { name: 'AcceptRouterAdvert', property: 'acceptRouterAdvert', type: 'boolean', namespace: tt, optional: true },
       { name: 'DHCP', type: 'string', namespace: tt },
-      { name: 'Manual', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
-      { name: 'LinkLocal', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
-      { name: 'FromDHCP', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
-      { name: 'FromRA', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
-      { name: 'Extension', type: 'IPv6ConfigurationExtension', namespace: tt, optional: true }
+      { name: 'Manual', property: 'manual', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
+      {
+        name: 'LinkLocal',
+        property: 'linkLocal',
+        type: 'PrefixedIPv6Address',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'FromDHCP',
+        property: 'fromDHCP',
+        type: 'PrefixedIPv6Address',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'FromRA', property: 'fromRA', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
+      { name: 'Extension', property: 'extension', type: 'IPv6ConfigurationExtension', namespace: tt, optional: true }
     ]
   },
   IPv6ConfigurationExtension: { fields: [], any: true },
   IPv6NetworkInterface: {
     fields: [
-      { name: 'Enabled', type: 'boolean', namespace: tt },
-      { name: 'Config', type: 'IPv6Configuration', namespace: tt, optional: true }
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tt },
+      { name: 'Config', property: 'config', type: 'IPv6Configuration', namespace: tt, optional: true }
     ]
   },
   MediaCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'StreamingCapabilities', type: 'RealTimeStreamingCapabilities', namespace: tt },
-      { name: 'Extension', type: 'MediaCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      {
+        name: 'StreamingCapabilities',
+        property: 'streamingCapabilities',
+        type: 'RealTimeStreamingCapabilities',
+        namespace: tt
+      },
+      { name: 'Extension', property: 'extension', type: 'MediaCapabilitiesExtension', namespace: tt, optional: true }
     ],
     any: true
   },
   MediaCapabilitiesExtension: {
-    fields: [{ name: 'ProfileCapabilities', type: 'ProfileCapabilities', namespace: tt }],
+    fields: [
+      { name: 'ProfileCapabilities', property: 'profileCapabilities', type: 'ProfileCapabilities', namespace: tt }
+    ],
     any: true
   },
-  MiscCapabilities: { fields: [{ name: 'AuxiliaryCommands', type: 'string[]', attribute: true, optional: true }] },
+  MiscCapabilities: {
+    fields: [
+      { name: 'AuxiliaryCommands', property: 'auxiliaryCommands', type: 'string[]', attribute: true, optional: true }
+    ]
+  },
   NetworkCapabilitiesExtension: {
     fields: [
-      { name: 'Dot11Configuration', type: 'boolean', namespace: tt, optional: true },
-      { name: 'Extension', type: 'NetworkCapabilitiesExtension2', namespace: tt, optional: true }
+      { name: 'Dot11Configuration', property: 'dot11Configuration', type: 'boolean', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'NetworkCapabilitiesExtension2', namespace: tt, optional: true }
     ],
     any: true
   },
@@ -1056,171 +1125,205 @@ export const schema: Schema = {
   NetworkInterface: {
     fields: [
       { name: 'token', type: 'string', attribute: true },
-      { name: 'Enabled', type: 'boolean', namespace: tt },
-      { name: 'Info', type: 'NetworkInterfaceInfo', namespace: tt, optional: true },
-      { name: 'Link', type: 'NetworkInterfaceLink', namespace: tt, optional: true },
-      { name: 'IPv4', type: 'IPv4NetworkInterface', namespace: tt, optional: true },
-      { name: 'IPv6', type: 'IPv6NetworkInterface', namespace: tt, optional: true },
-      { name: 'Extension', type: 'NetworkInterfaceExtension', namespace: tt, optional: true }
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tt },
+      { name: 'Info', property: 'info', type: 'NetworkInterfaceInfo', namespace: tt, optional: true },
+      { name: 'Link', property: 'link', type: 'NetworkInterfaceLink', namespace: tt, optional: true },
+      { name: 'IPv4', property: 'ipv4', type: 'IPv4NetworkInterface', namespace: tt, optional: true },
+      { name: 'IPv6', property: 'ipv6', type: 'IPv6NetworkInterface', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'NetworkInterfaceExtension', namespace: tt, optional: true }
     ]
   },
   NetworkInterfaceConnectionSetting: {
     fields: [
-      { name: 'AutoNegotiation', type: 'boolean', namespace: tt },
-      { name: 'Speed', type: 'integer', namespace: tt },
-      { name: 'Duplex', type: 'string', namespace: tt }
+      { name: 'AutoNegotiation', property: 'autoNegotiation', type: 'boolean', namespace: tt },
+      { name: 'Speed', property: 'speed', type: 'integer', namespace: tt },
+      { name: 'Duplex', property: 'duplex', type: 'string', namespace: tt }
     ]
   },
   NetworkInterfaceExtension: {
     fields: [
-      { name: 'InterfaceType', type: 'integer', namespace: tt },
-      { name: 'Dot3', type: 'Dot3Configuration', namespace: tt, optional: true, array: true },
-      { name: 'Dot11', type: 'Dot11Configuration', namespace: tt, optional: true, array: true },
-      { name: 'Extension', type: 'NetworkInterfaceExtension2', namespace: tt, optional: true }
+      { name: 'InterfaceType', property: 'interfaceType', type: 'integer', namespace: tt },
+      { name: 'Dot3', property: 'dot3', type: 'Dot3Configuration', namespace: tt, optional: true, array: true },
+      { name: 'Dot11', property: 'dot11', type: 'Dot11Configuration', namespace: tt, optional: true, array: true },
+      { name: 'Extension', property: 'extension', type: 'NetworkInterfaceExtension2', namespace: tt, optional: true }
     ],
     any: true
   },
   NetworkInterfaceExtension2: { fields: [], any: true },
   NetworkInterfaceInfo: {
     fields: [
-      { name: 'Name', type: 'string', namespace: tt, optional: true },
-      { name: 'HwAddress', type: 'string', namespace: tt },
+      { name: 'Name', property: 'name', type: 'string', namespace: tt, optional: true },
+      { name: 'HwAddress', property: 'hwAddress', type: 'string', namespace: tt },
       { name: 'MTU', type: 'integer', namespace: tt, optional: true }
     ]
   },
   NetworkInterfaceLink: {
     fields: [
-      { name: 'AdminSettings', type: 'NetworkInterfaceConnectionSetting', namespace: tt },
-      { name: 'OperSettings', type: 'NetworkInterfaceConnectionSetting', namespace: tt },
-      { name: 'InterfaceType', type: 'integer', namespace: tt }
+      { name: 'AdminSettings', property: 'adminSettings', type: 'NetworkInterfaceConnectionSetting', namespace: tt },
+      { name: 'OperSettings', property: 'operSettings', type: 'NetworkInterfaceConnectionSetting', namespace: tt },
+      { name: 'InterfaceType', property: 'interfaceType', type: 'integer', namespace: tt }
     ]
   },
   OnvifVersion: {
     fields: [
-      { name: 'Major', type: 'integer', namespace: tt },
-      { name: 'Minor', type: 'integer', namespace: tt }
+      { name: 'Major', property: 'major', type: 'integer', namespace: tt },
+      { name: 'Minor', property: 'minor', type: 'integer', namespace: tt }
     ]
   },
   PrefixedIPv4Address: {
     fields: [
-      { name: 'Address', type: 'string', namespace: tt },
-      { name: 'PrefixLength', type: 'integer', namespace: tt }
+      { name: 'Address', property: 'address', type: 'string', namespace: tt },
+      { name: 'PrefixLength', property: 'prefixLength', type: 'integer', namespace: tt }
     ]
   },
   PrefixedIPv6Address: {
     fields: [
-      { name: 'Address', type: 'string', namespace: tt },
-      { name: 'PrefixLength', type: 'integer', namespace: tt }
+      { name: 'Address', property: 'address', type: 'string', namespace: tt },
+      { name: 'PrefixLength', property: 'prefixLength', type: 'integer', namespace: tt }
     ]
   },
-  ProfileCapabilities: { fields: [{ name: 'MaximumNumberOfProfiles', type: 'integer', namespace: tt }], any: true },
-  PTZCapabilities: { fields: [{ name: 'XAddr', type: 'string', namespace: tt }], any: true },
+  ProfileCapabilities: {
+    fields: [{ name: 'MaximumNumberOfProfiles', property: 'maximumNumberOfProfiles', type: 'integer', namespace: tt }],
+    any: true
+  },
+  PTZCapabilities: { fields: [{ name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt }], any: true },
   RealTimeStreamingCapabilities: {
     fields: [
-      { name: 'RTPMulticast', type: 'boolean', namespace: tt, optional: true },
+      { name: 'RTPMulticast', property: 'rtpMulticast', type: 'boolean', namespace: tt, optional: true },
       { name: 'RTP_TCP', type: 'boolean', namespace: tt, optional: true },
       { name: 'RTP_RTSP_TCP', type: 'boolean', namespace: tt, optional: true },
-      { name: 'Extension', type: 'RealTimeStreamingCapabilitiesExtension', namespace: tt, optional: true }
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'RealTimeStreamingCapabilitiesExtension',
+        namespace: tt,
+        optional: true
+      }
     ]
   },
   RealTimeStreamingCapabilitiesExtension: { fields: [], any: true },
   ReceiverCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'RTP_Multicast', type: 'boolean', namespace: tt },
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'RTP_Multicast', property: 'rtp_Multicast', type: 'boolean', namespace: tt },
       { name: 'RTP_TCP', type: 'boolean', namespace: tt },
       { name: 'RTP_RTSP_TCP', type: 'boolean', namespace: tt },
-      { name: 'SupportedReceivers', type: 'integer', namespace: tt },
-      { name: 'MaximumRTSPURILength', type: 'integer', namespace: tt }
+      { name: 'SupportedReceivers', property: 'supportedReceivers', type: 'integer', namespace: tt },
+      { name: 'MaximumRTSPURILength', property: 'maximumRTSPURILength', type: 'integer', namespace: tt }
     ],
     any: true
   },
   RecordingCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'ReceiverSource', type: 'boolean', namespace: tt },
-      { name: 'MediaProfileSource', type: 'boolean', namespace: tt },
-      { name: 'DynamicRecordings', type: 'boolean', namespace: tt },
-      { name: 'DynamicTracks', type: 'boolean', namespace: tt },
-      { name: 'MaxStringLength', type: 'integer', namespace: tt }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'ReceiverSource', property: 'receiverSource', type: 'boolean', namespace: tt },
+      { name: 'MediaProfileSource', property: 'mediaProfileSource', type: 'boolean', namespace: tt },
+      { name: 'DynamicRecordings', property: 'dynamicRecordings', type: 'boolean', namespace: tt },
+      { name: 'DynamicTracks', property: 'dynamicTracks', type: 'boolean', namespace: tt },
+      { name: 'MaxStringLength', property: 'maxStringLength', type: 'integer', namespace: tt }
     ],
     any: true
   },
-  ReplayCapabilities: { fields: [{ name: 'XAddr', type: 'string', namespace: tt }], any: true },
+  ReplayCapabilities: { fields: [{ name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt }], any: true },
   Scope: {
     fields: [
-      { name: 'ScopeDef', type: 'string', namespace: tt },
-      { name: 'ScopeItem', type: 'string', namespace: tt }
+      { name: 'ScopeDef', property: 'scopeDef', type: 'string', namespace: tt },
+      { name: 'ScopeItem', property: 'scopeItem', type: 'string', namespace: tt }
     ]
   },
   SearchCapabilities: {
     fields: [
-      { name: 'XAddr', type: 'string', namespace: tt },
-      { name: 'MetadataSearch', type: 'boolean', namespace: tt },
-      { name: 'NLSearch', type: 'boolean', namespace: tt, optional: true },
-      { name: 'ImageSearch', type: 'boolean', namespace: tt, optional: true }
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tt },
+      { name: 'MetadataSearch', property: 'metadataSearch', type: 'boolean', namespace: tt },
+      { name: 'NLSearch', property: 'nlSearch', type: 'boolean', namespace: tt, optional: true },
+      { name: 'ImageSearch', property: 'imageSearch', type: 'boolean', namespace: tt, optional: true }
     ],
     any: true
   },
   SecurityCapabilitiesExtension: {
     fields: [
       { name: 'TLS1.0', type: 'boolean', namespace: tt },
-      { name: 'Extension', type: 'SecurityCapabilitiesExtension2', namespace: tt, optional: true }
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'SecurityCapabilitiesExtension2',
+        namespace: tt,
+        optional: true
+      }
     ]
   },
   SecurityCapabilitiesExtension2: {
     fields: [
-      { name: 'Dot1X', type: 'boolean', namespace: tt },
-      { name: 'SupportedEAPMethod', type: 'integer', namespace: tt, optional: true, array: true },
-      { name: 'RemoteUserHandling', type: 'boolean', namespace: tt }
+      { name: 'Dot1X', property: 'dot1X', type: 'boolean', namespace: tt },
+      {
+        name: 'SupportedEAPMethod',
+        property: 'supportedEAPMethod',
+        type: 'integer',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'RemoteUserHandling', property: 'remoteUserHandling', type: 'boolean', namespace: tt }
     ],
     any: true
   },
   Service: {
     fields: [
-      { name: 'Namespace', type: 'string', namespace: tds },
-      { name: 'XAddr', type: 'string', namespace: tds },
-      { name: 'Capabilities', type: 'ServiceCapabilities', namespace: tds, optional: true },
-      { name: 'Version', type: 'OnvifVersion', namespace: tds }
+      { name: 'Namespace', property: 'namespace', type: 'string', namespace: tds },
+      { name: 'XAddr', property: 'xAddr', type: 'string', namespace: tds },
+      { name: 'Capabilities', property: 'capabilities', type: 'ServiceCapabilities', namespace: tds, optional: true },
+      { name: 'Version', property: 'version', type: 'OnvifVersion', namespace: tds }
     ],
     any: true
   },
   ServiceCapabilities: { fields: [], any: true },
   SystemCapabilitiesExtension: {
     fields: [
-      { name: 'HttpFirmwareUpgrade', type: 'boolean', namespace: tt, optional: true },
-      { name: 'HttpSystemBackup', type: 'boolean', namespace: tt, optional: true },
-      { name: 'HttpSystemLogging', type: 'boolean', namespace: tt, optional: true },
-      { name: 'HttpSupportInformation', type: 'boolean', namespace: tt, optional: true },
-      { name: 'Extension', type: 'SystemCapabilitiesExtension2', namespace: tt, optional: true }
+      { name: 'HttpFirmwareUpgrade', property: 'httpFirmwareUpgrade', type: 'boolean', namespace: tt, optional: true },
+      { name: 'HttpSystemBackup', property: 'httpSystemBackup', type: 'boolean', namespace: tt, optional: true },
+      { name: 'HttpSystemLogging', property: 'httpSystemLogging', type: 'boolean', namespace: tt, optional: true },
+      {
+        name: 'HttpSupportInformation',
+        property: 'httpSupportInformation',
+        type: 'boolean',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Extension', property: 'extension', type: 'SystemCapabilitiesExtension2', namespace: tt, optional: true }
     ],
     any: true
   },
   SystemCapabilitiesExtension2: { fields: [], any: true },
   SystemDateTime: {
     fields: [
-      { name: 'DateTimeType', type: 'string', namespace: tt },
-      { name: 'DaylightSavings', type: 'boolean', namespace: tt },
-      { name: 'TimeZone', type: 'TimeZone', namespace: tt, optional: true },
-      { name: 'UTCDateTime', type: 'DateTime', namespace: tt, optional: true },
-      { name: 'LocalDateTime', type: 'DateTime', namespace: tt, optional: true },
-      { name: 'Extension', type: 'SystemDateTimeExtension', namespace: tt, optional: true }
+      { name: 'DateTimeType', property: 'dateTimeType', type: 'string', namespace: tt },
+      { name: 'DaylightSavings', property: 'daylightSavings', type: 'boolean', namespace: tt },
+      { name: 'TimeZone', property: 'timeZone', type: 'TimeZone', namespace: tt, optional: true },
+      { name: 'UTCDateTime', property: 'utcDateTime', type: 'DateTime', namespace: tt, optional: true },
+      { name: 'LocalDateTime', property: 'localDateTime', type: 'DateTime', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'SystemDateTimeExtension', namespace: tt, optional: true }
     ]
   },
   SystemDateTimeExtension: { fields: [], any: true },
   SystemRebootRequest: { fields: [] },
-  SystemRebootResponse: { fields: [{ name: 'Message', type: 'string', namespace: tds }] },
+  SystemRebootResponse: { fields: [{ name: 'Message', property: 'message', type: 'string', namespace: tds }] },
   TdsNetworkCapabilities: {
     fields: [
-      { name: 'IPFilter', type: 'boolean', attribute: true, optional: true },
-      { name: 'ZeroConfiguration', type: 'boolean', attribute: true, optional: true },
-      { name: 'IPVersion6', type: 'boolean', attribute: true, optional: true },
-      { name: 'DynDNS', type: 'boolean', attribute: true, optional: true },
-      { name: 'Dot11Configuration', type: 'boolean', attribute: true, optional: true },
-      { name: 'Dot1XConfigurations', type: 'integer', attribute: true, optional: true },
-      { name: 'HostnameFromDHCP', type: 'boolean', attribute: true, optional: true },
+      { name: 'IPFilter', property: 'ipFilter', type: 'boolean', attribute: true, optional: true },
+      { name: 'ZeroConfiguration', property: 'zeroConfiguration', type: 'boolean', attribute: true, optional: true },
+      { name: 'IPVersion6', property: 'ipVersion6', type: 'boolean', attribute: true, optional: true },
+      { name: 'DynDNS', property: 'dynDNS', type: 'boolean', attribute: true, optional: true },
+      { name: 'Dot11Configuration', property: 'dot11Configuration', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'Dot1XConfigurations',
+        property: 'dot1XConfigurations',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      },
+      { name: 'HostnameFromDHCP', property: 'hostnameFromDHCP', type: 'boolean', attribute: true, optional: true },
       { name: 'NTP', type: 'integer', attribute: true, optional: true },
-      { name: 'DHCPv6', type: 'boolean', attribute: true, optional: true }
+      { name: 'DHCPv6', property: 'dhcpv6', type: 'boolean', attribute: true, optional: true }
     ]
   },
   TdsSecurityCapabilities: {
@@ -1228,94 +1331,172 @@ export const schema: Schema = {
       { name: 'TLS1.0', type: 'boolean', attribute: true, optional: true },
       { name: 'TLS1.1', type: 'boolean', attribute: true, optional: true },
       { name: 'TLS1.2', type: 'boolean', attribute: true, optional: true },
-      { name: 'OnboardKeyGeneration', type: 'boolean', attribute: true, optional: true },
-      { name: 'AccessPolicyConfig', type: 'boolean', attribute: true, optional: true },
-      { name: 'DefaultAccessPolicy', type: 'boolean', attribute: true, optional: true },
-      { name: 'Dot1X', type: 'boolean', attribute: true, optional: true },
-      { name: 'RemoteUserHandling', type: 'boolean', attribute: true, optional: true },
-      { name: 'X.509Token', type: 'boolean', attribute: true, optional: true },
-      { name: 'SAMLToken', type: 'boolean', attribute: true, optional: true },
-      { name: 'KerberosToken', type: 'boolean', attribute: true, optional: true },
-      { name: 'UsernameToken', type: 'boolean', attribute: true, optional: true },
-      { name: 'HttpDigest', type: 'boolean', attribute: true, optional: true },
-      { name: 'RELToken', type: 'boolean', attribute: true, optional: true },
-      { name: 'JsonWebToken', type: 'boolean', attribute: true, optional: true },
-      { name: 'SupportedEAPMethods', type: 'integer[]', attribute: true, optional: true },
-      { name: 'MaxUsers', type: 'integer', attribute: true, optional: true },
-      { name: 'MaxUserNameLength', type: 'integer', attribute: true, optional: true },
-      { name: 'MaxPasswordLength', type: 'integer', attribute: true, optional: true },
-      { name: 'SecurityPolicies', type: 'string[]', attribute: true, optional: true },
-      { name: 'MaxPasswordHistory', type: 'integer', attribute: true, optional: true },
-      { name: 'HashingAlgorithms', type: 'string[]', attribute: true, optional: true },
-      { name: 'MaxUserRoles', type: 'integer', attribute: true, optional: true }
+      {
+        name: 'OnboardKeyGeneration',
+        property: 'onboardKeyGeneration',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'AccessPolicyConfig', property: 'accessPolicyConfig', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'DefaultAccessPolicy',
+        property: 'defaultAccessPolicy',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'Dot1X', property: 'dot1X', type: 'boolean', attribute: true, optional: true },
+      { name: 'RemoteUserHandling', property: 'remoteUserHandling', type: 'boolean', attribute: true, optional: true },
+      { name: 'X.509Token', property: 'x.509Token', type: 'boolean', attribute: true, optional: true },
+      { name: 'SAMLToken', property: 'samlToken', type: 'boolean', attribute: true, optional: true },
+      { name: 'KerberosToken', property: 'kerberosToken', type: 'boolean', attribute: true, optional: true },
+      { name: 'UsernameToken', property: 'usernameToken', type: 'boolean', attribute: true, optional: true },
+      { name: 'HttpDigest', property: 'httpDigest', type: 'boolean', attribute: true, optional: true },
+      { name: 'RELToken', property: 'relToken', type: 'boolean', attribute: true, optional: true },
+      { name: 'JsonWebToken', property: 'jsonWebToken', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'SupportedEAPMethods',
+        property: 'supportedEAPMethods',
+        type: 'integer[]',
+        attribute: true,
+        optional: true
+      },
+      { name: 'MaxUsers', property: 'maxUsers', type: 'integer', attribute: true, optional: true },
+      { name: 'MaxUserNameLength', property: 'maxUserNameLength', type: 'integer', attribute: true, optional: true },
+      { name: 'MaxPasswordLength', property: 'maxPasswordLength', type: 'integer', attribute: true, optional: true },
+      { name: 'SecurityPolicies', property: 'securityPolicies', type: 'string[]', attribute: true, optional: true },
+      { name: 'MaxPasswordHistory', property: 'maxPasswordHistory', type: 'integer', attribute: true, optional: true },
+      { name: 'HashingAlgorithms', property: 'hashingAlgorithms', type: 'string[]', attribute: true, optional: true },
+      { name: 'MaxUserRoles', property: 'maxUserRoles', type: 'integer', attribute: true, optional: true }
     ]
   },
   TdsSystemCapabilities: {
     fields: [
-      { name: 'DiscoveryResolve', type: 'boolean', attribute: true, optional: true },
-      { name: 'DiscoveryBye', type: 'boolean', attribute: true, optional: true },
-      { name: 'RemoteDiscovery', type: 'boolean', attribute: true, optional: true },
-      { name: 'SystemBackup', type: 'boolean', attribute: true, optional: true },
-      { name: 'SystemLogging', type: 'boolean', attribute: true, optional: true },
-      { name: 'CloudFirmwareUpgrade', type: 'boolean', attribute: true, optional: true },
-      { name: 'HttpFirmwareUpgrade', type: 'boolean', attribute: true, optional: true },
-      { name: 'HttpSystemBackup', type: 'boolean', attribute: true, optional: true },
-      { name: 'HttpSystemLogging', type: 'boolean', attribute: true, optional: true },
-      { name: 'HttpSupportInformation', type: 'boolean', attribute: true, optional: true },
-      { name: 'StorageConfiguration', type: 'boolean', attribute: true, optional: true },
-      { name: 'MaxStorageConfigurations', type: 'integer', attribute: true, optional: true },
-      { name: 'StorageConfigurationRenewal', type: 'boolean', attribute: true, optional: true },
-      { name: 'GeoLocationEntries', type: 'integer', attribute: true, optional: true },
-      { name: 'AutoGeo', type: 'string[]', attribute: true, optional: true },
-      { name: 'StorageTypesSupported', type: 'string[]', attribute: true, optional: true },
-      { name: 'DiscoveryNotSupported', type: 'boolean', attribute: true, optional: true },
-      { name: 'NetworkConfigNotSupported', type: 'boolean', attribute: true, optional: true },
-      { name: 'UserConfigNotSupported', type: 'boolean', attribute: true, optional: true },
-      { name: 'Addons', type: 'string[]', attribute: true, optional: true },
-      { name: 'HardwareType', type: 'string', attribute: true, optional: true }
+      { name: 'DiscoveryResolve', property: 'discoveryResolve', type: 'boolean', attribute: true, optional: true },
+      { name: 'DiscoveryBye', property: 'discoveryBye', type: 'boolean', attribute: true, optional: true },
+      { name: 'RemoteDiscovery', property: 'remoteDiscovery', type: 'boolean', attribute: true, optional: true },
+      { name: 'SystemBackup', property: 'systemBackup', type: 'boolean', attribute: true, optional: true },
+      { name: 'SystemLogging', property: 'systemLogging', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'CloudFirmwareUpgrade',
+        property: 'cloudFirmwareUpgrade',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'HttpFirmwareUpgrade',
+        property: 'httpFirmwareUpgrade',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'HttpSystemBackup', property: 'httpSystemBackup', type: 'boolean', attribute: true, optional: true },
+      { name: 'HttpSystemLogging', property: 'httpSystemLogging', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'HttpSupportInformation',
+        property: 'httpSupportInformation',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'StorageConfiguration',
+        property: 'storageConfiguration',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'MaxStorageConfigurations',
+        property: 'maxStorageConfigurations',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'StorageConfigurationRenewal',
+        property: 'storageConfigurationRenewal',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'GeoLocationEntries', property: 'geoLocationEntries', type: 'integer', attribute: true, optional: true },
+      { name: 'AutoGeo', property: 'autoGeo', type: 'string[]', attribute: true, optional: true },
+      {
+        name: 'StorageTypesSupported',
+        property: 'storageTypesSupported',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'DiscoveryNotSupported',
+        property: 'discoveryNotSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'NetworkConfigNotSupported',
+        property: 'networkConfigNotSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'UserConfigNotSupported',
+        property: 'userConfigNotSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'Addons', property: 'addons', type: 'string[]', attribute: true, optional: true },
+      { name: 'HardwareType', property: 'hardwareType', type: 'string', attribute: true, optional: true }
     ]
   },
   Time: {
     fields: [
-      { name: 'Hour', type: 'integer', namespace: tt },
-      { name: 'Minute', type: 'integer', namespace: tt },
-      { name: 'Second', type: 'integer', namespace: tt }
+      { name: 'Hour', property: 'hour', type: 'integer', namespace: tt },
+      { name: 'Minute', property: 'minute', type: 'integer', namespace: tt },
+      { name: 'Second', property: 'second', type: 'integer', namespace: tt }
     ]
   },
   TimeZone: { fields: [{ name: 'TZ', type: 'string', namespace: tt }] },
   TtNetworkCapabilities: {
     fields: [
-      { name: 'IPFilter', type: 'boolean', namespace: tt, optional: true },
-      { name: 'ZeroConfiguration', type: 'boolean', namespace: tt, optional: true },
-      { name: 'IPVersion6', type: 'boolean', namespace: tt, optional: true },
-      { name: 'DynDNS', type: 'boolean', namespace: tt, optional: true },
-      { name: 'Extension', type: 'NetworkCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'IPFilter', property: 'ipFilter', type: 'boolean', namespace: tt, optional: true },
+      { name: 'ZeroConfiguration', property: 'zeroConfiguration', type: 'boolean', namespace: tt, optional: true },
+      { name: 'IPVersion6', property: 'ipVersion6', type: 'boolean', namespace: tt, optional: true },
+      { name: 'DynDNS', property: 'dynDNS', type: 'boolean', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'NetworkCapabilitiesExtension', namespace: tt, optional: true }
     ]
   },
   TtSecurityCapabilities: {
     fields: [
       { name: 'TLS1.1', type: 'boolean', namespace: tt },
       { name: 'TLS1.2', type: 'boolean', namespace: tt },
-      { name: 'OnboardKeyGeneration', type: 'boolean', namespace: tt },
-      { name: 'AccessPolicyConfig', type: 'boolean', namespace: tt },
-      { name: 'X.509Token', type: 'boolean', namespace: tt },
-      { name: 'SAMLToken', type: 'boolean', namespace: tt },
-      { name: 'KerberosToken', type: 'boolean', namespace: tt },
-      { name: 'RELToken', type: 'boolean', namespace: tt },
-      { name: 'Extension', type: 'SecurityCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'OnboardKeyGeneration', property: 'onboardKeyGeneration', type: 'boolean', namespace: tt },
+      { name: 'AccessPolicyConfig', property: 'accessPolicyConfig', type: 'boolean', namespace: tt },
+      { name: 'X.509Token', property: 'x.509Token', type: 'boolean', namespace: tt },
+      { name: 'SAMLToken', property: 'samlToken', type: 'boolean', namespace: tt },
+      { name: 'KerberosToken', property: 'kerberosToken', type: 'boolean', namespace: tt },
+      { name: 'RELToken', property: 'relToken', type: 'boolean', namespace: tt },
+      { name: 'Extension', property: 'extension', type: 'SecurityCapabilitiesExtension', namespace: tt, optional: true }
     ],
     any: true
   },
   TtSystemCapabilities: {
     fields: [
-      { name: 'DiscoveryResolve', type: 'boolean', namespace: tt },
-      { name: 'DiscoveryBye', type: 'boolean', namespace: tt },
-      { name: 'RemoteDiscovery', type: 'boolean', namespace: tt },
-      { name: 'SystemBackup', type: 'boolean', namespace: tt },
-      { name: 'SystemLogging', type: 'boolean', namespace: tt },
-      { name: 'FirmwareUpgrade', type: 'boolean', namespace: tt },
-      { name: 'SupportedVersions', type: 'OnvifVersion', namespace: tt, array: true },
-      { name: 'Extension', type: 'SystemCapabilitiesExtension', namespace: tt, optional: true }
+      { name: 'DiscoveryResolve', property: 'discoveryResolve', type: 'boolean', namespace: tt },
+      { name: 'DiscoveryBye', property: 'discoveryBye', type: 'boolean', namespace: tt },
+      { name: 'RemoteDiscovery', property: 'remoteDiscovery', type: 'boolean', namespace: tt },
+      { name: 'SystemBackup', property: 'systemBackup', type: 'boolean', namespace: tt },
+      { name: 'SystemLogging', property: 'systemLogging', type: 'boolean', namespace: tt },
+      { name: 'FirmwareUpgrade', property: 'firmwareUpgrade', type: 'boolean', namespace: tt },
+      { name: 'SupportedVersions', property: 'supportedVersions', type: 'OnvifVersion', namespace: tt, array: true },
+      { name: 'Extension', property: 'extension', type: 'SystemCapabilitiesExtension', namespace: tt, optional: true }
     ]
   }
 }

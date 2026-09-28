@@ -7,6 +7,8 @@ export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime
 
 export type FieldSchema = {
   name: string
+  /** Key of the field in decoded and request objects, when it differs from `name`. */
+  property?: string
   /** A primitive, a primitive list such as `integer[]` (XSD list), or a key of the schema. */
   type: string
   namespace?: string
@@ -131,6 +133,7 @@ const decodeComplex = (
   const result: Record<string, unknown> = {}
 
   for (const field of type.fields) {
+    const key = field.property ?? field.name
     const raw = field.attribute
       ? typeof attributes === 'object' && !Array.isArray(attributes)
         ? attributes[field.name]
@@ -149,17 +152,9 @@ const decodeComplex = (
     const fieldPath = `${path}.${field.name}`
     if (field.array) {
       const items = Array.isArray(raw) ? raw : [raw]
-      result[field.name] = items.map((item, index) =>
-        decodeValue(schema, field.type, item, `${fieldPath}[${index}]`, context)
-      )
+      result[key] = items.map((item, index) => decodeValue(schema, field.type, item, `${fieldPath}[${index}]`, context))
     } else {
-      result[field.name] = decodeValue(
-        schema,
-        field.type,
-        Array.isArray(raw) ? (raw[0] as XmlValue) : raw,
-        fieldPath,
-        context
-      )
+      result[key] = decodeValue(schema, field.type, Array.isArray(raw) ? (raw[0] as XmlValue) : raw, fieldPath, context)
     }
   }
 
@@ -184,10 +179,10 @@ const decodeComplex = (
 }
 
 /**
- * Convert a parsed element into the typed shape described by the schema: numbers, booleans and dates are converted,
- * repeatable elements are always arrays, attributes become properties and simple content becomes `value`. When an
- * element that should occur once is repeated, the first occurrence is used. Unknown elements are kept under `$any` for
- * types that allow extensions and dropped otherwise.
+ * Turn a parsed element into the typed shape from the schema. Numbers, booleans and dates get converted, repeatable
+ * elements are always arrays, elements and attributes go under their property names and simple content becomes
+ * `value`. If an element that should occur once is repeated, the first one wins. Unknown elements go under `$any` on
+ * types that allow extensions and are dropped otherwise.
  *
  * @param schema - Generated schema table
  * @param type - Type key in the table
@@ -263,10 +258,11 @@ class Encoder {
     const attributes: Record<string, string> = {}
     const children: XmlNode[] = []
     for (const field of schema.fields) {
-      const fieldValue = data[field.name]
-      const fieldPath = `${path}.${field.name}`
+      const key = field.property ?? field.name
+      const fieldValue = data[key]
+      const fieldPath = `${path}.${key}`
       if (fieldValue === undefined) {
-        if (!field.optional) throw new OnvifError(`Missing required ${field.name} at ${path}`)
+        if (!field.optional) throw new OnvifError(`Missing required ${key} at ${path}`)
         continue
       }
       if (field.attribute) {

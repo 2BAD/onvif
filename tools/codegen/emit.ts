@@ -24,6 +24,25 @@ const pascal = (value: string): string =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('')
 
+const camelCase = (name: string): string => {
+  if (!/[a-z]/.test(name)) return name
+  const upper = /^[A-Z]+/.exec(name)?.[0] ?? ''
+  const rest = name.slice(upper.length)
+  if (upper.length > 1 && /^[a-z]{2}/.test(rest)) return `${upper.slice(0, -1).toLowerCase()}${upper.slice(-1)}${rest}`
+  return `${upper.toLowerCase()}${rest}`
+}
+
+const properties = (model: ComplexModel): string[] => {
+  const candidates = model.fields.map((field) => camelCase(field.name))
+  const keys = model.fields.map((field) => {
+    const candidate = camelCase(field.name)
+    return candidates.filter((other) => other === candidate).length === 1 ? candidate : field.name
+  })
+  const all = model.text ? [...keys, 'value'] : keys
+  if (new Set(all).size !== all.length) throw new Error(`Colliding property names in ${model.suggestedName}`)
+  return keys
+}
+
 const propertyName = (name: string): string => (/^[A-Za-z_$][\w$]*$/.test(name) ? name : `'${name}'`)
 
 const comment = (text: string | undefined, indent: string): string => {
@@ -167,9 +186,10 @@ export function emit(options: EmitOptions): string {
       continue
     }
     types += `export type ${names.complex(model)} = {\n`
-    for (const field of model.fields) {
+    const keys = properties(model)
+    for (const [index, field] of model.fields.entries()) {
       types += comment(field.documentation, '  ')
-      types += `  ${propertyName(field.name)}${field.optional ? '?' : ''}: ${tsField(field, names)}\n`
+      types += `  ${propertyName(keys[index] ?? field.name)}${field.optional ? '?' : ''}: ${tsField(field, names)}\n`
     }
     if (model.text) types += `  value: ${tsSimple(model.text, names)}\n`
     if (model.any) types += '  $any?: Record<string, unknown>\n'
@@ -178,8 +198,12 @@ export function emit(options: EmitOptions): string {
 
   let schema = 'export const schema: Schema = {\n'
   for (const model of sorted) {
-    const fields = model.fields.map((field) => {
-      const parts = [`name: '${field.name}'`, `type: '${schemaType(field, names)}'`]
+    const keys = properties(model)
+    const fields = model.fields.map((field, index) => {
+      const parts = [`name: '${field.name}'`]
+      const key = keys[index] ?? field.name
+      if (key !== field.name) parts.push(`property: '${key}'`)
+      parts.push(`type: '${schemaType(field, names)}'`)
       const namespace = field.namespace === undefined ? undefined : names.namespace(field.namespace)
       if (namespace) parts.push(`namespace: ${namespace}`)
       if (field.attribute) parts.push('attribute: true')
