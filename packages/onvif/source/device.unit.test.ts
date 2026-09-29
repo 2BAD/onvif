@@ -123,6 +123,24 @@ describe('Device.connect', () => {
     ])
   })
 
+  it.each([1, 999])(
+    'estimates the skew within half a second when the device time is %i ms into a second',
+    async (millisecond) => {
+      const skewMs = 3_600_000
+      const base = performance.now()
+      const frozen = base + ((((millisecond - ((performance.timeOrigin + base) % 1_000)) % 1_000) + 1_000) % 1_000)
+      const spies = [
+        vi.spyOn(performance, 'now').mockReturnValue(frozen),
+        vi.spyOn(Date, 'now').mockReturnValue(performance.timeOrigin + frozen)
+      ]
+      cleanups.push(() => {
+        for (const spy of spies) spy.mockRestore()
+      })
+      const device = await connect(await camera({ clockSkewMs: skewMs }))
+      expect(Math.abs(device.clock.skewMs - skewMs)).toBeLessThanOrEqual(500)
+    }
+  )
+
   it('falls back to the local clock when the device reports no UTC time', async () => {
     const mock = await camera({ utcTime: false })
     const device = await connect(mock)

@@ -27,6 +27,8 @@ import { HttpTransport, type HttpResponse, type TlsOptions } from '#transport/ht
 export const DEVICE_NAMESPACE = 'http://www.onvif.org/ver10/device/wsdl'
 
 const CLOCK_TOLERANCE_MS = 1_000
+// devices report whole seconds, so their time lies anywhere in the second after the reported one
+const HALF_A_SECOND_MS = 500
 const RESYNC_INTERVAL_MS = 60_000
 
 /**
@@ -240,7 +242,7 @@ export class Device {
     this.#clock =
       deviceTime === undefined
         ? { skewMs: 0, source: 'local' }
-        : { skewMs: Math.round(deviceTime - midpoint), source: 'device' }
+        : { skewMs: Math.round(deviceTime + HALF_A_SECOND_MS - midpoint), source: 'device' }
     const wall = Date.now()
     this.#synchronizedAt = { device: wall + this.#clock.skewMs, wall, monotonic: performance.now() }
   }
