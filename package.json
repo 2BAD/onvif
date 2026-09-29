@@ -4,6 +4,7 @@
   "type": "module",
   "imports": {
     "#onvif/*": "./packages/onvif/source/*",
+    "#onvif-events/*": "./packages/events/source/*",
     "#tools/*": "./tools/*"
   },
   "scripts": {
