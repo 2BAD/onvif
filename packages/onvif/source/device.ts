@@ -213,6 +213,11 @@ export class Device {
     return { ...this.#clock }
   }
 
+  /** The `serviceAddresses` policy this device was connected with. */
+  get addressPolicy(): ServiceAddressPolicy {
+    return this.#policy
+  }
+
   /** Service addresses by namespace, after the address policy was applied. */
   get services(): ReadonlyMap<string, URL> {
     return new Map(this.#services)

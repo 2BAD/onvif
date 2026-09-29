@@ -323,12 +323,14 @@ describe('service addresses', () => {
   it('rewrites addresses that point to another host by default', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
     const device = await connect(mock)
+    expect(device.addressPolicy).toBe('rewrite')
     expect(device.services.get(MEDIA)?.href).toBe(`${mock.url}/onvif/Media`)
   })
 
   it('drops them under the reject policy', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
     const device = await connect(mock, { serviceAddresses: 'reject' })
+    expect(device.addressPolicy).toBe('reject')
     expect(device.services.has(MEDIA)).toBe(false)
     expect(device.services.has(DEVICE_NAMESPACE)).toBe(true)
     expect(() => device.resolveAddress('http://10.0.0.5:8080/onvif/Media')).toThrow('is not the configured origin')
