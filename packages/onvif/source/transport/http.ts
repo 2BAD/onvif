@@ -29,10 +29,10 @@ export type HttpTransportOptions = {
   digest?: Credentials | undefined
 }
 
-export type HttpResponse = {
+export type HttpResponse<Body = string> = {
   status: number
   headers: NodeJS.Dict<string[]>
-  body: string
+  body: Body
 }
 
 export type PostOptions = {
@@ -49,6 +49,8 @@ export type PostOptions = {
 type Body = string | (() => string)
 
 type AttemptOptions = PostOptions & { timeoutMs: number; deadline: number }
+
+type Method = 'GET' | 'POST'
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()
 
@@ -154,9 +156,38 @@ export class HttpTransport {
    * @throws {TransportError} On connection errors or a response over the size limit
    */
   async post(url: URL, body: Body, options: PostOptions = {}): Promise<HttpResponse> {
+    const response = await this.#request('POST', url, body, options)
+    return { ...response, body: response.body.toString('utf8') }
+  }
+
+  /**
+   * GET a resource, such as a snapshot. Resolves with any HTTP status.
+   *
+   * @param url - Resource address
+   * @param options - Abort signal, error context, timeout and deadline
+   * @returns Status, headers and the body as bytes
+   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII
+   * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
+   * @throws {TransportError} On connection errors or a response over the size limit
+   */
+  get(url: URL, options: Omit<PostOptions, 'action'> = {}): Promise<HttpResponse<Buffer>> {
+    return this.#request('GET', url, undefined, options)
+  }
+
+  close(): void {
+    this.#httpAgent.destroy()
+    this.#httpsAgent.destroy()
+  }
+
+  async #request(
+    method: Method,
+    url: URL,
+    body: Body | undefined,
+    options: PostOptions
+  ): Promise<HttpResponse<Buffer>> {
     const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
     const attempt = { ...options, timeoutMs, deadline }
-    const response = await this.#send(url, body, attempt)
+    const response = await this.#send(method, url, body, attempt)
     if (response.status !== 401 || !this.#digest) return response
 
     const challenge = parseChallenge(response.headers['www-authenticate'] ?? [])
@@ -166,7 +197,7 @@ export class HttpTransport {
     this.#challenge = challenge
     this.#nonceCount = 0
     try {
-      return await this.#send(url, body, attempt)
+      return await this.#send(method, url, body, attempt)
     } catch (error) {
       // some devices drop the connection instead of rejecting the digest
       if (error instanceof TransportError) return response
@@ -174,30 +205,30 @@ export class HttpTransport {
     }
   }
 
-  close(): void {
-    this.#httpAgent.destroy()
-    this.#httpsAgent.destroy()
-  }
-
-  #authorization(url: URL, context: ErrorContext = {}): string | undefined {
+  #authorization(method: Method, url: URL, context: ErrorContext = {}): string | undefined {
     if (!this.#challenge || !this.#digest) return undefined
     if (!/^[\x20-\x7e]*$/.test(this.#digest.username)) {
       throw new AuthError('HTTP Digest needs a username of printable ASCII characters', context)
     }
     this.#nonceCount += 1
-    return digestAuthorization(this.#challenge, this.#digest, 'POST', url.pathname + url.search, this.#nonceCount)
+    return digestAuthorization(this.#challenge, this.#digest, method, url.pathname + url.search, this.#nonceCount)
   }
 
-  async #send(url: URL, body: Body, options: AttemptOptions): Promise<HttpResponse> {
+  async #send(
+    method: Method,
+    url: URL,
+    body: Body | undefined,
+    options: AttemptOptions
+  ): Promise<HttpResponse<Buffer>> {
     try {
-      return await this.#attempt(url, body, options)
+      return await this.#attempt(method, url, body, options)
     } catch (error) {
       if (!(error instanceof RetryableReset)) throw error
-      return await this.#attempt(url, body, options)
+      return await this.#attempt(method, url, body, options)
     }
   }
 
-  #attempt(url: URL, body: Body, options: AttemptOptions): Promise<HttpResponse> {
+  #attempt(method: Method, url: URL, body: Body | undefined, options: AttemptOptions): Promise<HttpResponse<Buffer>> {
     const { signal, context = {}, action, timeoutMs, deadline } = options
     const remainingMs = Math.ceil(deadline - performance.now())
     if (remainingMs <= 0) return Promise.reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
@@ -207,12 +238,14 @@ export class HttpTransport {
     if (!secure && url.protocol !== 'http:') {
       return Promise.reject(new TransportError(`Unsupported protocol ${url.protocol}`, context))
     }
-    const payload = Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
-    const headers: Record<string, string | number> = {
-      'Content-Type': `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`,
-      'Content-Length': payload.length
+    const payload = body === undefined ? undefined : Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
+    const headers: Record<string, string | number> = {}
+    if (payload) {
+      headers['Content-Type'] =
+        `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`
+      headers['Content-Length'] = payload.length
     }
-    const authorization = this.#authorization(url, context)
+    const authorization = this.#authorization(method, url, context)
     if (authorization) headers['Authorization'] = authorization
 
     return new Promise((resolve, reject) => {
@@ -258,18 +291,14 @@ export class HttpTransport {
           resolve({
             status: response.statusCode ?? 0,
             headers: response.headersDistinct,
-            body: Buffer.concat(chunks).toString('utf8')
+            body: Buffer.concat(chunks)
           })
         })
       }
 
       const agent = secure ? this.#httpsAgent : this.#httpAgent
       try {
-        outgoing = (secure ? httpsRequest : httpRequest)(
-          url,
-          { method: 'POST', headers, agent, signal: combined },
-          onResponse
-        )
+        outgoing = (secure ? httpsRequest : httpRequest)(url, { method, headers, agent, signal: combined }, onResponse)
       } catch (error) {
         fail(error)
         return

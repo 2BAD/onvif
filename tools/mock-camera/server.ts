@@ -34,9 +34,21 @@ export type MockCameraOptions = {
   contentTypeAction?: 'require' | 'reject'
   /** Host written into service addresses instead of the mock's own, to simulate NAT. */
   advertisedHost?: string
+  /** What `GET /snapshot.JPG` answers; HTTP Digest and a small JPEG by default, as the DVC camera. */
+  snapshot?: MockSnapshotOptions
   /** Pull point behavior; subscriptions are simulated whatever these options are. */
   events?: MockEventsOptions
   overrides?: Record<string, ActionOverride>
+}
+
+export type MockSnapshotOptions = {
+  /** `basic` challenges for HTTP Basic only and accepts it, as some cameras do. */
+  auth?: 'digest' | 'basic' | 'none'
+  status?: number
+  contentType?: string
+  body?: Buffer
+  /** Wait this long before answering an authorized request. */
+  delayMs?: number
 }
 
 export type RecordedRequest = {
@@ -62,6 +74,12 @@ export type MockCamera = {
   resetConnections: () => void
   close: () => Promise<void>
 }
+
+// SOI, a JFIF APP0 segment and EOI: the smallest file that starts and ends like a JPEG
+export const MOCK_JPEG = Buffer.from([
+  0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+  0x00, 0xff, 0xd9
+])
 
 const defaultFixtures = join(import.meta.dirname, '../../fixtures/live/dvc/dcn-bm2220lpr')
 const capturedHost = '192.0.2.14:80'
@@ -218,8 +236,47 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     return true
   }
 
+  const serveSnapshot = async (request: IncomingMessage, response: ServerResponse, path: string) => {
+    requests.push({ path, service: 'snapshot', action: 'GET', headers: request.headers, body: '' })
+    const {
+      auth: snapshotAuth = 'digest',
+      status = 200,
+      contentType = 'image/jpeg',
+      body = MOCK_JPEG,
+      delayMs = 0
+    } = options.snapshot ?? {}
+    if (path !== '/snapshot.JPG') {
+      response.writeHead(404, { 'Content-Type': 'text/html' })
+      response.end('<html><body>Not Found</body></html>')
+      return
+    }
+    const basic = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`
+    const authorized =
+      snapshotAuth === 'none' ||
+      (snapshotAuth === 'basic' ? safeEqual(request.headers.authorization ?? '', basic) : checkDigest(request))
+    if (!authorized) {
+      const nonce = randomBytes(16).toString('hex')
+      digestNonceCounts.set(nonce, 0)
+      const challenge =
+        snapshotAuth === 'basic'
+          ? 'Basic realm="camera"'
+          : `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
+      response.writeHead(401, { 'Content-Type': 'text/html', 'WWW-Authenticate': challenge })
+      response.end('<html><body>401 Unauthorized</body></html>')
+      return
+    }
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs))
+    if (response.destroyed) return
+    response.writeHead(status, { 'Content-Type': contentType, 'Content-Length': body.length })
+    response.end(body)
+  }
+
   const handle = async (request: IncomingMessage, response: ServerResponse, body: string) => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname
+    if (request.method === 'GET') {
+      await serveSnapshot(request, response, path)
+      return
+    }
     const service =
       servicesByPath[path] ?? (path.startsWith('/onvif/event/') || path === '/onvif/services' ? 'events' : 'unknown')
 

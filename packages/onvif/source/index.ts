@@ -2,6 +2,7 @@ export {
   type CallOptions,
   type Clock,
   type ConnectOptions,
+  type Download,
   DEVICE_NAMESPACE,
   Device,
   type ServiceAddressPolicy

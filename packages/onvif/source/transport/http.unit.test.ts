@@ -5,7 +5,7 @@ import { createServer as createTlsServer } from 'node:https'
 import { type AddressInfo, createServer as createTcpServer, type Socket } from 'node:net'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { startMockCamera } from '../../../../tools/mock-camera/server.ts'
+import { MOCK_JPEG, startMockCamera } from '../../../../tools/mock-camera/server.ts'
 import { AuthError, TimeoutError, TransportError } from '#errors.ts'
 import { HttpTransport } from '#transport/http.ts'
 
@@ -59,6 +59,28 @@ describe('HttpTransport', () => {
     expect(ok).toMatchObject({ status: 200, body: 'echo:ä:2' })
     expect(ok.headers['x-type']).toEqual(['application/soap+xml; charset=utf-8'])
     expect((await client.post(url, 'fault')).status).toBe(500)
+  })
+
+  it('gets the body as bytes, without a request body or Content-Type', async () => {
+    const bytes = Buffer.from([0xff, 0xd8, 0x00, 0xc3, 0x28, 0xff, 0xd9])
+    const seen: IncomingMessage['headers'][] = []
+    const url = await listen(
+      serve((request, response, body) => {
+        seen.push(request.headers)
+        response.writeHead(body === '' && request.method === 'GET' ? 200 : 400)
+        response.end(bytes)
+      })
+    )
+    const response = await transport().get(url)
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(bytes)
+    expect(seen[0]?.['content-type']).toBeUndefined()
+    expect(seen[0]?.['content-length']).toBeUndefined()
+  })
+
+  it('applies the size limit to a GET', async () => {
+    const url = await listen(serve((_request, response) => response.end(Buffer.alloc(64))))
+    await expect(transport({ maxResponseBytes: 32 }).get(url)).rejects.toBeInstanceOf(TransportError)
   })
 
   it('sends the SOAP action as a Content-Type parameter', async () => {
@@ -236,6 +258,20 @@ describe('HttpTransport digest authentication', () => {
     expect((await client.post(url, envelope)).status).toBe(200)
     expect((await client.post(url, envelope)).status).toBe(200)
     expect(camera.requests).toHaveLength(3)
+  })
+
+  it('answers a challenge on a GET with the GET method in the digest', async () => {
+    const camera = await startMockCamera()
+    cleanups.push(() => camera.close())
+    const client = transport({ digest: { username: 'admin', password: 'password' } })
+    const url = new URL(`${camera.url}/snapshot.JPG`)
+
+    const response = await client.get(url)
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(MOCK_JPEG)
+    expect((await client.get(url)).status).toBe(200)
+    expect(camera.requests).toHaveLength(3)
+    expect(camera.requests[1]?.headers.authorization).toMatch(/^Digest .*uri="\/snapshot\.JPG"/)
   })
 
   it('gives up after one retry with wrong credentials', async () => {

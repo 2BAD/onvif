@@ -77,6 +77,12 @@ export type CallOptions = {
   timeoutMs?: number | undefined
 }
 
+export type Download = {
+  /** `Content-Type` as the device sent it. */
+  contentType: string | undefined
+  body: Uint8Array
+}
+
 export type Clock = {
   /** Device time minus local time, in milliseconds. */
   skewMs: number
@@ -317,6 +323,39 @@ export class Device {
       })
     }
     return new URL(`${url.pathname}${url.search}`, this.address.origin)
+  }
+
+  /**
+   * Download a resource the device reported, such as a snapshot, with HTTP Digest authentication. The service address
+   * policy applies to the address, and redirects are not followed.
+   *
+   * @param address - Absolute URL from a device response
+   * @param options - Abort signal and a timeout overriding the connection timeout
+   * @returns The body of a 2xx response and its content type
+   * @throws {AuthError} If the credentials are rejected or the device asks for anything other than HTTP Digest
+   * @throws {TransportError} On connection problems, a response over the size limit or a status other than 2xx
+   * @throws {TimeoutError} If the device does not answer in time
+   * @throws {OnvifError} If the address is invalid or refused by the service address policy
+   */
+  async download(address: string | URL, options: Pick<CallOptions, 'signal' | 'timeoutMs'> = {}): Promise<Download> {
+    const url = this.resolveAddress(typeof address === 'string' ? address : address.href)
+    const context = { host: this.address.host, action: 'GET' }
+    const { signal, timeoutMs } = options
+    const { status, headers, body } = await this.#transport.get(url, { context, signal, timeoutMs })
+    if (status === 401) {
+      const challenges = headers['www-authenticate'] ?? []
+      const basicOnly = challenges.length > 0 && challenges.every((challenge) => /^\s*Basic\b/i.test(challenge))
+      throw new AuthError(
+        basicOnly
+          ? 'Not authorized (HTTP 401): the device asks for HTTP Basic, which sends the password as plain text'
+          : 'Not authorized (HTTP 401)',
+        context
+      )
+    }
+    if (status < 200 || status >= 300) {
+      throw new TransportError(`Unexpected HTTP ${status} response`, context, { status })
+    }
+    return { contentType: headers['content-type']?.[0], body }
   }
 
   /** Close idle connections. The device can still be used afterwards. */

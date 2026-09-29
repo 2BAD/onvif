@@ -8,6 +8,7 @@ import {
   type ActionOverride,
   type MockCamera,
   type MockCameraOptions,
+  MOCK_JPEG,
   startMockCamera
 } from '../../../tools/mock-camera/server.ts'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
@@ -687,5 +688,67 @@ describe('Device.call', () => {
       cause: expect.any(OnvifError)
     })
     expect(actions(mock)).not.toContain('GetScopes')
+  })
+})
+
+describe('Device.download', () => {
+  it('downloads with HTTP Digest and returns the bytes and content type', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const result = await device.download(`${mock.url}/snapshot.JPG`)
+    expect(result).toEqual({ contentType: 'image/jpeg', body: MOCK_JPEG })
+    expect(mock.requests.filter(({ service }) => service === 'snapshot')).toHaveLength(2)
+  })
+
+  it('applies the service address policy before sending credentials', async () => {
+    const mock = await camera()
+    const rewriting = await connect(mock)
+    expect((await rewriting.download(new URL('http://10.0.0.5:8080/snapshot.JPG'))).body).toEqual(MOCK_JPEG)
+
+    const rejecting = await connect(mock, { serviceAddresses: 'reject' })
+    const before = mock.requests.length
+    await expect(rejecting.download('http://10.0.0.5/snapshot.JPG')).rejects.toThrow('is not the configured origin')
+    await expect(rejecting.download('rtsp://10.0.0.5/snapshot.JPG')).rejects.toThrow('Unsupported service address')
+    expect(mock.requests).toHaveLength(before)
+  })
+
+  it('rejects wrong credentials as an AuthError after one digest retry', async () => {
+    const mock = await camera({
+      password: 'other',
+      unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices']
+    })
+    const device = await connect(mock, { verifyCredentials: false })
+    const error = await rejection(() => device.download(`${mock.url}/snapshot.JPG`))
+    expect(error).toBeInstanceOf(AuthError)
+    expect(error).toMatchObject({ message: 'Not authorized (HTTP 401)', host: device.address.host, action: 'GET' })
+    expect(mock.requests.filter(({ service }) => service === 'snapshot')).toHaveLength(2)
+  })
+
+  it('does not answer an HTTP Basic challenge and says why', async () => {
+    const mock = await camera({ snapshot: { auth: 'basic' } })
+    const device = await connect(mock)
+    const error = await rejection(() => device.download(`${mock.url}/snapshot.JPG`))
+    expect(error).toBeInstanceOf(AuthError)
+    expect((error as AuthError).message).toContain('HTTP Basic')
+    const snapshots = mock.requests.filter(({ service }) => service === 'snapshot')
+    expect(snapshots.map(({ headers }) => headers.authorization)).toEqual([undefined])
+  })
+
+  it('rejects other statuses, redirects included, as a TransportError with the status', async () => {
+    const mock = await camera({ snapshot: { status: 302 } })
+    const device = await connect(mock)
+    await expect(device.download(`${mock.url}/snapshot.JPG`)).rejects.toMatchObject({
+      name: 'TransportError',
+      status: 302
+    })
+    await expect(device.download(`${mock.url}/missing.jpg`)).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('stops at the timeout of the download', async () => {
+    const device = await connect(await camera({ snapshot: { delayMs: 1_000 } }))
+    const started = performance.now()
+    const error = await rejection(() => device.download(`${device.address.origin}/snapshot.JPG`, { timeoutMs: 100 }))
+    expect(error).toMatchObject({ name: 'TimeoutError', message: 'No response within 100 ms', action: 'GET' })
+    expect(performance.now() - started).toBeLessThan(900)
   })
 })
