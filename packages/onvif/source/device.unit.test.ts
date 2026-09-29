@@ -12,7 +12,7 @@ import {
 } from '../../../tools/mock-camera/server.ts'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
-import { AuthError, DecodeError, OnvifError, SoapFaultError, TransportError } from '#errors.ts'
+import { AuthError, DecodeError, OnvifError, SoapFaultError, TimeoutError, TransportError } from '#errors.ts'
 import { GetDeviceInformation, GetScopes } from '#generated/device.ts'
 import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 
@@ -156,6 +156,56 @@ describe('Device.connect', () => {
     expect(actions(mock)).toEqual(['GetSystemDateAndTime', 'GetServices', 'GetCapabilities', 'GetDeviceInformation'])
     expect(device.services.get(MEDIA)?.href).toBe(`${mock.url}/onvif/Media`)
     expect(device.services.get('http://www.onvif.org/ver10/recording/wsdl')?.pathname).toBe('/onvif/Recording')
+  })
+
+  const servicesEnvelope = (services: string): string =>
+    '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>' +
+    `<tds:GetServicesResponse xmlns:tds="http://www.onvif.org/ver10/device/wsdl">${services}</tds:GetServicesResponse>` +
+    '</s:Body></s:Envelope>'
+
+  const deviceServiceOnly = servicesEnvelope(
+    `<tds:Service><tds:Namespace>${DEVICE_NAMESPACE}</tds:Namespace><tds:XAddr>http://192.0.2.14/onvif/device_service</tds:XAddr>` +
+      '<tds:Version><tds:Major>2</tds:Major><tds:Minor>0</tds:Minor></tds:Version></tds:Service>'
+  )
+
+  it.each<[string, ActionOverride]>([
+    ['an HTTP error with a plain body', { kind: 'status', status: 404, body: 'Not Found' }],
+    ['an HTML page', { kind: 'status', status: 200, body: '<html><body>Not Found</body></html>' }],
+    ['malformed XML', { kind: 'status', status: 200, body: '<s:Envelope><s:Body>' }],
+    [
+      'a response that does not match the schema',
+      {
+        kind: 'status',
+        status: 200,
+        body: servicesEnvelope('<tds:Service><tds:Namespace>x</tds:Namespace></tds:Service>')
+      }
+    ],
+    ['a list without any service but the device service', { kind: 'status', status: 200, body: deviceServiceOnly }]
+  ])('falls back to GetCapabilities after %s from GetServices', async (_name, override) => {
+    const mock = await camera({ overrides: { 'device.GetServices': override } })
+    const device = await connect(mock)
+    expect(actions(mock)).toEqual(['GetSystemDateAndTime', 'GetServices', 'GetCapabilities', 'GetDeviceInformation'])
+    expect(device.services.get(MEDIA)?.href).toBe(`${mock.url}/onvif/Media`)
+  })
+
+  it('does not fall back to GetCapabilities when GetServices times out or is not authorized', async () => {
+    const slow = await camera({ overrides: { 'device.GetServices': { kind: 'hang' } } })
+    await expect(connect(slow, { timeoutMs: 100 })).rejects.toThrow(TimeoutError)
+    expect(actions(slow)).not.toContain('GetCapabilities')
+    const denied = await camera({ overrides: { 'device.GetServices': { kind: 'status', status: 401, body: '' } } })
+    await expect(connect(denied)).rejects.toThrow(AuthError)
+    expect(actions(denied)).not.toContain('GetCapabilities')
+  })
+
+  it('keeps a service list without other services when GetCapabilities fails too', async () => {
+    const mock = await camera({
+      overrides: {
+        'device.GetServices': { kind: 'status', status: 200, body: deviceServiceOnly },
+        'device.GetCapabilities': { kind: 'status', status: 500 }
+      }
+    })
+    const device = await connect(mock)
+    expect([...device.services.keys()]).toEqual([DEVICE_NAMESPACE])
   })
 
   it('rejects wrong credentials', async () => {

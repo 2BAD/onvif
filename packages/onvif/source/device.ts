@@ -3,6 +3,7 @@ import {
   DecodeError,
   type ErrorContext,
   OnvifError,
+  ParseError,
   SoapFaultError,
   TimeoutError,
   TransportError
@@ -126,6 +127,12 @@ const utcTimeOf = (dateTime: DateTime): number | undefined => {
   ]
   return read.every((value, index) => value === fields[index]) ? utc : undefined
 }
+
+const answeredBadly = (error: unknown): boolean =>
+  error instanceof SoapFaultError ||
+  error instanceof DecodeError ||
+  error instanceof ParseError ||
+  (error instanceof TransportError && error.status !== undefined)
 
 const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
@@ -339,17 +346,22 @@ export class Device {
 
   async #discoverServices(signal?: AbortSignal): Promise<void> {
     const options = { signal }
-    let addresses: [string, string][]
+    let addresses: [string, string][] | undefined
     try {
       const { service } = await this.call(GetServices, { includeCapability: false }, options)
       addresses = service.map((entry) => [entry.namespace, entry.xAddr])
     } catch (error) {
-      if (!(error instanceof SoapFaultError) || error instanceof AuthError) throw error
-      addresses = this.#capabilityAddresses(
-        (await this.call(GetCapabilities, { category: ['All'] }, options)).capabilities
-      )
+      if (!answeredBadly(error)) throw error
     }
-    for (const [namespace, address] of addresses) {
+    if (!addresses?.some(([namespace]) => namespace !== DEVICE_NAMESPACE)) {
+      try {
+        const { capabilities } = await this.call(GetCapabilities, { category: ['All'] }, options)
+        addresses = this.#capabilityAddresses(capabilities)
+      } catch (error) {
+        if (addresses === undefined || !answeredBadly(error)) throw error
+      }
+    }
+    for (const [namespace, address] of addresses ?? []) {
       if (namespace === DEVICE_NAMESPACE) continue
       try {
         this.#services.set(namespace, this.resolveAddress(address))
