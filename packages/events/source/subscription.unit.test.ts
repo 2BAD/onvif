@@ -132,7 +132,7 @@ describe('subscribe', () => {
     const mock = await camera({ advertisedHost: '10.0.0.9:80' })
     const device = await connect(mock, 'reject')
     await expect(subscribe(device, { onError: () => {} })).rejects.toThrow(
-      /Service address .* is not the configured host|does not offer the service/
+      /is unavailable: Service address .* is not the configured origin/
     )
   })
 

@@ -626,10 +626,28 @@ describe('Device.call', () => {
   })
 
   it('refuses operations of services the device does not offer', async () => {
+    const device = await connect(await camera())
+    const custom = { ...GetScopes, request: { ...GetScopes.request, namespace: 'urn:custom' } }
+    await expect(device.call(custom)).rejects.toMatchObject({
+      message: 'The device does not offer the service urn:custom',
+      service: 'urn:custom',
+      action: 'GetScopes'
+    })
+  })
+
+  it('explains why a service with a rejected address is unavailable', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5' })
     const device = await connect(mock, { serviceAddresses: 'reject' })
     const media = { ...GetScopes, request: { ...GetScopes.request, namespace: MEDIA } }
-    await expect(device.call(media)).rejects.toThrow(OnvifError)
-    await expect(device.call(media)).rejects.toThrow(`The device does not offer the service ${MEDIA}`)
+    const error = await rejection(() => device.call(media))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).toMatchObject({
+      message: `The service ${MEDIA} is unavailable: Service address http://10.0.0.5 is not the configured origin`,
+      host: device.address.host,
+      service: 'trt',
+      action: 'GetScopes',
+      cause: expect.any(OnvifError)
+    })
+    expect(actions(mock)).not.toContain('GetScopes')
   })
 })

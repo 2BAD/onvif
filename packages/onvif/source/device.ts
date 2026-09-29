@@ -146,6 +146,7 @@ export class Device {
   readonly #policy: ServiceAddressPolicy
   readonly #timeoutMs: number
   readonly #services = new Map<string, URL>()
+  readonly #unavailable = new Map<string, OnvifError>()
   #clock: Clock = { skewMs: 0, source: 'local' }
   #synchronizedAt = { device: Date.now(), wall: Date.now(), monotonic: performance.now() }
   #sendAction = true
@@ -365,8 +366,11 @@ export class Device {
       if (namespace === DEVICE_NAMESPACE) continue
       try {
         this.#services.set(namespace, this.resolveAddress(address))
-      } catch {
+        this.#unavailable.delete(namespace)
+      } catch (error) {
+        if (!(error instanceof OnvifError)) throw error
         this.#services.delete(namespace)
+        this.#unavailable.set(namespace, error)
       }
     }
   }
@@ -398,14 +402,13 @@ export class Device {
 
   #target<Request, Response>(operation: Operation<Request, Response>, to: string | undefined): URL {
     if (to !== undefined) return this.resolveAddress(to)
-    const url = this.#services.get(operation.request.namespace)
-    if (!url) {
-      throw new OnvifError(`The device does not offer the service ${operation.request.namespace}`, {
-        host: this.address.host,
-        action: operation.name
-      })
-    }
-    return url
+    const { namespace } = operation.request
+    const url = this.#services.get(namespace)
+    if (url) return url
+    const context = this.#contextOf(operation)
+    const cause = this.#unavailable.get(namespace)
+    if (cause) throw new OnvifError(`The service ${namespace} is unavailable: ${cause.message}`, context, { cause })
+    throw new OnvifError(`The device does not offer the service ${namespace}`, context)
   }
 
   async #call<Request, Response>(
