@@ -1,7 +1,11 @@
 import { once } from 'node:events'
+import { readFileSync } from 'node:fs'
 import { Agent, createServer, request } from 'node:http'
+import { createServer as createTlsServer } from 'node:https'
 import type { AddressInfo } from 'node:net'
+import { join } from 'node:path'
 import { afterAll, beforeAll, expect, test } from 'vitest'
+import { HttpTransport } from '#onvif/transport/http.ts'
 import { workloads } from '#tools/bench/workloads.ts'
 
 const envelope = (body: string): string =>
@@ -77,6 +81,40 @@ test('GetProfiles round trip against a local server', async ({ bench }) => {
   keepAlive.destroy()
   noKeepAlive.destroy()
   expect(results.get('node:http keep-alive').throughput.mean).toBeGreaterThan(results.get('fetch').throughput.mean)
+})
+
+test('HTTPS round trip to a device that closes every connection', async ({ bench }) => {
+  const tls = join(import.meta.dirname, '../../fixtures/tls')
+  const cert = readFileSync(join(tls, 'cert.pem'))
+  const server = createTlsServer({ cert, key: readFileSync(join(tls, 'key.pem')) }, (incoming, outgoing) => {
+    incoming.resume()
+    incoming.on('end', () => {
+      outgoing.writeHead(200, { Connection: 'close', 'Content-Type': 'application/soap+xml; charset=utf-8' })
+      outgoing.end(workloads.small)
+    })
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  const url = new URL(`https://127.0.0.1:${(server.address() as AddressInfo).port}/onvif/device_service`)
+  const body = envelope('<GetSystemDateAndTime xmlns="http://www.onvif.org/ver10/device/wsdl"/>')
+  const trusted = new HttpTransport({ tls: { ca: cert } })
+  const pinned = new HttpTransport({
+    tls: { fingerprint256: '06DDB27F5670AFCAF42981271E663404B3FB0B54693AC176337D57880EA6D0DB' }
+  })
+  const results = await bench.compare(
+    bench('trusted CA', async () => {
+      await trusted.post(url, body)
+    }),
+    bench('pinned fingerprint', async () => {
+      await pinned.post(url, body)
+    })
+  )
+  trusted.close()
+  pinned.close()
+  server.close()
+  expect(results.get('pinned fingerprint').throughput.mean).toBeGreaterThan(
+    results.get('trusted CA').throughput.mean * 0.8
+  )
 })
 
 const liveHost = process.env['ONVIF_TEST_HOST']

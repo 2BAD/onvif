@@ -12,6 +12,8 @@ import { HttpTransport } from '#transport/http.ts'
 const tlsDirectory = join(import.meta.dirname, '../../../../fixtures/tls')
 const certificate = readFileSync(join(tlsDirectory, 'cert.pem'))
 const privateKey = readFileSync(join(tlsDirectory, 'key.pem'))
+const otherCertificate = readFileSync(join(tlsDirectory, 'other-cert.pem'))
+const otherPrivateKey = readFileSync(join(tlsDirectory, 'other-key.pem'))
 const fingerprint = '06:DD:B2:7F:56:70:AF:CA:F4:29:81:27:1E:66:34:04:B3:FB:0B:54:69:3A:C1:76:33:7D:57:88:0E:A6:D0:DB'
 
 const cleanups: (() => Promise<void> | void)[] = []
@@ -353,6 +355,42 @@ describe('HttpTransport TLS', () => {
     const client = transport({ tls: { fingerprint256: fingerprint.toLowerCase().replaceAll(':', '') } })
     expect((await client.post(url, 'x')).body).toBe('secure')
     expect((await client.post(url, 'x')).body).toBe('secure')
+  })
+
+  it('resumes pinned sessions and still rejects a server that cannot resume them', async () => {
+    let requests = 0
+    let resumed = 0
+    const handler = (_request: IncomingMessage, response: ServerResponse) => {
+      requests++
+      response.writeHead(200, { Connection: 'close' })
+      response.end('secure')
+    }
+    const start = async (cert: Buffer, key: Buffer, port = 0) => {
+      const server = createTlsServer({ cert, key }, handler)
+      server.on('secureConnection', (socket) => {
+        if (socket.isSessionReused()) resumed++
+      })
+      server.listen(port, '127.0.0.1')
+      await once(server, 'listening')
+      return server
+    }
+    const genuine = await start(certificate, privateKey)
+    const url = new URL(`https://127.0.0.1:${(genuine.address() as AddressInfo).port}/onvif/device_service`)
+    const client = transport({ tls: { fingerprint256: fingerprint } })
+    for (let index = 0; index < 3; index++) expect((await client.post(url, 'x')).body).toBe('secure')
+    expect(resumed).toBe(2)
+
+    genuine.close()
+    await once(genuine, 'close')
+    const impostor = await start(otherCertificate, otherPrivateKey, Number(url.port))
+    cleanups.push(async () => {
+      impostor.close()
+      await once(impostor, 'close')
+    })
+    requests = 0
+    await expect(client.post(url, 'secret')).rejects.toThrow(/does not match the pinned fingerprint/)
+    expect(requests).toBe(0)
+    expect(resumed).toBe(2)
   })
 
   it('closes an idle pinned connection', async () => {

@@ -55,6 +55,7 @@ const normalizeFingerprint = (fingerprint: string): string => fingerprint.replac
 class PinnedAgent extends HttpsAgent {
   readonly #fingerprint: string
   readonly #handshakeTimeoutMs: number
+  readonly #sessions = new Map<string, Buffer>()
 
   constructor(options: HttpsAgentOptions, fingerprint: string, handshakeTimeoutMs: number) {
     super(options)
@@ -63,11 +64,25 @@ class PinnedAgent extends HttpsAgent {
   }
 
   // The socket goes to the request only after the certificate matched, so nothing gets written to an unverified peer.
+  // Sessions are cached only from connections whose certificate matched, so a peer that resumes one proves it is the
+  // same server; a resumed TLS 1.3 session carries no certificate to check.
   override createConnection(
     options: RequestOptions,
     oncreate?: (error: Error | null, socket: Duplex) => void
   ): Duplex | undefined {
-    const socket = tlsConnect({ ...(options as ConnectionOptions), rejectUnauthorized: false })
+    const name = this.getName(options)
+    const session = this.#sessions.get(name)
+    const socket = tlsConnect({
+      ...(options as ConnectionOptions),
+      rejectUnauthorized: false,
+      ...(session ? { session } : {})
+    })
+    let verified = false
+    let pending: Buffer | undefined
+    socket.on('session', (ticket: Buffer) => {
+      if (verified) this.#sessions.set(name, ticket)
+      else pending = ticket
+    })
     const onTimeout = () => socket.destroy(new Error(`TLS handshake took longer than ${this.#handshakeTimeoutMs} ms`))
     socket.setTimeout(this.#handshakeTimeoutMs, onTimeout)
     const verify = async () => {
@@ -75,11 +90,14 @@ class PinnedAgent extends HttpsAgent {
         await once(socket, 'secureConnect')
         socket.setTimeout(0, onTimeout)
         const actual = normalizeFingerprint(socket.getPeerCertificate().fingerprint256 ?? '')
-        if (actual !== this.#fingerprint) {
+        if (!socket.isSessionReused() && actual !== this.#fingerprint) {
           throw new Error(`Certificate fingerprint ${actual} does not match the pinned fingerprint`)
         }
+        verified = true
+        if (pending) this.#sessions.set(name, pending)
         oncreate?.(null, socket)
       } catch (error) {
+        this.#sessions.delete(name)
         socket.destroy()
         oncreate?.(error instanceof Error ? error : new Error(String(error)), socket)
       }
