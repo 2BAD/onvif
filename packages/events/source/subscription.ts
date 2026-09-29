@@ -16,8 +16,9 @@ import { decodeNotification, type Notification } from '#notification.ts'
 export type SubscribeOptions = {
   /**
    * Receives every failure the subscription recovers from: lost connections, SOAP faults, expired or rebuilt pull
-   * points, responses and messages that could not be decoded. Failures it cannot recover from (rejected credentials,
-   * an address the service address policy refuses) close the subscription and are thrown from the iteration instead.
+   * points, responses and messages that could not be decoded, and a first rejection of the credentials by a working
+   * subscription, which rebuilds the pull point. Failures it cannot recover from (credentials rejected again, an address
+   * the service address policy refuses) close the subscription and are thrown from the iteration instead.
    */
   onError: (error: OnvifError) => void
   /** Closes the subscription when aborted, and aborts `subscribe()` itself. */
@@ -73,6 +74,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   #expiresAt = 0
   #renew = true
   #failures = 0
+  #rebuiltForAuth = false
   #resets = 0
   #pullTimeoutSince = 0
   #closed = false
@@ -160,6 +162,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
         if (this.#reference) {
           await this.#pull()
           this.#failures = 0
+          this.#rebuiltForAuth = false
         } else {
           await this.#create(this.#controller.signal)
         }
@@ -267,13 +270,15 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   }
 
   async #recover(error: unknown): Promise<void> {
-    if (!isRecoverable(error)) {
+    const rebuildForAuth = error instanceof AuthError && this.#reference !== undefined && !this.#rebuiltForAuth
+    if (!rebuildForAuth && !isRecoverable(error)) {
       if (error instanceof OnvifError) {
         this.#closing ??= this.#shutdown(false)
         await this.#closing
       }
       throw error
     }
+    this.#rebuiltForAuth ||= rebuildForAuth
     this.#onError(error)
     const expired = hasFault(error, 'ResourceUnknownFault')
     const stillValid =

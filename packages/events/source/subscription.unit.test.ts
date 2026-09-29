@@ -61,6 +61,15 @@ const take = async (subscription: Subscription, count: number): Promise<Notifica
 
 const requests = (mock: MockCamera, action: string) => mock.requests.filter((request) => request.action === action)
 
+const refused: ActionOverride = {
+  kind: 'status',
+  status: 400,
+  body:
+    '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Code><s:Value>s:Sender' +
+    '</s:Value><s:Subcode><s:Value>ter:NotAuthorized</s:Value></s:Subcode></s:Code><s:Reason>' +
+    '<s:Text xml:lang="en">Sender not Authorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>'
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('subscribe', () => {
@@ -312,19 +321,48 @@ describe('subscribe', () => {
     expect(errors.map((error) => error.message)).toEqual(['Missing required attribute UtcTime at Message'])
   })
 
-  it('ends with the AuthError when the credentials stop working', async () => {
-    const unauthorized =
-      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Code><s:Value>s:Sender' +
-      '</s:Value><s:Subcode><s:Value>ter:NotAuthorized</s:Value></s:Subcode></s:Code><s:Reason>' +
-      '<s:Text xml:lang="en">Sender not Authorized</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>'
-    const mock = await camera({
-      overrides: { 'events.PullMessages': { kind: 'status', status: 400, body: unauthorized } }
-    })
+  it('rebuilds the pull point once when a working subscription is refused, then ends when it is refused again', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const overrides: Record<string, ActionOverride> = { 'events.PullMessages': refused }
+    const mock = await camera({ overrides })
     const { subscription, errors } = await open(await connect(mock))
     await expect(subscription.next()).rejects.toThrow(AuthError)
     expect(await subscription.next()).toEqual({ value: undefined, done: true })
-    expect(requests(mock, 'Unsubscribe')).toHaveLength(1)
-    expect(errors).toEqual([])
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2)
+    expect(requests(mock, 'Unsubscribe')).toHaveLength(2)
+    expect(errors.map((error) => error.name)).toEqual(['AuthError'])
+  })
+
+  it('keeps delivering after the device refuses the credentials once', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const overrides: Record<string, ActionOverride> = { 'events.PullMessages': refused }
+    const mock = await camera({ overrides })
+    const { subscription, errors } = await open(await connect(mock), {
+      onError: (error) => {
+        errors.push(error)
+        delete overrides['events.PullMessages']
+      }
+    })
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(errors.map((error) => error.name)).toEqual(['AuthError'])
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2)
+    expect(mock.pullPoints()).toHaveLength(1)
+  })
+
+  it('ends when the rebuild after a refused pull is refused too', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const overrides: Record<string, ActionOverride> = { 'events.PullMessages': refused }
+    const mock = await camera({ overrides })
+    const { subscription, errors } = await open(await connect(mock), {
+      onError: (error) => {
+        errors.push(error)
+        overrides['events.CreatePullPointSubscription'] = refused
+      }
+    })
+    await expect(subscription.next()).rejects.toThrow(AuthError)
+    expect(await subscription.next()).toEqual({ value: undefined, done: true })
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2)
+    expect(errors.map((error) => error.name)).toEqual(['AuthError'])
   })
 
   it('reports a full device to the caller of subscribe', async () => {
