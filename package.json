@@ -5,6 +5,7 @@
   "imports": {
     "#onvif/*": "./packages/onvif/source/*",
     "#onvif-events/*": "./packages/events/source/*",
+    "#onvif-media/*": "./packages/media/source/*",
     "#tools/*": "./tools/*"
   },
   "scripts": {

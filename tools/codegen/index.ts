@@ -61,6 +61,18 @@ const targets: Target[] = [
     ],
     elements: [{ schema: 'ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' }],
     namespaces: ['CreatePullPointSubscription', 'PullMessages']
+  },
+  {
+    output: 'packages/media/source/generated/media.ts',
+    codecImport: '@2bad/onvif',
+    wsdl: 'ver10/media/wsdl/media.wsdl',
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver10/media/wsdl',
+        local: 'Media',
+        operations: ['GetProfiles', 'GetStreamUri', 'GetSnapshotUri']
+      }
+    ]
   }
 ]
 
