@@ -418,7 +418,7 @@ export class Device {
 
     const send = async (action: string | undefined): Promise<Envelope> => {
       const { signal, timeoutMs = this.#timeoutMs } = options
-      const response = await this.#transport.post(url, envelopeFor(), { context, signal, timeoutMs, deadline, action })
+      const response = await this.#transport.post(url, envelopeFor, { context, signal, timeoutMs, deadline, action })
       return this.#read(response, context, namespaces)
     }
 

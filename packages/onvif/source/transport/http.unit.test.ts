@@ -113,6 +113,27 @@ describe('HttpTransport', () => {
     expect(requests).toBe(3)
   })
 
+  it('serializes the body again for the retry after a reset', async () => {
+    const seen = new WeakSet<object>()
+    const bodies: string[] = []
+    const url = await listen(
+      serve((request, response, body) => {
+        bodies.push(body)
+        if (seen.has(request.socket)) {
+          request.socket.destroy()
+          return
+        }
+        seen.add(request.socket)
+        response.end('ok')
+      })
+    )
+    const client = transport()
+    let attempt = 0
+    await client.post(url, () => `first-${++attempt}`)
+    await client.post(url, () => `second-${++attempt}`)
+    expect(bodies).toEqual(['first-1', 'second-2', 'second-3'])
+  })
+
   it('does not retry a reset of a reused connection once the response started', async () => {
     const seen = new WeakSet<object>()
     let requests = 0

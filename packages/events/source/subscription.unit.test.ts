@@ -229,6 +229,22 @@ describe('subscribe', () => {
     expect(errors).toHaveLength(1)
   })
 
+  it('keeps pulling after the connection of a waiting pull is reset, without repeating a WS-Security nonce', async () => {
+    const mock = await camera()
+    const { subscription, errors } = await open(await connect(mock), { pullTimeoutMs: 5_000 })
+    await take(subscription, 7)
+    const pending = take(subscription, 1)
+    await vi.waitFor(() => expect(requests(mock, 'PullMessages')).toHaveLength(2))
+    mock.resetConnections()
+    await vi.waitFor(() => expect(requests(mock, 'PullMessages')).toHaveLength(3))
+    mock.emitEvent(motionNotification(true))
+    const [changed] = await pending
+    expect(changed && motionOf(changed)).toMatchObject({ isMotion: true })
+    expect(errors).toEqual([])
+    const nonces = mock.requests.flatMap((request) => /<wsse:Nonce[^>]*>([^<]+)</.exec(request.body)?.[1] ?? [])
+    expect(new Set(nonces).size).toBe(nonces.length)
+  })
+
   it('backs off exponentially when every pull faults and never leaves pull points behind (Reolink)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'status', status: 500 } } })

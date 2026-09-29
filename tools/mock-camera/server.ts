@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import type { AddressInfo } from 'node:net'
+import type { AddressInfo, Socket } from 'node:net'
 import { join } from 'node:path'
 import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
 import { MockEvents, type MockEventsOptions, type PullPointState } from '#tools/mock-camera/events.ts'
@@ -58,6 +58,8 @@ export type MockCamera = {
   pullPoints: () => PullPointState[]
   /** Drop every pull point, as a reboot would. */
   expirePullPoints: () => void
+  /** Reset every open connection with a TCP RST, as a network outage or a reboot would. */
+  resetConnections: () => void
   close: () => Promise<void>
 }
 
@@ -310,6 +312,11 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       response.destroy(error instanceof Error ? error : new Error(String(error)))
     }
   })
+  const sockets = new Set<Socket>()
+  server.on('connection', (socket) => {
+    sockets.add(socket)
+    socket.on('close', () => sockets.delete(socket))
+  })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
   host = `127.0.0.1:${(server.address() as AddressInfo).port}`
@@ -323,6 +330,9 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     emitEvent: (notification) => events.emit(notification),
     pullPoints: () => events.pullPoints,
     expirePullPoints: () => events.expireAll(),
+    resetConnections: () => {
+      for (const socket of sockets) socket.resetAndDestroy()
+    },
     close: async () => {
       events.close()
       server.closeAllConnections()

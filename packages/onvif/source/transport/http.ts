@@ -46,6 +46,8 @@ export type PostOptions = {
   deadline?: number | undefined
 }
 
+type Body = string | (() => string)
+
 type AttemptOptions = PostOptions & { timeoutMs: number; deadline: number }
 
 const normalizeFingerprint = (fingerprint: string): string => fingerprint.replaceAll(':', '').toUpperCase()
@@ -125,13 +127,14 @@ export class HttpTransport {
    * POST a SOAP message. Resolves with any HTTP status; SOAP faults arrive as 4xx/5xx responses with a body.
    *
    * @param url - Service address
-   * @param body - Serialized envelope
+   * @param body - Serialized envelope, or a function that serializes it for each attempt so a retry carries a fresh
+   *   WS-Security nonce and timestamp
    * @param options - Abort signal, error context, SOAP action, timeout and deadline
    * @returns Status, headers and body
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
-  async post(url: URL, body: string, options: PostOptions = {}): Promise<HttpResponse> {
+  async post(url: URL, body: Body, options: PostOptions = {}): Promise<HttpResponse> {
     const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
     const attempt = { ...options, timeoutMs, deadline }
     const response = await this.#send(url, body, attempt, this.#authorization(url))
@@ -163,7 +166,7 @@ export class HttpTransport {
     return digestAuthorization(this.#challenge, this.#digest, 'POST', url.pathname + url.search, this.#nonceCount)
   }
 
-  async #send(url: URL, body: string, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
+  async #send(url: URL, body: Body, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
     try {
       return await this.#attempt(url, body, options, authorization)
     } catch (error) {
@@ -172,7 +175,7 @@ export class HttpTransport {
     }
   }
 
-  #attempt(url: URL, body: string, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
+  #attempt(url: URL, body: Body, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
     const { signal, context = {}, action, timeoutMs, deadline } = options
     const remainingMs = Math.ceil(deadline - performance.now())
     if (remainingMs <= 0) return Promise.reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
@@ -182,7 +185,7 @@ export class HttpTransport {
     if (!secure && url.protocol !== 'http:') {
       return Promise.reject(new TransportError(`Unsupported protocol ${url.protocol}`, context))
     }
-    const payload = Buffer.from(body, 'utf8')
+    const payload = Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
     const headers: Record<string, string | number> = {
       'Content-Type': `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`,
       'Content-Length': payload.length
