@@ -9,7 +9,7 @@ import {
 import { Agent as HttpsAgent, type AgentOptions as HttpsAgentOptions, request as httpsRequest } from 'node:https'
 import type { Duplex } from 'node:stream'
 import { connect as tlsConnect, type ConnectionOptions } from 'node:tls'
-import { type ErrorContext, TimeoutError, TransportError } from '#errors.ts'
+import { AuthError, type ErrorContext, TimeoutError, TransportError } from '#errors.ts'
 import type { Credentials } from '#soap/security.ts'
 import { type DigestChallenge, digestAuthorization, parseChallenge } from '#transport/digest.ts'
 
@@ -131,13 +131,14 @@ export class HttpTransport {
    *   WS-Security nonce and timestamp
    * @param options - Abort signal, error context, SOAP action, timeout and deadline
    * @returns Status, headers and body
+   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
   async post(url: URL, body: Body, options: PostOptions = {}): Promise<HttpResponse> {
     const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
     const attempt = { ...options, timeoutMs, deadline }
-    const response = await this.#send(url, body, attempt, this.#authorization(url))
+    const response = await this.#send(url, body, attempt, this.#authorization(url, options.context))
     if (response.status !== 401 || !this.#digest) return response
 
     const challenge = parseChallenge(response.headers['www-authenticate'] ?? [])
@@ -147,7 +148,7 @@ export class HttpTransport {
     this.#challenge = challenge
     this.#nonceCount = 0
     try {
-      return await this.#send(url, body, attempt, this.#authorization(url))
+      return await this.#send(url, body, attempt, this.#authorization(url, options.context))
     } catch (error) {
       // some devices drop the connection instead of rejecting the digest
       if (error instanceof TransportError) return response
@@ -160,8 +161,11 @@ export class HttpTransport {
     this.#httpsAgent.destroy()
   }
 
-  #authorization(url: URL): string | undefined {
+  #authorization(url: URL, context: ErrorContext = {}): string | undefined {
     if (!this.#challenge || !this.#digest) return undefined
+    if (!/^[\x20-\x7e]*$/.test(this.#digest.username)) {
+      throw new AuthError('HTTP Digest needs a username of printable ASCII characters', context)
+    }
     this.#nonceCount += 1
     return digestAuthorization(this.#challenge, this.#digest, 'POST', url.pathname + url.search, this.#nonceCount)
   }

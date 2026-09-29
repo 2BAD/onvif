@@ -6,7 +6,7 @@ import { type AddressInfo, createServer as createTcpServer, type Socket } from '
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startMockCamera } from '../../../../tools/mock-camera/server.ts'
-import { TimeoutError, TransportError } from '#errors.ts'
+import { AuthError, TimeoutError, TransportError } from '#errors.ts'
 import { HttpTransport } from '#transport/http.ts'
 
 const tlsDirectory = join(import.meta.dirname, '../../../../fixtures/tls')
@@ -263,9 +263,28 @@ describe('HttpTransport digest authentication', () => {
     await expect(request).rejects.toThrow(TransportError)
     await expect(request).rejects.toMatchObject({ host: 'camera' })
     await expect(request).rejects.not.toThrow(/secret|Injected/)
+  })
 
-    const client = transport({ digest: { username: 'admin\r\nX-Injected: 1', password: 'secret' } })
-    expect((await client.post(url, 'x')).status).toBe(401)
+  it.each([
+    ['a line break', 'admin\r\nX-Injected: 1'],
+    ['a non-ASCII character', 'ädmin']
+  ])('rejects a Digest username with %s as an AuthError, then sends nothing', async (_name, username) => {
+    let requests = 0
+    const url = await listen(
+      serve((_request, response) => {
+        requests++
+        response.writeHead(401, { 'WWW-Authenticate': 'Digest realm="r", nonce="n", qop="auth"' })
+        response.end()
+      })
+    )
+    const client = transport({ digest: { username, password: 'secret' } })
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const request = client.post(url, 'x', { context: { host: 'camera' } })
+      await expect(request).rejects.toThrow(AuthError)
+      await expect(request).rejects.toMatchObject({ host: 'camera' })
+      await expect(request).rejects.not.toThrow(/admin|ädmin|Injected|secret/)
+    }
+    expect(requests).toBe(1)
   })
 
   it('counts the digest retry against the same timeout', async () => {
