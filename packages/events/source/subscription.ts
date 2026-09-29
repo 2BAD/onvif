@@ -24,7 +24,7 @@ export type SubscribeOptions = {
   /** Closes the subscription when aborted, and aborts `subscribe()` itself. */
   signal?: AbortSignal
   /**
-   * How long one PullMessages waits on the device for events, 10 000 ms by default. Halved when the device keeps
+   * How long one PullMessages waits on the device for events, 30 000 ms by default. Halved when the device keeps
    * resetting long polls, and doubled back after 10 minutes without a reset.
    */
   pullTimeoutMs?: number
@@ -110,7 +110,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   private constructor(device: Device, options: SubscribeOptions) {
     this.#device = device
     this.#onError = options.onError
-    this.#pullTimeoutMs = options.pullTimeoutMs ?? 10_000
+    this.#pullTimeoutMs = options.pullTimeoutMs ?? 30_000
     this.#configuredPullTimeoutMs = this.#pullTimeoutMs
     this.#messageLimit = options.messageLimit ?? 100
     this.#terminationMs = options.terminationMs ?? 60_000
