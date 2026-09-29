@@ -264,6 +264,26 @@ describe('Device.connect', () => {
     expect(ipv6).toMatchObject({ host: '[::1]:9' })
   })
 
+  it.each<[string, Partial<ConnectOptions>]>([
+    ['a hostname URL syntax rejects', { hostname: 'bad host' }],
+    ['an empty hostname', { hostname: '' }],
+    ['a hostname with credentials', { hostname: 'admin@192.0.2.1' }],
+    ['a hostname with a path', { hostname: '192.0.2.1/onvif' }],
+    ['a hostname with a fragment', { hostname: '192.0.2.1#' }],
+    ['a port out of range', { hostname: '192.0.2.1', port: 70_000 }],
+    ['a port that is not an integer', { hostname: '192.0.2.1', port: 80.5 }]
+  ])('refuses %s with an OnvifError before sending anything', async (_name, options) => {
+    const error = await rejection(() => Device.connect({ hostname: '', ...options }))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).toMatchObject({ message: expect.stringMatching(/^Invalid device address '/) })
+  })
+
+  it('keeps a device path that starts with two slashes on the configured host', async () => {
+    const mock = await camera()
+    const device = await connect(mock, { path: '//192.0.2.1/onvif/device_service' })
+    expect(device.address.origin).toBe(mock.url)
+  })
+
   it('accepts a device path without a leading slash', async () => {
     const mock = await camera()
     const device = await connect(mock, { path: 'onvif/device_service' })

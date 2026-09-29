@@ -157,7 +157,16 @@ export class Device {
     const protocol = secure ? 'https' : 'http'
     const host = hostname.includes(':') && !hostname.startsWith('[') ? `[${hostname}]` : hostname
     const pathname = path.startsWith('/') ? path : `/${path}`
-    this.address = new URL(`${protocol}://${host}${port === undefined ? '' : `:${port}`}${pathname}`)
+    const origin = URL.parse(`${protocol}://${host}`)
+    const validPort = port === undefined || (Number.isInteger(port) && port > 0 && port <= 65_535)
+    if (!origin || origin.href !== `${origin.origin}/` || !validPort) {
+      const shown = hostname.slice(0, 200)
+      throw new OnvifError(`Invalid device address '${shown}'${port === undefined ? '' : ` with port ${port}`}`, {
+        host: shown
+      })
+    }
+    if (port !== undefined) origin.port = String(port)
+    this.address = new URL(`${origin.origin}${pathname}`)
     this.#credentials = username === undefined ? undefined : { username, password }
     this.#policy = options.serviceAddresses ?? 'rewrite'
     this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -177,6 +186,7 @@ export class Device {
    * @returns The connected device
    * @throws {AuthError} If the credentials are rejected
    * @throws {TransportError} If the device cannot be reached
+   * @throws {OnvifError} If the hostname or port is not a valid device address
    */
   static async connect(options: ConnectOptions): Promise<Device> {
     const device = new Device(options)
