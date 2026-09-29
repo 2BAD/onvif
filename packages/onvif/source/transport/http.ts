@@ -156,7 +156,7 @@ export class HttpTransport {
   async post(url: URL, body: Body, options: PostOptions = {}): Promise<HttpResponse> {
     const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
     const attempt = { ...options, timeoutMs, deadline }
-    const response = await this.#send(url, body, attempt, this.#authorization(url, options.context))
+    const response = await this.#send(url, body, attempt)
     if (response.status !== 401 || !this.#digest) return response
 
     const challenge = parseChallenge(response.headers['www-authenticate'] ?? [])
@@ -166,7 +166,7 @@ export class HttpTransport {
     this.#challenge = challenge
     this.#nonceCount = 0
     try {
-      return await this.#send(url, body, attempt, this.#authorization(url, options.context))
+      return await this.#send(url, body, attempt)
     } catch (error) {
       // some devices drop the connection instead of rejecting the digest
       if (error instanceof TransportError) return response
@@ -188,16 +188,16 @@ export class HttpTransport {
     return digestAuthorization(this.#challenge, this.#digest, 'POST', url.pathname + url.search, this.#nonceCount)
   }
 
-  async #send(url: URL, body: Body, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
+  async #send(url: URL, body: Body, options: AttemptOptions): Promise<HttpResponse> {
     try {
-      return await this.#attempt(url, body, options, authorization)
+      return await this.#attempt(url, body, options)
     } catch (error) {
       if (!(error instanceof RetryableReset)) throw error
-      return await this.#attempt(url, body, options, authorization)
+      return await this.#attempt(url, body, options)
     }
   }
 
-  #attempt(url: URL, body: Body, options: AttemptOptions, authorization?: string): Promise<HttpResponse> {
+  #attempt(url: URL, body: Body, options: AttemptOptions): Promise<HttpResponse> {
     const { signal, context = {}, action, timeoutMs, deadline } = options
     const remainingMs = Math.ceil(deadline - performance.now())
     if (remainingMs <= 0) return Promise.reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
@@ -212,6 +212,7 @@ export class HttpTransport {
       'Content-Type': `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`,
       'Content-Length': payload.length
     }
+    const authorization = this.#authorization(url, context)
     if (authorization) headers['Authorization'] = authorization
 
     return new Promise((resolve, reject) => {

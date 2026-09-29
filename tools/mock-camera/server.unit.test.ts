@@ -112,6 +112,7 @@ describe('mock camera', () => {
     const authorized = await post(deviceUrl, body, { Authorization: authorization })
     expect(authorized.status).toBe(200)
     expect(await authorized.text()).toContain('<tds:Manufacturer>DVC</tds:Manufacturer>')
+    expect((await post(deviceUrl, body, { Authorization: authorization })).status).toBe(401)
   })
 
   it('answers unknown actions with the captured fault', async () => {

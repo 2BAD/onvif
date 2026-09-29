@@ -166,7 +166,8 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   const manifest = JSON.parse(readFileSync(join(fixtureDirectory, 'manifest.json'), 'utf8')) as Manifest
   const requests: RecordedRequest[] = []
   const usedNonces = new Set<string>()
-  const digestNonces = new Set<string>()
+  // highest nonce count accepted per issued nonce; a count that does not increase is a replay
+  const digestNonceCounts = new Map<string, number>()
   let host = ''
 
   const fixture = (name: string): string =>
@@ -202,14 +203,19 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     const header = request.headers.authorization
     if (!header?.startsWith('Digest ')) return false
     const fields = parseDigestHeader(header)
-    if (!fields['nonce'] || !digestNonces.has(fields['nonce'])) return false
+    const nonce = fields['nonce'] ?? ''
+    const lastCount = digestNonceCounts.get(nonce)
+    const count = Number.parseInt(fields['nc'] ?? '', 16)
+    if (lastCount === undefined || !(count > lastCount)) return false
     const ha1 = hash(digestAlgorithm, `${username}:${fields['realm']}:${password}`)
     const ha2 = hash(digestAlgorithm, `${request.method}:${fields['uri']}`)
     const expected = hash(
       digestAlgorithm,
       `${ha1}:${fields['nonce']}:${fields['nc']}:${fields['cnonce']}:${fields['qop']}:${ha2}`
     )
-    return fields['username'] === username && safeEqual(fields['response'] ?? '', expected)
+    if (fields['username'] !== username || !safeEqual(fields['response'] ?? '', expected)) return false
+    digestNonceCounts.set(nonce, count)
+    return true
   }
 
   const handle = async (request: IncomingMessage, response: ServerResponse, body: string) => {
@@ -267,7 +273,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     }
     if (auth === 'digest' && !preAuth && !checkDigest(request)) {
       const nonce = randomBytes(16).toString('hex')
-      digestNonces.add(nonce)
+      digestNonceCounts.set(nonce, 0)
       send(response, 401, soapFault('ter:NotAuthorized', 'HTTP Error: 401 Unauthorized'), {
         'WWW-Authenticate': `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
       })

@@ -247,6 +247,33 @@ describe('HttpTransport digest authentication', () => {
     expect(camera.requests).toHaveLength(2)
   })
 
+  it('answers the retry after a reset with a new nonce count and cnonce', async () => {
+    const seen = new WeakSet<object>()
+    const authorizations: string[] = []
+    const url = await listen(
+      serve((request, response) => {
+        const { authorization } = request.headers
+        if (!authorization) {
+          response.writeHead(401, { 'WWW-Authenticate': 'Digest realm="r", nonce="n", qop="auth"' })
+          response.end()
+          return
+        }
+        authorizations.push(authorization)
+        if (seen.has(request.socket)) {
+          request.socket.destroy()
+          return
+        }
+        seen.add(request.socket)
+        response.end('ok')
+      })
+    )
+    const client = transport({ digest: { username: 'admin', password: 'password' } })
+    expect((await client.post(url, 'first')).status).toBe(200)
+    expect((await client.post(url, 'second')).status).toBe(200)
+    expect(authorizations.map((header) => /nc=(\w+)/.exec(header)?.[1])).toEqual(['00000001', '00000002', '00000003'])
+    expect(new Set(authorizations.map((header) => /cnonce="(\w+)"/.exec(header)?.[1])).size).toBe(3)
+  })
+
   it('returns the 401 unchanged without digest credentials', async () => {
     const camera = await startMockCamera({ auth: 'digest' })
     cleanups.push(() => camera.close())
