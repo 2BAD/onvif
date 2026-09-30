@@ -276,6 +276,26 @@ describe('encodeRequest', () => {
     expect(decode(schema, 'Request', element)).toEqual({ Sample: sample })
   })
 
+  it('writes zero, false and empty values instead of dropping them', () => {
+    const empty = {
+      token: '',
+      fixed: false,
+      Name: '',
+      Count: 0,
+      Ratio: 0,
+      Enabled: false,
+      Levels: [0],
+      Item: [{ Value: 0 }]
+    }
+    const xml = serialize(encodeRequest(operation, { Sample: empty }))
+    expect(xml).toBe(
+      `<tds:SetSample xmlns:tds="${tds}" xmlns:tt="${tt}"><tds:Sample token="" fixed="false">` +
+        '<tt:Name></tt:Name><tt:Count>0</tt:Count><tt:Ratio>0</tt:Ratio><tt:Enabled>false</tt:Enabled>' +
+        '<tt:Levels>0</tt:Levels><tt:Item><tt:Value>0</tt:Value></tt:Item></tds:Sample></tds:SetSample>'
+    )
+    expect(decode(schema, 'Request', parseXml(xml)['SetSample'] as XmlObject)).toEqual({ Sample: empty })
+  })
+
   it.each([
     ['a missing required value', { Sample: { token: 't' } }, 'Missing required Name at SetSample.Sample'],
     [
