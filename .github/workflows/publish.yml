@@ -25,16 +25,32 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - name: check versions
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(node -p "require('./packages/onvif/package.json').version")
+          for manifest in packages/*/package.json; do
+            PACKAGE_VERSION=$(node -p "require('./$manifest').version")
+            if [[ "$PACKAGE_VERSION" != "$VERSION" ]]; then
+              echo "::error::$manifest is at $PACKAGE_VERSION, expected $VERSION"
+              exit 1
+            fi
+          done
+          if [[ "${RELEASE_TAG#v}" != "$VERSION" ]]; then
+            echo "::error::release $RELEASE_TAG does not match version $VERSION"
+            exit 1
+          fi
       - name: determine dist-tag
         id: dist-tag
         run: |
           VERSION=$(node -p "require('./packages/onvif/package.json').version")
-          if [[ "$VERSION" =~ -([a-zA-Z]+) ]]; then
-            echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
       - name: publish
         env:
           NPM_TAG: ${{ steps.dist-tag.outputs.tag }}
-        run: pnpm --filter @2bad/onvif publish --provenance --access public --no-git-checks --tag "$NPM_TAG"
+        run: pnpm --filter './packages/*' publish --provenance --access public --no-git-checks --tag "$NPM_TAG"
