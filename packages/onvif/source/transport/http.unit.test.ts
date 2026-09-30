@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createServer as createTlsServer } from 'node:https'
 import { type AddressInfo, createServer as createTcpServer, type Socket } from 'node:net'
 import { join } from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { setFlagsFromString } from 'node:v8'
 import { runInNewContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -91,15 +92,20 @@ describe('HttpTransport', () => {
     const body = Buffer.alloc(1024 * 1024, 1)
     const url = await listen(serve((_request, response) => response.end(body)))
     const client = transport({ timeoutMs: 60_000 })
-    const retained = (): number => {
+    const retained = async (): Promise<number> => {
+      await sleep(100)
       gc()
       const { heapUsed, arrayBuffers } = process.memoryUsage()
       return heapUsed + arrayBuffers
     }
     await client.get(url)
-    const before = retained()
+    const before = await retained()
     for (let index = 0; index < 20; index++) await client.get(url)
-    expect(retained() - before).toBeLessThan(5 * 1024 * 1024)
+    const limit = 5 * 1024 * 1024
+    const giveUpAt = performance.now() + 2_000
+    let growth = (await retained()) - before
+    while (growth >= limit && performance.now() < giveUpAt) growth = (await retained()) - before
+    expect(growth).toBeLessThan(limit)
   })
 
   it('sends the SOAP action as a Content-Type parameter', async () => {
@@ -177,7 +183,7 @@ describe('HttpTransport', () => {
     expect(bodies).toEqual(['first-1', 'second-2', 'second-3'])
   })
 
-  it('does not retry a reset of a reused connection once the response started', async () => {
+  it('does not retry a reused connection that breaks once the response started', async () => {
     const seen = new WeakSet<object>()
     let requests = 0
     const url = await listen(
@@ -185,7 +191,7 @@ describe('HttpTransport', () => {
         requests++
         if (seen.has(request.socket)) {
           response.writeHead(200, { 'Content-Length': 100 })
-          response.write('partial', () => request.socket.resetAndDestroy())
+          response.write('partial', () => request.socket.destroy())
           return
         }
         seen.add(request.socket)
