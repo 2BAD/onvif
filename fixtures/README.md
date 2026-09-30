@@ -12,14 +12,18 @@ pnpm fixtures:capture
 
 It only calls read-only operations (plus one pull point subscription, which it unsubscribes again). Before writing anything it scrubs:
 
-* serial number, hardware id, username and password -> `REDACTEDn`
-* echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
-* unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
-* MAC addresses -> locally administered `02:00:00:00:00:xx`
-* UUIDs -> `00000000-0000-4000-8000-xxxxxxxxxxxx`
-* credentials in URIs are stripped
+- serial number, hardware id, username and password -> `REDACTEDn`
+- echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
+- unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
+- MAC addresses -> locally administered `02:00:00:00:00:xx`
+- UUIDs -> `00000000-0000-4000-8000-xxxxxxxxxxxx`
+- credentials in URIs are stripped
 
 Check the output before committing a new capture. The scrubbing is pattern based, so a new vendor can put identifiers somewhere the patterns don't catch.
+
+## `snapshots/`
+
+JPEG images served by the mock camera in the snapshot benchmark.
 
 ## `upstream/`
 
