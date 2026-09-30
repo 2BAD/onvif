@@ -4,6 +4,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createServer as createTlsServer } from 'node:https'
 import { type AddressInfo, createServer as createTcpServer, type Socket } from 'node:net'
 import { join } from 'node:path'
+import { setFlagsFromString } from 'node:v8'
+import { runInNewContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_JPEG, startMockCamera } from '../../../../tools/mock-camera/server.ts'
 import { AuthError, TimeoutError, TransportError } from '#errors.ts'
@@ -81,6 +83,23 @@ describe('HttpTransport', () => {
   it('applies the size limit to a GET', async () => {
     const url = await listen(serve((_request, response) => response.end(Buffer.alloc(64))))
     await expect(transport({ maxResponseBytes: 32 }).get(url)).rejects.toBeInstanceOf(TransportError)
+  })
+
+  it('releases responses once they are read, long before the timeout', async () => {
+    setFlagsFromString('--expose-gc')
+    const gc = runInNewContext('gc') as () => void
+    const body = Buffer.alloc(1024 * 1024, 1)
+    const url = await listen(serve((_request, response) => response.end(body)))
+    const client = transport({ timeoutMs: 60_000 })
+    const retained = (): number => {
+      gc()
+      const { heapUsed, arrayBuffers } = process.memoryUsage()
+      return heapUsed + arrayBuffers
+    }
+    await client.get(url)
+    const before = retained()
+    for (let index = 0; index < 20; index++) await client.get(url)
+    expect(retained() - before).toBeLessThan(5 * 1024 * 1024)
   })
 
   it('sends the SOAP action as a Content-Type parameter', async () => {

@@ -228,16 +228,17 @@ export class HttpTransport {
     }
   }
 
-  #attempt(method: Method, url: URL, body: Body | undefined, options: AttemptOptions): Promise<HttpResponse<Buffer>> {
+  async #attempt(
+    method: Method,
+    url: URL,
+    body: Body | undefined,
+    options: AttemptOptions
+  ): Promise<HttpResponse<Buffer>> {
     const { signal, context = {}, action, timeoutMs, deadline } = options
     const remainingMs = Math.ceil(deadline - performance.now())
-    if (remainingMs <= 0) return Promise.reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
-    const timeout = AbortSignal.timeout(remainingMs)
-    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
+    if (remainingMs <= 0) throw new TimeoutError(`No response within ${timeoutMs} ms`, context)
     const secure = url.protocol === 'https:'
-    if (!secure && url.protocol !== 'http:') {
-      return Promise.reject(new TransportError(`Unsupported protocol ${url.protocol}`, context))
-    }
+    if (!secure && url.protocol !== 'http:') throw new TransportError(`Unsupported protocol ${url.protocol}`, context)
     const payload = body === undefined ? undefined : Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
     const headers: Record<string, string | number> = {}
     if (payload) {
@@ -248,64 +249,78 @@ export class HttpTransport {
     const authorization = this.#authorization(method, url, context)
     if (authorization) headers['Authorization'] = authorization
 
-    return new Promise((resolve, reject) => {
-      let outgoing: ClientRequest | undefined
-      let responded = false
-      const fail = (error: unknown) => {
-        if (timeout.aborted) {
-          reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
-        } else if (signal?.aborted) {
-          reject(signal.reason)
-        } else if (!responded && isResetOfReusedSocket(error, outgoing?.reusedSocket === true)) {
-          reject(new RetryableReset())
-        } else {
-          const message = error instanceof Error ? error.message : String(error)
-          reject(new TransportError(`Request failed: ${message}`, context, { cause: error }))
+    const deadlineController = new AbortController()
+    const timer = setTimeout(() => deadlineController.abort(), remainingMs)
+    const timedOut = deadlineController.signal
+    const combined = signal ? AbortSignal.any([signal, timedOut]) : timedOut
+    let fail = (_error: unknown): void => {}
+    try {
+      return await new Promise((resolve, reject) => {
+        let outgoing: ClientRequest | undefined
+        let responded = false
+        fail = (error: unknown) => {
+          if (timedOut.aborted) {
+            reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
+          } else if (signal?.aborted) {
+            reject(signal.reason)
+          } else if (!responded && isResetOfReusedSocket(error, outgoing?.reusedSocket === true)) {
+            reject(new RetryableReset())
+          } else {
+            const message = error instanceof Error ? error.message : String(error)
+            reject(new TransportError(`Request failed: ${message}`, context, { cause: error }))
+          }
         }
-      }
 
-      const onResponse = (response: IncomingMessage) => {
-        responded = true
-        const declared = Number(response.headers['content-length'])
-        if (declared > this.#maxResponseBytes) {
-          response.destroy()
-          reject(new TransportError(`Response of ${declared} bytes exceeds ${this.#maxResponseBytes}`, context))
-          return
-        }
-        const chunks: Buffer[] = []
-        let received = 0
-        response.on('data', (chunk: Buffer) => {
-          received += chunk.length
-          if (received > this.#maxResponseBytes) {
+        const onResponse = (response: IncomingMessage) => {
+          responded = true
+          const declared = Number(response.headers['content-length'])
+          if (declared > this.#maxResponseBytes) {
             response.destroy()
-            reject(new TransportError(`Response exceeds ${this.#maxResponseBytes} bytes`, context))
+            reject(new TransportError(`Response of ${declared} bytes exceeds ${this.#maxResponseBytes}`, context))
             return
           }
-          chunks.push(chunk)
-        })
-        response.on('error', fail)
-        response.on('close', () => {
-          if (!response.complete) fail(new Error('Connection closed before the response was complete'))
-        })
-        response.on('end', () => {
-          resolve({
-            status: response.statusCode ?? 0,
-            headers: response.headersDistinct,
-            body: Buffer.concat(chunks)
+          const chunks: Buffer[] = []
+          let received = 0
+          response.on('data', (chunk: Buffer) => {
+            received += chunk.length
+            if (received > this.#maxResponseBytes) {
+              response.destroy()
+              reject(new TransportError(`Response exceeds ${this.#maxResponseBytes} bytes`, context))
+              return
+            }
+            chunks.push(chunk)
           })
-        })
-      }
+          response.on('error', fail)
+          response.on('close', () => {
+            if (!response.complete) fail(new Error('Connection closed before the response was complete'))
+          })
+          response.on('end', () => {
+            resolve({
+              status: response.statusCode ?? 0,
+              headers: response.headersDistinct,
+              body: Buffer.concat(chunks)
+            })
+          })
+        }
 
-      const agent = secure ? this.#httpsAgent : this.#httpAgent
-      try {
-        outgoing = (secure ? httpsRequest : httpRequest)(url, { method, headers, agent, signal: combined }, onResponse)
-      } catch (error) {
-        fail(error)
-        return
-      }
-      outgoing.on('error', fail)
-      combined.addEventListener('abort', fail, { once: true })
-      outgoing.end(payload)
-    })
+        const agent = secure ? this.#httpsAgent : this.#httpAgent
+        try {
+          outgoing = (secure ? httpsRequest : httpRequest)(
+            url,
+            { method, headers, agent, signal: combined },
+            onResponse
+          )
+        } catch (error) {
+          fail(error)
+          return
+        }
+        outgoing.on('error', fail)
+        combined.addEventListener('abort', fail, { once: true })
+        outgoing.end(payload)
+      })
+    } finally {
+      clearTimeout(timer)
+      combined.removeEventListener('abort', fail)
+    }
   }
 }
