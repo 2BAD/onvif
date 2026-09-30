@@ -268,6 +268,30 @@ describe('subscribe', () => {
     expect(await pending).toEqual({ value: undefined, done: true })
   })
 
+  it('keeps backing off while the device refuses every new pull point after a failed pull (Reolink lockout)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const overrides: Record<string, ActionOverride> = {}
+    const mock = await camera({ overrides })
+    const { subscription, errors } = await open(await connect(mock))
+    overrides['events.PullMessages'] = { kind: 'status', status: 500 }
+    overrides['events.CreatePullPointSubscription'] = {
+      kind: 'status',
+      status: 500,
+      body:
+        '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Code><s:Value>s:Receiver' +
+        '</s:Value></s:Code><s:Reason><s:Text xml:lang="en">The device is locked because of entering wrong ' +
+        'username/password many times. Please try it after 5 minutes!</s:Text></s:Reason></s:Fault></s:Body>' +
+        '</s:Envelope>'
+    }
+    const pending = subscription.next()
+    await wait(2_000)
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(3)
+    expect(mock.pullPoints()).toEqual([])
+    expect(errors.map((error) => error.name)).toEqual(['SoapFaultError', 'SoapFaultError', 'SoapFaultError'])
+    await subscription.close()
+    expect(await pending).toEqual({ value: undefined, done: true })
+  })
+
   it('re-pulls without rebuilding after a reset and shortens the pull when resets repeat (TP-Link)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'destroy' } } })
