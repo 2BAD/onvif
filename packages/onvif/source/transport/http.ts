@@ -253,12 +253,12 @@ export class HttpTransport {
     const timer = setTimeout(() => deadlineController.abort(), remainingMs)
     const timedOut = deadlineController.signal
     const combined = signal ? AbortSignal.any([signal, timedOut]) : timedOut
-    let fail = (_error: unknown): void => {}
+    let detach: (() => void) | undefined
     try {
       return await new Promise((resolve, reject) => {
         let outgoing: ClientRequest | undefined
         let responded = false
-        fail = (error: unknown) => {
+        const fail = (error: unknown) => {
           if (timedOut.aborted) {
             reject(new TimeoutError(`No response within ${timeoutMs} ms`, context))
           } else if (signal?.aborted) {
@@ -316,11 +316,12 @@ export class HttpTransport {
         }
         outgoing.on('error', fail)
         combined.addEventListener('abort', fail, { once: true })
+        detach = () => combined.removeEventListener('abort', fail)
         outgoing.end(payload)
       })
     } finally {
       clearTimeout(timer)
-      combined.removeEventListener('abort', fail)
+      detach?.()
     }
   }
 }
