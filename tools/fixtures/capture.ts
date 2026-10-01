@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 type Capture = { service: string; action: string; status: number; contentType: string; xml: string }
@@ -9,6 +9,10 @@ const host = process.env['ONVIF_TEST_HOST']
 const username = process.env['ONVIF_TEST_USER'] ?? ''
 const password = process.env['ONVIF_TEST_PASS'] ?? ''
 if (!host) throw new Error('ONVIF_TEST_HOST is not set')
+
+// --motion only records PullMessages responses in which motion starts and ends, leaving the other captures as they are
+const motionOnly = process.argv.includes('--motion')
+const MOTION_WAIT_MS = 300_000
 
 const deviceUrl = `http://${host}/onvif/device_service`
 const outRoot = join(import.meta.dirname, '../../fixtures/live')
@@ -86,6 +90,55 @@ const tr2 = 'xmlns="http://www.onvif.org/ver20/media/wsdl"'
 const tev = 'xmlns="http://www.onvif.org/ver10/events/wsdl"'
 const tptz = 'xmlns="http://www.onvif.org/ver20/ptz/wsdl"'
 const wsnt = 'xmlns="http://docs.oasis-open.org/wsn/b-2"'
+const pullAction = 'http://www.onvif.org/ver10/events/wsdl/PullPointSubscription/PullMessagesRequest'
+const unsubscribeAction = 'http://docs.oasis-open.org/wsn/bw-2/SubscriptionManager/UnsubscribeRequest'
+
+const motionStates = (xml: string): string[] =>
+  xml
+    .split(/<[\w-]+:NotificationMessage>/)
+    .slice(1)
+    .filter((message) => /Motion/.test(firstMatch(message, /<[\w-]+:Topic[^>]*>([^<]+)</) ?? ''))
+    .flatMap((message) =>
+      [...message.matchAll(/Name="(?:IsMotion|State)" Value="([^"]*)"/g)].map((match) => match[1] ?? '')
+    )
+
+const captureMotion = async (url: string): Promise<void> => {
+  const subscriptionXml = (
+    await send(
+      url,
+      `<CreatePullPointSubscription ${tev}><InitialTerminationTime>PT600S</InitialTerminationTime></CreatePullPointSubscription>`,
+      {}
+    )
+  ).xml
+  const subscriptionAddress = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
+  if (!subscriptionAddress) throw new Error('CreatePullPointSubscription returned no address')
+  const subscriptionUrl = pinToHost(subscriptionAddress)
+  const addressing = (action: string) => ({ addressing: { action, to: subscriptionAddress } })
+  console.log(`waiting up to ${MOTION_WAIT_MS / 1000} s for motion to start and stop`)
+  try {
+    const deadline = Date.now() + MOTION_WAIT_MS
+    let started = false
+    while (Date.now() < deadline) {
+      const pulled = await send(
+        subscriptionUrl,
+        `<PullMessages ${tev}><Timeout>PT10S</Timeout><MessageLimit>50</MessageLimit></PullMessages>`,
+        addressing(pullAction)
+      )
+      const states = motionStates(pulled.xml)
+      console.log(JSON.stringify({ status: pulled.status, motion: states }))
+      if (!started && states.includes('true')) {
+        captures.push({ service: 'events', action: 'PullMessagesMotion', ...pulled })
+        started = true
+      } else if (started && states.includes('false')) {
+        captures.push({ service: 'events', action: 'PullMessagesMotionEnd', ...pulled })
+        return
+      }
+    }
+    throw new Error(started ? 'Motion did not stop in time' : 'No motion in time')
+  } finally {
+    await send(subscriptionUrl, `<Unsubscribe ${wsnt}/>`, addressing(unsubscribeAction))
+  }
+}
 
 const timeXml = await capture('device', 'GetSystemDateAndTime', deviceUrl, `<GetSystemDateAndTime ${tds}/>`, {
   authenticated: false
@@ -121,75 +174,73 @@ await capture(
   `<GetCapabilities ${tds}><Category>All</Category></GetCapabilities>`
 )
 const infoXml = await capture('device', 'GetDeviceInformation', deviceUrl, `<GetDeviceInformation ${tds}/>`)
-await capture('device', 'GetServiceCapabilities', deviceUrl, `<GetServiceCapabilities ${tds}/>`)
-await capture('device', 'GetScopes', deviceUrl, `<GetScopes ${tds}/>`)
-await capture('device', 'GetHostname', deviceUrl, `<GetHostname ${tds}/>`)
-await capture('device', 'GetNetworkInterfaces', deviceUrl, `<GetNetworkInterfaces ${tds}/>`)
+if (motionOnly) {
+  const eventsUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/events/wsdl')
+  if (!eventsUrl) throw new Error('The device offers no events service')
+  await captureMotion(pinToHost(eventsUrl))
+} else {
+  await capture('device', 'GetServiceCapabilities', deviceUrl, `<GetServiceCapabilities ${tds}/>`)
+  await capture('device', 'GetScopes', deviceUrl, `<GetScopes ${tds}/>`)
+  await capture('device', 'GetHostname', deviceUrl, `<GetHostname ${tds}/>`)
+  await capture('device', 'GetNetworkInterfaces', deviceUrl, `<GetNetworkInterfaces ${tds}/>`)
 
-const mediaUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
-if (mediaUrl) {
-  const url = pinToHost(mediaUrl)
-  const profilesXml = await capture('media', 'GetProfiles', url, `<GetProfiles ${trt}/>`)
-  await capture('media', 'GetVideoSources', url, `<GetVideoSources ${trt}/>`)
-  await capture('media', 'GetVideoSourceConfigurations', url, `<GetVideoSourceConfigurations ${trt}/>`)
-  await capture('media', 'GetVideoEncoderConfigurations', url, `<GetVideoEncoderConfigurations ${trt}/>`)
-  const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
-  if (profileToken) {
-    const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
-    await capture('media', 'GetSnapshotUri', url, `<GetSnapshotUri ${trt}>${token}</GetSnapshotUri>`)
-    await capture(
-      'media',
-      'GetStreamUri',
-      url,
-      `<GetStreamUri ${trt}><StreamSetup><Stream xmlns="http://www.onvif.org/ver10/schema">RTP-Unicast</Stream>` +
-        `<Transport xmlns="http://www.onvif.org/ver10/schema"><Protocol>RTSP</Protocol></Transport></StreamSetup>${token}</GetStreamUri>`
-    )
+  const mediaUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
+  if (mediaUrl) {
+    const url = pinToHost(mediaUrl)
+    const profilesXml = await capture('media', 'GetProfiles', url, `<GetProfiles ${trt}/>`)
+    await capture('media', 'GetVideoSources', url, `<GetVideoSources ${trt}/>`)
+    await capture('media', 'GetVideoSourceConfigurations', url, `<GetVideoSourceConfigurations ${trt}/>`)
+    await capture('media', 'GetVideoEncoderConfigurations', url, `<GetVideoEncoderConfigurations ${trt}/>`)
+    const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
+    if (profileToken) {
+      const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
+      await capture('media', 'GetSnapshotUri', url, `<GetSnapshotUri ${trt}>${token}</GetSnapshotUri>`)
+      await capture(
+        'media',
+        'GetStreamUri',
+        url,
+        `<GetStreamUri ${trt}><StreamSetup><Stream xmlns="http://www.onvif.org/ver10/schema">RTP-Unicast</Stream>` +
+          `<Transport xmlns="http://www.onvif.org/ver10/schema"><Protocol>RTSP</Protocol></Transport></StreamSetup>${token}</GetStreamUri>`
+      )
+    }
   }
-}
 
-const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
-if (media2Url) {
-  await capture('media2', 'GetProfiles', pinToHost(media2Url), `<GetProfiles ${tr2}><Type>All</Type></GetProfiles>`)
-}
+  const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
+  if (media2Url) {
+    await capture('media2', 'GetProfiles', pinToHost(media2Url), `<GetProfiles ${tr2}><Type>All</Type></GetProfiles>`)
+  }
 
-const ptzUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/ptz/wsdl')
-if (ptzUrl) {
-  await capture('ptz', 'GetNodes', pinToHost(ptzUrl), `<GetNodes ${tptz}/>`)
-  await capture('ptz', 'GetConfigurations', pinToHost(ptzUrl), `<GetConfigurations ${tptz}/>`)
-}
+  const ptzUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/ptz/wsdl')
+  if (ptzUrl) {
+    await capture('ptz', 'GetNodes', pinToHost(ptzUrl), `<GetNodes ${tptz}/>`)
+    await capture('ptz', 'GetConfigurations', pinToHost(ptzUrl), `<GetConfigurations ${tptz}/>`)
+  }
 
-const eventsUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/events/wsdl')
-if (eventsUrl) {
-  const url = pinToHost(eventsUrl)
-  await capture('events', 'GetServiceCapabilities', url, `<GetServiceCapabilities ${tev}/>`)
-  await capture('events', 'GetEventProperties', url, `<GetEventProperties ${tev}/>`)
-  const subscriptionXml = await capture(
-    'events',
-    'CreatePullPointSubscription',
-    url,
-    `<CreatePullPointSubscription ${tev}><InitialTerminationTime>PT60S</InitialTerminationTime></CreatePullPointSubscription>`
-  )
-  const subscriptionAddress = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
-  if (subscriptionAddress) {
-    const subscriptionUrl = pinToHost(subscriptionAddress)
-    await capture(
+  const eventsUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/events/wsdl')
+  if (eventsUrl) {
+    const url = pinToHost(eventsUrl)
+    await capture('events', 'GetServiceCapabilities', url, `<GetServiceCapabilities ${tev}/>`)
+    await capture('events', 'GetEventProperties', url, `<GetEventProperties ${tev}/>`)
+    const subscriptionXml = await capture(
       'events',
-      'PullMessages',
-      subscriptionUrl,
-      `<PullMessages ${tev}><Timeout>PT5S</Timeout><MessageLimit>50</MessageLimit></PullMessages>`,
-      {
-        addressing: {
-          action: 'http://www.onvif.org/ver10/events/wsdl/PullPointSubscription/PullMessagesRequest',
-          to: subscriptionAddress
-        }
-      }
+      'CreatePullPointSubscription',
+      url,
+      `<CreatePullPointSubscription ${tev}><InitialTerminationTime>PT60S</InitialTerminationTime></CreatePullPointSubscription>`
     )
-    await capture('events', 'Unsubscribe', subscriptionUrl, `<Unsubscribe ${wsnt}/>`, {
-      addressing: {
-        action: 'http://docs.oasis-open.org/wsn/bw-2/SubscriptionManager/UnsubscribeRequest',
-        to: subscriptionAddress
-      }
-    })
+    const subscriptionAddress = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
+    if (subscriptionAddress) {
+      const subscriptionUrl = pinToHost(subscriptionAddress)
+      await capture(
+        'events',
+        'PullMessages',
+        subscriptionUrl,
+        `<PullMessages ${tev}><Timeout>PT5S</Timeout><MessageLimit>50</MessageLimit></PullMessages>`,
+        { addressing: { action: pullAction, to: subscriptionAddress } }
+      )
+      await capture('events', 'Unsubscribe', subscriptionUrl, `<Unsubscribe ${wsnt}/>`, {
+        addressing: { action: unsubscribeAction, to: subscriptionAddress }
+      })
+    }
   }
 }
 
@@ -244,14 +295,25 @@ const scrub = (xml: string): string => {
     )
 }
 
-const manifest: Record<string, { status: number; contentType: string }> = {}
-for (const { service, action, status, contentType, xml } of captures) {
-  const name = `${service}.${action}`
-  manifest[name] = { status, contentType }
-  await writeFile(join(outDir, `${name}.xml`), scrub(xml))
+const manifestPath = join(outDir, 'manifest.json')
+let previous: { capturedAt?: string; responses?: Record<string, unknown> } = {}
+try {
+  previous = JSON.parse(await readFile(manifestPath, 'utf8')) as typeof previous
+} catch {
+  previous = {}
 }
-await writeFile(
-  join(outDir, 'manifest.json'),
-  `${JSON.stringify({ capturedAt: new Date().toISOString().slice(0, 10), vendor, model, responses: manifest }, null, 2)}\n`
-)
-console.log(JSON.stringify({ outDir, files: captures.length }))
+const responses: Record<string, unknown> = { ...previous.responses }
+let written = 0
+for (const { service, action, status, contentType, xml } of captures) {
+  // scrub every response in the same order, so pseudonyms match those of a full capture
+  const scrubbed = scrub(xml)
+  if (motionOnly && !action.startsWith('PullMessagesMotion')) continue
+  const name = `${service}.${action}`
+  responses[name] = { status, contentType }
+  await writeFile(join(outDir, `${name}.xml`), scrubbed)
+  written += 1
+}
+const today = new Date().toISOString().slice(0, 10)
+const capturedAt = motionOnly ? (previous.capturedAt ?? today) : today
+await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
+console.log(JSON.stringify({ outDir, files: written }))

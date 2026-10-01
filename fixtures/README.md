@@ -10,7 +10,15 @@ Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TES
 pnpm fixtures:capture
 ```
 
-It only calls read-only operations (plus one pull point subscription, which it unsubscribes again). Before writing anything it scrubs:
+It only calls read-only operations (plus one pull point subscription, which it unsubscribes again).
+
+```sh
+pnpm fixtures:capture --motion
+```
+
+Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device. The other captures and their manifest entries stay as they are.
+
+Before writing anything it scrubs:
 
 - serial number, hardware id, username and password -> `REDACTEDn`
 - echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
