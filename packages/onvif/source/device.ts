@@ -375,19 +375,24 @@ export class Device {
   }
 
   async #awaitResynchronization(options: CallOptions, deadline: number, context: ErrorContext): Promise<void> {
-    const timeout = AbortSignal.timeout(Math.max(0, Math.ceil(deadline - performance.now())))
-    const stop = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
-    stop.throwIfAborted()
+    const { signal } = options
+    signal?.throwIfAborted()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let onAbort: (() => void) | undefined
     const stopped = new Promise<never>((_resolve, reject) => {
-      const onStop = () =>
-        reject(
-          timeout.aborted
-            ? new TimeoutError(`No response within ${options.timeoutMs ?? this.#timeoutMs} ms`, context)
-            : stop.reason
-        )
-      stop.addEventListener('abort', onStop, { once: true })
+      timer = setTimeout(
+        () => reject(new TimeoutError(`No response within ${options.timeoutMs ?? this.#timeoutMs} ms`, context)),
+        Math.max(0, Math.ceil(deadline - performance.now()))
+      )
+      onAbort = () => reject(signal?.reason)
+      signal?.addEventListener('abort', onAbort, { once: true })
     })
-    await Promise.race([(this.#resynchronizing ??= this.#resynchronize()), stopped])
+    try {
+      await Promise.race([(this.#resynchronizing ??= this.#resynchronize()), stopped])
+    } finally {
+      clearTimeout(timer)
+      if (onAbort) signal?.removeEventListener('abort', onAbort)
+    }
   }
 
   async #resynchronize(): Promise<void> {
