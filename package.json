@@ -11,6 +11,7 @@
   "scripts": {
     "bench": "vitest bench --run --reporter=verbose",
     "bench:memory": "node --expose-gc --import tsx tools/bench/memory.ts",
+    "bench:regression": "tsx tools/bench/regression.ts",
     "build": "pnpm --recursive --filter './packages/*' run build",
     "check": "run-p check:**",
     "check:code": "oxlint ./packages ./tools",
