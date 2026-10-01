@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- `getProfiles()` now returns `videoSource` and `videoEncoder` summaries, with the camera's response under `reported`
+- `getSnapshotUri()` and `getStreamUri()` now take a profile or `{ service, token }` instead of a token
+- The `protocol` option of `getStreamUri()` now takes `RTSP`, `UDP` or `HTTP` only
+
+### Added
+
+- Added Media2 support. Media calls use Media2 when the camera offers it and fall back to Media v1.
+- H.265 encoders are now reported on cameras with Media2
+- Added `getVideoSourceConfigurations()` and `getVideoEncoderConfigurations()`
+- Added `device.timeoutMs`
+
 ## [2.0.0-alpha.0] - 2026-10-01
 
 ### Highlights

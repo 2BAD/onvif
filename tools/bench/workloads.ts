@@ -2,7 +2,7 @@ import { corpus, fixture } from '#tools/fixtures/corpus.ts'
 
 const live = 'live/dvc/dcn-bm2220lpr'
 
-const repeatElement = (xml: string, open: RegExp, close: string, times: number): string => {
+export const repeatElement = (xml: string, open: RegExp, close: string, times: number): string => {
   const start = xml.search(open)
   const end = xml.lastIndexOf(close) + close.length
   if (start === -1 || end < close.length) throw new Error(`Element ${open} not found`)
