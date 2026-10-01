@@ -25,11 +25,11 @@ console.log(info.manufacturer, info.model)
 
 Compared with [`onvif`](https://github.com/agsh/onvif) 0.8.3 and 1.0.0-rc.3 on the same machine:
 
-|                                    | `@2bad/onvif` | `onvif`  |
-| ---------------------------------- | ------------- | -------- |
-| Event responses decoded per second | 11,400        | 3,500    |
-| Time for a burst of 5,000 events   | 194 ms        | 1,315 ms |
-| CPU time for 5,000 events          | 281 ms        | 892 ms   |
+|                                    | `@2bad/onvif` | `onvif`  |             |
+| ---------------------------------- | ------------- | -------- | ----------- |
+| Event responses decoded per second | 11,400        | 3,500    | 3.3x faster |
+| Time for a burst of 5,000 events   | 194 ms        | 1,315 ms | 6.8x faster |
+| CPU time for 5,000 events          | 281 ms        | 892 ms   | 3.2x less   |
 
 Snapshots are up to 2.6x faster than plain `fetch`.
 
