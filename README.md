@@ -1,26 +1,24 @@
 # @2bad/onvif
 
-ONVIF client for Node.js. Rewritten from scratch with three goals: performance, security and reliability. The core has zero runtime deps, and each ONVIF service gets its own optional package.
+ONVIF client for TypeScript with no runtime dependencies.
 
 > [!WARNING]
-> 2.0 is still in development and isn't usable yet. The `1.0.0-beta` releases on npm are the old implementation and aren't maintained anymore.
+> 2.0 is in alpha. The API can still change. The `1.0.0-beta` releases on npm are the old implementation and are no longer maintained.
 
 ## Packages
 
-| Package | Status |
-|---|---|
-| [`@2bad/onvif`](packages/onvif) | in progress: connect, device management, SOAP layer, WS-Security, HTTP transport |
-| [`@2bad/onvif-events`](packages/events) | in progress: pull point subscriptions, motion events |
-| [`@2bad/onvif-media`](packages/media) | in progress: profiles, snapshot and stream URIs, snapshots |
+- [`@2bad/onvif`](packages/onvif): connect to a camera and call device operations
+- [`@2bad/onvif-events`](packages/events): event subscriptions and motion detection
+- [`@2bad/onvif-media`](packages/media): profiles, snapshots and stream URLs
 
-## Development
+## Example
 
-```sh
-pnpm install
-pnpm check            # lint, format, types
-pnpm test             # unit, conformance and fuzz tests
-pnpm bench            # parser and transport benchmarks
-pnpm fixtures:capture # record responses from the device in .env
+```ts
+import { Device, DeviceManagement } from '@2bad/onvif'
+
+const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
+const info = await device.call(DeviceManagement.GetDeviceInformation)
+console.log(info.manufacturer, info.model)
 ```
 
 ## License

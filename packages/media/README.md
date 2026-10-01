@@ -1,9 +1,15 @@
 # @2bad/onvif-media
 
-ONVIF media profiles, snapshot and stream URIs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif), and snapshots fetched with HTTP Digest.
+ONVIF profiles, snapshots and stream URLs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 > [!WARNING]
-> Still in development, not usable yet. Check the [repo](https://github.com/2BAD/onvif) for status.
+> 2.0 is in alpha. The API can still change.
+
+## Install
+
+```sh
+npm install @2bad/onvif@next @2bad/onvif-media@next
+```
 
 ## Usage
 
@@ -18,17 +24,43 @@ if (!profile) throw new Error('The camera has no media profiles')
 const snapshot = await getSnapshotUri(device, profile.token)
 const jpeg = await fetchSnapshot(device, snapshot.uri)
 
-const stream = await getStreamUri(device, profile.token, { protocol: 'RTSP' })
+const stream = await getStreamUri(device, profile.token)
 console.log(stream.uri.href)
 ```
 
-Every call takes the profile token explicitly; there is no hidden current profile. `defaultProfile()` picks the first profile with a video source and encoder, and falls back to one with a video source, then to the first.
+## Profiles
 
-Addresses the device reports go through the service address policy of the device (`serviceAddresses` in `Device.connect()`), because cameras behind NAT or port forwarding report their internal address. A snapshot address on another origin is rewritten to the configured one, or refused under `reject`. A stream address on another host gets the configured host but keeps its scheme and port, since RTSP does not run on the ONVIF port, or is refused under `reject`. The address as the device sent it stays in `reported`.
+`defaultProfile()` picks the first profile with a video source and an encoder.
 
-`fetchSnapshot()` sends the credentials only with HTTP Digest, applies the address policy again, follows no redirects and fails with a `TransportError` when the response is not a JPEG image. A camera that only offers HTTP Basic fails with an `AuthError` that says so, unless `Device.connect()` gets `basicAuth: 'https'` (Basic only over HTTPS) or `basicAuth: 'always'`.
+## Stream URLs
 
-Media v1 only. Profiles for H.265 streams may come without a video encoder configuration, since Media v1 cannot describe H.265; their snapshot and stream URIs still work.
+```ts
+const stream = await getStreamUri(device, profile.token, {
+  // optional, values are the defaults
+  protocol: 'RTSP', // or 'UDP', 'HTTP'
+  multicast: false
+})
+```
+
+## Snapshots
+
+`fetchSnapshot()` returns the JPEG bytes. A response that is not a JPEG image is a `TransportError`.
+
+Cameras that only offer HTTP Basic for snapshots need `basicAuth` on `Device.connect()`.
+
+## Addresses
+
+Cameras behind NAT report internal addresses. The returned `uri` uses the host you connected to. Stream URLs keep the port and scheme the camera reported. `reported` has the address as the camera sent it.
+
+With `serviceAddresses: 'reject'`, an address on another host throws an `OnvifError`.
+
+## Timeouts and cancellation
+
+Functions that call the camera take `signal` and `timeoutMs` in their last argument, like `device.call()`.
+
+## Limits
+
+Only Media v1 is supported. H.265 profiles may have no video encoder configuration. Their snapshot and stream addresses still work.
 
 ## License
 
