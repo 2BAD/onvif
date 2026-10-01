@@ -237,6 +237,16 @@ describe('mock camera', () => {
       expect((await post(`${url}/onvif/device_service`, body)).status).toBe(503)
     })
 
+    it('applies an override the given number of times only', async () => {
+      const { url } = await start({
+        auth: 'none',
+        overrides: { 'device.GetDeviceInformation': { kind: 'status', status: 503, times: 2 } }
+      })
+      const statuses = []
+      for (let index = 0; index < 3; index++) statuses.push((await post(`${url}/onvif/device_service`, body)).status)
+      expect(statuses).toEqual([503, 503, 200])
+    })
+
     it('delays the response', async () => {
       const { url } = await start({
         auth: 'none',

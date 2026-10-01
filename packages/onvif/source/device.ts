@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises'
 import {
   AuthError,
   DecodeError,
@@ -30,6 +31,21 @@ const CLOCK_TOLERANCE_MS = 1_000
 // devices report whole seconds, so their time lies anywhere in the second after the reported one
 const HALF_A_SECOND_MS = 500
 const RESYNC_INTERVAL_MS = 60_000
+const DEFAULT_RETRY_DELAY_MS = 250
+const MAX_RETRY_ATTEMPTS = 10
+const TRANSIENT_NETWORK_CODES = new Set([
+  'EAI_AGAIN',
+  'ECONNABORTED',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTDOWN',
+  'EHOSTUNREACH',
+  'ENETDOWN',
+  'ENETUNREACH',
+  'EPIPE',
+  'ETIMEDOUT'
+])
+const TRANSIENT_STATUSES = new Set([502, 503, 504])
 
 /**
  * What to do with service addresses the device reports for an origin (protocol, host and port) other than the configured
@@ -65,6 +81,12 @@ export type ConnectOptions = {
    * extra `GetDeviceInformation`.
    */
   verifyCredentials?: boolean
+  /**
+   * Retry `Get*` operations, which only read, after a connection failure or an HTTP 502, 503 or 504 response. Off by
+   * default. Each retry waits `delayMs` (250 by default), doubled for every further one, with jitter, and only starts
+   * when the call's timeout leaves room for the wait.
+   */
+  retry?: { attempts: number; delayMs?: number }
   signal?: AbortSignal
 }
 
@@ -147,6 +169,13 @@ const answeredBadly = (error: unknown): boolean =>
   error instanceof ParseError ||
   (error instanceof TransportError && error.status !== undefined)
 
+const isTransient = (error: unknown): boolean => {
+  if (!(error instanceof TransportError)) return false
+  if (error.status !== undefined) return TRANSIENT_STATUSES.has(error.status)
+  const { cause } = error
+  return cause instanceof Error && 'code' in cause && TRANSIENT_NETWORK_CODES.has(String(cause.code))
+}
+
 const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
@@ -158,6 +187,7 @@ export class Device {
   readonly #credentials: Credentials | undefined
   readonly #policy: ServiceAddressPolicy
   readonly #timeoutMs: number
+  readonly #retry: { attempts: number; delayMs: number } | undefined
   readonly #services = new Map<string, URL>()
   readonly #unavailable = new Map<string, OnvifError>()
   #clock: Clock = { skewMs: 0, source: 'local' }
@@ -183,6 +213,16 @@ export class Device {
     this.#credentials = username === undefined ? undefined : { username, password }
     this.#policy = options.serviceAddresses ?? 'rewrite'
     this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    if (options.retry) {
+      const { attempts, delayMs = DEFAULT_RETRY_DELAY_MS } = options.retry
+      if (!Number.isInteger(attempts) || attempts < 0 || attempts > MAX_RETRY_ATTEMPTS) {
+        throw new OnvifError(`Retry attempts must be an integer from 0 to ${MAX_RETRY_ATTEMPTS}`, { host: hostname })
+      }
+      if (!Number.isFinite(delayMs) || delayMs < 0) {
+        throw new OnvifError('Retry delay must be a finite number of milliseconds of at least 0', { host: hostname })
+      }
+      this.#retry = { attempts, delayMs }
+    }
     this.#transport = new HttpTransport({
       timeoutMs: this.#timeoutMs,
       maxResponseBytes: options.maxResponseBytes,
@@ -479,6 +519,31 @@ export class Device {
   }
 
   async #call<Request, Response>(
+    operation: Operation<Request, Response>,
+    request: Request,
+    options: CallOptions,
+    deadline: number,
+    authenticated: boolean
+  ): Promise<Response> {
+    const retry = operation.name.startsWith('Get') ? this.#retry : undefined
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.#attempt(operation, request, options, deadline, authenticated)
+      } catch (error) {
+        if (!retry || attempt > retry.attempts || !isTransient(error)) throw error
+        const delayMs = retry.delayMs * 2 ** (attempt - 1) * (0.5 + Math.random() / 2)
+        if (performance.now() + delayMs >= deadline) throw error
+        try {
+          await sleep(delayMs, undefined, { signal: options.signal })
+        } catch (sleepError) {
+          options.signal?.throwIfAborted()
+          throw sleepError
+        }
+      }
+    }
+  }
+
+  async #attempt<Request, Response>(
     operation: Operation<Request, Response>,
     request: Request,
     options: CallOptions,

@@ -9,12 +9,16 @@ import { MockEvents, type MockEventsOptions, type PullPointState } from '#tools/
 
 type Manifest = { responses: Record<string, { status: number; contentType: string }> }
 
-export type ActionOverride =
+export type ActionOverride = (
   | { kind: 'status'; status: number; body?: string }
   | { kind: 'delay'; ms: number }
   | { kind: 'truncate'; bytes: number }
   | { kind: 'hang' }
   | { kind: 'destroy' }
+) & {
+  /** Apply to this many requests for the action only, then answer normally. Every request by default. */
+  times?: number
+}
 
 export type MockCameraOptions = {
   fixtureDirectory?: string
@@ -185,6 +189,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   let clockSkewMs = options.clockSkewMs ?? 0
   const manifest = JSON.parse(readFileSync(join(fixtureDirectory, 'manifest.json'), 'utf8')) as Manifest
   const requests: RecordedRequest[] = []
+  const overridden = new Map<string, number>()
   const usedNonces = new Set<string>()
   // highest nonce count accepted per issued nonce; a count that does not increase is a replay
   const digestNonceCounts = new Map<string, number>()
@@ -295,7 +300,11 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     const action = typeof soapBody === 'object' ? (Object.keys(soapBody)[0] ?? '') : ''
     requests.push({ path, service, action, headers: request.headers, body })
 
-    const override = overrides[`${service}.${action}`]
+    const key = `${service}.${action}`
+    const count = (overridden.get(key) ?? 0) + 1
+    overridden.set(key, count)
+    const configured = overrides[key]
+    const override = configured && count <= (configured.times ?? Infinity) ? configured : undefined
     if (override?.kind === 'hang') return
     if (override?.kind === 'destroy') {
       request.socket.destroy()

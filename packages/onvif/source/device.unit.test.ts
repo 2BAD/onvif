@@ -1,7 +1,7 @@
-import { once } from 'node:events'
+import { getEventListeners, once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer as createHttpsServer } from 'node:https'
-import type { AddressInfo } from 'node:net'
+import { type AddressInfo, createServer } from 'node:net'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -14,7 +14,7 @@ import {
 import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
 import { AuthError, DecodeError, OnvifError, SoapFaultError, TimeoutError, TransportError } from '#errors.ts'
-import { GetDeviceInformation, GetScopes } from '#generated/device.ts'
+import { GetDeviceInformation, GetHostname, GetScopes, SystemReboot } from '#generated/device.ts'
 import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 
 const MEDIA = 'http://www.onvif.org/ver10/media/wsdl'
@@ -690,6 +690,138 @@ describe('Device.call', () => {
       cause: expect.any(OnvifError)
     })
     expect(actions(mock)).not.toContain('GetScopes')
+  })
+})
+
+describe('retry', () => {
+  const nonceOf = (body: string): string | undefined => /<wsse:Nonce[^>]*>([^<]+)</.exec(body)?.[1]
+
+  it('does not retry unless asked to', async () => {
+    const mock = await camera({
+      overrides: { 'device.GetScopes': { kind: 'status', status: 503, body: '', times: 1 } }
+    })
+    const device = await connect(mock)
+    await expect(device.call(GetScopes)).rejects.toMatchObject({ name: 'TransportError', status: 503 })
+    expect(actions(mock).slice(3)).toEqual(['GetScopes'])
+  })
+
+  it.for([502, 503, 504])('retries Get operations answered with HTTP %i with a fresh nonce', async (status) => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status, body: '', times: 2 } } })
+    const device = await connect(mock, { retry: { attempts: 2, delayMs: 1 } })
+    await expect(device.call(GetScopes)).resolves.toMatchObject({ scopes: expect.any(Array) })
+    const retried = mock.requests.slice(3)
+    expect(retried.map(({ action }) => action)).toEqual(['GetScopes', 'GetScopes', 'GetScopes'])
+    expect(new Set(retried.map(({ body }) => nonceOf(body))).size).toBe(3)
+  })
+
+  it('retries after dropped connections and responses cut short', async () => {
+    const overrides: Record<string, ActionOverride> = {}
+    const mock = await camera({ overrides })
+    const device = await connect(mock, { retry: { attempts: 1, delayMs: 1 } })
+    overrides['device.GetScopes'] = { kind: 'destroy', times: 2 }
+    await expect(device.call(GetScopes)).resolves.toMatchObject({ scopes: expect.any(Array) })
+    overrides['device.GetHostname'] = { kind: 'truncate', bytes: 100, times: 1 }
+    await expect(device.call(GetHostname)).resolves.toMatchObject({ hostnameInformation: expect.any(Object) })
+    expect(actions(mock).slice(3)).toEqual(['GetScopes', 'GetScopes', 'GetScopes', 'GetHostname', 'GetHostname'])
+  })
+
+  it('retries while connecting', async () => {
+    let connections = 0
+    const server = createServer((socket) => {
+      connections += 1
+      socket.resetAndDestroy()
+    })
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    cleanups.push(() => {
+      server.close()
+    })
+    const { port } = server.address() as AddressInfo
+    const retry = { attempts: 2, delayMs: 1 }
+    await expect(Device.connect({ hostname: '127.0.0.1', port, retry })).rejects.toMatchObject({
+      name: 'TransportError',
+      cause: { code: 'ECONNRESET' }
+    })
+    expect(connections).toBe(3)
+  })
+
+  it('gives up after the configured number of retries', async () => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status: 503, body: '' } } })
+    const device = await connect(mock, { retry: { attempts: 2, delayMs: 1 } })
+    await expect(device.call(GetScopes)).rejects.toMatchObject({ name: 'TransportError', status: 503 })
+    expect(actions(mock).slice(3)).toEqual(['GetScopes', 'GetScopes', 'GetScopes'])
+  })
+
+  it('doubles the delay for every retry, with jitter', async () => {
+    const mock = await camera({
+      overrides: { 'device.GetScopes': { kind: 'status', status: 503, body: '', times: 2 } }
+    })
+    const device = await connect(mock, { retry: { attempts: 2, delayMs: 100 } })
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+    cleanups.push(() => random.mockRestore())
+    const started = performance.now()
+    await device.call(GetScopes)
+    const elapsed = performance.now() - started
+    expect(elapsed).toBeGreaterThanOrEqual(149)
+    expect(elapsed).toBeLessThan(1_000)
+  })
+
+  it('does not retry operations other than Get, faults, auth errors or other HTTP errors', async () => {
+    const mock = await camera({
+      overrides: {
+        'device.SystemReboot': { kind: 'status', status: 503, body: '' },
+        'device.GetScopes': { kind: 'status', status: 500 },
+        'device.GetHostname': { kind: 'status', status: 500, body: 'Internal error' }
+      }
+    })
+    const device = await connect(mock, { retry: { attempts: 3, delayMs: 1 } })
+    await expect(device.call(SystemReboot)).rejects.toMatchObject({ name: 'TransportError', status: 503 })
+    await expect(device.call(GetScopes)).rejects.toThrow(SoapFaultError)
+    await expect(device.call(GetHostname)).rejects.toMatchObject({ name: 'TransportError', status: 500 })
+    expect(actions(mock).slice(3)).toEqual(['SystemReboot', 'GetScopes', 'GetHostname'])
+    const strict = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'] })
+    const wrong = await connect(strict, { password: 'wrong', verifyCredentials: false, retry: { attempts: 3 } })
+    await expect(wrong.call(GetDeviceInformation)).rejects.toThrow(AuthError)
+    expect(actions(strict).slice(2)).toEqual(['GetDeviceInformation'])
+  })
+
+  it('does not retry responses over the size limit', async () => {
+    const mock = await camera({
+      overrides: { 'device.GetScopes': { kind: 'status', status: 200, body: 'x'.repeat(100_000) } }
+    })
+    const device = await connect(mock, { retry: { attempts: 3, delayMs: 1 }, maxResponseBytes: 50_000 })
+    await expect(device.call(GetScopes)).rejects.toThrow(/exceeds/)
+    expect(actions(mock).slice(3)).toEqual(['GetScopes'])
+  })
+
+  it('throws the last error instead of waiting past the deadline', async () => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status: 503, body: '' } } })
+    const device = await connect(mock, { retry: { attempts: 3, delayMs: 5_000 }, timeoutMs: 1_000 })
+    const started = performance.now()
+    await expect(device.call(GetScopes)).rejects.toMatchObject({ name: 'TransportError', status: 503 })
+    expect(performance.now() - started).toBeLessThan(500)
+    expect(actions(mock).slice(3)).toEqual(['GetScopes'])
+  })
+
+  it('stops waiting for a retry when the call is aborted', async () => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status: 503, body: '' } } })
+    const device = await connect(mock, { retry: { attempts: 3, delayMs: 5_000 }, timeoutMs: 60_000 })
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(new Error('cancelled')), 50)
+    const started = performance.now()
+    await expect(device.call(GetScopes, {}, { signal: controller.signal })).rejects.toThrow('cancelled')
+    expect(performance.now() - started).toBeLessThan(1_000)
+    expect(getEventListeners(controller.signal, 'abort')).toHaveLength(0)
+  })
+
+  it.for([
+    { attempts: -1 },
+    { attempts: 1.5 },
+    { attempts: 11 },
+    { attempts: 1, delayMs: -1 },
+    { attempts: 1, delayMs: Number.NaN }
+  ])('rejects invalid retry options %o', async (retry) => {
+    await expect(Device.connect({ hostname: '127.0.0.1', retry })).rejects.toThrow(OnvifError)
   })
 })
 
