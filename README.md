@@ -21,6 +21,18 @@ const info = await device.call(DeviceManagement.GetDeviceInformation)
 console.log(info.manufacturer, info.model)
 ```
 
+## ONVIF profiles
+
+| Profile | Covered  | Missing                                 |
+| ------- | -------- | --------------------------------------- |
+| S       | 7 of 7   |                                         |
+| T       | 11 of 21 | WS-Discovery, network, imaging, PTZ     |
+| M       | 4 of 7   | WS-Discovery, analytics, metadata       |
+| C       | 7 of 15  | access control, door control            |
+| D       | 6 of 19  | WS-Discovery, network, access, doors    |
+| G       | 2 of 8   | recording search, replay                |
+| A       | 4 of 17  | WS-Discovery, users, credentials, rules |
+
 ## Performance
 
 Compared with [`onvif`](https://github.com/agsh/onvif) 0.8.3 and 1.0.0-rc.3 on the same machine:

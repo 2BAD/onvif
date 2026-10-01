@@ -22,13 +22,13 @@ Pulls events for up to five minutes and writes only `events.PullMessagesMotion.x
 pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOptions
 ```
 
-Runs the full capture but writes only the responses whose `<service>.<Action>` name starts with one of the prefixes. The other captures and their manifest entries stay as they are.
+Writes only the responses whose `<service>.<Action>` name starts with one of the prefixes.
 
 ```sh
 pnpm fixtures:capture --set-encoder
 ```
 
-Also sends the first video encoder configuration of Media v1 and Media2 back to the device unchanged, to capture `SetVideoEncoderConfiguration`. This is the only call that writes to the device.
+Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configuration of Media v1 and Media2 back to the device unchanged. No other call writes to the device.
 
 Before writing anything it scrubs:
 

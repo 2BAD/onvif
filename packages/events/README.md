@@ -36,7 +36,7 @@ Stop with `break`, `close()` or an aborted `signal`.
 
 After that, the loop recovers from network errors, camera reboots and expired subscriptions. Each one goes to `onError`. It throws when the camera rejects the credentials or reports an event address that `serviceAddresses` refuses.
 
-## Current state
+## State
 
 After subscribing and after every reconnect, the camera sends the current state of every topic. To get only changes, skip events whose `propertyOperation` is `'Initialized'`.
 
