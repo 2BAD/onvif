@@ -24,8 +24,17 @@ const git = (...args: string[]): Buffer => execFileSync('git', args, { cwd: root
 
 const baseRef = process.argv[2] ?? 'HEAD'
 const baseCommit = git('rev-parse', '--verify', `${baseRef}^{commit}`).toString().trim()
+const sourceChanged = ((): boolean => {
+  try {
+    git('diff', '--quiet', baseCommit, '--', ':(glob)packages/*/source/**', ':(glob,exclude)**/*.test.ts')
+    return false
+  } catch {
+    return true
+  }
+})()
+
 const baseRoot = join(root, 'node_modules/.cache/onvif-bench', baseCommit)
-if (!existsSync(join(baseRoot, 'packages'))) {
+if (sourceChanged && !existsSync(join(baseRoot, 'packages'))) {
   rmSync(baseRoot, { recursive: true, force: true })
   mkdirSync(baseRoot, { recursive: true })
   execFileSync('tar', ['-x', '-C', baseRoot], { input: git('archive', baseCommit, 'packages') })
@@ -101,6 +110,21 @@ const median = (values: number[]): number => {
   return sorted.length % 2 === 1 ? (sorted[middle] ?? 0) : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2
 }
 
+const ratioOf = (previous: () => unknown, current: () => unknown): number => {
+  throughput(previous, WARMUP_MS)
+  throughput(current, WARMUP_MS)
+  const ratios = []
+  for (let round = 0; round < ROUNDS; round++) {
+    const [first, second] = round % 2 === 0 ? [previous, current] : [current, previous]
+    const firstThroughput = throughput(first, SAMPLE_MS)
+    const secondThroughput = throughput(second, SAMPLE_MS)
+    ratios.push(round % 2 === 0 ? secondThroughput / firstThroughput : firstThroughput / secondThroughput)
+  }
+  return median(ratios)
+}
+
+const formatChange = (ratio: number): string => `${ratio >= 1 ? '+' : ''}${((ratio - 1) * 100).toFixed(1)}%`
+
 const compare = (base: Map<string, () => unknown>, head: Map<string, () => unknown>): string[] => {
   console.log(
     `Throughput of the working tree against ${baseCommit.slice(0, 7)}, median of ${ROUNDS} alternating rounds`
@@ -112,34 +136,34 @@ const compare = (base: Map<string, () => unknown>, head: Map<string, () => unkno
       console.log(`  ${name}: new`)
       continue
     }
-    throughput(previous, WARMUP_MS)
-    throughput(current, WARMUP_MS)
-    const ratios = []
-    for (let round = 0; round < ROUNDS; round++) {
-      const [first, second] = round % 2 === 0 ? [previous, current] : [current, previous]
-      const firstThroughput = throughput(first, SAMPLE_MS)
-      const secondThroughput = throughput(second, SAMPLE_MS)
-      ratios.push(round % 2 === 0 ? secondThroughput / firstThroughput : firstThroughput / secondThroughput)
+    const ratio = ratioOf(previous, current)
+    if (ratio >= 1 - MAX_SLOWDOWN) {
+      console.log(`  ${name}: ${formatChange(ratio)}`)
+      continue
     }
-    const ratio = median(ratios)
-    const change = `${ratio >= 1 ? '+' : ''}${((ratio - 1) * 100).toFixed(1)}%`
-    const regressed = ratio < 1 - MAX_SLOWDOWN
+    const repeated = ratioOf(previous, current)
+    const regressed = repeated < 1 - MAX_SLOWDOWN
     if (regressed) slower.push(name)
-    console.log(`  ${name}: ${change}${regressed ? ' REGRESSION' : ''}`)
+    console.log(
+      `  ${name}: ${formatChange(ratio)}, repeated ${formatChange(repeated)}${regressed ? ' REGRESSION' : ''}`
+    )
   }
   return slower
 }
 
-const head = await workloadsFor(root)
 let base: Map<string, () => unknown> | undefined
-try {
-  base = await workloadsFor(baseRoot)
-} catch (error) {
-  console.log(
-    `Base ${baseCommit.slice(0, 7)} cannot run the regression workloads, nothing to compare: ${String(error)}`
-  )
+if (sourceChanged) {
+  try {
+    base = await workloadsFor(baseRoot)
+  } catch (error) {
+    console.log(
+      `Base ${baseCommit.slice(0, 7)} cannot run the regression workloads, nothing to compare: ${String(error)}`
+    )
+  }
+} else {
+  console.log(`No package source changed since ${baseCommit.slice(0, 7)}, nothing to compare`)
 }
-const slower = base ? compare(base, head) : []
+const slower = base ? compare(base, await workloadsFor(root)) : []
 if (slower.length > 0) {
   console.error(`${slower.length} workloads are more than ${MAX_SLOWDOWN * 100}% slower than ${baseCommit.slice(0, 7)}`)
   process.exitCode = 1
