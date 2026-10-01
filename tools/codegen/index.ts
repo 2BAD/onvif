@@ -75,7 +75,9 @@ const targets: Target[] = [
           'GetStreamUri',
           'GetSnapshotUri',
           'GetVideoSourceConfigurations',
-          'GetVideoEncoderConfigurations'
+          'GetVideoEncoderConfigurations',
+          'GetVideoEncoderConfigurationOptions',
+          'SetVideoEncoderConfiguration'
         ]
       }
     ]
@@ -93,7 +95,9 @@ const targets: Target[] = [
           'GetStreamUri',
           'GetSnapshotUri',
           'GetVideoSourceConfigurations',
-          'GetVideoEncoderConfigurations'
+          'GetVideoEncoderConfigurations',
+          'GetVideoEncoderConfigurationOptions',
+          'SetVideoEncoderConfiguration'
         ]
       }
     ]

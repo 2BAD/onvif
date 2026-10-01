@@ -194,6 +194,23 @@ export type GetStreamUriResponse = {
   mediaUri: MediaUri
 }
 
+export type GetVideoEncoderConfigurationOptionsRequest = {
+  /**
+   * Optional video encoder configuration token that specifies an existing configuration that the options
+   * are intended for.
+   */
+  configurationToken?: string
+  /**
+   * Optional ProfileToken that specifies an existing media profile that the options shall be compatible
+   * with.
+   */
+  profileToken?: string
+}
+
+export type GetVideoEncoderConfigurationOptionsResponse = {
+  options: VideoEncoderConfigurationOptions
+}
+
 export type GetVideoEncoderConfigurationsRequest = Record<string, never>
 
 export type GetVideoEncoderConfigurationsResponse = {
@@ -218,6 +235,47 @@ export type H264Configuration = {
   govLength: number
   /** the H.264 profile, either baseline, main, extended or high */
   h264Profile: H264Profile
+}
+
+export type H264Options = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported group of Video frames length. This value typically corresponds to the I-Frame distance. */
+  govLengthRange: IntRange
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+  /** List of supported H.264 profiles. */
+  h264ProfilesSupported: H264Profile[]
+}
+
+export type H264Options2 = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported group of Video frames length. This value typically corresponds to the I-Frame distance. */
+  govLengthRange: IntRange
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+  /** List of supported H.264 profiles. */
+  h264ProfilesSupported: H264Profile[]
+  /** Supported range of encoded bitrate in kbps. */
+  bitrateRange: IntRange
+  $any?: Record<string, unknown>
+}
+
+/** Range of values greater equal Min value and less equal Max value. */
+export type IntRange = {
+  min: number
+  max: number
 }
 
 /** Rectangle defined by lower left corner position and size. Units are pixel. */
@@ -260,6 +318,33 @@ export type ItemListSimpleItem = {
   name: string
   /** Item value. The type is defined in the corresponding description. */
   value: string
+}
+
+export type JpegOptions = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+}
+
+export type JpegOptions2 = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+  /** Supported range of encoded bitrate in kbps. */
+  bitrateRange: IntRange
+  $any?: Record<string, unknown>
 }
 
 export type LensDescription = {
@@ -392,6 +477,41 @@ export type Mpeg4Configuration = {
   govLength: number
   /** the Mpeg4 profile, either simple profile (SP) or advanced simple profile (ASP) */
   mpeg4Profile: Mpeg4Profile
+}
+
+export type Mpeg4Options = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported group of Video frames length. This value typically corresponds to the I-Frame distance. */
+  govLengthRange: IntRange
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+  /** List of supported MPEG-4 profiles. */
+  mpeg4ProfilesSupported: Mpeg4Profile[]
+}
+
+export type Mpeg4Options2 = {
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution[]
+  /** Supported group of Video frames length. This value typically corresponds to the I-Frame distance. */
+  govLengthRange: IntRange
+  /** Supported frame rate in fps (frames per second). */
+  frameRateRange: IntRange
+  /**
+   * Supported encoding interval range. The encoding interval corresponds to the number of frames divided
+   * by the encoded frames. An encoding interval value of "1" means that all frames are encoded.
+   */
+  encodingIntervalRange: IntRange
+  /** List of supported MPEG-4 profiles. */
+  mpeg4ProfilesSupported: Mpeg4Profile[]
+  /** Supported range of encoded bitrate in kbps. */
+  bitrateRange: IntRange
+  $any?: Record<string, unknown>
 }
 
 export type MulticastConfiguration = {
@@ -655,6 +775,15 @@ export type SensorDataFilter = {
   $any?: Record<string, unknown>
 }
 
+export type SetVideoEncoderConfigurationRequest = {
+  /** Contains the modified video encoder configuration. The configuration shall exist in the device. */
+  configuration: VideoEncoderConfiguration
+  /** The ForcePersistence element is obsolete and should always be assumed to be true. */
+  forcePersistence: boolean
+}
+
+export type SetVideoEncoderConfigurationResponse = Record<string, never>
+
 export type Space1DDescription = {
   /** A URI of coordinate systems. */
   URI: string
@@ -767,6 +896,38 @@ export type VideoEncoderConfiguration = {
    * bitrate. Default is false.
    */
   guaranteedFrameRate?: boolean
+  $any?: Record<string, unknown>
+}
+
+export type VideoEncoderConfigurationOptions = {
+  /** Range of the quality values. A high value means higher quality. */
+  qualityRange: IntRange
+  /** Optional JPEG encoder settings ranges (See also Extension element). */
+  JPEG?: JpegOptions
+  /** Optional MPEG-4 encoder settings ranges (See also Extension element). */
+  MPEG4?: Mpeg4Options
+  /** Optional H.264 encoder settings ranges (See also Extension element). */
+  H264?: H264Options
+  extension?: VideoEncoderOptionsExtension
+  /**
+   * Indicates the support for the GuaranteedFrameRate attribute on the VideoEncoderConfiguration
+   * element.
+   */
+  guaranteedFrameRateSupported?: boolean
+}
+
+export type VideoEncoderOptionsExtension = {
+  /** Optional JPEG encoder settings ranges. */
+  JPEG?: JpegOptions2
+  /** Optional MPEG-4 encoder settings ranges. */
+  MPEG4?: Mpeg4Options2
+  /** Optional H.264 encoder settings ranges. */
+  H264?: H264Options2
+  extension?: VideoEncoderOptionsExtension2
+  $any?: Record<string, unknown>
+}
+
+export type VideoEncoderOptionsExtension2 = {
   $any?: Record<string, unknown>
 }
 
@@ -962,6 +1123,15 @@ export const schema: Schema = {
     ]
   },
   GetStreamUriResponse: { fields: [{ name: 'MediaUri', property: 'mediaUri', type: 'MediaUri', namespace: trt }] },
+  GetVideoEncoderConfigurationOptionsRequest: {
+    fields: [
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: trt, optional: true },
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: trt, optional: true }
+    ]
+  },
+  GetVideoEncoderConfigurationOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'VideoEncoderConfigurationOptions', namespace: trt }]
+  },
   GetVideoEncoderConfigurationsRequest: { fields: [] },
   GetVideoEncoderConfigurationsResponse: {
     fields: [
@@ -992,6 +1162,44 @@ export const schema: Schema = {
     fields: [
       { name: 'GovLength', property: 'govLength', type: 'integer', namespace: tt },
       { name: 'H264Profile', property: 'h264Profile', type: 'string', namespace: tt }
+    ]
+  },
+  H264Options: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'GovLengthRange', property: 'govLengthRange', type: 'IntRange', namespace: tt },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt },
+      { name: 'H264ProfilesSupported', property: 'h264ProfilesSupported', type: 'string', namespace: tt, array: true }
+    ]
+  },
+  H264Options2: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'GovLengthRange', property: 'govLengthRange', type: 'IntRange', namespace: tt },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt },
+      { name: 'H264ProfilesSupported', property: 'h264ProfilesSupported', type: 'string', namespace: tt, array: true },
+      { name: 'BitrateRange', property: 'bitrateRange', type: 'IntRange', namespace: tt }
+    ],
+    any: true
+  },
+  IntRange: {
+    fields: [
+      { name: 'Min', property: 'min', type: 'integer', namespace: tt },
+      { name: 'Max', property: 'max', type: 'integer', namespace: tt }
     ]
   },
   IntRectangle: {
@@ -1037,6 +1245,34 @@ export const schema: Schema = {
       { name: 'Name', property: 'name', type: 'string', attribute: true },
       { name: 'Value', property: 'value', type: 'string', attribute: true }
     ]
+  },
+  JpegOptions: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt }
+    ]
+  },
+  JpegOptions2: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt },
+      { name: 'BitrateRange', property: 'bitrateRange', type: 'IntRange', namespace: tt }
+    ],
+    any: true
   },
   LensDescription: {
     fields: [
@@ -1114,6 +1350,44 @@ export const schema: Schema = {
       { name: 'GovLength', property: 'govLength', type: 'integer', namespace: tt },
       { name: 'Mpeg4Profile', property: 'mpeg4Profile', type: 'string', namespace: tt }
     ]
+  },
+  Mpeg4Options: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'GovLengthRange', property: 'govLengthRange', type: 'IntRange', namespace: tt },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt },
+      { name: 'Mpeg4ProfilesSupported', property: 'mpeg4ProfilesSupported', type: 'string', namespace: tt, array: true }
+    ]
+  },
+  Mpeg4Options2: {
+    fields: [
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution',
+        namespace: tt,
+        array: true
+      },
+      { name: 'GovLengthRange', property: 'govLengthRange', type: 'IntRange', namespace: tt },
+      { name: 'FrameRateRange', property: 'frameRateRange', type: 'IntRange', namespace: tt },
+      { name: 'EncodingIntervalRange', property: 'encodingIntervalRange', type: 'IntRange', namespace: tt },
+      {
+        name: 'Mpeg4ProfilesSupported',
+        property: 'mpeg4ProfilesSupported',
+        type: 'string',
+        namespace: tt,
+        array: true
+      },
+      { name: 'BitrateRange', property: 'bitrateRange', type: 'IntRange', namespace: tt }
+    ],
+    any: true
   },
   MulticastConfiguration: {
     fields: [
@@ -1332,6 +1606,13 @@ export const schema: Schema = {
     ],
     any: true
   },
+  SetVideoEncoderConfigurationRequest: {
+    fields: [
+      { name: 'Configuration', property: 'configuration', type: 'VideoEncoderConfiguration', namespace: trt },
+      { name: 'ForcePersistence', property: 'forcePersistence', type: 'boolean', namespace: trt }
+    ]
+  },
+  SetVideoEncoderConfigurationResponse: { fields: [] },
   Space1DDescription: {
     fields: [
       { name: 'URI', type: 'string', namespace: tt },
@@ -1409,6 +1690,32 @@ export const schema: Schema = {
     ],
     any: true
   },
+  VideoEncoderConfigurationOptions: {
+    fields: [
+      { name: 'QualityRange', property: 'qualityRange', type: 'IntRange', namespace: tt },
+      { name: 'JPEG', type: 'JpegOptions', namespace: tt, optional: true },
+      { name: 'MPEG4', type: 'Mpeg4Options', namespace: tt, optional: true },
+      { name: 'H264', type: 'H264Options', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'VideoEncoderOptionsExtension', namespace: tt, optional: true },
+      {
+        name: 'GuaranteedFrameRateSupported',
+        property: 'guaranteedFrameRateSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      }
+    ]
+  },
+  VideoEncoderOptionsExtension: {
+    fields: [
+      { name: 'JPEG', type: 'JpegOptions2', namespace: tt, optional: true },
+      { name: 'MPEG4', type: 'Mpeg4Options2', namespace: tt, optional: true },
+      { name: 'H264', type: 'H264Options2', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'VideoEncoderOptionsExtension2', namespace: tt, optional: true }
+    ],
+    any: true
+  },
+  VideoEncoderOptionsExtension2: { fields: [], any: true },
   VideoRateControl: {
     fields: [
       { name: 'FrameRateLimit', property: 'frameRateLimit', type: 'integer', namespace: tt },
@@ -1518,5 +1825,34 @@ export const GetVideoEncoderConfigurations: Operation<
   action: 'http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurations',
   request: { name: 'GetVideoEncoderConfigurations', namespace: trt, type: 'GetVideoEncoderConfigurationsRequest' },
   response: { name: 'GetVideoEncoderConfigurationsResponse', type: 'GetVideoEncoderConfigurationsResponse' },
+  schema
+}
+
+export const GetVideoEncoderConfigurationOptions: Operation<
+  GetVideoEncoderConfigurationOptionsRequest,
+  GetVideoEncoderConfigurationOptionsResponse
+> = {
+  name: 'GetVideoEncoderConfigurationOptions',
+  action: 'http://www.onvif.org/ver10/media/wsdl/GetVideoEncoderConfigurationOptions',
+  request: {
+    name: 'GetVideoEncoderConfigurationOptions',
+    namespace: trt,
+    type: 'GetVideoEncoderConfigurationOptionsRequest'
+  },
+  response: {
+    name: 'GetVideoEncoderConfigurationOptionsResponse',
+    type: 'GetVideoEncoderConfigurationOptionsResponse'
+  },
+  schema
+}
+
+export const SetVideoEncoderConfiguration: Operation<
+  SetVideoEncoderConfigurationRequest,
+  SetVideoEncoderConfigurationResponse
+> = {
+  name: 'SetVideoEncoderConfiguration',
+  action: 'http://www.onvif.org/ver10/media/wsdl/SetVideoEncoderConfiguration',
+  request: { name: 'SetVideoEncoderConfiguration', namespace: trt, type: 'SetVideoEncoderConfigurationRequest' },
+  response: { name: 'SetVideoEncoderConfigurationResponse', type: 'SetVideoEncoderConfigurationResponse' },
   schema
 }

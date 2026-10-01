@@ -239,6 +239,10 @@ export type GetStreamUriResponse = {
   uri: string
 }
 
+export type GetVideoEncoderConfigurationOptionsResponse = {
+  options: VideoEncoder2ConfigurationOptions[]
+}
+
 export type GetVideoEncoderConfigurationsResponse = {
   /** This element contains a list of video encoder configurations. */
   configurations?: VideoEncoder2Configuration[]
@@ -247,6 +251,12 @@ export type GetVideoEncoderConfigurationsResponse = {
 export type GetVideoSourceConfigurationsResponse = {
   /** This element contains a list of video source configurations. */
   configurations?: VideoSourceConfiguration[]
+}
+
+/** Range of values greater equal Min value and less equal Max value. */
+export type IntRange = {
+  min: number
+  max: number
 }
 
 /** Rectangle defined by lower left corner position and size. Units are pixel. */
@@ -631,6 +641,13 @@ export type SensorDataFilter = {
   $any?: Record<string, unknown>
 }
 
+export type SetConfigurationResponse = Record<string, never>
+
+export type SetVideoEncoderConfigurationRequest = {
+  /** Contains the modified video encoder configuration. The configuration shall exist in the device. */
+  configuration: VideoEncoder2Configuration
+}
+
 export type Space1DDescription = {
   /** A URI of coordinate systems. */
   URI: string
@@ -758,6 +775,54 @@ export type VideoEncoder2Configuration = {
   signed?: boolean
   /** Defines the cryptographic algorithm to use as defined by tt:SrtpSecurityAlgorithms */
   secureStreamingProtocolAlgorithm?: string
+  $any?: Record<string, unknown>
+}
+
+export type VideoEncoder2ConfigurationOptions = {
+  /**
+   * Video Media Subtype for the video format. For definitions see tt:VideoEncodingMimeNames and IANA
+   * Media Types.
+   */
+  encoding: string
+  /** Range of the quality values. A high value means higher quality. */
+  qualityRange: FloatRange
+  /** List of supported image sizes. */
+  resolutionsAvailable: VideoResolution2[]
+  /** Supported range of encoded bitrate in kbps. */
+  bitrateRange: IntRange
+  /**
+   * Exactly two values, which define the Lower and Upper bounds for the supported group of Video frames
+   * length. These values typically correspond to the I-Frame distance.
+   */
+  govLengthRange?: number[]
+  /**
+   * Signals support for B-Frames. Upper bound for the supported anchor frame distance (must be larger
+   * than one).
+   */
+  maxAnchorFrameDistance?: number
+  /**
+   * List of supported target frame rates in fps (frames per second). The list shall be sorted with
+   * highest values first.
+   */
+  frameRatesSupported?: number[]
+  /** List of supported encoder profiles as defined in tt::VideoEncodingProfiles. */
+  profilesSupported?: string[]
+  /** Signal whether enforcing constant bitrate is supported. */
+  constantBitRateSupported?: boolean
+  /** Signal whether enforcing average bitrate is supported. */
+  averageBitRateSupported?: boolean
+  /**
+   * Indicates the support for the GuaranteedFrameRate attribute on the VideoEncoder2Configuration
+   * element.
+   */
+  guaranteedFrameRateSupported?: boolean
+  /**
+   * If secure RTSP streaming is supported, this shall return the list of supported cryptographic
+   * algorithms as defined by tt:SrtpSecurityAlgorithms.
+   */
+  secureStreamingProtocolAlgorithms?: string[]
+  /** Indicates the support for signing according to the Media Signing Specification. */
+  signingSupported?: boolean
   $any?: Record<string, unknown>
 }
 
@@ -1024,6 +1089,11 @@ export const schema: Schema = {
     ]
   },
   GetStreamUriResponse: { fields: [{ name: 'Uri', property: 'uri', type: 'string', namespace: tr2 }] },
+  GetVideoEncoderConfigurationOptionsResponse: {
+    fields: [
+      { name: 'Options', property: 'options', type: 'VideoEncoder2ConfigurationOptions', namespace: tr2, array: true }
+    ]
+  },
   GetVideoEncoderConfigurationsResponse: {
     fields: [
       {
@@ -1046,6 +1116,12 @@ export const schema: Schema = {
         optional: true,
         array: true
       }
+    ]
+  },
+  IntRange: {
+    fields: [
+      { name: 'Min', property: 'min', type: 'integer', namespace: tt },
+      { name: 'Max', property: 'max', type: 'integer', namespace: tt }
     ]
   },
   IntRectangle: {
@@ -1310,6 +1386,10 @@ export const schema: Schema = {
     ],
     any: true
   },
+  SetConfigurationResponse: { fields: [] },
+  SetVideoEncoderConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'VideoEncoder2Configuration', namespace: tr2 }]
+  },
   Space1DDescription: {
     fields: [
       { name: 'URI', type: 'string', namespace: tt },
@@ -1404,6 +1484,66 @@ export const schema: Schema = {
         attribute: true,
         optional: true
       }
+    ],
+    any: true
+  },
+  VideoEncoder2ConfigurationOptions: {
+    fields: [
+      { name: 'Encoding', property: 'encoding', type: 'string', namespace: tt },
+      { name: 'QualityRange', property: 'qualityRange', type: 'FloatRange', namespace: tt },
+      {
+        name: 'ResolutionsAvailable',
+        property: 'resolutionsAvailable',
+        type: 'VideoResolution2',
+        namespace: tt,
+        array: true
+      },
+      { name: 'BitrateRange', property: 'bitrateRange', type: 'IntRange', namespace: tt },
+      { name: 'GovLengthRange', property: 'govLengthRange', type: 'integer[]', attribute: true, optional: true },
+      {
+        name: 'MaxAnchorFrameDistance',
+        property: 'maxAnchorFrameDistance',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'FrameRatesSupported',
+        property: 'frameRatesSupported',
+        type: 'decimal[]',
+        attribute: true,
+        optional: true
+      },
+      { name: 'ProfilesSupported', property: 'profilesSupported', type: 'string[]', attribute: true, optional: true },
+      {
+        name: 'ConstantBitRateSupported',
+        property: 'constantBitRateSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'AverageBitRateSupported',
+        property: 'averageBitRateSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'GuaranteedFrameRateSupported',
+        property: 'guaranteedFrameRateSupported',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'SecureStreamingProtocolAlgorithms',
+        property: 'secureStreamingProtocolAlgorithms',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      },
+      { name: 'SigningSupported', property: 'signingSupported', type: 'boolean', attribute: true, optional: true }
     ],
     any: true
   },
@@ -1513,5 +1653,27 @@ export const GetVideoEncoderConfigurations: Operation<GetConfiguration, GetVideo
   action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoEncoderConfigurations',
   request: { name: 'GetVideoEncoderConfigurations', namespace: tr2, type: 'GetConfiguration' },
   response: { name: 'GetVideoEncoderConfigurationsResponse', type: 'GetVideoEncoderConfigurationsResponse' },
+  schema
+}
+
+export const GetVideoEncoderConfigurationOptions: Operation<
+  GetConfiguration,
+  GetVideoEncoderConfigurationOptionsResponse
+> = {
+  name: 'GetVideoEncoderConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoEncoderConfigurationOptions',
+  request: { name: 'GetVideoEncoderConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: {
+    name: 'GetVideoEncoderConfigurationOptionsResponse',
+    type: 'GetVideoEncoderConfigurationOptionsResponse'
+  },
+  schema
+}
+
+export const SetVideoEncoderConfiguration: Operation<SetVideoEncoderConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetVideoEncoderConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetVideoEncoderConfiguration',
+  request: { name: 'SetVideoEncoderConfiguration', namespace: tr2, type: 'SetVideoEncoderConfigurationRequest' },
+  response: { name: 'SetVideoEncoderConfigurationResponse', type: 'SetConfigurationResponse' },
   schema
 }
