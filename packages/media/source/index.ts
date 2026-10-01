@@ -1,3 +1,10 @@
+export {
+  getVideoEncoderConfigurationOptions,
+  getVideoEncoderConfigurations,
+  setVideoEncoderConfiguration,
+  type VideoEncoder,
+  type VideoEncoderOptions
+} from '#encoder.ts'
 export * as Media from '#generated/media.ts'
 export type { VideoSourceConfiguration } from '#generated/media.ts'
 export * as Media2 from '#generated/media2.ts'
@@ -7,11 +14,9 @@ export {
   getProfiles,
   getSnapshotUri,
   getStreamUri,
-  getVideoEncoderConfigurations,
   getVideoSourceConfigurations,
   type MediaAddress,
-  type MediaOptions,
   type Profile,
-  type StreamOptions,
-  type VideoEncoder
+  type StreamOptions
 } from '#media.ts'
+export type { MediaOptions } from '#service.ts'

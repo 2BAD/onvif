@@ -14,7 +14,6 @@ import {
   getProfiles,
   getSnapshotUri,
   getStreamUri,
-  getVideoEncoderConfigurations,
   getVideoSourceConfigurations
 } from '#index.ts'
 
@@ -364,38 +363,6 @@ describe('getVideoSourceConfigurations', () => {
     )
     const mock = await camera({ overrides: { 'media2.GetVideoSourceConfigurations': answer(empty) } })
     expect(await getVideoSourceConfigurations(await connect(mock))).toEqual([])
-  })
-})
-
-describe('getVideoEncoderConfigurations', () => {
-  it('summarizes them from Media2, or from Media v1 without it', async () => {
-    const mock = await camera()
-    const encoders = await getVideoEncoderConfigurations(await connect(mock))
-    expect(encoders.map(({ token, resolution, service }) => ({ token, ...resolution, service }))).toEqual([
-      { token: 'VideoEncode_token_1', width: 1920, height: 1080, service: 'media2' },
-      { token: 'VideoEncode_token_2', width: 1280, height: 720, service: 'media2' },
-      { token: 'VideoEncode_token_3', width: 480, height: 240, service: 'media2' }
-    ])
-
-    const v1 = await camera(mediaOnly())
-    const fromV1 = await getVideoEncoderConfigurations(await connect(v1))
-    expect(fromV1[0]).toMatchObject({ token: 'VideoEncode_token_1', encoding: 'H264', service: 'media' })
-    expect(fromV1[0]?.service === 'media' && fromV1[0].reported.sessionTimeout).toBeTypeOf('string')
-  })
-
-  it('falls back to Media v1 after a fault from Media2', async () => {
-    const mock = await camera({ overrides: { 'media2.GetVideoEncoderConfigurations': mustUnderstand } })
-    const encoders = await getVideoEncoderConfigurations(await connect(mock))
-    expect(encoders.map(({ service }) => service)).toContain('media')
-  })
-
-  it('returns an empty list when the device reports none', async () => {
-    const empty = live('media.GetVideoEncoderConfigurations').replace(
-      /<trt:Configurations [\s\S]*<\/trt:Configurations>/,
-      ''
-    )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(empty) }))
-    expect(await getVideoEncoderConfigurations(await connect(mock))).toEqual([])
   })
 })
 

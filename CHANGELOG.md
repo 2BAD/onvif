@@ -15,9 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added Media2 support. Media calls use Media2 when the camera offers it and fall back to Media v1.
+- Added Media2 support for cameras that offer it, with Media v1 as the fallback
 - H.265 encoders are now reported on cameras with Media2
 - Added `getVideoSourceConfigurations()` and `getVideoEncoderConfigurations()`
+- Added `getVideoEncoderConfigurationOptions()` to list the codecs and settings an encoder accepts
+- Added `setVideoEncoderConfiguration()` to change the codec, resolution, frame rate or bitrate
+- Encoders now report their codec profile in `profile`
 - Added `device.timeoutMs`
 
 ## [2.0.0-alpha.0] - 2026-10-01

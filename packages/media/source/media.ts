@@ -1,18 +1,8 @@
-import {
-  type CallOptions,
-  DecodeError,
-  type Device,
-  type ErrorContext,
-  OnvifError,
-  ParseError,
-  SoapFaultError,
-  TimeoutError,
-  TransportError
-} from '@2bad/onvif'
+import { type Device, OnvifError, TransportError } from '@2bad/onvif'
+import { encoderOfMedia, encoderOfMedia2, type VideoEncoder } from '#encoder.ts'
 import * as Media from '#generated/media.ts'
 import * as Media2 from '#generated/media2.ts'
-
-export type MediaOptions = Pick<CallOptions, 'signal' | 'timeoutMs'>
+import { contextOf, fromEitherService, type MediaOptions } from '#service.ts'
 
 export type StreamOptions = MediaOptions & {
   /**
@@ -35,22 +25,6 @@ export type MediaAddress = {
   timeout: string
 }
 
-export type VideoEncoder = {
-  token: string
-  name: string
-  /** Media subtype as in `tt:VideoEncodingMimeNames`: `JPEG`, `MPV4-ES`, `H264`, `H265` or what the device reports. */
-  encoding: string
-  resolution: { width: number; height: number }
-  quality: number
-  frameRateLimit?: number
-  /** Kilobits per second. */
-  bitrateLimit?: number
-  govLength?: number
-} & (
-  | { service: 'media'; reported: Media.VideoEncoderConfiguration }
-  | { service: 'media2'; reported: Media2.VideoEncoder2Configuration }
-)
-
 export type Profile = {
   token: string
   name: string
@@ -60,18 +34,10 @@ export type Profile = {
   videoEncoder?: VideoEncoder
 } & ({ service: 'media'; reported: Media.Profile } | { service: 'media2'; reported: Media2.MediaProfile })
 
-const MEDIA_NAMESPACE = 'http://www.onvif.org/ver10/media/wsdl'
-const MEDIA2_NAMESPACE = 'http://www.onvif.org/ver20/media/wsdl'
 const JPEG_START = [0xff, 0xd8, 0xff]
 const streamProtocols = new Set(['rtsp:', 'rtsps:', 'http:', 'https:'])
 // Media2 addresses stay valid indefinitely, even if the profile changes
 const stableAddress = { invalidAfterConnect: false, invalidAfterReboot: false, timeout: 'PT0S' }
-
-const contextOf = (device: Device, service: Profile['service'], action: string): ErrorContext => ({
-  host: device.address.host,
-  service: service === 'media2' ? 'tr2' : 'trt',
-  action
-})
 
 const addressOf = (mediaUri: Media.MediaUri, uri: URL): MediaAddress => ({
   uri,
@@ -82,48 +48,6 @@ const addressOf = (mediaUri: Media.MediaUri, uri: URL): MediaAddress => ({
 })
 
 const printable = (text: string): string => text.slice(0, 100).replaceAll(/[^\x20-\x7e]/g, '?')
-
-const answeredBadly = (error: unknown): boolean =>
-  error instanceof SoapFaultError ||
-  error instanceof DecodeError ||
-  error instanceof ParseError ||
-  (error instanceof TransportError && error.status !== undefined)
-
-const encoderOfMedia = (configuration: Media.VideoEncoderConfiguration): VideoEncoder => {
-  const { token, name, encoding, resolution, quality, rateControl } = configuration
-  const govLength =
-    encoding === 'H264'
-      ? configuration.H264?.govLength
-      : encoding === 'MPEG4'
-        ? configuration.MPEG4?.govLength
-        : undefined
-  return {
-    token,
-    name,
-    encoding: encoding === 'MPEG4' ? 'MPV4-ES' : encoding,
-    resolution: { width: resolution.width, height: resolution.height },
-    quality,
-    ...(rateControl ? { frameRateLimit: rateControl.frameRateLimit, bitrateLimit: rateControl.bitrateLimit } : {}),
-    ...(govLength === undefined ? {} : { govLength }),
-    service: 'media',
-    reported: configuration
-  }
-}
-
-const encoderOfMedia2 = (configuration: Media2.VideoEncoder2Configuration): VideoEncoder => {
-  const { token, name, encoding, resolution, quality, rateControl, govLength } = configuration
-  return {
-    token,
-    name,
-    encoding,
-    resolution: { width: resolution.width, height: resolution.height },
-    quality,
-    ...(rateControl ? { frameRateLimit: rateControl.frameRateLimit, bitrateLimit: rateControl.bitrateLimit } : {}),
-    ...(govLength === undefined ? {} : { govLength }),
-    service: 'media2',
-    reported: configuration
-  }
-}
 
 const profileOfMedia = (profile: Media.Profile): Profile => {
   const { videoSourceConfiguration, videoEncoderConfiguration } = profile
@@ -148,31 +72,6 @@ const profileOfMedia2 = (profile: Media2.MediaProfile): Profile => {
     ...(videoEncoder ? { videoEncoder: encoderOfMedia2(videoEncoder) } : {}),
     service: 'media2',
     reported: profile
-  }
-}
-
-// Media2 when the device offers it, Media v1 when it does not or Media2 answers with an error, under one timeout
-const fromEitherService = async <Result>(
-  device: Device,
-  action: string,
-  options: MediaOptions,
-  media2: (callOptions: MediaOptions) => Promise<Result>,
-  media: (callOptions: MediaOptions) => Promise<Result>
-): Promise<Result> => {
-  if (!device.services.has(MEDIA2_NAMESPACE)) return await media(options)
-  const timeoutMs = options.timeoutMs ?? device.timeoutMs
-  const deadline = performance.now() + timeoutMs
-  try {
-    return await media2({ ...options, timeoutMs })
-  } catch (error) {
-    if (!device.services.has(MEDIA_NAMESPACE) || !answeredBadly(error)) throw error
-    const remainingMs = deadline - performance.now()
-    if (remainingMs <= 0) {
-      throw new TimeoutError(`No response within ${timeoutMs} ms`, contextOf(device, 'media', action), {
-        cause: error
-      })
-    }
-    return await media({ ...options, timeoutMs: remainingMs })
   }
 }
 
@@ -239,33 +138,6 @@ export async function getVideoSourceConfigurations(
     async (callOptions) => {
       const { configurations = [] } = await device.call(Media.GetVideoSourceConfigurations, {}, callOptions)
       return configurations
-    }
-  )
-}
-
-/**
- * List the video encoder configurations of the device, from the same service as `getProfiles()`.
- *
- * @param device - A connected device
- * @param options - Abort signal and timeout
- * @returns Every configuration, in the order the device reports them
- * @throws {OnvifError} If the device offers no usable media service, and the errors of `device.call()`
- */
-export async function getVideoEncoderConfigurations(
-  device: Device,
-  options: MediaOptions = {}
-): Promise<VideoEncoder[]> {
-  return await fromEitherService(
-    device,
-    'GetVideoEncoderConfigurations',
-    options,
-    async (callOptions) => {
-      const { configurations = [] } = await device.call(Media2.GetVideoEncoderConfigurations, {}, callOptions)
-      return configurations.map(encoderOfMedia2)
-    },
-    async (callOptions) => {
-      const { configurations = [] } = await device.call(Media.GetVideoEncoderConfigurations, {}, callOptions)
-      return configurations.map(encoderOfMedia)
     }
   )
 }

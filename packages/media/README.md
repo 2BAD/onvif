@@ -55,6 +55,24 @@ const encoders = await getVideoEncoderConfigurations(device)
 
 Encoders come in the same shape as `profile.videoEncoder`.
 
+## Encoder settings
+
+```ts
+const encoder = profile.videoEncoder
+if (!encoder) throw new Error('The profile has no encoder')
+
+const options = await getVideoEncoderConfigurationOptions(device, encoder)
+// [{ encoding: 'H264', resolutions: [...], frameRateRange: { min: 1, max: 25 }, bitrateRange: ..., profiles: [...] }]
+
+await setVideoEncoderConfiguration(device, encoder, {
+  resolution: { width: 1280, height: 720 },
+  frameRateLimit: 15,
+  bitrateLimit: 2048
+})
+```
+
+`setVideoEncoderConfiguration()` changes only the fields you pass and returns the encoder as sent. Changing the codec on Media2 drops the codec profile unless you pass one. On Media v1, switching to `H264` or `MPV4-ES` needs `govLength` and `profile` when the encoder has none for that codec.
+
 ## Stream URLs
 
 ```ts

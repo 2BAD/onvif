@@ -6,7 +6,9 @@ import {
   getProfiles,
   getSnapshotUri,
   getStreamUri,
+  getVideoEncoderConfigurationOptions,
   getVideoEncoderConfigurations,
+  setVideoEncoderConfiguration,
   getVideoSourceConfigurations
 } from '#index.ts'
 
@@ -38,6 +40,26 @@ describe.skipIf(!hostname)('Media on a live camera', () => {
 
       expect((await getVideoSourceConfigurations(device)).length).toBeGreaterThan(0)
       expect((await getVideoEncoderConfigurations(device)).map(({ service }) => service)).toContain(profile.service)
+    } finally {
+      device.close()
+    }
+  })
+
+  it('reads the encoder options and sends the encoder configuration back unchanged', async () => {
+    const device = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    try {
+      const encoder = defaultProfile(await getProfiles(device))?.videoEncoder
+      if (!encoder) throw new Error('The camera reported no encoder')
+      const options = await getVideoEncoderConfigurationOptions(device, encoder)
+      expect(options.map(({ encoding }) => encoding)).toContain(encoder.encoding)
+
+      const sent = await setVideoEncoderConfiguration(device, encoder, {})
+      const [read] = (await getVideoEncoderConfigurations(device)).filter(({ token }) => token === encoder.token)
+      expect(read?.reported).toEqual(sent.reported)
     } finally {
       device.close()
     }
