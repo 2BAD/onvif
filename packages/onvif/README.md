@@ -60,6 +60,7 @@ const device = await Device.connect({
 ## `device.call()` options
 
 The third argument takes `signal` to abort the call and `timeoutMs` to override the timeout for that call.
+`device.timeoutMs` has the timeout set in `connect()`.
 
 ```ts
 await device.call(DeviceManagement.GetScopes, {}, { signal: AbortSignal.timeout(2_000) })

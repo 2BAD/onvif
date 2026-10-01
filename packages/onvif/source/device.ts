@@ -264,6 +264,11 @@ export class Device {
     return this.#policy
   }
 
+  /** Time allowed for each call in milliseconds, retries included, unless the call sets its own `timeoutMs`. */
+  get timeoutMs(): number {
+    return this.#timeoutMs
+  }
+
   /** Service addresses by namespace, after the address policy was applied. */
   get services(): ReadonlyMap<string, URL> {
     return new Map(this.#services)

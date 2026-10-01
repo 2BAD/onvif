@@ -268,6 +268,7 @@ describe('Device.connect', () => {
   it('applies the timeout of a call over the connection timeout', async () => {
     const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'delay', ms: 200 } } })
     const device = await connect(mock, { timeoutMs: 100 })
+    expect(device.timeoutMs).toBe(100)
     await expect(device.call(GetScopes, {}, { timeoutMs: 2_000 })).resolves.toHaveProperty('scopes')
     await expect(device.call(GetScopes, {}, { timeoutMs: 50 })).rejects.toThrow('No response within 50 ms')
   })
