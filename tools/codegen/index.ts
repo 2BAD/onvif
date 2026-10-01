@@ -70,7 +70,31 @@ const targets: Target[] = [
       {
         namespace: 'http://www.onvif.org/ver10/media/wsdl',
         local: 'Media',
-        operations: ['GetProfiles', 'GetStreamUri', 'GetSnapshotUri']
+        operations: [
+          'GetProfiles',
+          'GetStreamUri',
+          'GetSnapshotUri',
+          'GetVideoSourceConfigurations',
+          'GetVideoEncoderConfigurations'
+        ]
+      }
+    ]
+  },
+  {
+    output: 'packages/media/source/generated/media2.ts',
+    codecImport: '@2bad/onvif',
+    wsdl: 'ver20/media/wsdl/media.wsdl',
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver20/media/wsdl',
+        local: 'Media2',
+        operations: [
+          'GetProfiles',
+          'GetStreamUri',
+          'GetSnapshotUri',
+          'GetVideoSourceConfigurations',
+          'GetVideoEncoderConfigurations'
+        ]
       }
     ]
   }
