@@ -25,8 +25,13 @@ export type HttpTransportOptions = {
   /** Close a kept-alive connection after this long unused, before the device does. 4 000 by default. */
   idleTimeoutMs?: number
   tls?: TlsOptions | undefined
-  /** Answer HTTP Digest challenges with these credentials. */
-  digest?: Credentials | undefined
+  /** Answer HTTP Digest challenges, and Basic ones when `basicAuth` allows it, with these credentials. */
+  credentials?: Credentials | undefined
+  /**
+   * Answer a challenge that offers HTTP Basic and no Digest: `https` only on HTTPS requests, `always` on any. Never
+   * answered by default, since Basic sends the password as it is.
+   */
+  basicAuth?: 'https' | 'always' | undefined
 }
 
 export type HttpResponse<Body = string> = {
@@ -111,17 +116,22 @@ class PinnedAgent extends HttpsAgent {
 
 class RetryableReset extends Error {}
 
+const offersBasic = (challenges: string[]): boolean =>
+  challenges.some((challenge) => /(?:^|,)\s*Basic(?:\s|,|$)/i.test(challenge))
+
 const isResetOfReusedSocket = (error: unknown, reusedSocket: boolean): boolean =>
   reusedSocket && error instanceof Error && 'code' in error && error.code === 'ECONNRESET'
 
 export class HttpTransport {
   readonly #timeoutMs: number
   readonly #maxResponseBytes: number
-  readonly #digest: Credentials | undefined
+  readonly #credentials: Credentials | undefined
+  readonly #basicAuth: 'https' | 'always' | undefined
   readonly #httpAgent: HttpAgent
   readonly #httpsAgent: HttpsAgent
   #challenge: DigestChallenge | undefined
   #nonceCount = 0
+  #basic = false
 
   constructor(options: HttpTransportOptions = {}) {
     const {
@@ -130,11 +140,13 @@ export class HttpTransport {
       maxSockets = 4,
       idleTimeoutMs = 4_000,
       tls = {},
-      digest
+      credentials,
+      basicAuth
     } = options
     this.#timeoutMs = timeoutMs
     this.#maxResponseBytes = maxResponseBytes
-    this.#digest = digest
+    this.#credentials = credentials
+    this.#basicAuth = basicAuth
     this.#httpAgent = new HttpAgent({ keepAlive: true, maxSockets, timeout: idleTimeoutMs })
     const { fingerprint256, ...tlsOptions } = tls
     const httpsOptions = { keepAlive: true, maxSockets, timeout: idleTimeoutMs, ...tlsOptions }
@@ -151,7 +163,8 @@ export class HttpTransport {
    *   WS-Security nonce and timestamp
    * @param options - Abort signal, error context, SOAP action, timeout and deadline
    * @returns Status, headers and body
-   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII
+   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII, or a
+   *   Basic one for a username with a colon or control characters
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
@@ -166,7 +179,8 @@ export class HttpTransport {
    * @param url - Resource address
    * @param options - Abort signal, error context, timeout and deadline
    * @returns Status, headers and the body as bytes
-   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII
+   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII, or a
+   *   Basic one for a username with a colon or control characters
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
@@ -187,15 +201,23 @@ export class HttpTransport {
   ): Promise<HttpResponse<Buffer>> {
     const { timeoutMs = this.#timeoutMs, deadline = performance.now() + timeoutMs } = options
     const attempt = { ...options, timeoutMs, deadline }
+    const sentBasic = this.#sendsBasic(url)
     const response = await this.#send(method, url, body, attempt)
-    if (response.status !== 401 || !this.#digest) return response
+    if (response.status !== 401 || !this.#credentials) return response
 
-    const challenge = parseChallenge(response.headers['www-authenticate'] ?? [])
-    const repeated = this.#challenge !== undefined && challenge?.nonce === this.#challenge.nonce && !challenge.stale
-    if (!challenge || repeated) return response
-
-    this.#challenge = challenge
-    this.#nonceCount = 0
+    const challenges = response.headers['www-authenticate'] ?? []
+    const challenge = parseChallenge(challenges)
+    if (challenge) {
+      const repeated = this.#challenge !== undefined && challenge.nonce === this.#challenge.nonce && !challenge.stale
+      if (repeated) return response
+      this.#challenge = challenge
+      this.#nonceCount = 0
+      this.#basic = false
+    } else {
+      if (sentBasic || !offersBasic(challenges)) return response
+      this.#basic = true
+      if (!this.#sendsBasic(url)) return response
+    }
     try {
       return await this.#send(method, url, body, attempt)
     } catch (error) {
@@ -205,13 +227,28 @@ export class HttpTransport {
     }
   }
 
+  #sendsBasic(url: URL): boolean {
+    return this.#basic && (this.#basicAuth === 'always' || (this.#basicAuth === 'https' && url.protocol === 'https:'))
+  }
+
   #authorization(method: Method, url: URL, context: ErrorContext = {}): string | undefined {
-    if (!this.#challenge || !this.#digest) return undefined
-    if (!/^[\x20-\x7e]*$/.test(this.#digest.username)) {
+    if (!this.#credentials) return undefined
+    const { username, password } = this.#credentials
+    if (this.#sendsBasic(url)) {
+      if (!/^[^\p{Cc}:]*$/u.test(username) || !/^\P{Cc}*$/u.test(password)) {
+        throw new AuthError(
+          'HTTP Basic needs a username without colons and credentials without control characters',
+          context
+        )
+      }
+      return `Basic ${Buffer.from(`${username}:${password}`, 'utf8').toString('base64')}`
+    }
+    if (!this.#challenge) return undefined
+    if (!/^[\x20-\x7e]*$/.test(username)) {
       throw new AuthError('HTTP Digest needs a username of printable ASCII characters', context)
     }
     this.#nonceCount += 1
-    return digestAuthorization(this.#challenge, this.#digest, method, url.pathname + url.search, this.#nonceCount)
+    return digestAuthorization(this.#challenge, this.#credentials, method, url.pathname + url.search, this.#nonceCount)
   }
 
   async #send(

@@ -277,7 +277,7 @@ describe('HttpTransport digest authentication', () => {
   it.each(['MD5', 'SHA-256'] as const)('answers a %s challenge and reuses it', async (digestAlgorithm) => {
     const camera = await startMockCamera({ auth: 'digest', digestAlgorithm })
     cleanups.push(() => camera.close())
-    const client = transport({ digest: { username: 'admin', password: 'password' } })
+    const client = transport({ credentials: { username: 'admin', password: 'password' } })
     const url = new URL(`${camera.url}/onvif/device_service`)
 
     expect((await client.post(url, envelope)).status).toBe(200)
@@ -288,7 +288,7 @@ describe('HttpTransport digest authentication', () => {
   it('answers a challenge on a GET with the GET method in the digest', async () => {
     const camera = await startMockCamera()
     cleanups.push(() => camera.close())
-    const client = transport({ digest: { username: 'admin', password: 'password' } })
+    const client = transport({ credentials: { username: 'admin', password: 'password' } })
     const url = new URL(`${camera.url}/snapshot.JPG`)
 
     const response = await client.get(url)
@@ -302,7 +302,7 @@ describe('HttpTransport digest authentication', () => {
   it('gives up after one retry with wrong credentials', async () => {
     const camera = await startMockCamera({ auth: 'digest' })
     cleanups.push(() => camera.close())
-    const client = transport({ digest: { username: 'admin', password: 'wrong' } })
+    const client = transport({ credentials: { username: 'admin', password: 'wrong' } })
     const response = await client.post(new URL(`${camera.url}/onvif/device_service`), envelope)
     expect(response.status).toBe(401)
     expect(camera.requests).toHaveLength(2)
@@ -328,7 +328,7 @@ describe('HttpTransport digest authentication', () => {
         response.end('ok')
       })
     )
-    const client = transport({ digest: { username: 'admin', password: 'password' } })
+    const client = transport({ credentials: { username: 'admin', password: 'password' } })
     expect((await client.post(url, 'first')).status).toBe(200)
     expect((await client.post(url, 'second')).status).toBe(200)
     expect(authorizations.map((header) => /nc=(\w+)/.exec(header)?.[1])).toEqual(['00000001', '00000002', '00000003'])
@@ -367,7 +367,7 @@ describe('HttpTransport digest authentication', () => {
         response.end()
       })
     )
-    const client = transport({ digest: { username, password: 'secret' } })
+    const client = transport({ credentials: { username, password: 'secret' } })
     for (let attempt = 0; attempt < 2; attempt++) {
       const request = client.post(url, 'x', { context: { host: 'camera' } })
       await expect(request).rejects.toThrow(AuthError)
@@ -388,7 +388,7 @@ describe('HttpTransport digest authentication', () => {
         }, 70)
       })
     )
-    const client = transport({ timeoutMs: 100, digest: { username: 'a', password: 'b' } })
+    const client = transport({ timeoutMs: 100, credentials: { username: 'a', password: 'b' } })
     await expect(client.post(url, 'x')).rejects.toThrow('No response within 100 ms')
     expect(requests).toBe(2)
     await expect(client.post(url, 'x', { deadline: performance.now() - 1, timeoutMs: 5 })).rejects.toThrow(
@@ -410,9 +410,81 @@ describe('HttpTransport digest authentication', () => {
         response.end('denied')
       })
     )
-    const response = await transport({ digest: { username: 'a', password: 'b' } }).post(url, 'x')
+    const response = await transport({ credentials: { username: 'a', password: 'b' } }).post(url, 'x')
     expect(response).toMatchObject({ status: 401, body: 'denied' })
     expect(requests).toBe(3)
+  })
+})
+
+describe('HttpTransport basic authentication', () => {
+  const credentials = { username: 'admin', password: 'pässword' }
+  const expected = `Basic ${Buffer.from('admin:pässword', 'utf8').toString('base64')}`
+
+  const handler =
+    (challenges: string[], seen: (string | undefined)[]) => (request: IncomingMessage, response: ServerResponse) => {
+      seen.push(request.headers.authorization)
+      if (request.headers.authorization === expected) {
+        response.end('ok')
+        return
+      }
+      response.writeHead(401, { 'WWW-Authenticate': challenges })
+      response.end()
+    }
+
+  const basicServer = async (challenges = ['Basic realm="camera"'], protocol = 'http') => {
+    const seen: (string | undefined)[] = []
+    const url =
+      protocol === 'https'
+        ? await listen(createTlsServer({ cert: certificate, key: privateKey }, handler(challenges, seen)), 'https')
+        : await listen(createServer(handler(challenges, seen)))
+    return { url, seen }
+  }
+
+  it('does not answer a Basic challenge by default', async () => {
+    const { url, seen } = await basicServer()
+    expect((await transport({ credentials }).get(url)).status).toBe(401)
+    expect(seen).toEqual([undefined])
+  })
+
+  it('answers a Basic challenge over HTTP with always, once, then sends it right away', async () => {
+    const { url, seen } = await basicServer()
+    const client = transport({ credentials, basicAuth: 'always' })
+    expect((await client.get(url)).status).toBe(200)
+    expect((await client.post(url, 'x')).status).toBe(200)
+    expect(seen).toEqual([undefined, expected, expected])
+  })
+
+  it('answers a Basic challenge only over HTTPS with https', async () => {
+    const plain = await basicServer()
+    expect((await transport({ credentials, basicAuth: 'https' }).get(plain.url)).status).toBe(401)
+    expect(plain.seen).toEqual([undefined])
+
+    const secure = await basicServer(['Basic realm="camera"'], 'https')
+    const client = transport({ credentials, basicAuth: 'https', tls: { ca: certificate } })
+    expect((await client.get(secure.url)).status).toBe(200)
+    expect(secure.seen).toEqual([undefined, expected])
+  })
+
+  it('prefers Digest when the device offers both', async () => {
+    const { url, seen } = await basicServer(['Basic realm="camera"', 'Digest realm="r", nonce="n", qop="auth"'])
+    await transport({ credentials, basicAuth: 'always' }).get(url)
+    expect(seen[1]).toMatch(/^Digest /)
+  })
+
+  it('gives up after one retry with wrong credentials', async () => {
+    const { url, seen } = await basicServer()
+    const client = transport({ credentials: { username: 'admin', password: 'wrong' }, basicAuth: 'always' })
+    expect((await client.get(url)).status).toBe(401)
+    expect(seen).toHaveLength(2)
+  })
+
+  it.each([
+    ['a username with a colon', { username: 'ad:min', password: 'x' }],
+    ['a password with a line break', { username: 'admin', password: 'x\ny' }]
+  ])('rejects %s as an AuthError and sends nothing more', async (_name, rejected) => {
+    const { url, seen } = await basicServer()
+    await expect(transport({ credentials: rejected, basicAuth: 'always' }).get(url)).rejects.toBeInstanceOf(AuthError)
+    expect(seen).toEqual([undefined])
   })
 })
 

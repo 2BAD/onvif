@@ -26,7 +26,7 @@ Every call takes the profile token explicitly; there is no hidden current profil
 
 Addresses the device reports go through the service address policy of the device (`serviceAddresses` in `Device.connect()`), because cameras behind NAT or port forwarding report their internal address. A snapshot address on another origin is rewritten to the configured one, or refused under `reject`. A stream address on another host gets the configured host but keeps its scheme and port, since RTSP does not run on the ONVIF port, or is refused under `reject`. The address as the device sent it stays in `reported`.
 
-`fetchSnapshot()` sends the credentials only with HTTP Digest, applies the address policy again, follows no redirects and fails with a `TransportError` when the response is not a JPEG image. A camera that only offers HTTP Basic fails with an `AuthError` that says so.
+`fetchSnapshot()` sends the credentials only with HTTP Digest, applies the address policy again, follows no redirects and fails with a `TransportError` when the response is not a JPEG image. A camera that only offers HTTP Basic fails with an `AuthError` that says so, unless `Device.connect()` gets `basicAuth: 'https'` (Basic only over HTTPS) or `basicAuth: 'always'`.
 
 Media v1 only. Profiles for H.265 streams may come without a video encoder configuration, since Media v1 cannot describe H.265; their snapshot and stream URIs still work.
 

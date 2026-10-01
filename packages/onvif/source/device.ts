@@ -55,6 +55,11 @@ export type ConnectOptions = {
   tls?: TlsOptions
   serviceAddresses?: ServiceAddressPolicy
   /**
+   * Answer HTTP Basic challenges from devices that offer no Digest: `https` only on HTTPS requests, `always` on any.
+   * Off by default, since Basic sends the password as it is. Digest is preferred whenever the device offers it.
+   */
+  basicAuth?: 'https' | 'always'
+  /**
    * Test the username and password while connecting. ONVIF has no login step and the calls `connect()` needs don't
    * require one, so a wrong password would otherwise only fail on the first call that does. Default `true`, costs one
    * extra `GetDeviceInformation`.
@@ -182,7 +187,8 @@ export class Device {
       timeoutMs: this.#timeoutMs,
       maxResponseBytes: options.maxResponseBytes,
       tls: options.tls,
-      digest: this.#credentials
+      credentials: this.#credentials,
+      basicAuth: options.basicAuth
     })
     this.#services.set(DEVICE_NAMESPACE, this.address)
   }
@@ -337,7 +343,7 @@ export class Device {
    * @param address - Absolute URL from a device response
    * @param options - Abort signal and a timeout overriding the connection timeout
    * @returns The body of a 2xx response and its content type
-   * @throws {AuthError} If the credentials are rejected or the device asks for anything other than HTTP Digest
+   * @throws {AuthError} If the credentials are rejected, or the device asks for HTTP Basic and `basicAuth` does not allow it
    * @throws {TransportError} On connection problems, a response over the size limit or a status other than 2xx
    * @throws {TimeoutError} If the device does not answer in time
    * @throws {OnvifError} If the address is invalid or refused by the service address policy
@@ -352,7 +358,7 @@ export class Device {
       const basicOnly = challenges.length > 0 && challenges.every((challenge) => /^\s*Basic\b/i.test(challenge))
       throw new AuthError(
         basicOnly
-          ? 'Not authorized (HTTP 401): the device asks for HTTP Basic, which sends the password as plain text'
+          ? 'Not authorized (HTTP 401): the device asks for HTTP Basic, which sends the password as plain text; the basicAuth option allows it'
           : 'Not authorized (HTTP 401)',
         context
       )

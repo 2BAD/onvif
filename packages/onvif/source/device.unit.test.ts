@@ -732,8 +732,17 @@ describe('Device.download', () => {
     const error = await rejection(() => device.download(`${mock.url}/snapshot.JPG`))
     expect(error).toBeInstanceOf(AuthError)
     expect((error as AuthError).message).toContain('HTTP Basic')
+    expect((error as AuthError).message).toContain('basicAuth')
     const snapshots = mock.requests.filter(({ service }) => service === 'snapshot')
     expect(snapshots.map(({ headers }) => headers.authorization)).toEqual([undefined])
+  })
+
+  it('answers HTTP Basic with the basicAuth option', async () => {
+    const mock = await camera({ snapshot: { auth: 'basic' } })
+    const device = await connect(mock, { basicAuth: 'always' })
+    expect((await device.download(`${mock.url}/snapshot.JPG`)).body).toEqual(MOCK_JPEG)
+    const snapshots = mock.requests.filter(({ service }) => service === 'snapshot')
+    expect(snapshots.map(({ headers }) => headers.authorization?.split(' ')[0])).toEqual([undefined, 'Basic'])
   })
 
   it('rejects other statuses, redirects included, as a TransportError with the status', async () => {
