@@ -12,6 +12,8 @@ if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
 // --motion only records PullMessages responses in which motion starts and ends, leaving the other captures as they are
 const motionOnly = process.argv.includes('--motion')
+// --media2 runs the full capture but only writes the Media2 responses
+const media2Only = process.argv.includes('--media2')
 const MOTION_WAIT_MS = 300_000
 
 const deviceUrl = `http://${host}/onvif/device_service`
@@ -207,7 +209,26 @@ if (motionOnly) {
 
   const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
   if (media2Url) {
-    await capture('media2', 'GetProfiles', pinToHost(media2Url), `<GetProfiles ${tr2}><Type>All</Type></GetProfiles>`)
+    const url = pinToHost(media2Url)
+    const profilesXml = await capture(
+      'media2',
+      'GetProfiles',
+      url,
+      `<GetProfiles ${tr2}><Type>All</Type></GetProfiles>`
+    )
+    await capture('media2', 'GetVideoSourceConfigurations', url, `<GetVideoSourceConfigurations ${tr2}/>`)
+    await capture('media2', 'GetVideoEncoderConfigurations', url, `<GetVideoEncoderConfigurations ${tr2}/>`)
+    const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
+    if (profileToken) {
+      const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
+      await capture('media2', 'GetSnapshotUri', url, `<GetSnapshotUri ${tr2}>${token}</GetSnapshotUri>`)
+      await capture(
+        'media2',
+        'GetStreamUri',
+        url,
+        `<GetStreamUri ${tr2}><Protocol>RTSP</Protocol>${token}</GetStreamUri>`
+      )
+    }
   }
 
   const ptzUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/ptz/wsdl')
@@ -308,12 +329,13 @@ for (const { service, action, status, contentType, xml } of captures) {
   // scrub every response in the same order, so pseudonyms match those of a full capture
   const scrubbed = scrub(xml)
   if (motionOnly && !action.startsWith('PullMessagesMotion')) continue
+  if (media2Only && service !== 'media2') continue
   const name = `${service}.${action}`
   responses[name] = { status, contentType }
   await writeFile(join(outDir, `${name}.xml`), scrubbed)
   written += 1
 }
 const today = new Date().toISOString().slice(0, 10)
-const capturedAt = motionOnly ? (previous.capturedAt ?? today) : today
+const capturedAt = motionOnly || media2Only ? (previous.capturedAt ?? today) : today
 await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
 console.log(JSON.stringify({ outDir, files: written }))

@@ -106,6 +106,22 @@
     "events.PullMessagesMotionEnd": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
