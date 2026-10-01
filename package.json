@@ -16,6 +16,7 @@
     "check:code": "oxlint ./packages ./tools",
     "check:codegen": "tsx tools/codegen/index.ts --check",
     "check:format": "oxfmt --check ./packages ./tools",
+    "check:size": "tsx tools/bench/size.ts",
     "check:types": "tsc --noEmit",
     "codegen": "tsx tools/codegen/index.ts",
     "codegen:specs": "tsx tools/codegen/fetch-specs.ts",
