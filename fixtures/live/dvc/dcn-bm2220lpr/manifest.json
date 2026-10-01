@@ -98,6 +98,14 @@
     "events.Unsubscribe": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotion": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotionEnd": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

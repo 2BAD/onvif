@@ -1,5 +1,6 @@
 import { DecodeError, Device, type OnvifError } from '@2bad/onvif'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { type MockCamera, startMockCamera } from '../../../tools/mock-camera/server.ts'
 import {
   decodeNotification,
@@ -41,9 +42,9 @@ const message = (data: string, attributes = 'UtcTime="2026-09-28T04:01:39.352Z" 
   `<tt:Message ${attributes}><tt:Source><tt:SimpleItem Name="InputToken" Value="1"/></tt:Source>` +
   `<tt:Data>${data}</tt:Data></tt:Message>`
 
-const receive = async (topic: string, body = message('<tt:SimpleItem Name="State" Value="true"/>')) => {
+const collect = async (notifications: string[]) => {
   errors.length = 0
-  mock.emitEvent(`<wsnt:NotificationMessage>${topic}<wsnt:Message>${body}</wsnt:Message></wsnt:NotificationMessage>`)
+  for (const notification of notifications) mock.emitEvent(notification)
   mock.emitEvent(
     '<wsnt:NotificationMessage><wsnt:Message>' +
       message('<tt:SimpleItem Name="End" Value="1"/>') +
@@ -58,6 +59,16 @@ const receive = async (topic: string, body = message('<tt:SimpleItem Name="State
   }
   return received
 }
+
+const receive = async (topic: string, body = message('<tt:SimpleItem Name="State" Value="true"/>')) =>
+  collect([`<wsnt:NotificationMessage>${topic}<wsnt:Message>${body}</wsnt:Message></wsnt:NotificationMessage>`])
+
+const replay = async (name: string) =>
+  collect(
+    fixture(`live/dvc/dcn-bm2220lpr/${name}`).xml.match(
+      /<wsnt:NotificationMessage>[\s\S]*?<\/wsnt:NotificationMessage>/g
+    ) ?? []
+  )
 
 const topic = (expression: string, attributes = `Dialect="${CONCRETE_SET}"`) =>
   `<wsnt:Topic ${attributes}>${expression}</wsnt:Topic>`
@@ -144,6 +155,33 @@ describe('notifications', () => {
       namespace: undefined,
       path: ['RuleEngine', 'CellMotionDetector', 'Motion']
     })
+  })
+
+  it('reads motion starting and stopping as captured from the DVC camera', async () => {
+    const started = await replay('events.PullMessagesMotion.xml')
+    const stopped = await replay('events.PullMessagesMotionEnd.xml')
+    expect(errors).toEqual([])
+    expect(started.map(({ topic }) => topic?.path.join('/'))).toEqual([
+      'VideoSource/MotionAlarm',
+      'RuleEngine/CellMotionDetector/Motion'
+    ])
+    expect(started.map((notification) => motionOf(notification))).toEqual([
+      undefined,
+      {
+        isMotion: true,
+        initialized: false,
+        utcTime: new Date('2026-10-01T04:14:37.113Z'),
+        source: {
+          VideoSourceConfigurationToken: 'VideoSource_token_1',
+          VideoAnalyticsConfigurationToken: 'VideoAnalytics0',
+          Rule: 'MotionDetectorRule'
+        }
+      }
+    ])
+    expect(stopped.map((notification) => motionOf(notification)?.isMotion)).toEqual([undefined, false])
+    expect(stopped[1]?.utcTime).toEqual(new Date('2026-10-01T04:14:53.404Z'))
+    const alarms = [...started, ...stopped].filter(({ topic }) => isTopic(topic, ['VideoSource', 'MotionAlarm']))
+    expect(alarms.map(({ data }) => data['State'])).toEqual(['true', 'false'])
   })
 
   it('rejects a motion notification without IsMotion', async () => {
