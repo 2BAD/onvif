@@ -122,6 +122,22 @@
     "media2.GetStreamUri": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.SetVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

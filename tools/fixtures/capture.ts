@@ -12,8 +12,10 @@ if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
 // --motion only records PullMessages responses in which motion starts and ends, leaving the other captures as they are
 const motionOnly = process.argv.includes('--motion')
-// --media2 runs the full capture but only writes the Media2 responses
-const media2Only = process.argv.includes('--media2')
+// --only <prefix> runs the full capture but only writes responses whose `service.Action` name starts with a prefix
+const only = process.argv.flatMap((argument, index) => (process.argv[index - 1] === '--only' ? [argument] : []))
+// --set-encoder also sends the first video encoder configuration back unchanged, the only call that writes
+const setEncoder = process.argv.includes('--set-encoder')
 const MOTION_WAIT_MS = 300_000
 
 const deviceUrl = `http://${host}/onvif/device_service`
@@ -142,6 +144,33 @@ const captureMotion = async (url: string): Promise<void> => {
   }
 }
 
+const captureEncoder = async (
+  service: string,
+  url: string,
+  namespace: string,
+  encodersXml: string,
+  extra: string
+): Promise<void> => {
+  const encoder = /<([\w-]+):Configurations\b([^>]*)>([\s\S]*?)<\/\1:Configurations>/.exec(encodersXml)
+  const token = encoder && firstMatch(encoder[2] ?? '', /token="([^"]+)"/)
+  if (!encoder || !token) return
+  await capture(
+    service,
+    'GetVideoEncoderConfigurationOptions',
+    url,
+    `<GetVideoEncoderConfigurationOptions ${namespace}><ConfigurationToken>${escapeXml(token)}</ConfigurationToken>` +
+      '</GetVideoEncoderConfigurationOptions>'
+  )
+  if (!setEncoder) return
+  const configuration = `<Configuration xmlns:tt="http://www.onvif.org/ver10/schema"${encoder[2]}>${encoder[3]}</Configuration>`
+  await capture(
+    service,
+    'SetVideoEncoderConfiguration',
+    url,
+    `<SetVideoEncoderConfiguration ${namespace}>${configuration}${extra}</SetVideoEncoderConfiguration>`
+  )
+}
+
 const timeXml = await capture('device', 'GetSystemDateAndTime', deviceUrl, `<GetSystemDateAndTime ${tds}/>`, {
   authenticated: false
 })
@@ -192,7 +221,13 @@ if (motionOnly) {
     const profilesXml = await capture('media', 'GetProfiles', url, `<GetProfiles ${trt}/>`)
     await capture('media', 'GetVideoSources', url, `<GetVideoSources ${trt}/>`)
     await capture('media', 'GetVideoSourceConfigurations', url, `<GetVideoSourceConfigurations ${trt}/>`)
-    await capture('media', 'GetVideoEncoderConfigurations', url, `<GetVideoEncoderConfigurations ${trt}/>`)
+    const encodersXml = await capture(
+      'media',
+      'GetVideoEncoderConfigurations',
+      url,
+      `<GetVideoEncoderConfigurations ${trt}/>`
+    )
+    await captureEncoder('media', url, trt, encodersXml, '<ForcePersistence>true</ForcePersistence>')
     const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
     if (profileToken) {
       const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
@@ -217,7 +252,13 @@ if (motionOnly) {
       `<GetProfiles ${tr2}><Type>All</Type></GetProfiles>`
     )
     await capture('media2', 'GetVideoSourceConfigurations', url, `<GetVideoSourceConfigurations ${tr2}/>`)
-    await capture('media2', 'GetVideoEncoderConfigurations', url, `<GetVideoEncoderConfigurations ${tr2}/>`)
+    const encodersXml = await capture(
+      'media2',
+      'GetVideoEncoderConfigurations',
+      url,
+      `<GetVideoEncoderConfigurations ${tr2}/>`
+    )
+    await captureEncoder('media2', url, tr2, encodersXml, '')
     const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
     if (profileToken) {
       const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
@@ -329,13 +370,13 @@ for (const { service, action, status, contentType, xml } of captures) {
   // scrub every response in the same order, so pseudonyms match those of a full capture
   const scrubbed = scrub(xml)
   if (motionOnly && !action.startsWith('PullMessagesMotion')) continue
-  if (media2Only && service !== 'media2') continue
   const name = `${service}.${action}`
+  if (only.length > 0 && !only.some((prefix) => name.startsWith(prefix))) continue
   responses[name] = { status, contentType }
   await writeFile(join(outDir, `${name}.xml`), scrubbed)
   written += 1
 }
 const today = new Date().toISOString().slice(0, 10)
-const capturedAt = motionOnly || media2Only ? (previous.capturedAt ?? today) : today
+const capturedAt = motionOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
 await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
 console.log(JSON.stringify({ outDir, files: written }))

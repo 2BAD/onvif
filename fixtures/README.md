@@ -18,6 +18,18 @@ pnpm fixtures:capture --motion
 
 Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device. The other captures and their manifest entries stay as they are.
 
+```sh
+pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOptions
+```
+
+Runs the full capture but writes only the responses whose `<service>.<Action>` name starts with one of the prefixes. The other captures and their manifest entries stay as they are.
+
+```sh
+pnpm fixtures:capture --set-encoder
+```
+
+Also sends the first video encoder configuration of Media v1 and Media2 back to the device unchanged, to capture `SetVideoEncoderConfiguration`. This is the only call that writes to the device.
+
 Before writing anything it scrubs:
 
 - serial number, hardware id, username and password -> `REDACTEDn`
