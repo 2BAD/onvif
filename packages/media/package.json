@@ -1,14 +1,18 @@
 {
   "name": "@2bad/onvif-media",
   "version": "2.0.0-alpha.0",
-  "description": "ONVIF media profiles, snapshot and stream URIs for @2bad/onvif",
+  "description": "ONVIF media profiles, snapshots and stream URLs for @2bad/onvif",
   "keywords": [
     "camera",
+    "cctv",
     "ip camera",
     "media",
     "onvif",
     "rtsp",
-    "snapshot"
+    "snapshot",
+    "stream",
+    "surveillance",
+    "typescript"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {

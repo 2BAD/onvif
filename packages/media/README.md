@@ -1,6 +1,6 @@
 # @2bad/onvif-media
 
-ONVIF profiles, snapshots and stream URLs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
+ONVIF media profiles, snapshots and stream URLs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 > [!WARNING]
 > 2.0 is in alpha. The API can still change.

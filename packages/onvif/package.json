@@ -1,13 +1,17 @@
 {
   "name": "@2bad/onvif",
   "version": "2.0.0-alpha.0",
-  "description": "ONVIF client for Node.js built for performance, security and reliability",
+  "description": "High-performance ONVIF client for TypeScript with no runtime dependencies",
   "keywords": [
     "camera",
+    "cctv",
     "ip camera",
+    "nvr",
     "onvif",
     "soap",
-    "ws-discovery"
+    "surveillance",
+    "typescript",
+    "ws-security"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {

@@ -1,13 +1,17 @@
 {
   "name": "@2bad/onvif-events",
   "version": "2.0.0-alpha.0",
-  "description": "ONVIF event subscriptions for @2bad/onvif",
+  "description": "ONVIF events and motion detection for @2bad/onvif",
   "keywords": [
     "camera",
+    "cctv",
     "events",
     "ip camera",
     "motion detection",
-    "onvif"
+    "onvif",
+    "pull point",
+    "surveillance",
+    "typescript"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {
