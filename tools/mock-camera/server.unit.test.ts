@@ -257,6 +257,16 @@ describe('mock camera', () => {
       expect(performance.now() - started).toBeGreaterThanOrEqual(190)
     })
 
+    it('delays an injected status', async () => {
+      const { url } = await start({
+        auth: 'none',
+        overrides: { 'device.GetDeviceInformation': { kind: 'status', status: 503, delayMs: 200 } }
+      })
+      const started = performance.now()
+      expect((await post(`${url}/onvif/device_service`, body)).status).toBe(503)
+      expect(performance.now() - started).toBeGreaterThanOrEqual(190)
+    })
+
     it('truncates the body', async () => {
       const { url } = await start({
         auth: 'none',

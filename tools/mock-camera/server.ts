@@ -10,7 +10,7 @@ import { MockEvents, type MockEventsOptions, type PullPointState } from '#tools/
 type Manifest = { responses: Record<string, { status: number; contentType: string }> }
 
 export type ActionOverride = (
-  | { kind: 'status'; status: number; body?: string }
+  | { kind: 'status'; status: number; body?: string; delayMs?: number }
   | { kind: 'delay'; ms: number }
   | { kind: 'truncate'; bytes: number }
   | { kind: 'hang' }
@@ -312,6 +312,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     }
     if (override?.kind === 'delay') await new Promise((resolve) => setTimeout(resolve, override.ms))
     if (override?.kind === 'status') {
+      if (override.delayMs) await new Promise((resolve) => setTimeout(resolve, override.delayMs))
       send(response, override.status, override.body ?? soapFault('ter:Action', 'Injected failure'))
       return
     }
