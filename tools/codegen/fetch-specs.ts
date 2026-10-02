@@ -15,6 +15,8 @@ const externalSchemas = [
   'http://docs.oasis-open.org/wsrf/r-2.xsd',
   'http://docs.oasis-open.org/wsrf/bf-2.xsd',
   'http://www.w3.org/2005/08/addressing/ws-addr.xsd',
+  'http://schemas.xmlsoap.org/ws/2005/04/discovery/ws-discovery.xsd',
+  'http://schemas.xmlsoap.org/ws/2004/08/addressing',
   'http://www.w3.org/2001/xml.xsd',
   'https://www.w3.org/2005/05/xmlmime',
   'https://www.w3.org/2004/08/xop/include',
@@ -57,7 +59,7 @@ await inBatches(specs, 8, async (entry) => {
 files.set(join('onvif', 'COMMIT'), Buffer.from(`${commit}\n`))
 
 await inBatches(externalSchemas, 8, async (url) => {
-  files.set(join('external', url.replace(/^https?:\/\//, '')), await download(url, 'application/xml'))
+  files.set(join('external', url.replace(/^https?:\/\//, '')), await download(url, 'application/xml, */*;q=0.1'))
 })
 
 await rm(join(specsDirectory, 'onvif'), { recursive: true, force: true })
