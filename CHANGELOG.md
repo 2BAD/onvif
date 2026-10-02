@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-alpha.1] - 2026-10-02
+
 ### Breaking Changes
 
 - `getProfiles()` now returns `videoSource` and `videoEncoder` summaries, with the camera's response under `reported`
@@ -61,5 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed PTZ camera control, with no replacement in 2.0 yet
 - Removed the 1.x types for ONVIF services that 2.0 does not cover
 
-[Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.0...HEAD
+[Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.1...HEAD
+[2.0.0-alpha.1]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.0...v2.0.0-alpha.1
 [2.0.0-alpha.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0-alpha.0

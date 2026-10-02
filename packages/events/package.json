@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-events",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0-alpha.1",
   "description": "ONVIF events and motion detection for @2bad/onvif",
   "keywords": [
     "camera",

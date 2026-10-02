@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-media",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0-alpha.1",
   "description": "ONVIF media profiles, snapshots and stream URLs for @2bad/onvif",
   "keywords": [
     "camera",
