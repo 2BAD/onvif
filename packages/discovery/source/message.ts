@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  decode,
   DecodeError,
   type ErrorContext,
   namespaceInfo,
@@ -9,6 +10,7 @@ import {
   type XmlObject,
   type XmlValue
 } from '@2bad/onvif'
+import { type ProbeMatchType, schema } from '#generated/discovery.ts'
 
 const SOAP = 'http://www.w3.org/2003/05/soap-envelope'
 const WSA = 'http://schemas.xmlsoap.org/ws/2004/08/addressing'
@@ -105,12 +107,10 @@ const textOf = (value: XmlValue | undefined): string => {
   return typeof text === 'string' ? text.trim() : ''
 }
 
-const tokens = (text: string): string[] => text.split(/\s+/).filter((token) => token.length > 0)
-
-const readTypes = (value: XmlValue | undefined): QualifiedName[] => {
-  const node = listOf(value)[0]
+const readTypes = (types: string[], element: XmlValue | undefined): QualifiedName[] => {
+  const node = listOf(element)[0]
   const namespaces = isObject(node) ? namespaceInfo(node)?.namespaces : undefined
-  return tokens(textOf(node)).map((token) => {
+  return types.map((token) => {
     const colon = token.indexOf(':')
     return {
       namespace: namespaces?.[colon === -1 ? '' : token.slice(0, colon)],
@@ -142,13 +142,13 @@ const scopeValues = (scopes: string[], category: string): string[] => {
 }
 
 const readXAddrs = (
-  text: string,
+  addresses: string[],
   sender: string,
   policy: XAddrPolicy
 ): Pick<DiscoveredDevice, 'xaddrs' | 'droppedXAddrs'> => {
   const xaddrs: URL[] = []
   const droppedXAddrs: string[] = []
-  for (const token of tokens(text)) {
+  for (const token of addresses) {
     const url = URL.parse(token)
     const web = url !== null && (url.protocol === 'http:' || url.protocol === 'https:')
     if (web && (policy === 'any' || url.hostname === sender)) xaddrs.push(url)
@@ -187,27 +187,33 @@ export function readProbeMatches(xml: string, sender: string, probes: ReadonlySe
 
   const devices: DiscoveredDevice[] = []
   const errors: DecodeError[] = []
-  listOf(matches['ProbeMatch']).forEach((match, index) => {
-    const path = `ProbeMatches/ProbeMatch[${index}]`
-    const reference = isObject(match) ? listOf(match['EndpointReference'])[0] : undefined
-    const endpoint = isObject(reference) ? textOf(reference['Address']) : ''
-    if (!isObject(match) || endpoint.length === 0) {
-      errors.push(new DecodeError('Missing element', `${path}/EndpointReference/Address`, context))
-      return
+  for (const node of listOf(matches['ProbeMatch'])) {
+    let match: ProbeMatchType
+    try {
+      match = decode(schema, 'ProbeMatchType', node, context) as ProbeMatchType
+    } catch (error) {
+      if (!(error instanceof DecodeError)) throw error
+      errors.push(error)
+      continue
     }
-    const types = readTypes(match['Types'])
-    if (!isOnvifDevice(types)) return
-    const scopes = tokens(textOf(match['Scopes']))
+    const endpoint = match.endpointReference.address.value.trim()
+    if (endpoint.length === 0) {
+      errors.push(new DecodeError('Empty endpoint address', 'ProbeMatchType.EndpointReference.Address', context))
+      continue
+    }
+    const types = readTypes(match.types ?? [], isObject(node) ? node['Types'] : undefined)
+    if (!isOnvifDevice(types)) continue
+    const scopes = match.scopes?.value ?? []
     devices.push({
       endpoint,
       address: sender,
-      ...readXAddrs(textOf(match['XAddrs']), sender, policy),
+      ...readXAddrs(match.xAddrs ?? [], sender, policy),
       types,
       scopes,
       name: scopeValues(scopes, 'name')[0],
       hardware: scopeValues(scopes, 'hardware')[0],
       profiles: scopeValues(scopes, 'Profile')
     })
-  })
+  }
   return { devices, errors }
 }

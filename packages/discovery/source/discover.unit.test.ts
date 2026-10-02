@@ -143,9 +143,9 @@ describe('discover', () => {
   })
 
   it('stops yielding after the limit of distinct devices', async () => {
-    const perDatagram = 6
+    const perDatagram = 5
     const match = (index: number) =>
-      `<d:ProbeMatch><a:EndpointReference><a:Address>urn:uuid:${index}</a:Address></a:EndpointReference></d:ProbeMatch>`
+      `<d:ProbeMatch><a:EndpointReference><a:Address>urn:uuid:${index}</a:Address></a:EndpointReference><d:MetadataVersion>1</d:MetadataVersion></d:ProbeMatch>`
     const datagram = (messageId: string, first: number) =>
       probeMatches(messageId).replace(
         /<d:ProbeMatches>.*<\/d:ProbeMatches>/,

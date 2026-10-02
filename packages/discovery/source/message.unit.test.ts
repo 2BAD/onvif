@@ -18,15 +18,24 @@ const reply = (matches: string, relatesTo = probeId, declarations = ''): string 
   `<s:Header><a:RelatesTo>${relatesTo}</a:RelatesTo></s:Header>` +
   `<s:Body><d:ProbeMatches>${matches}</d:ProbeMatches></s:Body></s:Envelope>`
 
-const match = (fields: { endpoint?: string; types?: string; scopes?: string; xaddrs?: string } = {}): string => {
-  const { endpoint = 'urn:uuid:1', types = 'dn:NetworkVideoTransmitter', scopes, xaddrs } = fields
+type MatchFields = { endpoint?: string; types?: string; scopes?: string; xaddrs?: string; metadataVersion?: string }
+
+const match = (fields: MatchFields = {}): string => {
+  const {
+    endpoint = 'urn:uuid:1',
+    types = 'dn:NetworkVideoTransmitter',
+    scopes,
+    xaddrs,
+    metadataVersion = '1'
+  } = fields
   return (
     '<d:ProbeMatch>' +
     (endpoint === '' ? '' : `<a:EndpointReference><a:Address>${endpoint}</a:Address></a:EndpointReference>`) +
     (types === '' ? '' : `<d:Types>${types}</d:Types>`) +
     (scopes === undefined ? '' : `<d:Scopes>${scopes}</d:Scopes>`) +
     (xaddrs === undefined ? '' : `<d:XAddrs>${xaddrs}</d:XAddrs>`) +
-    '<d:MetadataVersion>1</d:MetadataVersion></d:ProbeMatch>'
+    (metadataVersion === '' ? '' : `<d:MetadataVersion>${metadataVersion}</d:MetadataVersion>`) +
+    '</d:ProbeMatch>'
   )
 }
 
@@ -138,11 +147,21 @@ describe('readProbeMatches', () => {
     expect(devices.map((device) => device.endpoint)).toEqual(['urn:uuid:2'])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toBeInstanceOf(DecodeError)
-    expect(errors[0]).toMatchObject({
-      path: 'ProbeMatches/ProbeMatch[0]/EndpointReference/Address',
-      host: '192.0.2.5',
-      service: 'discovery'
-    })
+    expect(errors[0]).toMatchObject({ path: 'ProbeMatchType', host: '192.0.2.5', service: 'discovery' })
+    expect(errors[0]?.message).toContain('Missing required element EndpointReference')
+  })
+
+  it('reports an empty endpoint address', () => {
+    const { devices, errors } = readProbeMatches(reply(match({ endpoint: ' ' })), '192.0.2.5', probes, 'sender')
+    expect(devices).toEqual([])
+    expect(errors[0]).toMatchObject({ name: 'DecodeError', path: 'ProbeMatchType.EndpointReference.Address' })
+  })
+
+  it('reports a match with a missing or invalid MetadataVersion as the schema requires', () => {
+    const matches = match({ metadataVersion: '' }) + match({ metadataVersion: 'ten' })
+    const { devices, errors } = readProbeMatches(reply(matches), '192.0.2.5', probes, 'sender')
+    expect(devices).toEqual([])
+    expect(errors.map((error) => error.path)).toEqual(['ProbeMatchType', 'ProbeMatchType.MetadataVersion'])
   })
 
   it('leaves out printers, computers and types whose prefix is not declared', () => {
@@ -156,7 +175,7 @@ describe('readProbeMatches', () => {
   })
 
   it('resolves types in the default namespace', () => {
-    const matches = `<d:ProbeMatch><a:EndpointReference><a:Address>urn:uuid:1</a:Address></a:EndpointReference><d:Types xmlns="${DEVICE}">Device</d:Types></d:ProbeMatch>`
+    const matches = `<d:ProbeMatch><a:EndpointReference><a:Address>urn:uuid:1</a:Address></a:EndpointReference><d:Types xmlns="${DEVICE}">Device</d:Types><d:MetadataVersion>1</d:MetadataVersion></d:ProbeMatch>`
     const { devices } = readProbeMatches(reply(matches), '192.0.2.5', probes, 'sender')
     expect(devices[0]?.types).toEqual([{ namespace: DEVICE, name: 'Device' }])
   })
