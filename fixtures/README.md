@@ -10,7 +10,7 @@ Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TES
 pnpm fixtures:capture
 ```
 
-It only calls read-only operations (plus one pull point subscription, which it unsubscribes again).
+It only calls read-only operations (plus one pull point subscription, which it unsubscribes again). It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
 
 ```sh
 pnpm fixtures:capture --motion
@@ -35,6 +35,7 @@ Before writing anything it scrubs:
 - serial number, hardware id, username and password -> `REDACTEDn`
 - echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
 - unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
+- IPv6 addresses in URLs -> `fe80::n` for link-local, `2001:db8::n` otherwise
 - MAC addresses -> locally administered `02:00:00:00:00:xx`
 - UUIDs -> `00000000-0000-4000-8000-xxxxxxxxxxxx`
 - credentials in URIs are stripped

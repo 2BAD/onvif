@@ -138,6 +138,14 @@
     "media2.SetVideoEncoderConfiguration": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "discovery.ProbeMatches": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesDevice": {
+      "status": 200,
+      "contentType": "application/soap+xml"
     }
   }
 }

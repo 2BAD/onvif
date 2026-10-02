@@ -1,4 +1,6 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { createSocket } from 'node:dgram'
+import { once } from 'node:events'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -78,6 +80,28 @@ const pinToHost = (xaddr: string): string => {
   const target = new URL(deviceUrl)
   url.host = target.host
   return url.toString()
+}
+
+const probe = async (types: string): Promise<string> => {
+  const socket = createSocket('udp4')
+  try {
+    socket.bind(0)
+    await once(socket, 'listening')
+    const envelope =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" ' +
+      'xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dn="http://www.onvif.org/ver10/network/wsdl" ' +
+      'xmlns:tds="http://www.onvif.org/ver10/device/wsdl">' +
+      `<s:Header><a:MessageID>urn:uuid:${randomUUID()}</a:MessageID>` +
+      '<a:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To>' +
+      '<a:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action></s:Header>' +
+      `<s:Body><d:Probe><d:Types>${types}</d:Types><d:Scopes/></d:Probe></s:Body></s:Envelope>`
+    socket.send(envelope, 3702, host)
+    const [message] = (await once(socket, 'message', { signal: AbortSignal.timeout(5_000) })) as [Buffer]
+    return message.toString('utf8')
+  } finally {
+    socket.close()
+  }
 }
 
 const captures: Capture[] = []
@@ -304,6 +328,15 @@ if (motionOnly) {
       })
     }
   }
+
+  for (const [action, types] of [
+    ['ProbeMatches', 'dn:NetworkVideoTransmitter'],
+    ['ProbeMatchesDevice', 'tds:Device']
+  ] as const) {
+    const xml = await probe(types)
+    captures.push({ service: 'discovery', action, status: 200, contentType: 'application/soap+xml', xml })
+    console.log(JSON.stringify({ service: 'discovery', action, bytes: xml.length }))
+  }
 }
 
 const vendor = firstMatch(infoXml, /<[\w-]+:Manufacturer>([^<]+)</) ?? 'unknown'
@@ -332,9 +365,11 @@ const pseudonym = (value: string, kind: string): string => {
       ? `192.0.2.${replacements.size + 10}`
       : kind === 'mac'
         ? `02:00:00:00:00:${(replacements.size + 16).toString(16).padStart(2, '0')}`
-        : kind === 'uuid'
-          ? `00000000-0000-4000-8000-${(replacements.size + 1).toString().padStart(12, '0')}`
-          : `REDACTED${replacements.size + 1}`
+        : kind === 'ipv6'
+          ? `${value.startsWith('fe80:') ? 'fe80' : '2001:db8'}::${(replacements.size + 1).toString(16)}`
+          : kind === 'uuid'
+            ? `00000000-0000-4000-8000-${(replacements.size + 1).toString().padStart(12, '0')}`
+            : `REDACTED${replacements.size + 1}`
   replacements.set(value, next)
   return next
 }
@@ -351,6 +386,7 @@ const scrub = (xml: string): string => {
     .replace(/:\/\/[^/@\s<"]+:[^/@\s<"]+@/g, '://')
     .replace(/(<[\w-]+:(?:Password|Nonce)\b[^>]*>)[^<]*/g, '$1REDACTED')
     .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => (isNonIdentifyingIp(ip) ? ip : pseudonym(ip, 'ip')))
+    .replace(/\[([0-9a-f:]+)\]/gi, (_, ip: string) => `[${pseudonym(ip.toLowerCase(), 'ipv6')}]`)
     .replace(/\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi, (mac) => pseudonym(mac.toLowerCase(), 'mac'))
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, (uuid) =>
       pseudonym(uuid.toLowerCase(), 'uuid')
