@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added the `@2bad/onvif-discovery` package with `discover()` to find cameras on the local network
+- Added `parseEnvelope()` and `serialize()` to the core for reading and writing SOAP messages
+
 ## [2.0.0-alpha.1] - 2026-10-02
 
 ### Breaking Changes

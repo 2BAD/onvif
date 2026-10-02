@@ -8,6 +8,7 @@ High-performance ONVIF client for TypeScript with no runtime dependencies.
 ## Packages
 
 - [`@2bad/onvif`](packages/onvif): connect to a camera and call device operations
+- [`@2bad/onvif-discovery`](packages/discovery): find cameras on the local network
 - [`@2bad/onvif-events`](packages/events): event subscriptions and motion detection
 - [`@2bad/onvif-media`](packages/media): profiles, snapshots and stream URLs
 
@@ -23,15 +24,15 @@ console.log(info.manufacturer, info.model)
 
 ## ONVIF profiles
 
-| Profile | Covered  | Missing                                 |
-| ------- | -------- | --------------------------------------- |
-| S       | 7 of 7   |                                         |
-| T       | 11 of 21 | WS-Discovery, network, imaging, PTZ     |
-| M       | 4 of 7   | WS-Discovery, analytics, metadata       |
-| C       | 7 of 15  | access control, door control            |
-| D       | 6 of 19  | WS-Discovery, network, access, doors    |
-| G       | 2 of 8   | recording search, replay                |
-| A       | 4 of 17  | WS-Discovery, users, credentials, rules |
+| Profile | Covered  | Missing                      |
+| ------- | -------- | ---------------------------- |
+| S       | 7 of 7   |                              |
+| T       | 12 of 21 | network, imaging, PTZ        |
+| M       | 5 of 7   | analytics, metadata          |
+| C       | 7 of 15  | access control, door control |
+| D       | 7 of 19  | network, access, doors       |
+| G       | 2 of 8   | recording search, replay     |
+| A       | 5 of 17  | users, credentials, rules    |
 
 ## Performance
 
