@@ -1,0 +1,61 @@
+{
+  "name": "@2bad/onvif-discovery",
+  "version": "2.0.0-alpha.1",
+  "description": "Find ONVIF cameras on the local network with WS-Discovery for @2bad/onvif",
+  "keywords": [
+    "camera",
+    "cctv",
+    "discovery",
+    "ip camera",
+    "onvif",
+    "surveillance",
+    "typescript",
+    "ws-discovery"
+  ],
+  "homepage": "https://github.com/2BAD/onvif#readme",
+  "bugs": {
+    "url": "https://github.com/2BAD/onvif/issues"
+  },
+  "license": "MIT",
+  "author": "2BAD (https://github.com/2BAD)",
+  "contributors": [
+    {
+      "name": "Jason Hyde",
+      "email": "github@2bad.me",
+      "url": "https://github.com/mrhyde"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2BAD/onvif.git",
+    "directory": "packages/discovery"
+  },
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "imports": {
+    "#*": "./source/*"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@2bad/onvif": "workspace:^"
+  },
+  "peerDependencies": {
+    "@2bad/onvif": "workspace:^"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

@@ -4,6 +4,7 @@
   "type": "module",
   "imports": {
     "#onvif/*": "./packages/onvif/source/*",
+    "#onvif-discovery/*": "./packages/discovery/source/*",
     "#onvif-events/*": "./packages/events/source/*",
     "#onvif-media/*": "./packages/media/source/*",
     "#tools/*": "./tools/*"
