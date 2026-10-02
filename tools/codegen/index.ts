@@ -9,9 +9,9 @@ import { Registry, specsDirectory } from '#tools/codegen/registry.ts'
 type Target = {
   output: string
   codecImport: string
-  wsdl: string
-  portTypes: { namespace: string; local: string; operations: string[] }[]
-  /** Global elements outside the operations, with the schema that defines them. */
+  wsdl?: string
+  portTypes?: { namespace: string; local: string; operations: string[] }[]
+  /** Global elements outside the operations, with the schema that defines them relative to the specs directory. */
   elements?: { schema: string; namespace: string; local: string }[]
   /** Operations whose responses hold QNames or endpoint references and are parsed with namespaces. */
   namespaces?: string[]
@@ -59,8 +59,21 @@ const targets: Target[] = [
       },
       { namespace: 'http://docs.oasis-open.org/wsn/bw-2', local: 'SubscriptionManager', operations: ['Renew'] }
     ],
-    elements: [{ schema: 'ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' }],
+    elements: [
+      { schema: 'onvif/ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' }
+    ],
     namespaces: ['CreatePullPointSubscription', 'PullMessages']
+  },
+  {
+    output: 'packages/discovery/source/generated/discovery.ts',
+    codecImport: '@2bad/onvif',
+    elements: [
+      {
+        schema: 'external/schemas.xmlsoap.org/ws/2005/04/discovery/ws-discovery.xsd',
+        namespace: 'http://schemas.xmlsoap.org/ws/2005/04/discovery',
+        local: 'ProbeMatches'
+      }
+    ]
   },
   {
     output: 'packages/media/source/generated/media.ts',
@@ -110,9 +123,9 @@ const commit = readFileSync(join(specsDirectory, 'onvif', 'COMMIT'), 'utf8')
 
 const generate = (target: Target): string => {
   const registry = new Registry()
-  registry.load(join(specsDirectory, 'onvif', target.wsdl))
+  if (target.wsdl) registry.load(join(specsDirectory, 'onvif', target.wsdl))
   const builder = new ModelBuilder(registry)
-  const operations = target.portTypes.flatMap((portType) => {
+  const operations = (target.portTypes ?? []).flatMap((portType) => {
     const available = new Map(registry.operations(portType).map((operation) => [operation.name, operation]))
     return portType.operations.map((name) => {
       const operation = available.get(name)
@@ -121,7 +134,7 @@ const generate = (target: Target): string => {
     })
   })
   const elements = (target.elements ?? []).map(({ schema, ...element }) => {
-    registry.load(join(specsDirectory, 'onvif', schema))
+    registry.load(join(specsDirectory, schema))
     return builder.element(element)
   })
   return emit({ commit, codecImport: target.codecImport, operations, elements, namespaces: target.namespaces ?? [] })
