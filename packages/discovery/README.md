@@ -27,16 +27,9 @@ Each camera appears once. The loop ends after `timeoutMs`.
 ## Connecting
 
 ```ts
-const xaddr = found.xaddrs[0]
-if (xaddr) {
-  const device = await Device.connect({
-    hostname: xaddr.hostname,
-    secure: xaddr.protocol === 'https:',
-    ...(xaddr.port === '' ? {} : { port: Number(xaddr.port) }),
-    path: xaddr.pathname,
-    username: 'admin',
-    password: 'secret'
-  })
+const [url] = found.xaddrs
+if (url) {
+  const device = await Device.connect({ url, username: 'admin', password: 'secret' })
 }
 ```
 
