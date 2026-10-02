@@ -11,7 +11,7 @@ ONVIF client for TypeScript with no runtime dependencies.
 npm install @2bad/onvif@next
 ```
 
-Needs Node.js 26 or later. ESM only. Events and media are in [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
+Needs Node.js 26 or later. ESM only. Discovery, events and media are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
 
 ## Usage
 
@@ -54,6 +54,16 @@ const device = await Device.connect({
   tls: { fingerprint256: 'AB:CD:...' }, // see TLS
   basicAuth: 'https', // allow HTTP Basic on HTTPS, or 'always'
   signal // aborts connect()
+})
+```
+
+A device service URL works in place of `hostname`, `port`, `secure` and `path`.
+
+```ts
+const device = await Device.connect({
+  url: 'http://192.0.2.10/onvif/device_service',
+  username: 'admin',
+  password: 'secret'
 })
 ```
 

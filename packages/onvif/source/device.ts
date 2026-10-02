@@ -57,12 +57,30 @@ export type ServiceAddressPolicy = 'rewrite' | 'reject' | 'sameHost'
 
 const DEFAULT_TIMEOUT_MS = 10_000
 
-export type ConnectOptions = {
-  hostname: string
-  port?: number
-  secure?: boolean
-  /** Path of the device service, `/onvif/device_service` by default. */
-  path?: string
+const DEFAULT_PATH = '/onvif/device_service'
+
+type DeviceLocation =
+  | {
+      hostname: string
+      port?: number
+      secure?: boolean
+      /** Path of the device service, `/onvif/device_service` by default. */
+      path?: string
+      url?: never
+    }
+  | {
+      /**
+       * Address of the device service, such as an XAddr from discovery. `http:` or `https:`, without credentials. A
+       * URL without a path uses `/onvif/device_service`.
+       */
+      url: string | URL
+      hostname?: never
+      port?: never
+      secure?: never
+      path?: never
+    }
+
+export type ConnectOptions = DeviceLocation & {
   username?: string
   password?: string
   /** Time allowed for each call in milliseconds, retries included, 10 000 by default. */
@@ -163,6 +181,26 @@ const utcTimeOf = (dateTime: DateTime): number | undefined => {
   return read.every((value, index) => value === fields[index]) ? utc : undefined
 }
 
+const locate = (address: string | URL): { hostname: string; port?: number; secure: boolean; path: string } => {
+  const url = URL.parse(address)
+  if (!url) throw new OnvifError('Invalid device URL')
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new OnvifError(`Invalid device URL scheme '${url.protocol.slice(0, 32)}'`, { host: url.host })
+  }
+  if (url.username !== '' || url.password !== '') {
+    throw new OnvifError('Device URL must not contain credentials, pass username and password instead', {
+      host: url.host
+    })
+  }
+  const path = url.pathname === '/' && url.search === '' ? DEFAULT_PATH : `${url.pathname}${url.search}`
+  return {
+    hostname: url.hostname,
+    secure: url.protocol === 'https:',
+    path,
+    ...(url.port === '' ? {} : { port: Number(url.port) })
+  }
+}
+
 const answeredBadly = (error: unknown): boolean =>
   error instanceof SoapFaultError ||
   error instanceof DecodeError ||
@@ -196,7 +234,13 @@ export class Device {
   #resynchronizing: Promise<void> | undefined
 
   private constructor(options: ConnectOptions) {
-    const { hostname, secure = false, port, path = '/onvif/device_service', username, password = '' } = options
+    const {
+      hostname,
+      secure = false,
+      port,
+      path = DEFAULT_PATH
+    } = options.url === undefined ? options : locate(options.url)
+    const { username, password = '' } = options
     const protocol = secure ? 'https' : 'http'
     const host = hostname.includes(':') && !hostname.startsWith('[') ? `[${hostname}]` : hostname
     const pathname = path.startsWith('/') ? path : `/${path}`
@@ -240,7 +284,7 @@ export class Device {
    * @returns The connected device
    * @throws {AuthError} If the credentials are rejected
    * @throws {TransportError} If the device cannot be reached
-   * @throws {OnvifError} If the hostname or port is not a valid device address
+   * @throws {OnvifError} If the hostname, port or URL is not a valid device address
    */
   static async connect(options: ConnectOptions): Promise<Device> {
     const device = new Device(options)

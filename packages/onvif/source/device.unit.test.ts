@@ -31,7 +31,9 @@ const camera = async (options?: MockCameraOptions): Promise<MockCamera> => {
   return mock
 }
 
-const connect = async (mock: MockCamera, options: Partial<ConnectOptions> = {}): Promise<Device> => {
+type HostnameOptions = Extract<ConnectOptions, { hostname: string }>
+
+const connect = async (mock: MockCamera, options: Partial<HostnameOptions> = {}): Promise<Device> => {
   const url = new URL(mock.url)
   const device = await Device.connect({
     hostname: url.hostname,
@@ -284,7 +286,7 @@ describe('Device.connect', () => {
     expect(ipv6).toMatchObject({ host: '[::1]:9' })
   })
 
-  it.each<[string, Partial<ConnectOptions>]>([
+  it.each<[string, Partial<HostnameOptions>]>([
     ['a hostname URL syntax rejects', { hostname: 'bad host' }],
     ['an empty hostname', { hostname: '' }],
     ['a hostname with credentials', { hostname: 'admin@192.0.2.1' }],
@@ -296,6 +298,54 @@ describe('Device.connect', () => {
     const error = await rejection(() => Device.connect({ hostname: '', ...options }))
     expect(error).toBeInstanceOf(OnvifError)
     expect(error).toMatchObject({ message: expect.stringMatching(/^Invalid device address '/) })
+  })
+
+  it('connects to a device service URL such as an XAddr from discovery', async () => {
+    const mock = await camera()
+    const options = { username: 'admin', password: 'password' }
+    const fromString = await Device.connect({ url: `${mock.url}/onvif/device_service`, ...options })
+    cleanups.push(() => fromString.close())
+    expect(fromString.address.href).toBe(`${mock.url}/onvif/device_service`)
+    const fromOrigin = await Device.connect({ url: new URL(mock.url), ...options })
+    cleanups.push(() => fromOrigin.close())
+    expect(fromOrigin.address.href).toBe(`${mock.url}/onvif/device_service`)
+  })
+
+  it('keeps the query of a device service URL', async () => {
+    const mock = await camera()
+    const device = await Device.connect({
+      url: `${mock.url}/onvif/device_service?channel=1`,
+      username: 'admin',
+      password: 'password'
+    })
+    cleanups.push(() => device.close())
+    expect(device.address.search).toBe('?channel=1')
+  })
+
+  it('uses HTTPS and IPv6 hosts from a device service URL', async () => {
+    const mock = await camera()
+    const secure = await rejection(() =>
+      Device.connect({ url: mock.url.replace('http:', 'https:'), tls: { rejectUnauthorized: true } })
+    )
+    expect(secure).toBeInstanceOf(TransportError)
+    const ipv6 = await rejection(() => Device.connect({ url: 'http://[::1]:9/onvif/device_service', timeoutMs: 1_000 }))
+    expect(ipv6).toMatchObject({ host: '[::1]:9' })
+  })
+
+  it.each([
+    ['a URL that does not parse', 'not a url'],
+    ['a scheme other than HTTP', 'ftp://192.0.2.1/onvif/device_service']
+  ])('refuses %s with an OnvifError', async (_name, url) => {
+    const error = await rejection(() => Device.connect({ url }))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).toMatchObject({ message: expect.stringMatching(/^Invalid device URL/) })
+  })
+
+  it('refuses credentials in a device service URL without showing them', async () => {
+    const error = await rejection(() => Device.connect({ url: 'http://admin:secret@192.0.2.1/onvif/device_service' }))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).toMatchObject({ host: '192.0.2.1' })
+    expect(String(error)).not.toContain('secret')
   })
 
   it('keeps a device path that starts with two slashes on the configured host', async () => {
