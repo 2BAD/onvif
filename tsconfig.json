@@ -2,6 +2,7 @@
   "extends": "@2bad/tsconfig",
   "include": ["packages/*/source/**/*", "packages/*/tsdown.config.ts", "tools/**/*", "vitest.config.ts"],
   "compilerOptions": {
+    "target": "es2025",
     "noEmit": true,
     "types": ["node"],
     "allowImportingTsExtensions": true,

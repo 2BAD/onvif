@@ -3,6 +3,7 @@
   "include": ["source/**/*"],
   "exclude": ["source/**/*.test.ts"],
   "compilerOptions": {
+    "target": "es2025",
     "outDir": "build",
     "types": ["node"],
     "declaration": true,
