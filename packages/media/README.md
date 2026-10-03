@@ -28,6 +28,17 @@ const stream = await getStreamUri(device, profile)
 console.log(stream.uri.href)
 ```
 
+## Methods on the device
+
+```ts
+import { media } from '@2bad/onvif-media'
+
+const camera = device.use(media)
+const profiles = await camera.media.getProfiles()
+```
+
+Every function that takes a device is on `camera.media` without the device argument.
+
 ## Media2 and Media v1
 
 Media2 is used when the camera supports it, Media v1 otherwise. If Media2 answers with an error, Media v1 is tried within the same timeout.

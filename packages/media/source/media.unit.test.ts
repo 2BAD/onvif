@@ -15,7 +15,8 @@ import {
   getProfiles,
   getSnapshotUri,
   getStreamUri,
-  getVideoSourceConfigurations
+  getVideoSourceConfigurations,
+  media
 } from '#index.ts'
 
 const live = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
@@ -680,5 +681,27 @@ describe('fetchSnapshot', () => {
     const mock = await camera({ snapshot: { auth: 'basic' } })
     const device = await connect(mock)
     await expect(fetchSnapshot(device, new URL(`${mock.url}/snapshot.JPG`))).rejects.toBeInstanceOf(AuthError)
+  })
+})
+
+describe('media', () => {
+  it('adds the media functions to the device without the device argument', async () => {
+    const mock = await camera()
+    const device = (await connect(mock)).use(media)
+    const profile = defaultProfile(await device.media.getProfiles())
+    expect(profile?.service).toBe('media2')
+    const snapshot = await device.media.getSnapshotUri(profile ?? media2)
+    expect(await device.media.fetchSnapshot(snapshot.uri)).toEqual(MOCK_JPEG)
+    expect((await device.media.getStreamUri(profile ?? media2, { protocol: 'UDP' })).uri.protocol).toBe('rtsp:')
+    expect(Object.keys(device.media)).toEqual([
+      'getProfiles',
+      'getVideoSourceConfigurations',
+      'getSnapshotUri',
+      'getStreamUri',
+      'fetchSnapshot',
+      'getVideoEncoderConfigurations',
+      'getVideoEncoderConfigurationOptions',
+      'setVideoEncoderConfiguration'
+    ])
   })
 })
