@@ -26,6 +26,17 @@ for await (const notification of events) {
 }
 ```
 
+## Methods on the device
+
+```ts
+import { events } from '@2bad/onvif-events'
+
+const camera = device.use(events)
+const subscription = await camera.events.subscribe({ onError: (error) => logger.warn(error) })
+```
+
+`camera.events.subscribe()` takes the same options as `subscribe()`.
+
 ## Stopping
 
 Stop with `break`, `close()` or an aborted `signal`.

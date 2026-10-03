@@ -7,7 +7,7 @@ import {
   type MockCameraOptions,
   startMockCamera
 } from '../../../tools/mock-camera/server.ts'
-import { motionOf, type Notification, subscribe, type SubscribeOptions, type Subscription } from '#index.ts'
+import { events, motionOf, type Notification, subscribe, type SubscribeOptions, type Subscription } from '#index.ts'
 
 const cleanups: (() => Promise<void> | void)[] = []
 
@@ -496,5 +496,17 @@ describe('close', () => {
       await take(subscription, 1)
     }
     expect(mock.pullPoints()).toEqual([])
+  })
+})
+
+describe('events', () => {
+  it('adds subscribe to the device without the device argument', async () => {
+    const mock = await camera()
+    const device = (await connect(mock)).use(events)
+    const errors: OnvifError[] = []
+    const subscription = await device.events.subscribe({ onError: (error) => errors.push(error), pullTimeoutMs: 200 })
+    cleanups.push(() => subscription.close())
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(errors).toEqual([])
   })
 })
