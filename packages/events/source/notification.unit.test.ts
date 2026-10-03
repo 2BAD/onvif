@@ -63,11 +63,10 @@ const collect = async (notifications: string[]) => {
 const receive = async (topic: string, body = message('<tt:SimpleItem Name="State" Value="true"/>')) =>
   collect([`<wsnt:NotificationMessage>${topic}<wsnt:Message>${body}</wsnt:Message></wsnt:NotificationMessage>`])
 
-const replay = async (name: string) =>
+const replay = async (name: string, model = 'dcn-bm2220lpr') =>
   collect(
-    fixture(`live/dvc/dcn-bm2220lpr/${name}`).xml.match(
-      /<wsnt:NotificationMessage>[\s\S]*?<\/wsnt:NotificationMessage>/g
-    ) ?? []
+    fixture(`live/dvc/${model}/${name}`).xml.match(/<wsnt:NotificationMessage>[\s\S]*?<\/wsnt:NotificationMessage>/g) ??
+      []
   )
 
 const topic = (expression: string, attributes = `Dialect="${CONCRETE_SET}"`) =>
@@ -182,6 +181,54 @@ describe('notifications', () => {
     expect(stopped[1]?.utcTime).toEqual(new Date('2026-10-01T04:14:53.404Z'))
     const alarms = [...started, ...stopped].filter(({ topic }) => isTopic(topic, ['VideoSource', 'MotionAlarm']))
     expect(alarms.map(({ data }) => data['State'])).toEqual(['true', 'false'])
+  })
+
+  it('reads the states the DCN-BF5365 reports on subscribe', async () => {
+    const received = await replay('events.PullMessages.xml', 'dcn-bf5365')
+    expect(errors).toEqual([])
+    expect(received.map(({ topic }) => topic?.path.join('/'))).toEqual([
+      'RuleEngine/CellMotionDetector/Motion',
+      'VideoSource/MotionAlarm',
+      'RecordingConfig/JobState',
+      'RecordingConfig/RecordingConfiguration',
+      'RecordingConfig/RecordingJobConfiguration',
+      'RecordingConfig/TrackConfiguration'
+    ])
+    expect(motionOf(received[0] as Notification)).toEqual({
+      isMotion: false,
+      initialized: true,
+      utcTime: new Date('2026-10-03T02:27:19Z'),
+      source: {
+        VideoSourceConfigurationToken: 'VideoSource_token_1',
+        VideoAnalyticsConfigurationToken: 'VideoAnalyticsToken',
+        Rule: 'MotionDetectorRule'
+      }
+    })
+  })
+
+  it('reads motion starting and stopping as captured from the DCN-BF5365', async () => {
+    const started = await replay('events.PullMessagesMotion.xml', 'dcn-bf5365')
+    const stopped = await replay('events.PullMessagesMotionEnd.xml', 'dcn-bf5365')
+    expect(errors).toEqual([])
+    expect(started.map(({ topic }) => topic?.path.join('/'))).toEqual([
+      'VideoSource/MotionAlarm',
+      'RuleEngine/CellMotionDetector/Motion'
+    ])
+    expect(started.map((notification) => motionOf(notification))).toEqual([
+      undefined,
+      {
+        isMotion: true,
+        initialized: false,
+        utcTime: new Date('2026-10-03T02:56:20Z'),
+        source: {
+          VideoSourceConfigurationToken: 'VideoSource_token_1',
+          VideoAnalyticsConfigurationToken: 'VideoAnalyticsToken',
+          Rule: 'MotionDetectorRule'
+        }
+      }
+    ])
+    expect(stopped.map((notification) => motionOf(notification)?.isMotion)).toEqual([undefined, false])
+    expect(stopped[1]?.utcTime).toEqual(new Date('2026-10-03T02:56:40Z'))
   })
 
   it('rejects a motion notification without IsMotion', async () => {

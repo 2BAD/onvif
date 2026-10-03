@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { AuthError, DecodeError, Device, OnvifError, SoapFaultError, TimeoutError, TransportError } from '@2bad/onvif'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
@@ -275,6 +276,27 @@ describe('getProfiles', () => {
     const profiles = await getProfiles(await connect(mock))
     expect(profiles.length).toBeGreaterThan(0)
     expect(profiles[0]?.token).toBe('main')
+  })
+
+  it('reads the profiles and addresses of the DCN-BF5365', async () => {
+    const fixtureDirectory = join(import.meta.dirname, '../../../fixtures/live/dvc/dcn-bf5365')
+    const device = await connect(await camera({ fixtureDirectory }))
+    const profiles = await getProfiles(device)
+    expect(
+      profiles.map(({ token, service, videoEncoder }) => [
+        token,
+        service,
+        videoEncoder?.encoding,
+        videoEncoder?.resolution
+      ])
+    ).toEqual([
+      ['profile_token_1', 'media2', 'H265', { width: 2592, height: 1944 }],
+      ['profile_token_2', 'media2', 'H264', { width: 1280, height: 720 }],
+      ['profile_token_3', 'media2', 'H265', { width: 704, height: 576 }]
+    ])
+    const first = { service: 'media2', token: 'profile_token_1' } as const
+    expect((await getSnapshotUri(device, first)).uri.pathname).toBe('/snapshot.JPG')
+    expect((await getStreamUri(device, first)).uri.pathname).toBe('/profile1')
   })
 
   it('returns a single profile as an array and keeps a numeric token a string (Illustra)', async () => {
