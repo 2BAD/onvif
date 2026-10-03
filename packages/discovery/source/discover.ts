@@ -109,6 +109,12 @@ const send = (socket: Socket, message: string, destination: { address: string; p
     })
   })
 
+// Some firmware gives several units the same endpoint address.
+const identityOf = (device: DiscoveredDevice): string => {
+  const addresses = [...device.xaddrs.map(String), ...device.droppedXAddrs].sort()
+  return JSON.stringify([device.endpoint, addresses.length > 0 ? addresses : device.address])
+}
+
 const delay = (attempt: number): number =>
   Math.min(UPPER_DELAY_MS, (MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS)) * 2 ** attempt)
 
@@ -157,13 +163,14 @@ export async function* discover(options: DiscoverOptions = {}): AsyncGenerator<D
     }
     for (const error of reply.errors) onError(error)
     for (const device of reply.devices) {
-      if (seen.has(device.endpoint)) continue
+      const identity = identityOf(device)
+      if (seen.has(identity)) continue
       if (seen.size >= MAX_DEVICES) {
         if (!overflowReported) onError(new OnvifError(`More than ${MAX_DEVICES} devices answered`, context))
         overflowReported = true
         return
       }
-      seen.add(device.endpoint)
+      seen.add(identity)
       queue.push(device)
       wake()
     }

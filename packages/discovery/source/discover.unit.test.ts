@@ -92,6 +92,31 @@ describe('discover', () => {
     expect(new Set(responder.probes.map((probe) => probe.messageId)).size).toBe(2)
   })
 
+  it('yields devices that share an endpoint but list other addresses', async () => {
+    const endpoint = 'urn:uuid:00000000-0000-4000-8000-000000000003'
+    const responder = await respond({
+      reply: (probe) => [
+        probeMatches(probe.messageId, [{ endpoint, host: '192.0.2.10' }]),
+        probeMatches(probe.messageId, [{ endpoint, host: '192.0.2.14' }])
+      ]
+    })
+    const { devices, errors } = await collect({ hosts: [responder.host], xaddrs: 'any' })
+    expect(errors).toEqual([])
+    expect(devices.map((device) => device.xaddrs[0]?.hostname)).toEqual(['192.0.2.10', '192.0.2.14'])
+  })
+
+  it('yields a device without addresses once for the address it answers from', async () => {
+    const first = await respond({
+      reply: (probe) => [probeMatches(probe.messageId).replace(/<d:XAddrs>.*<\/d:XAddrs>/, '')]
+    })
+    const second = await respond({
+      reply: (probe) => [probeMatches(probe.messageId).replace(/<d:XAddrs>.*<\/d:XAddrs>/, '')]
+    })
+    const { devices } = await collect({ hosts: [first.host, second.host] })
+    expect(devices).toHaveLength(1)
+    expect(devices[0]?.xaddrs).toEqual([])
+  })
+
   it('yields each device as it answers, before the timeout', async () => {
     const responder = await respond()
     const start = performance.now()

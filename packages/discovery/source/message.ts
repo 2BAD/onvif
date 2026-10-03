@@ -32,7 +32,10 @@ export type QualifiedName = {
 }
 
 export type DiscoveredDevice = {
-  /** Endpoint reference address of the device, usually a `urn:uuid:`. It stays the same across reboots and IP changes. */
+  /**
+   * Endpoint reference address of the device, usually a `urn:uuid:`. It stays the same across reboots and IP changes.
+   * Several units of some models share one.
+   */
   endpoint: string
   /** Address the reply came from. */
   address: string

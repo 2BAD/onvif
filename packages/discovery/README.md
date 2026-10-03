@@ -33,7 +33,7 @@ if (url) {
 }
 ```
 
-`found.endpoint` identifies the camera across reboots and address changes.
+`found.endpoint` stays the same across reboots and address changes. Some cameras share it with other units of the same model.
 
 ## Addresses on other hosts
 
