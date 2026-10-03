@@ -3,6 +3,7 @@
   "include": ["packages/*/source/**/*", "packages/*/tsdown.config.ts", "tools/**/*", "vitest.config.ts"],
   "compilerOptions": {
     "target": "es2025",
+    "lib": ["es2025", "esnext.array"],
     "noEmit": true,
     "types": ["node"],
     "allowImportingTsExtensions": true,

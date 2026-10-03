@@ -38,8 +38,7 @@ const listen = async (server: Server, protocol = 'http'): Promise<URL> => {
 
 const serve = (handler: (request: IncomingMessage, response: ServerResponse, body: string) => void) =>
   createServer(async (request, response) => {
-    const chunks: Buffer[] = []
-    for await (const chunk of request) chunks.push(chunk as Buffer)
+    const chunks = await Array.fromAsync<Buffer>(request)
     handler(request, response, Buffer.concat(chunks).toString('utf8'))
   })
 

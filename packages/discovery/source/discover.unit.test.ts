@@ -46,15 +46,11 @@ const respond = async (options?: MockResponderOptions): Promise<MockResponder> =
   return responder
 }
 
-const all = async (devices: AsyncIterable<DiscoveredDevice>): Promise<DiscoveredDevice[]> => {
-  const found: DiscoveredDevice[] = []
-  for await (const device of devices) found.push(device)
-  return found
-}
-
 const collect = async (options: DiscoverOptions): Promise<{ devices: DiscoveredDevice[]; errors: OnvifError[] }> => {
   const errors: OnvifError[] = []
-  const devices = await all(discover({ timeoutMs: 400, onError: (error) => errors.push(error), ...options }))
+  const devices = await Array.fromAsync(
+    discover({ timeoutMs: 400, onError: (error) => errors.push(error), ...options })
+  )
   return { devices, errors }
 }
 
@@ -163,7 +159,7 @@ describe('discover', () => {
 
   it('ignores bad replies without an error callback', async () => {
     const responder = await respond({ reply: (probe) => ['<x/>', probeMatches(probe.messageId)] })
-    const devices = await all(discover({ hosts: [responder.host], timeoutMs: 300 }))
+    const devices = await Array.fromAsync(discover({ hosts: [responder.host], timeoutMs: 300 }))
     expect(devices).toHaveLength(1)
   })
 

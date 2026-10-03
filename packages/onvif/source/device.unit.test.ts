@@ -415,8 +415,7 @@ describe('service addresses', () => {
       const front = createHttpsServer(
         { cert: readFileSync(join(tls, 'cert.pem')), key: readFileSync(join(tls, 'key.pem')) },
         async (request, response) => {
-          const chunks: Buffer[] = []
-          for await (const chunk of request) chunks.push(chunk as Buffer)
+          const chunks = await Array.fromAsync<Buffer>(request)
           const reply = await fetch(`${target}${request.url}`, {
             method: 'POST',
             headers: { 'Content-Type': request.headers['content-type'] ?? '' },

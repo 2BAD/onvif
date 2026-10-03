@@ -382,8 +382,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
 
   const server = createServer(async (request, response) => {
     try {
-      const chunks: Buffer[] = []
-      for await (const chunk of request) chunks.push(chunk as Buffer)
+      const chunks = await Array.fromAsync<Buffer>(request)
       await handle(request, response, Buffer.concat(chunks).toString('utf8'))
     } catch (error) {
       response.destroy(error instanceof Error ? error : new Error(String(error)))
