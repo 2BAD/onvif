@@ -39,12 +39,11 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
         if (motionOf(notification)) break
       }
       const motion = received.map(motionOf).find(Boolean)
-      if (!motion) {
-        const topics = received.map((notification) => notification.topic?.expression).join(', ')
-        expect.fail(
-          `No motion notification within 10 s although the device lists the motion topic. Received: ${topics}`
-        )
-      }
+      const topics = received.map((notification) => notification.topic?.expression).join(', ')
+      expect(
+        motion,
+        `No motion notification within 10 s although the device lists the motion topic. Received: ${topics}`
+      ).toBeDefined()
       expect(motion).toMatchObject({ initialized: true, isMotion: expect.any(Boolean) })
       expect(motion?.source['VideoSourceConfigurationToken']).toBeDefined()
       expect(errors).toEqual([])
