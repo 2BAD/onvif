@@ -385,6 +385,14 @@ const scrub = (xml: string): string => {
   return result
     .replace(/:\/\/[^/@\s<"]+:[^/@\s<"]+@/g, '://')
     .replace(/(<[\w-]+:(?:Password|Nonce)\b[^>]*>)[^<]*/g, '$1REDACTED')
+    .replace(
+      /(onvif:\/\/www\.onvif\.org\/(?:name|location)\/)([^\s<]+)/gi,
+      (_, scope: string, value: string) => `${scope}${pseudonym(value, 'text')}`
+    )
+    .replace(
+      /(<[\w-]+:HostnameInformation\b[^>]*>(?:(?!HostnameInformation>)[\s\S])*?<[\w-]+:Name>)([^<]+)/g,
+      (_, start: string, name: string) => `${start}${pseudonym(name, 'text')}`
+    )
     .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => (isNonIdentifyingIp(ip) ? ip : pseudonym(ip, 'ip')))
     .replace(/\[([0-9a-f:]+)\]/gi, (_, ip: string) => `[${pseudonym(ip.toLowerCase(), 'ipv6')}]`)
     .replace(/\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi, (mac) => pseudonym(mac.toLowerCase(), 'mac'))

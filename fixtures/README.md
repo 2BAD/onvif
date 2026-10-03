@@ -33,6 +33,7 @@ Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configu
 Before writing anything it scrubs:
 
 - serial number, hardware id, username and password -> `REDACTEDn`
+- hostname and the values of `name` and `location` scopes -> `REDACTEDn`
 - echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
 - unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
 - IPv6 addresses in URLs -> `fe80::n` for link-local, `2001:db8::n` otherwise
