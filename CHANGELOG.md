@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `url` option to `Device.connect()` for connecting to a device service URL
 - Added `parseEnvelope()` and `serialize()` to the core for reading and writing SOAP messages
 
+### Fixed
+
+- Fixed a subscription closed by `signal` crashing the process when `Unsubscribe` fails unexpectedly
+
 ## [2.0.0-alpha.1] - 2026-10-02
 
 ### Breaking Changes

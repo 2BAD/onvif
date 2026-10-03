@@ -459,6 +459,24 @@ describe('close', () => {
     expect(await subscription.next()).toEqual({ value: undefined, done: true })
   })
 
+  it('reports an Unsubscribe that fails with an error from outside the library after the signal aborts', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const controller = new AbortController()
+    const { subscription, errors } = await open(device, { signal: controller.signal })
+    await take(subscription, 1)
+    const call = device.call.bind(device)
+    const failure = new TypeError('another copy of @2bad/onvif')
+    vi.spyOn(device, 'call').mockImplementation((operation, ...rest) =>
+      operation.name === 'Unsubscribe' ? Promise.reject(failure) : call(operation, ...rest)
+    )
+    controller.abort()
+    await vi.waitFor(() => expect(errors).toHaveLength(1))
+    expect(errors[0]).toBeInstanceOf(OnvifError)
+    expect(errors[0]).toMatchObject({ service: 'wsnt', action: 'Unsubscribe', cause: failure })
+    await expect(subscription.close()).resolves.toBeUndefined()
+  })
+
   it('stops a backoff wait at once', async () => {
     const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'status', status: 500 } } })
     const { subscription } = await open(await connect(mock))

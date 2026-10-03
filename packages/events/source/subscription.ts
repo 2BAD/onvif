@@ -304,8 +304,10 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     try {
       await this.#device.call(Unsubscribe, {}, { to: reference, addressing: true, timeoutMs: UNSUBSCRIBE_TIMEOUT_MS })
     } catch (error) {
-      if (!(error instanceof OnvifError)) throw error
-      this.#onError(error)
+      const context = { host: this.#device.address.host, service: 'wsnt', action: 'Unsubscribe' }
+      this.#onError(
+        error instanceof OnvifError ? error : new OnvifError('Unsubscribe failed', context, { cause: error })
+      )
     }
   }
 
