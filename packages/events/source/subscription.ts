@@ -127,10 +127,8 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
 
   async next(): Promise<IteratorResult<Notification>> {
     const previous = this.#queue
-    let release = () => {}
-    this.#queue = new Promise((resolve) => {
-      release = resolve
-    })
+    const { promise, resolve: release }: PromiseWithResolvers<void> = Promise.withResolvers()
+    this.#queue = promise
     try {
       await previous
       return await this.#next()

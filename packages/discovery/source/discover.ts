@@ -227,9 +227,9 @@ export async function* discover(options: DiscoverOptions = {}): AsyncGenerator<D
         continue
       }
       if (finished) return
-      await new Promise<void>((resolve) => {
-        wake = resolve
-      })
+      const { promise, resolve }: PromiseWithResolvers<void> = Promise.withResolvers()
+      wake = resolve
+      await promise
     }
   } finally {
     signal?.removeEventListener('abort', finish)
