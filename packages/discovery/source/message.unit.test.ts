@@ -87,17 +87,17 @@ describe('readProbeMatches', () => {
   it('reads the DCN-BF5365 reply with Profile G and no Profile T', () => {
     const { devices, errors } = readProbeMatches(
       liveReply('dcn-bf5365/discovery.ProbeMatches'),
-      '192.0.2.10',
+      '192.0.2.14',
       probes,
       'sender'
     )
     expect(errors).toEqual([])
     expect(devices).toMatchObject([
       {
-        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000003',
-        xaddrs: [new URL('http://192.0.2.10/onvif/device_service')],
-        droppedXAddrs: ['http://[fe80::2]:80/onvif/device_service'],
-        name: 'Camera 1',
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000011',
+        xaddrs: [new URL('http://192.0.2.14/onvif/device_service')],
+        droppedXAddrs: ['http://[fe80::a]:80/onvif/device_service'],
+        name: 'REDACTED7',
         hardware: 'DCN-BF5365',
         profiles: ['Streaming', 'G']
       }

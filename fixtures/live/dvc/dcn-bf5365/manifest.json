@@ -3,9 +3,133 @@
   "vendor": "DVC",
   "model": "DCN-BF5365",
   "responses": {
+    "device.GetSystemDateAndTime": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemDateAndTimeUnauthorizedFault": {
+      "status": 401,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.UnknownActionFault": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetServices": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDeviceInformation": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetScopes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetHostname": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetNetworkInterfaces": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetProfiles": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetProfiles": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.GetEventProperties": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
     "discovery.ProbeMatches": {
       "status": 200,
       "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesDevice": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "events.CreatePullPointSubscription": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessages": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.Unsubscribe": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotion": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotionEnd": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
