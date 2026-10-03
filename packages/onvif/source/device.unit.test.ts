@@ -955,3 +955,26 @@ describe('Device.download', () => {
     expect(performance.now() - started).toBeLessThan(900)
   })
 })
+
+describe('Device.use', () => {
+  it('adds the properties of an extension to the device and returns the device', async () => {
+    const device = await connect(await camera())
+    const extended = device.use((target) => ({ greeting: { host: () => target.address.host } }))
+    expect(extended).toBe(device)
+    expect(extended.greeting.host()).toBe(device.address.host)
+    expect(Object.getOwnPropertyDescriptor(extended, 'greeting')).toMatchObject({ writable: false, enumerable: true })
+  })
+
+  it('rejects a property the device already has and adds none of the others', async () => {
+    const device = await connect(await camera())
+    expect(() => device.use(() => ({ extra: 1, call: 2 }))).toThrow(OnvifError)
+    expect(() => device.use(() => ({ call: 2 }))).toThrow("Device already has 'call'")
+    expect('extra' in device).toBe(false)
+    device.use(() => ({ extra: 1 }))
+    const symbol = Symbol('extra')
+    expect(() => device.use(() => ({ extra: 2 }))).toThrow("Device already has 'extra'")
+    expect(() => device.use(() => ({ [symbol]: 1 })).use(() => ({ [symbol]: 2 }))).toThrow(
+      "Device already has 'Symbol(extra)'"
+    )
+  })
+})

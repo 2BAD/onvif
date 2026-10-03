@@ -75,6 +75,18 @@ The third argument takes `signal` to abort the call and `timeoutMs` to override 
 await device.call(DeviceManagement.GetScopes, {}, { signal: AbortSignal.timeout(2_000) })
 ```
 
+## Service packages
+
+```ts
+import { events } from '@2bad/onvif-events'
+import { media } from '@2bad/onvif-media'
+
+const camera = device.use(media).use(events)
+const profiles = await camera.media.getProfiles()
+```
+
+`use()` returns the same device with the functions of the package added. Adding a name the device already has throws an `OnvifError`.
+
 ## Authentication
 
 Uses WS-Security digest and HTTP Digest. Works with cameras whose clock is wrong.

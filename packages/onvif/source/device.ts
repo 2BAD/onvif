@@ -458,6 +458,25 @@ export class Device {
     return { contentType: headers['content-type']?.[0], body }
   }
 
+  /**
+   * Add the methods of a service package to this device, such as `media` from `@2bad/onvif-media`. The device itself is
+   * returned with the new properties.
+   *
+   * @param extension - Function that takes the device and returns the properties to add
+   * @returns This device
+   * @throws {OnvifError} If the device already has a property the extension adds
+   */
+  use<Extension extends object>(extension: (device: Device) => Extension): this & Extension {
+    const added = extension(this)
+    const keys = Reflect.ownKeys(added)
+    const taken = keys.find((key) => key in this)
+    if (taken !== undefined) {
+      throw new OnvifError(`Device already has '${String(taken)}'`, { host: this.address.host })
+    }
+    for (const key of keys) Object.defineProperty(this, key, { value: Reflect.get(added, key), enumerable: true })
+    return this as this & Extension
+  }
+
   /** Close idle connections. The device can still be used afterwards. */
   close(): void {
     this.#transport.close()
