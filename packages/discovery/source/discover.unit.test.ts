@@ -181,7 +181,7 @@ describe('discover', () => {
       reply: (probe) => {
         if (answered) return []
         answered = true
-        return Array.from({ length: Math.ceil(4_100 / perDatagram) }, (_, index) =>
+        return Array.from({ length: Math.ceil(4_500 / perDatagram) }, (_, index) =>
           datagram(probe.messageId, index * perDatagram)
         )
       }
