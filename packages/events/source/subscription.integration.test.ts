@@ -27,7 +27,11 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
       context.skip('The device lists no motion topic')
     }
     const errors: OnvifError[] = []
-    const subscription = await subscribe(device, { onError: (error) => errors.push(error), pullTimeoutMs: 2_000 })
+    const subscription = await subscribe(device, {
+      onError: (error) => errors.push(error),
+      pullTimeoutMs: 2_000,
+      signal: AbortSignal.timeout(10_000)
+    })
     try {
       const received: Notification[] = []
       for await (const notification of subscription) {
@@ -35,6 +39,12 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
         if (motionOf(notification)) break
       }
       const motion = received.map(motionOf).find(Boolean)
+      if (!motion) {
+        const topics = received.map((notification) => notification.topic?.expression).join(', ')
+        expect.fail(
+          `No motion notification within 10 s although the device lists the motion topic. Received: ${topics}`
+        )
+      }
       expect(motion).toMatchObject({ initialized: true, isMotion: expect.any(Boolean) })
       expect(motion?.source['VideoSourceConfigurationToken']).toBeDefined()
       expect(errors).toEqual([])
