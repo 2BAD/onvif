@@ -211,7 +211,7 @@ const isTransient = (error: unknown): boolean => {
   if (!(error instanceof TransportError)) return false
   if (error.status !== undefined) return TRANSIENT_STATUSES.has(error.status)
   const { cause } = error
-  return cause instanceof Error && 'code' in cause && TRANSIENT_NETWORK_CODES.has(String(cause.code))
+  return Error.isError(cause) && 'code' in cause && TRANSIENT_NETWORK_CODES.has(String(cause.code))
 }
 
 const isActionRejection = (error: unknown): boolean =>

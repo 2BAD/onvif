@@ -46,7 +46,7 @@ const duration = (ms: number): string => `PT${Number((ms / 1000).toFixed(3))}S`
 const hasFault = (error: unknown, name: string): boolean =>
   error instanceof SoapFaultError && [error.code, ...error.subcodes].includes(name)
 
-const isAbort = (error: unknown): boolean => error instanceof Error && error.name === 'AbortError'
+const isAbort = (error: unknown): boolean => Error.isError(error) && error.name === 'AbortError'
 
 const isRecoverable = (error: unknown): error is OnvifError =>
   !(error instanceof AuthError) &&

@@ -106,7 +106,7 @@ class PinnedAgent extends HttpsAgent {
       } catch (error) {
         this.#sessions.delete(name)
         socket.destroy()
-        oncreate?.(error instanceof Error ? error : new Error(String(error)), socket)
+        oncreate?.(Error.isError(error) ? error : new Error(String(error)), socket)
       }
     }
     void verify()
@@ -120,7 +120,7 @@ const offersBasic = (challenges: string[]): boolean =>
   challenges.some((challenge) => /(?:^|,)\s*Basic(?:\s|,|$)/i.test(challenge))
 
 const isResetOfReusedSocket = (error: unknown, reusedSocket: boolean): boolean =>
-  reusedSocket && error instanceof Error && 'code' in error && error.code === 'ECONNRESET'
+  reusedSocket && Error.isError(error) && 'code' in error && error.code === 'ECONNRESET'
 
 export class HttpTransport {
   readonly #timeoutMs: number
@@ -303,7 +303,7 @@ export class HttpTransport {
           } else if (!responded && isResetOfReusedSocket(error, outgoing?.reusedSocket === true)) {
             reject(new RetryableReset())
           } else {
-            const message = error instanceof Error ? error.message : String(error)
+            const message = Error.isError(error) ? error.message : String(error)
             reject(new TransportError(`Request failed: ${message}`, context, { cause: error }))
           }
         }
