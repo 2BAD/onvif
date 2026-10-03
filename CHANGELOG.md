@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `url` option to `Device.connect()` for connecting to a device service URL
 - Added `parseEnvelope()` and `serialize()` to the core for reading and writing SOAP messages
 
+### Changed
+
+- base64 values with bits set past the end or non-ASCII whitespace are now rejected as a `DecodeError`
+
 ### Fixed
 
 - Fixed a subscription closed by `signal` crashing the process when `Unsubscribe` fails unexpectedly

@@ -41,7 +41,6 @@ const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
 const dateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
-const base64Pattern = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
 const typeOf = (schema: Schema, name: string): TypeSchema => {
@@ -87,11 +86,12 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
       }
       return date
     }
-    case 'base64': {
-      const compact = trimmed.replaceAll(/\s/g, '')
-      if (!base64Pattern.test(compact)) throw new DecodeError('Invalid base64 value', path, context)
-      return new Uint8Array(Buffer.from(compact, 'base64'))
-    }
+    case 'base64':
+      try {
+        return Uint8Array.fromBase64(trimmed, { lastChunkHandling: 'strict' })
+      } catch {
+        throw new DecodeError('Invalid base64 value', path, context)
+      }
     default:
       throw new OnvifError(`Unknown primitive ${primitive}`)
   }
@@ -246,7 +246,7 @@ class Encoder {
         if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString()
         break
       case 'base64':
-        if (value instanceof Uint8Array) return Buffer.from(value).toString('base64')
+        if (value instanceof Uint8Array) return value.toBase64()
         break
       case 'any':
         if (typeof value === 'string') return value

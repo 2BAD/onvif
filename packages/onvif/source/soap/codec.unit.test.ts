@@ -164,6 +164,18 @@ describe('decode', () => {
     expect(blob('')).toEqual(new Uint8Array([]))
   })
 
+  it.each([
+    ['without padding', 'AQ'],
+    ['with bits set past the end', 'AR=='],
+    ['with an incomplete group', 'AQI'],
+    ['with data after the padding', 'AQ=I'],
+    ['in the URL alphabet', 'AQ-_'],
+    ['with a non-ASCII space', 'AQ\u00a0ID']
+  ])('rejects base64 %s', (_name, value) => {
+    const xml = `<Sample token="t"><Name>a</Name><Blob>${value}</Blob></Sample>`
+    expect(() => decode(schema, 'Sample', parsed(xml))).toThrow('Invalid base64 value at Sample.Blob')
+  })
+
   it('carries the namespaces of an element parsed with namespaces to the decoded object', () => {
     const root = parseXml(
       '<t:Sample xmlns:t="urn:t" xmlns:tns1="urn:topics" token="x"><t:Name>a</t:Name><t:Text>tns1:A</t:Text></t:Sample>',

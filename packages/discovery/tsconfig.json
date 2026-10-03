@@ -4,7 +4,7 @@
   "exclude": ["source/**/*.test.ts"],
   "compilerOptions": {
     "target": "es2025",
-    "lib": ["es2025", "esnext.error"],
+    "lib": ["es2025", "esnext.error", "esnext.typedarrays"],
     "outDir": "build",
     "types": ["node"],
     "declaration": true,
