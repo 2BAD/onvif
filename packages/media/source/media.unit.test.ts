@@ -299,6 +299,38 @@ describe('getProfiles', () => {
     expect((await getStreamUri(device, first)).uri.pathname).toBe('/profile1')
   })
 
+  it('reads the 28 profiles of the 14 channel DRN-3282R recorder and keeps its channel addresses', async () => {
+    const recorder = (name: string): string => fixture(`live/dvc/drn-3282r/${name}.xml`).xml
+    const mock = await camera({
+      overrides: {
+        'media2.GetProfiles': answer(recorder('media2.GetProfiles')),
+        'media2.GetStreamUri': answer(recorder('media2.GetStreamUri')),
+        'media2.GetSnapshotUri': answer(recorder('media2.GetSnapshotUri'))
+      }
+    })
+    const device = await connect(mock)
+    const profiles = await getProfiles(device)
+    expect(profiles).toHaveLength(28)
+    expect(new Set(profiles.map(({ videoSource }) => videoSource?.sourceToken)).size).toBe(14)
+    expect(
+      profiles
+        .slice(0, 2)
+        .map(({ token, videoSource, videoEncoder }) => [
+          token,
+          videoSource?.sourceToken,
+          videoEncoder?.encoding,
+          videoEncoder?.resolution
+        ])
+    ).toEqual([
+      ['Profile_11_0', 'entities_11_0_1', 'H265', { width: 2592, height: 1944 }],
+      ['Profile_11_1', 'entities_11_0_1', 'H264', { width: 1280, height: 720 }]
+    ])
+    const first = { service: 'media2', token: 'Profile_11_0' } as const
+    expect((await getStreamUri(device, first)).uri.pathname).toBe('/chID=11&streamType=main&linkType=tcp')
+    const snapshot = await getSnapshotUri(device, first)
+    expect(`${snapshot.uri.pathname}${snapshot.uri.search}`).toBe('/onvif/snapshot?11_0')
+  })
+
   it('returns a single profile as an array and keeps a numeric token a string (Illustra)', async () => {
     const xml = live('media.GetProfiles')
     const first = xml.indexOf('<trt:Profiles ')
