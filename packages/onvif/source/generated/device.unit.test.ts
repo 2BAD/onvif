@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { corpus } from '../../../../tools/fixtures/corpus.ts'
+import { corpus, fixture as captured } from '../../../../tools/fixtures/corpus.ts'
+import { DecodeError } from '#errors.ts'
 import { decode } from '#soap/codec.ts'
 import { parseEnvelope } from '#soap/envelope.ts'
 import * as device from '#generated/device.ts'
@@ -46,5 +47,14 @@ describe('generated device operations', () => {
     ) as device.GetSystemDateAndTimeResponse
     expect(result.systemDateAndTime.daylightSavings).toBe(false)
     expect(result.systemDateAndTime.utcDateTime?.date.year).toBeTypeOf('number')
+  })
+
+  it('reject the DRN-3282R capabilities, which list supported versions without the required Minor', () => {
+    const { body } = parseEnvelope(captured('live/dvc/drn-3282r/device.GetCapabilitiesWithoutMinorVersion.xml').xml)
+    const response = body['GetCapabilitiesResponse'] ?? ''
+    expect(() => decode(device.schema, 'GetCapabilitiesResponse', response)).toThrow(DecodeError)
+    expect(() => decode(device.schema, 'GetCapabilitiesResponse', response)).toThrow(
+      'Missing required element Minor at GetCapabilitiesResponse.Capabilities.Device.System.SupportedVersions[0]'
+    )
   })
 })

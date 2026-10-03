@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:ad="http://www.w3.org/2005/08/addressing" xmlns:addis="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:adw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:ana="http://www.onvif.org/ver20/analytics/wsdl" xmlns:dio="http://www.onvif.org/ver10/deviceIO/wsdl" xmlns:dis="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:et="http://www.hikvision.com/2011/event/topics" xmlns:http="http://schemas.xmlsoap.org/wsdl/http" xmlns:img="http://www.onvif.org/ver20/imaging/wsdl" xmlns:nt="http://www.onvif.org/ver10/network/wsdl" xmlns:ptzw="http://www.onvif.org/ver20/ptz/wsdl" xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:sto="http://www.onvif.org/ver10/storage/wsdl" xmlns:tds="http://www.onvif.org/ver10/device/wsdl" xmlns:ter="http://www.onvif.org/ver10/error" xmlns:tev="http://www.onvif.org/ver10/events/wsdl" xmlns:tns1="http://www.onvif.org/ver10/topics" xmlns:tr2="http://www.onvif.org/ver20/media/wsdl" xmlns:trc="http://www.onvif.org/ver10/recording/wsdl" xmlns:trp="http://www.onvif.org/ver10/replay/wsdl" xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:trv="http://www.onvif.org/ver10/receiver/wsdl" xmlns:tse="http://www.onvif.org/ver10/search/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema" xmlns:wsa5="http://www.w3.org/2005/08/addressing" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema">	<s:Header></s:Header>
+	<s:Body>		<ptzw:GetConfigurationsResponse>			<ptzw:PTZConfiguration token="entities_13_0_256">				<tt:NodeToken>entities_13_0_256</tt:NodeToken>
+				<tt:Name>entities_13_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_13_1_256">				<tt:NodeToken>entities_13_1_256</tt:NodeToken>
+				<tt:Name>entities_13_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_14_0_256">				<tt:NodeToken>entities_14_0_256</tt:NodeToken>
+				<tt:Name>entities_14_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_14_1_256">				<tt:NodeToken>entities_14_1_256</tt:NodeToken>
+				<tt:Name>entities_14_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_15_0_256">				<tt:NodeToken>entities_15_0_256</tt:NodeToken>
+				<tt:Name>entities_15_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_15_1_256">				<tt:NodeToken>entities_15_1_256</tt:NodeToken>
+				<tt:Name>entities_15_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_1_0_256">				<tt:NodeToken>entities_1_0_256</tt:NodeToken>
+				<tt:Name>entities_1_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_1_1_256">				<tt:NodeToken>entities_1_1_256</tt:NodeToken>
+				<tt:Name>entities_1_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_2_0_256">				<tt:NodeToken>entities_2_0_256</tt:NodeToken>
+				<tt:Name>entities_2_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_2_1_256">				<tt:NodeToken>entities_2_1_256</tt:NodeToken>
+				<tt:Name>entities_2_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_3_0_256">				<tt:NodeToken>entities_3_0_256</tt:NodeToken>
+				<tt:Name>entities_3_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_3_1_256">				<tt:NodeToken>entities_3_1_256</tt:NodeToken>
+				<tt:Name>entities_3_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_4_0_256">				<tt:NodeToken>entities_4_0_256</tt:NodeToken>
+				<tt:Name>entities_4_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_4_1_256">				<tt:NodeToken>entities_4_1_256</tt:NodeToken>
+				<tt:Name>entities_4_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_5_0_256">				<tt:NodeToken>entities_5_0_256</tt:NodeToken>
+				<tt:Name>entities_5_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_5_1_256">				<tt:NodeToken>entities_5_1_256</tt:NodeToken>
+				<tt:Name>entities_5_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_6_0_256">				<tt:NodeToken>entities_6_0_256</tt:NodeToken>
+				<tt:Name>entities_6_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_6_1_256">				<tt:NodeToken>entities_6_1_256</tt:NodeToken>
+				<tt:Name>entities_6_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_7_0_256">				<tt:NodeToken>entities_7_0_256</tt:NodeToken>
+				<tt:Name>entities_7_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_7_1_256">				<tt:NodeToken>entities_7_1_256</tt:NodeToken>
+				<tt:Name>entities_7_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_8_0_256">				<tt:NodeToken>entities_8_0_256</tt:NodeToken>
+				<tt:Name>entities_8_0_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+			<ptzw:PTZConfiguration token="entities_8_1_256">				<tt:NodeToken>entities_8_1_256</tt:NodeToken>
+				<tt:Name>entities_8_1_256</tt:Name>
+				<tt:UseCount>1</tt:UseCount>
+				<tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
+				<tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>
+				<tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+				<tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>
+				<tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
+				<tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
+				<tt:DefaultPTZSpeed>					<tt:PanTilt space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace" x="0.1" y="0.1"></tt:PanTilt>
+					<tt:Zoom space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace" x="0.1"></tt:Zoom>
+				</tt:DefaultPTZSpeed>
+				<tt:DefaultPTZTimeout>PT1S</tt:DefaultPTZTimeout>
+				<tt:PanTiltLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+						<tt:YRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:YRange>
+					</tt:Range>
+				</tt:PanTiltLimits>
+				<tt:ZoomLimits>					<tt:Range>						<tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
+						<tt:XRange>							<tt:Min>0</tt:Min>
+							<tt:Max>1</tt:Max>
+						</tt:XRange>
+					</tt:Range>
+				</tt:ZoomLimits>
+			</ptzw:PTZConfiguration>
+		</ptzw:GetConfigurationsResponse>
+	</s:Body>
+</s:Envelope>
+

@@ -107,23 +107,23 @@ describe('readProbeMatches', () => {
   it('reads the DRN-3282R recorder reply with whitespace between elements and in XAddrs', () => {
     const { devices, errors } = readProbeMatches(
       liveReply('drn-3282r/discovery.ProbeMatches'),
-      '192.0.2.10',
+      '192.0.2.14',
       probes,
       'sender'
     )
     expect(errors).toEqual([])
     expect(devices).toEqual([
       {
-        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000002',
-        address: '192.0.2.10',
-        xaddrs: [new URL('http://192.0.2.10/onvif/device_service')],
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000017',
+        address: '192.0.2.14',
+        xaddrs: [new URL('http://192.0.2.14/onvif/device_service')],
         droppedXAddrs: [],
         types: [
           { namespace: NETWORK, name: 'NetworkVideoTransmitter' },
           { namespace: DEVICE, name: 'Device' }
         ],
         scopes: expect.arrayContaining(['onvif://www.onvif.org/hardware/DRN-3282R']),
-        name: 'DRN-3282R',
+        name: 'REDACTED6',
         hardware: 'DRN-3282R',
         profiles: ['G', 'T']
       }

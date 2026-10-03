@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:ad="http://www.w3.org/2005/08/addressing" xmlns:addis="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:adw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:ana="http://www.onvif.org/ver20/analytics/wsdl" xmlns:dio="http://www.onvif.org/ver10/deviceIO/wsdl" xmlns:dis="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:et="http://www.hikvision.com/2011/event/topics" xmlns:http="http://schemas.xmlsoap.org/wsdl/http" xmlns:img="http://www.onvif.org/ver20/imaging/wsdl" xmlns:nt="http://www.onvif.org/ver10/network/wsdl" xmlns:ptzw="http://www.onvif.org/ver20/ptz/wsdl" xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:sto="http://www.onvif.org/ver10/storage/wsdl" xmlns:tds="http://www.onvif.org/ver10/device/wsdl" xmlns:ter="http://www.onvif.org/ver10/error" xmlns:tev="http://www.onvif.org/ver10/events/wsdl" xmlns:tns1="http://www.onvif.org/ver10/topics" xmlns:tr2="http://www.onvif.org/ver20/media/wsdl" xmlns:trc="http://www.onvif.org/ver10/recording/wsdl" xmlns:trp="http://www.onvif.org/ver10/replay/wsdl" xmlns:trt="http://www.onvif.org/ver10/media/wsdl" xmlns:trv="http://www.onvif.org/ver10/receiver/wsdl" xmlns:tse="http://www.onvif.org/ver10/search/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema" xmlns:wsa5="http://www.w3.org/2005/08/addressing" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema">	<s:Header>		<wsa5:Action s:mustUnderstand="true">http://docs.oasis-open.org/wsn/bw-2/SubscriptionManager/UnsubscribeResponse</wsa5:Action>
+		<wsa5:MessageID></wsa5:MessageID>
+		<wsa5:ReplyTo>
+			<wsa5:Address></wsa5:Address>
+		</wsa5:ReplyTo>
+		<wsa5:To s:mustUnderstand="true">http://192.0.2.14/onvif/event/subsription_0</wsa5:To>
+	</s:Header>
+	<s:Body>		<wsnt:UnsubscribeResponse></wsnt:UnsubscribeResponse>
+	</s:Body>
+</s:Envelope>
+

@@ -3,7 +3,95 @@
   "vendor": "DVC",
   "model": "DRN-3282R",
   "responses": {
+    "device.UnknownActionFault": {
+      "status": 400,
+      "contentType": "text/html"
+    },
+    "device.GetServices": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetCapabilitiesWithoutMinorVersion": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetDeviceInformation": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetScopes": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetHostname": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetNetworkInterfaces": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetProfiles": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "media2.GetStreamUri": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "ptz.GetNodes": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "ptz.GetConfigurations": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "events.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "events.GetEventProperties": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "events.CreatePullPointSubscription": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "events.PullMessages": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "events.Unsubscribe": {
+      "status": 200,
+      "contentType": "text/html"
+    },
     "discovery.ProbeMatches": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesDevice": {
       "status": 200,
       "contentType": "application/soap+xml"
     }
