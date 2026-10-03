@@ -146,6 +146,14 @@
     "discovery.ProbeMatchesDevice": {
       "status": 200,
       "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesSharedEndpoint1": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesSharedEndpoint2": {
+      "status": 200,
+      "contentType": "application/soap+xml"
     }
   }
 }

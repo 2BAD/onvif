@@ -8,8 +8,10 @@ const DEVICE = 'http://www.onvif.org/ver10/device/wsdl'
 const probeId = 'urn:uuid:3c0b0a62-4b5e-4f0c-9a43-8f6c2f2b1d11'
 const probes = new Set([probeId])
 
-const dvcReply = (): string =>
-  fixture('live/dvc/dcn-bm2220lpr/discovery.ProbeMatches.xml').xml.replace(/(<wsa:RelatesTo>)[^<]*/, `$1${probeId}`)
+const liveReply = (name: string): string =>
+  fixture(`live/dvc/${name}.xml`).xml.replace(/(<wsa:RelatesTo>)[^<]*/, `$1${probeId}`)
+
+const dvcReply = (): string => liveReply('dcn-bm2220lpr/discovery.ProbeMatches')
 
 const reply = (matches: string, relatesTo = probeId, declarations = ''): string =>
   '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" ' +
@@ -80,6 +82,63 @@ describe('readProbeMatches', () => {
         profiles: ['Streaming', 'T', 'G']
       }
     ])
+  })
+
+  it('reads the DCN-BF5365 reply with Profile G and no Profile T', () => {
+    const { devices, errors } = readProbeMatches(
+      liveReply('dcn-bf5365/discovery.ProbeMatches'),
+      '192.0.2.10',
+      probes,
+      'sender'
+    )
+    expect(errors).toEqual([])
+    expect(devices).toMatchObject([
+      {
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000003',
+        xaddrs: [new URL('http://192.0.2.10/onvif/device_service')],
+        droppedXAddrs: ['http://[fe80::2]:80/onvif/device_service'],
+        name: 'Camera 1',
+        hardware: 'DCN-BF5365',
+        profiles: ['Streaming', 'G']
+      }
+    ])
+  })
+
+  it('reads the DRN-3282R recorder reply with whitespace between elements and in XAddrs', () => {
+    const { devices, errors } = readProbeMatches(
+      liveReply('drn-3282r/discovery.ProbeMatches'),
+      '192.0.2.10',
+      probes,
+      'sender'
+    )
+    expect(errors).toEqual([])
+    expect(devices).toEqual([
+      {
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000002',
+        address: '192.0.2.10',
+        xaddrs: [new URL('http://192.0.2.10/onvif/device_service')],
+        droppedXAddrs: [],
+        types: [
+          { namespace: NETWORK, name: 'NetworkVideoTransmitter' },
+          { namespace: DEVICE, name: 'Device' }
+        ],
+        scopes: expect.arrayContaining(['onvif://www.onvif.org/hardware/DRN-3282R']),
+        name: 'DRN-3282R',
+        hardware: 'DRN-3282R',
+        profiles: ['G', 'T']
+      }
+    ])
+  })
+
+  it('reads two DCN-BM2220LPR cameras that share an endpoint as two devices', () => {
+    const [first, second] = ['10', '14'].map((host, index) => {
+      const xml = liveReply(`dcn-bm2220lpr/discovery.ProbeMatchesSharedEndpoint${index + 1}`)
+      return readProbeMatches(xml, `192.0.2.${host}`, probes, 'sender').devices[0]
+    })
+    expect(first?.endpoint).toBe(second?.endpoint)
+    expect(first?.xaddrs.map(String)).toEqual(['http://192.0.2.10/onvif/device_service'])
+    expect(second?.xaddrs.map(String)).toEqual(['http://192.0.2.14/onvif/device_service'])
+    expect(first?.droppedXAddrs).toEqual(second?.droppedXAddrs)
   })
 
   it('keeps addresses on other hosts when the policy is any', () => {

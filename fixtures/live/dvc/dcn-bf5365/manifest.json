@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-03",
+  "vendor": "DVC",
+  "model": "DCN-BF5365",
+  "responses": {
+    "discovery.ProbeMatches": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    }
+  }
+}
