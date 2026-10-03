@@ -1,18 +1,31 @@
 import { Device, type OnvifError } from '@2bad/onvif'
 import { describe, expect, it } from 'vitest'
-import { motionOf, type Notification, subscribe } from '#index.ts'
+import { Events, motionOf, type Notification, subscribe } from '#index.ts'
 
 const hostname = process.env['ONVIF_TEST_HOST']
 const username = process.env['ONVIF_TEST_USER']
 const password = process.env['ONVIF_TEST_PASS']
 
+const hasMotionTopic = async (device: Device): Promise<boolean> => {
+  const { topicSet } = await device.call(Events.GetEventProperties)
+  const motion = ['RuleEngine', 'CellMotionDetector', 'Motion'].reduce<unknown>(
+    (node, name) => (typeof node === 'object' && node !== null ? Reflect.get(node, name) : undefined),
+    topicSet.$any
+  )
+  return motion !== undefined
+}
+
 describe.skipIf(!hostname)('Subscription on a live camera', () => {
-  it('receives the initial motion state, keeps pulling and unsubscribes', async () => {
+  it('receives the initial motion state, keeps pulling and unsubscribes', async (context) => {
     const device = await Device.connect({
       hostname: hostname ?? '',
       username: username ?? '',
       password: password ?? ''
     })
+    if (!(await hasMotionTopic(device))) {
+      device.close()
+      context.skip('The device lists no motion topic')
+    }
     const errors: OnvifError[] = []
     const subscription = await subscribe(device, { onError: (error) => errors.push(error), pullTimeoutMs: 2_000 })
     try {
