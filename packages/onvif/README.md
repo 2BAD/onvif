@@ -18,10 +18,9 @@ Needs Node.js 26 or later. ESM only. Discovery, events and media are in [`@2bad/
 ```ts
 import { Device, DeviceManagement } from '@2bad/onvif'
 
-const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
+using device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
 const info = await device.call(DeviceManagement.GetDeviceInformation)
 console.log(info.manufacturer, info.model, info.firmwareVersion)
-device.close()
 ```
 
 ## Calling operations

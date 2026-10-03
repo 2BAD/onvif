@@ -100,6 +100,16 @@ describe('Device.connect', () => {
     await expect(connect(mock)).resolves.toBeInstanceOf(Device)
   })
 
+  it('closes when a using block ends', async () => {
+    const device = await connect(await camera())
+    const close = vi.spyOn(device, 'close')
+    {
+      using scoped = device
+      expect(scoped.services.size).toBeGreaterThan(0)
+    }
+    expect(close).toHaveBeenCalledOnce()
+  })
+
   it('does not verify when no credentials are given', async () => {
     const mock = await camera({ auth: 'none' })
     const url = new URL(mock.url)

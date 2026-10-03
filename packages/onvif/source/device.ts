@@ -463,6 +463,10 @@ export class Device {
     this.#transport.close()
   }
 
+  [Symbol.dispose](): void {
+    this.close()
+  }
+
   async #awaitResynchronization(options: CallOptions, deadline: number, context: ErrorContext): Promise<void> {
     const { signal } = options
     signal?.throwIfAborted()
