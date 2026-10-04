@@ -9,9 +9,9 @@ export type StreamOptions = MediaOptions & {
    * `RTSP` (RTP over RTSP over TCP) by default, `UDP` (RTP over UDP) or `HTTP` (RTSP tunnelled through HTTP). A device
    * that cannot serve the combination answers with a SOAP fault.
    */
-  protocol?: 'RTSP' | 'UDP' | 'HTTP'
+  protocol?: 'RTSP' | 'UDP' | 'HTTP' | undefined
   /** Ask for the multicast stream. The profile needs a multicast configuration. Not over `HTTP` on Media2. */
-  multicast?: boolean
+  multicast?: boolean | undefined
 }
 
 export type MediaAddress = {
@@ -218,7 +218,7 @@ export async function getStreamUri(
   const configured = device.address.hostname
   // an address without a host can only mean the device itself
   const sameHost = uri.hostname === '' || uri.hostname.toLowerCase() === configured
-  if (!sameHost && device.addressPolicy === 'reject') {
+  if (!sameHost && device.serviceAddresses === 'reject') {
     throw new OnvifError(`Stream address host ${printable(uri.hostname)} is not the configured host`, context)
   }
   uri.hostname = configured

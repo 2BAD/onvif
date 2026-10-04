@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking Changes
 
 - Moved `decode()`, `parseEnvelope()`, `serialize()`, `namespaceInfo()` and the XML types to `@2bad/onvif/soap`
+- Renamed `device.addressPolicy` to `device.serviceAddresses`
 - Removed the `DEVICE_NAMESPACE` export
 
 ### Added
 
+- Optional options can now be set to `undefined` to use their default
 - Added the `XmlLimits` and `XmlOptions` types for the options of `parseEnvelope()`
 
 ## [2.0.0-alpha.2] - 2026-10-04

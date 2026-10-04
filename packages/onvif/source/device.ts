@@ -62,10 +62,10 @@ const DEFAULT_PATH = '/onvif/device_service'
 type DeviceLocation =
   | {
       hostname: string
-      port?: number
-      secure?: boolean
+      port?: number | undefined
+      secure?: boolean | undefined
       /** Path of the device service, `/onvif/device_service` by default. */
-      path?: string
+      path?: string | undefined
       url?: never
     }
   | {
@@ -81,31 +81,31 @@ type DeviceLocation =
     }
 
 export type ConnectOptions = DeviceLocation & {
-  username?: string
-  password?: string
+  username?: string | undefined
+  password?: string | undefined
   /** Time allowed for each call in milliseconds, retries included, 10 000 by default. */
-  timeoutMs?: number
-  maxResponseBytes?: number
-  tls?: TlsOptions
-  serviceAddresses?: ServiceAddressPolicy
+  timeoutMs?: number | undefined
+  maxResponseBytes?: number | undefined
+  tls?: TlsOptions | undefined
+  serviceAddresses?: ServiceAddressPolicy | undefined
   /**
    * Answer HTTP Basic challenges from devices that offer no Digest: `https` only on HTTPS requests, `always` on any.
    * Off by default, since Basic sends the password as it is. Digest is preferred whenever the device offers it.
    */
-  basicAuth?: 'https' | 'always'
+  basicAuth?: 'https' | 'always' | undefined
   /**
    * Test the username and password while connecting. ONVIF has no login step and the calls `connect()` needs don't
    * require one, so a wrong password would otherwise only fail on the first call that does. Default `true`, costs one
    * extra `GetDeviceInformation`.
    */
-  verifyCredentials?: boolean
+  verifyCredentials?: boolean | undefined
   /**
    * Retry `Get*` operations, which only read, after a connection failure or an HTTP 502, 503 or 504 response. Off by
    * default. Each retry waits `delayMs` (250 by default), doubled for every further one, with jitter, and only starts
    * when the call's timeout leaves room for the wait.
    */
-  retry?: { attempts: number; delayMs?: number }
-  signal?: AbortSignal
+  retry?: { attempts: number; delayMs?: number | undefined } | undefined
+  signal?: AbortSignal | undefined
 }
 
 export type CallOptions = {
@@ -115,9 +115,9 @@ export type CallOptions = {
    * policy applies to where the request goes; `wsa:To` carries the address as the device issued it, and the reference
    * parameters of an endpoint reference are sent back as headers.
    */
-  to?: string | EndpointReference
+  to?: string | EndpointReference | undefined
   /** Send WS-Addressing `MessageID`, `To` and `Action` headers. */
-  addressing?: boolean
+  addressing?: boolean | undefined
   /** Overrides the connection timeout for this call, retries included, such as for a long poll. */
   timeoutMs?: number | undefined
 }
@@ -304,7 +304,7 @@ export class Device {
   }
 
   /** The `serviceAddresses` policy this device was connected with. */
-  get addressPolicy(): ServiceAddressPolicy {
+  get serviceAddresses(): ServiceAddressPolicy {
     return this.#policy
   }
 

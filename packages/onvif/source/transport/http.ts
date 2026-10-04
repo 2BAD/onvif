@@ -15,7 +15,7 @@ import { type DigestChallenge, digestAuthorization, parseChallenge } from '#tran
 
 export type TlsOptions = Pick<ConnectionOptions, 'ca' | 'cert' | 'key' | 'rejectUnauthorized'> & {
   /** SHA-256 fingerprint of the device certificate, hex with or without colons. Accepts self signed certificates. */
-  fingerprint256?: string
+  fingerprint256?: string | undefined
 }
 
 export type HttpTransportOptions = {

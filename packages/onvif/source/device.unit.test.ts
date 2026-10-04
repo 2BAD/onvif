@@ -118,6 +118,34 @@ describe('Device.connect', () => {
     expect(actions(mock)).toEqual(['GetSystemDateAndTime', 'GetServices'])
   })
 
+  it('treats options set to undefined as not given', async () => {
+    const mock = await camera({ auth: 'none' })
+    const url = new URL(mock.url)
+    const device = await Device.connect({
+      hostname: url.hostname,
+      port: Number(url.port),
+      secure: undefined,
+      path: undefined,
+      username: undefined,
+      password: undefined,
+      timeoutMs: undefined,
+      maxResponseBytes: undefined,
+      tls: undefined,
+      serviceAddresses: undefined,
+      basicAuth: undefined,
+      verifyCredentials: undefined,
+      retry: undefined,
+      signal: undefined
+    })
+    cleanups.push(() => device.close())
+    expect(device.timeoutMs).toBe(10_000)
+    expect(device.serviceAddresses).toBe('rewrite')
+    await expect(
+      device.call(GetDeviceInformation, {}, { to: undefined, addressing: undefined, signal: undefined })
+    ).resolves.toMatchObject({ manufacturer: 'DVC' })
+    expect(actions(mock)).toEqual(['GetSystemDateAndTime', 'GetServices', 'GetDeviceInformation'])
+  })
+
   it('sends GetSystemDateAndTime without credentials first', async () => {
     const mock = await camera()
     await connect(mock)
@@ -384,14 +412,14 @@ describe('service addresses', () => {
   it('rewrites addresses that point to another host by default', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
     const device = await connect(mock)
-    expect(device.addressPolicy).toBe('rewrite')
+    expect(device.serviceAddresses).toBe('rewrite')
     expect(device.services.get(MEDIA)?.href).toBe(`${mock.url}/onvif/Media`)
   })
 
   it('drops them under the reject policy', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5:8080' })
     const device = await connect(mock, { serviceAddresses: 'reject' })
-    expect(device.addressPolicy).toBe('reject')
+    expect(device.serviceAddresses).toBe('reject')
     expect(device.services.has(MEDIA)).toBe(false)
     expect(device.services.has(DEVICE_NAMESPACE)).toBe(true)
     expect(() => device.resolveAddress('http://10.0.0.5:8080/onvif/Media')).toThrow('is not the configured origin')

@@ -22,16 +22,16 @@ export type SubscribeOptions = {
    */
   onError: (error: OnvifError) => void
   /** Closes the subscription when aborted, and aborts `subscribe()` itself. */
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
   /**
    * How long one PullMessages waits on the device for events, 30 000 ms by default. Halved when the device keeps
    * resetting long polls, and doubled back after 10 minutes without a reset.
    */
-  pullTimeoutMs?: number
+  pullTimeoutMs?: number | undefined
   /** Most notifications per PullMessages, 100 by default. */
-  messageLimit?: number
+  messageLimit?: number | undefined
   /** Lifetime asked for when creating and renewing a pull point, 60 000 ms by default. */
-  terminationMs?: number
+  terminationMs?: number | undefined
 }
 
 const RESPONSE_MARGIN_MS = 10_000

@@ -6,25 +6,25 @@ import { buildProbe, type DiscoveredDevice, readProbeMatches, type XAddrPolicy }
 
 export type DiscoverOptions = {
   /** How long to wait for replies, 3 000 ms by default. */
-  timeoutMs?: number
+  timeoutMs?: number | undefined
   /**
    * Names of the network interfaces to probe by multicast, as `os.networkInterfaces()` lists them. Every IPv4 address
    * of every interface except loopback by default.
    */
-  interfaces?: string[]
+  interfaces?: string[] | undefined
   /**
    * Probe these hosts directly instead of by multicast, for devices on another subnet or behind a VPN. IPv4 addresses
    * or hostnames, with an optional `:port` (3702 by default).
    */
-  hosts?: string[]
+  hosts?: string[] | undefined
   /** Local port replies come back to, for firewalls that only let a fixed port in. A random port by default. */
-  port?: number
+  port?: number | undefined
   /** Service addresses on a host other than the one that replied: `sender` drops them (default), `any` keeps them. */
-  xaddrs?: XAddrPolicy
+  xaddrs?: XAddrPolicy | undefined
   /** Receives replies that could not be read and probes that could not be sent. Discovery goes on after each one. */
-  onError?: (error: OnvifError) => void
+  onError?: ((error: OnvifError) => void) | undefined
   /** Ends the discovery when aborted. */
-  signal?: AbortSignal
+  signal?: AbortSignal | undefined
 }
 
 type Target = { bind: string | undefined; destinations: { address: string; port: number }[]; repeats: number }
