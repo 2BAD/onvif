@@ -2,8 +2,8 @@
 
 High-performance ONVIF client for TypeScript with no runtime dependencies.
 
-> [!WARNING]
-> 2.0 is in alpha. The API can still change. The `1.0.0-beta` releases on npm are the old implementation and are no longer maintained.
+> [!NOTE]
+> The `1.0.0-beta` releases on npm are the old implementation and are no longer maintained.
 
 ## Packages
 

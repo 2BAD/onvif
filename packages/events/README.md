@@ -2,13 +2,10 @@
 
 ONVIF events and motion detection for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
-> [!WARNING]
-> 2.0 is in alpha. The API can still change.
-
 ## Install
 
 ```sh
-npm install @2bad/onvif@next @2bad/onvif-events@next
+npm install @2bad/onvif @2bad/onvif-events
 ```
 
 ## Usage

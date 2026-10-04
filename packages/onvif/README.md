@@ -2,13 +2,10 @@
 
 ONVIF client for TypeScript with no runtime dependencies.
 
-> [!WARNING]
-> 2.0 is in alpha. The API can still change.
-
 ## Install
 
 ```sh
-npm install @2bad/onvif@next
+npm install @2bad/onvif
 ```
 
 Needs Node.js 26 or later. ESM only. Discovery, events and media are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
