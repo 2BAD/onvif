@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-alpha.2] - 2026-10-04
+
 ### Added
 
 - Added the `@2bad/onvif-discovery` package with `discover()` to find cameras on the local network
@@ -79,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed PTZ camera control, with no replacement in 2.0 yet
 - Removed the 1.x types for ONVIF services that 2.0 does not cover
 
-[Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.1...HEAD
+[Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.2...HEAD
+[2.0.0-alpha.2]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
 [2.0.0-alpha.1]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.0...v2.0.0-alpha.1
 [2.0.0-alpha.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0-alpha.0
