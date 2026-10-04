@@ -3,7 +3,10 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
-    alias: [{ find: /^@2bad\/onvif$/, replacement: `${import.meta.dirname}/packages/onvif/source/index.ts` }]
+    alias: [
+      { find: /^@2bad\/onvif$/, replacement: `${import.meta.dirname}/packages/onvif/source/index.ts` },
+      { find: /^@2bad\/onvif\/soap$/, replacement: `${import.meta.dirname}/packages/onvif/source/soap/index.ts` }
+    ]
   },
   test: {
     exclude: ['**/build', '**/node_modules'],

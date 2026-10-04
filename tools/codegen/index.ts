@@ -44,7 +44,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/events/source/generated/events.ts',
-    codecImport: '@2bad/onvif',
+    codecImport: '@2bad/onvif/soap',
     wsdl: 'ver10/events/wsdl/event.wsdl',
     portTypes: [
       {
@@ -66,7 +66,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/discovery/source/generated/discovery.ts',
-    codecImport: '@2bad/onvif',
+    codecImport: '@2bad/onvif/soap',
     elements: [
       {
         schema: 'external/schemas.xmlsoap.org/ws/2005/04/discovery/ws-discovery.xsd',
@@ -77,7 +77,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/media/source/generated/media.ts',
-    codecImport: '@2bad/onvif',
+    codecImport: '@2bad/onvif/soap',
     wsdl: 'ver10/media/wsdl/media.wsdl',
     portTypes: [
       {
@@ -97,7 +97,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/media/source/generated/media2.ts',
-    codecImport: '@2bad/onvif',
+    codecImport: '@2bad/onvif/soap',
     wsdl: 'ver20/media/wsdl/media.wsdl',
     portTypes: [
       {

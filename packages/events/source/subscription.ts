@@ -3,13 +3,13 @@ import {
   AuthError,
   DecodeError,
   type Device,
-  type EndpointReference,
   OnvifError,
   ParseError,
   SoapFaultError,
   TimeoutError,
   TransportError
 } from '@2bad/onvif'
+import type { EndpointReference } from '@2bad/onvif/soap'
 import { CreatePullPointSubscription, PullMessages, Renew, Unsubscribe } from '#generated/events.ts'
 import { decodeNotification, type Notification } from '#notification.ts'
 

@@ -1,4 +1,5 @@
-import { DecodeError, decode, type ErrorContext, namespaceInfo, type XmlValue } from '@2bad/onvif'
+import { DecodeError, type ErrorContext } from '@2bad/onvif'
+import { decode, namespaceInfo, type XmlValue } from '@2bad/onvif/soap'
 import {
   type ItemList,
   type Message,

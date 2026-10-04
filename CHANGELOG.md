@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Moved `decode()`, `parseEnvelope()`, `serialize()`, `namespaceInfo()` and the XML types to `@2bad/onvif/soap`
+- Removed the `DEVICE_NAMESPACE` export
+
+### Added
+
+- Added the `XmlLimits` and `XmlOptions` types for the options of `parseEnvelope()`
+
 ## [2.0.0-alpha.2] - 2026-10-04
 
 ### Added

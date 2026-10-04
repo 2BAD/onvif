@@ -1,4 +1,5 @@
-import { DecodeError, OnvifError, ParseError, parseEnvelope, SoapFaultError } from '@2bad/onvif'
+import { DecodeError, OnvifError, ParseError, SoapFaultError } from '@2bad/onvif'
+import { parseEnvelope } from '@2bad/onvif/soap'
 import { describe, expect, it } from 'vitest'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { buildProbe, readProbeMatches } from '#message.ts'

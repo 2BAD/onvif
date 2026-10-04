@@ -44,6 +44,12 @@
         "types": "./build/index.d.ts",
         "default": "./build/index.js"
       }
+    },
+    "./soap": {
+      "import": {
+        "types": "./build/soap/index.d.ts",
+        "default": "./build/soap/index.js"
+      }
     }
   },
   "scripts": {

@@ -1,15 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import {
-  decode,
-  DecodeError,
-  type ErrorContext,
-  namespaceInfo,
-  OnvifError,
-  parseEnvelope,
-  serialize,
-  type XmlObject,
-  type XmlValue
-} from '@2bad/onvif'
+import { DecodeError, type ErrorContext, OnvifError } from '@2bad/onvif'
+import { decode, namespaceInfo, parseEnvelope, serialize, type XmlObject, type XmlValue } from '@2bad/onvif/soap'
 import { type ProbeMatchType, schema } from '#generated/discovery.ts'
 
 const SOAP = 'http://www.w3.org/2003/05/soap-envelope'

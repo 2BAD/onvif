@@ -43,9 +43,10 @@ if (sourceChanged && !existsSync(join(baseRoot, 'packages'))) {
 // each tree resolves the core by package name to its own source, not to the workspace build
 registerHooks({
   resolve: (specifier, context, nextResolve) => {
-    if (specifier !== '@2bad/onvif') return nextResolve(specifier, context)
+    const entry = { '@2bad/onvif': 'index.ts', '@2bad/onvif/soap': 'soap/index.ts' }[specifier]
+    if (!entry) return nextResolve(specifier, context)
     const tree = context.parentURL?.startsWith(pathToFileURL(baseRoot).href) ? baseRoot : root
-    return nextResolve(pathToFileURL(join(tree, 'packages/onvif/source/index.ts')).href, context)
+    return nextResolve(pathToFileURL(join(tree, 'packages/onvif/source', entry)).href, context)
   }
 })
 
