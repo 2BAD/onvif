@@ -289,7 +289,7 @@ export class Device {
   static async connect(options: ConnectOptions): Promise<Device> {
     const device = new Device(options)
     try {
-      await device.synchronizeClock(options.signal)
+      await device.synchronizeClock({ signal: options.signal })
       await device.#discoverServices(options.signal)
       if (options.verifyCredentials !== false) await device.#verifyCredentials(options.signal)
     } catch (error) {
@@ -322,17 +322,17 @@ export class Device {
    * Measure the device clock with `GetSystemDateAndTime`. Tries without credentials first (the ONVIF spec says it
    * works without), then with credentials for devices that need them.
    *
-   * @param signal - Abort signal
+   * @param options - Abort signal and a timeout overriding the connection timeout
    */
-  async synchronizeClock(signal?: AbortSignal): Promise<void> {
+  async synchronizeClock(options: Pick<CallOptions, 'signal' | 'timeoutMs'> = {}): Promise<void> {
     const started = Date.now()
-    const deadline = performance.now() + this.#timeoutMs
+    const deadline = performance.now() + (options.timeoutMs ?? this.#timeoutMs)
     let response
     try {
-      response = await this.#call(GetSystemDateAndTime, {}, { signal }, deadline, false)
+      response = await this.#call(GetSystemDateAndTime, {}, options, deadline, false)
     } catch (error) {
       if (!(error instanceof AuthError) || !this.#credentials) throw error
-      response = await this.#call(GetSystemDateAndTime, {}, { signal }, deadline, true)
+      response = await this.#call(GetSystemDateAndTime, {}, options, deadline, true)
     }
     const midpoint = (started + Date.now()) / 2
     const utc = response.systemDateAndTime.utcDateTime

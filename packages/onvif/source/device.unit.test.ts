@@ -313,6 +313,15 @@ describe('Device.connect', () => {
     await expect(device.call(GetScopes, {}, { timeoutMs: 50 })).rejects.toThrow('No response within 50 ms')
   })
 
+  it('applies the timeout of a clock measurement over the connection timeout', async () => {
+    const mock = await camera({ overrides: { 'device.GetSystemDateAndTime': { kind: 'delay', ms: 200 } } })
+    const device = await connect(mock, { timeoutMs: 2_000 })
+    await expect(device.synchronizeClock()).resolves.toBeUndefined()
+    await expect(device.synchronizeClock({ timeoutMs: 50 })).rejects.toThrow('No response within 50 ms')
+    const aborted = AbortSignal.abort(new Error('cancelled'))
+    await expect(device.synchronizeClock({ signal: aborted })).rejects.toThrow('cancelled')
+  })
+
   it('connects over HTTPS with TLS options and formats IPv6 hosts', async () => {
     const mock = await camera()
     const port = Number(new URL(mock.url).port)

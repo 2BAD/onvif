@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Moved `decode()`, `parseEnvelope()`, `serialize()`, `namespaceInfo()` and the XML types to `@2bad/onvif/soap`
 - Renamed `device.addressPolicy` to `device.serviceAddresses`
+- `device.synchronizeClock()` now takes `{ signal, timeoutMs }` instead of a signal
 - Removed the `DEVICE_NAMESPACE` export
 
 ### Added
