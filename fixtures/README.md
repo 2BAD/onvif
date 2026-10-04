@@ -43,10 +43,6 @@ Before writing anything it scrubs:
 
 Check the output before committing a new capture. The scrubbing is pattern based, so a new vendor can put identifiers somewhere the patterns don't catch.
 
-## `snapshots/`
-
-JPEG images served by the mock camera in the snapshot benchmark.
-
 ## `upstream/`
 
 Responses from the [agsh/onvif](https://github.com/agsh/onvif) mock server (`test/serverMockup/`, branch `v0.x`, commit `4ac697bc`). MIT licensed, see `upstream/LICENSE`. The doT templates were rendered to static XML with fixed values: `192.0.2.1:80`, dates on 2026-01-01, and the conditional fault sections removed.

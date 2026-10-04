@@ -53,8 +53,6 @@ export type MockSnapshotOptions = {
   body?: Buffer
   /** Wait this long before answering an authorized request. */
   delayMs?: number
-  /** Answer every request with `Connection: close`, as the DVC camera does. */
-  closeConnections?: boolean
 }
 
 export type RecordedRequest = {
@@ -250,10 +248,8 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       status = 200,
       contentType = 'image/jpeg',
       body = MOCK_JPEG,
-      delayMs = 0,
-      closeConnections = false
+      delayMs = 0
     } = options.snapshot ?? {}
-    const connection: Record<string, string> = closeConnections ? { Connection: 'close' } : {}
     if (path !== '/snapshot.JPG') {
       response.writeHead(404, { 'Content-Type': 'text/html' })
       response.end('<html><body>Not Found</body></html>')
@@ -270,13 +266,13 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
         snapshotAuth === 'basic'
           ? 'Basic realm="camera"'
           : `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
-      response.writeHead(401, { 'Content-Type': 'text/html', 'WWW-Authenticate': challenge, ...connection })
+      response.writeHead(401, { 'Content-Type': 'text/html', 'WWW-Authenticate': challenge })
       response.end('<html><body>401 Unauthorized</body></html>')
       return
     }
     if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs))
     if (response.destroyed) return
-    response.writeHead(status, { 'Content-Type': contentType, 'Content-Length': body.length, ...connection })
+    response.writeHead(status, { 'Content-Type': contentType, 'Content-Length': body.length })
     response.end(body)
   }
 
