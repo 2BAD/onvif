@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `url` option to `Device.connect()` for connecting to a device service URL
 - Added `parseEnvelope()` and `serialize()` to the core for reading and writing SOAP messages
 - `Device` can now be declared with `using` to close its connections at the end of the block
+- Added `device.use()` to call media and events functions as `device.media` and `device.events`
 
 ### Changed
 
