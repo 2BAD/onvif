@@ -35,7 +35,7 @@ export type VideoEncoderOptions = {
   profiles?: string[]
 }
 
-type EncoderChanges = Partial<
+export type VideoEncoderChanges = Partial<
   Pick<
     VideoEncoder,
     'encoding' | 'resolution' | 'quality' | 'frameRateLimit' | 'bitrateLimit' | 'govLength' | 'profile'
@@ -139,7 +139,7 @@ const optionsOfMedia2 = (options: Media2.VideoEncoder2ConfigurationOptions): Vid
 
 const withRateControl = <RateControl extends { frameRateLimit: number; bitrateLimit: number }>(
   current: RateControl | undefined,
-  changes: EncoderChanges,
+  changes: VideoEncoderChanges,
   context: ErrorContext
 ): RateControl | undefined => {
   const { frameRateLimit, bitrateLimit } = changes
@@ -154,7 +154,7 @@ const withRateControl = <RateControl extends { frameRateLimit: number; bitrateLi
 
 const changedMedia = (
   reported: Media.VideoEncoderConfiguration,
-  changes: EncoderChanges,
+  changes: VideoEncoderChanges,
   context: ErrorContext
 ): Media.VideoEncoderConfiguration => {
   const { resolution, quality, govLength, profile } = changes
@@ -193,7 +193,7 @@ const changedMedia = (
 
 const changedMedia2 = (
   reported: Media2.VideoEncoder2Configuration,
-  changes: EncoderChanges,
+  changes: VideoEncoderChanges,
   context: ErrorContext
 ): Media2.VideoEncoder2Configuration => {
   const { encoding, resolution, quality, govLength, profile } = changes
@@ -282,7 +282,7 @@ export async function getVideoEncoderConfigurationOptions(
 export async function setVideoEncoderConfiguration(
   device: Device,
   encoder: VideoEncoder,
-  changes: EncoderChanges,
+  changes: VideoEncoderChanges,
   options: MediaOptions = {}
 ): Promise<VideoEncoder> {
   const context = contextOf(device, encoder.service, 'SetVideoEncoderConfiguration')

@@ -3,6 +3,7 @@ export {
   getVideoEncoderConfigurations,
   setVideoEncoderConfiguration,
   type VideoEncoder,
+  type VideoEncoderChanges,
   type VideoEncoderOptions
 } from '#encoder.ts'
 export { media } from '#extension.ts'

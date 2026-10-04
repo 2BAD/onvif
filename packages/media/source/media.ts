@@ -230,13 +230,17 @@ export async function getStreamUri(
  * that did not come from `getSnapshotUri()` gets no credentials it should not.
  *
  * @param device - A connected device
- * @param snapshot - The address from `getSnapshotUri()`
+ * @param snapshot - The address from `getSnapshotUri()`, or its `uri`
  * @param options - Abort signal and timeout
  * @returns The JPEG image
  * @throws {TransportError} If the response is not a JPEG image, and the errors of `device.download()`
  */
-export async function fetchSnapshot(device: Device, snapshot: URL, options: MediaOptions = {}): Promise<Uint8Array> {
-  const { contentType, body } = await device.download(snapshot, options)
+export async function fetchSnapshot(
+  device: Device,
+  snapshot: MediaAddress | URL,
+  options: MediaOptions = {}
+): Promise<Uint8Array> {
+  const { contentType, body } = await device.download(snapshot instanceof URL ? snapshot : snapshot.uri, options)
   if (!JPEG_START.every((byte, index) => body[index] === byte)) {
     throw new TransportError(
       `Expected a JPEG snapshot, got ${body.length} bytes with Content-Type '${printable(contentType ?? '')}'`,

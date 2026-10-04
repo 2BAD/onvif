@@ -639,12 +639,13 @@ describe('fetchSnapshot', () => {
   it('fetches the JPEG with HTTP Digest', async () => {
     const mock = await camera()
     const device = await connect(mock)
-    const { uri } = await getSnapshotUri(device, media2)
-    expect(await fetchSnapshot(device, uri)).toEqual(MOCK_JPEG)
+    const snapshot = await getSnapshotUri(device, media2)
+    expect(await fetchSnapshot(device, snapshot)).toEqual(MOCK_JPEG)
     const authorizations = mock.requests
       .filter(({ service }) => service === 'snapshot')
       .map((r) => r.headers.authorization)
     expect(authorizations).toEqual([undefined, expect.stringMatching(/^Digest /)])
+    expect(await fetchSnapshot(device, snapshot.uri)).toEqual(MOCK_JPEG)
   })
 
   it('applies the service address policy to an address from elsewhere', async () => {
@@ -691,7 +692,7 @@ describe('media', () => {
     const profile = defaultProfile(await device.media.getProfiles())
     expect(profile?.service).toBe('media2')
     const snapshot = await device.media.getSnapshotUri(profile ?? media2)
-    expect(await device.media.fetchSnapshot(snapshot.uri)).toEqual(MOCK_JPEG)
+    expect(await device.media.fetchSnapshot(snapshot)).toEqual(MOCK_JPEG)
     expect((await device.media.getStreamUri(profile ?? media2, { protocol: 'UDP' })).uri.protocol).toBe('rtsp:')
     expect(Object.keys(device.media)).toEqual([
       'getProfiles',

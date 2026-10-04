@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Optional options can now be set to `undefined` to use their default
+- `fetchSnapshot()` can now take the result of `getSnapshotUri()` directly
+- Added the `VideoEncoderChanges` type for the changes passed to `setVideoEncoderConfiguration()`
 - Added the `XmlLimits` and `XmlOptions` types for the options of `parseEnvelope()`
 
 ## [2.0.0-alpha.2] - 2026-10-04

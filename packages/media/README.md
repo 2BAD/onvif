@@ -22,7 +22,7 @@ const profile = defaultProfile(await getProfiles(device))
 if (!profile) throw new Error('The camera has no media profiles')
 
 const snapshot = await getSnapshotUri(device, profile)
-const jpeg = await fetchSnapshot(device, snapshot.uri)
+const jpeg = await fetchSnapshot(device, snapshot)
 
 const stream = await getStreamUri(device, profile)
 console.log(stream.uri.href)
