@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-discovery",
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0",
   "description": "Find ONVIF cameras on the local network with WS-Discovery for @2bad/onvif",
   "keywords": [
     "camera",
