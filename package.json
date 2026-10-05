@@ -35,25 +35,25 @@
     "@2bad/axiom": "2.1.0",
     "@2bad/tsconfig": "4.0.0",
     "@arethetypeswrong/cli": "0.18.5",
-    "@types/node": "26.6.2",
-    "@vitest/coverage-v8": "5.0.2",
+    "@types/node": "26.6.4",
+    "@vitest/coverage-v8": "5.0.3",
     "fast-check": "4.10.2",
-    "fast-xml-parser": "5.11.1",
+    "fast-xml-parser": "5.11.2",
     "npm-run-all2": "9.0.3",
-    "oxfmt": "0.70.0",
-    "oxlint": "1.85.0",
-    "publint": "0.3.24",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "publint": "0.3.25",
     "tsdown": "0.23.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.2"
+    "vitest": "5.0.3"
   },
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.8.2",
   "engines": {
     "node": ">=26"
   },
   "volta": {
     "node": "26.10.0",
-    "pnpm": "12.6.0"
+    "pnpm": "12.8.2"
   }
 }
