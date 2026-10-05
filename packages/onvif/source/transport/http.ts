@@ -1,17 +1,15 @@
 import { once } from 'node:events'
-import {
-  type ClientRequest,
-  Agent as HttpAgent,
-  type IncomingMessage,
-  request as httpRequest,
-  type RequestOptions
-} from 'node:http'
-import { Agent as HttpsAgent, type AgentOptions as HttpsAgentOptions, request as httpsRequest } from 'node:https'
+import type { ClientRequest, IncomingMessage, RequestOptions } from 'node:http'
+import type { AgentOptions as HttpsAgentOptions } from 'node:https'
 import type { Duplex } from 'node:stream'
 import { connect as tlsConnect, type ConnectionOptions } from 'node:tls'
 import { AuthError, type ErrorContext, TimeoutError, TransportError } from '#errors.ts'
 import type { Credentials } from '#soap/security.ts'
 import { type DigestChallenge, digestAuthorization, parseChallenge } from '#transport/digest.ts'
+
+// An ESM import of node:http reads its lazy WebSocket export, which loads undici and costs about 2 MiB of heap.
+const { Agent: HttpAgent, request: httpRequest } = process.getBuiltinModule('node:http')
+const { Agent: HttpsAgent, request: httpsRequest } = process.getBuiltinModule('node:https')
 
 export type TlsOptions = Pick<ConnectionOptions, 'ca' | 'cert' | 'key' | 'rejectUnauthorized'> & {
   /** SHA-256 fingerprint of the device certificate, hex with or without colons. Accepts self signed certificates. */
@@ -127,8 +125,8 @@ export class HttpTransport {
   readonly #maxResponseBytes: number
   readonly #credentials: Credentials | undefined
   readonly #basicAuth: 'https' | 'always' | undefined
-  readonly #httpAgent: HttpAgent
-  readonly #httpsAgent: HttpsAgent
+  readonly #httpAgent: InstanceType<typeof HttpAgent>
+  readonly #httpsAgent: InstanceType<typeof HttpsAgent>
   #challenge: DigestChallenge | undefined
   #nonceCount = 0
   #basic = false
