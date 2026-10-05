@@ -9,96 +9,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-10-05
 
-### Breaking Changes
+### Highlights
 
-- Moved `decode()`, `parseEnvelope()`, `serialize()`, `namespaceInfo()` and the XML types to `@2bad/onvif/soap`
-- Renamed `device.addressPolicy` to `device.serviceAddresses`
-- `device.synchronizeClock()` now takes `{ signal, timeoutMs }` instead of a signal
-- Removed the `DEVICE_NAMESPACE` export
-
-### Added
-
-- Optional options can now be set to `undefined` to use their default
-- `fetchSnapshot()` can now take the result of `getSnapshotUri()` directly
-- Added the `VideoEncoderChanges` type for the changes passed to `setVideoEncoderConfiguration()`
-- Added the `XmlLimits` and `XmlOptions` types for the options of `parseEnvelope()`
-
-## [2.0.0-alpha.2] - 2026-10-04
-
-### Added
-
-- Added the `@2bad/onvif-discovery` package with `discover()` to find cameras on the local network
-- Added the `url` option to `Device.connect()` for connecting to a device service URL
-- Added `parseEnvelope()` and `serialize()` to the core for reading and writing SOAP messages
-- `Device` can now be declared with `using` to close its connections at the end of the block
-- Added `device.use()` to call media and events functions as `device.media` and `device.events`
-
-### Changed
-
-- base64 values with bits set past the end or non-ASCII whitespace are now rejected as a `DecodeError`
-
-### Fixed
-
-- Fixed a subscription closed by `signal` crashing the process when `Unsubscribe` fails unexpectedly
-
-## [2.0.0-alpha.1] - 2026-10-02
+- **Rewritten from scratch:** 2.0 shares no API with 1.x. Code written for 1.x needs changes.
+- **Separate packages:** Media, events and discovery are their own packages. Install them next to `@2bad/onvif` when you need them.
+- **Typed calls:** Every operation has request and response types generated from the ONVIF schema.
+- **Faster:** Parses camera responses about 6x faster.
+- **Safer:** Credentials go only to the camera you connected to. Every response is treated as untrusted input.
+- **No runtime dependencies:** The core no longer depends on `fast-xml-parser`.
 
 ### Breaking Changes
 
-- `getProfiles()` now returns `videoSource` and `videoEncoder` summaries, with the camera's response under `reported`
-- `getSnapshotUri()` and `getStreamUri()` now take a profile or `{ service, token }` instead of a token
+- Replaced `new Onvif()` and `onvif.connect()` with `await Device.connect()`
+- Replaced the `onvif.device` methods with `device.call()` and the `DeviceManagement` operations
+- Moved media to `@2bad/onvif-media`, where each function takes the device first
+- Moved discovery to `@2bad/onvif-discovery`, with `discover()` in place of `Discovery.probe()`
+- `getSnapshotUri()` and `getStreamUri()` now take a profile instead of `{ profileToken }`
+- `getStreamUri()` now returns the address as a `URL` in `uri`
 - The `protocol` option of `getStreamUri()` now takes `RTSP`, `UDP` or `HTTP` only
+- Renamed the `useSecure` and `timeout` options to `secure` and `timeoutMs`
+- Replaced the `secureOptions` option with `tls`
+- Replaced the `preserveAddress` option with `serviceAddresses`
+- Service addresses on another host now use the host passed to `connect()` by default
+- `connect()` now fails with an `AuthError` when the credentials are wrong
+- `connect()` no longer reads profiles, video sources or device information
 
 ### Added
 
+- Added event subscriptions with `subscribe()` in `@2bad/onvif-events`
+- Added `motionOf()` and `isTopic()` to read motion and other event topics
 - Added Media2 support for cameras that offer it, with Media v1 as the fallback
 - H.265 encoders are now reported on cameras with Media2
+- Added `defaultProfile()` to pick a profile with a video source and encoder
+- Added `fetchSnapshot()` to download a snapshot with the camera's credentials
 - Added `getVideoSourceConfigurations()` and `getVideoEncoderConfigurations()`
 - Added `getVideoEncoderConfigurationOptions()` to list the codecs and settings an encoder accepts
 - Added `setVideoEncoderConfiguration()` to change the codec, resolution, frame rate or bitrate
-- Encoders now report their codec profile in `profile`
-- Added `device.timeoutMs`
-
-## [2.0.0-alpha.0] - 2026-10-01
-
-### Highlights
-
-- **Rewritten from scratch:** The core has no runtime dependencies. Events and media are separate packages.
-- **Typed calls:** Every operation has request and response types generated from the ONVIF schema. Responses are checked against the schema at runtime.
-
-### Breaking Changes
-
-- Replaced the 1.x API with `Device.connect()` and `device.call()`. Code written for 1.x needs changes.
-- Moved events and media into the `@2bad/onvif-events` and `@2bad/onvif-media` packages
-
-### Added
-
+- Added `device.use()` to call media and events functions as `device.media` and `device.events`
+- `Device` can now be declared with `using` to close its connections at the end of the block
+- Added the `url` option to `Device.connect()` for connecting to an address found by `discover()`
 - Added typed errors that carry the host, service and action of each failure
 - Added an `AbortSignal` and a single timeout to every call
 - Added the `retry` option to retry `Get*` calls on connection and gateway errors
 - Added HTTP Digest authentication with MD5 and SHA-256
 - Added the `basicAuth` option to allow HTTP Basic authentication
 - Calls can now authenticate with cameras whose clock is set wrong
-- Added the `serviceAddresses` option for cameras behind NAT or a proxy
-- Added custom CA, client certificates and certificate pinning to the `tls` option
-- Added `subscribe()` for event subscriptions that reconnect after network errors and reboots
-- Added `motionOf()` and `isTopic()` to read motion and other event topics
-- Added `getProfiles()`, `getSnapshotUri()`, `getStreamUri()` and `fetchSnapshot()` for media
-- Added `defaultProfile()` to pick a profile with a video source and encoder
+- Added `parseEnvelope()` and `serialize()` in `@2bad/onvif/soap` for reading and writing SOAP messages
 
 ### Changed
 
-- Prereleases are now published under the `next` npm tag
-- Replaced `fast-xml-parser` with a built-in XML parser
+- Parsing camera responses is now about 6x faster
+- Reading profiles is now about 5x faster
+- Requests now reuse open connections to the camera
+- Local request round trips are now about 4x faster
+- `connect()` now makes 3 requests on most cameras instead of 5 or more
 
 ### Removed
 
-- Removed WS-Discovery device search, with no replacement in 2.0 yet
-- Removed PTZ camera control, with no replacement in 2.0 yet
+- Removed PTZ control, with no replacement in 2.0 yet
+- Removed `setSystemDateAndTime()`, `getNTP()`, `setNTP()`, `getDNS()` and `setScopes()`, with no replacement yet
+- Removed `getVideoSources()`, `getActiveSources()`, `getOSDs()` and `getOSDOptions()`, with no replacement yet
+- Removed the `defaultProfile` property, replaced by the `defaultProfile()` function
+- Removed the `activeSource`, `deviceInformation` and `capabilities` properties
+- Removed the `agent`, `urn` and `autoConnect` options
 - Removed the 1.x types for ONVIF services that 2.0 does not cover
 
+### Security
+
+- Credentials are now sent only to the protocol, host and port passed to `connect()`
+- Service addresses no longer move a connection from HTTPS to HTTP
+- Added certificate pinning to the `tls` option, with nothing sent before the certificate matches
+- Responses with a DOCTYPE, custom entities or processing instructions are now rejected
+- Responses now have limits on size, nesting depth, element count and attributes
+- Responses can no longer set `__proto__`, `constructor` or `prototype` on decoded objects
+- Values written into requests are now XML escaped
+- WS-Security nonces now come from `node:crypto` instead of `Math.random()`
+- Passwords with non-ASCII characters now work with WS-Security
+- Errors never contain credentials, including WS-Security headers echoed by cameras
+
 [Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.2...v2.0.0
-[2.0.0-alpha.2]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
-[2.0.0-alpha.1]: https://github.com/2BAD/onvif/compare/v2.0.0-alpha.0...v2.0.0-alpha.1
-[2.0.0-alpha.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0-alpha.0
+[2.0.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0
