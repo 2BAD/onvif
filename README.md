@@ -2,15 +2,20 @@
 
 High-performance ONVIF client for TypeScript with no runtime dependencies.
 
-> [!NOTE]
-> The `1.0.0-beta` releases on npm are the old implementation and are no longer maintained.
+New in 2.0:
+
+- Faster and lighter
+- TypeScript types generated from the ONVIF spec
+- Clear errors and a timeout on every call
+- Credentials are never exposed
+- Handles the quirks of real cameras
 
 ## Packages
 
-- [`@2bad/onvif`](packages/onvif): connect to a camera and call device operations
-- [`@2bad/onvif-discovery`](packages/discovery): find cameras on the local network
-- [`@2bad/onvif-events`](packages/events): event subscriptions and motion detection
-- [`@2bad/onvif-media`](packages/media): profiles, snapshots and stream URLs
+- [`@2bad/onvif`](packages/onvif): connect to a camera, read its settings and send it commands
+- [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
+- [`@2bad/onvif-events`](packages/events): receive motion and other camera events
+- [`@2bad/onvif-media`](packages/media): get RTSP stream URLs and JPEG snapshots, change resolution, frame rate and bitrate
 
 ## Example
 
@@ -19,7 +24,7 @@ import { Device, DeviceManagement } from '@2bad/onvif'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
 const info = await device.call(DeviceManagement.GetDeviceInformation)
-console.log(info.manufacturer, info.model)
+console.log(info.manufacturer, info.model) // DVC DCN-BM2220LPR
 ```
 
 ## ONVIF profiles
@@ -36,7 +41,7 @@ console.log(info.manufacturer, info.model)
 
 ## Performance
 
-Compared with [`onvif`](https://github.com/agsh/onvif) 0.8.3 and 1.0.0-rc.3 on the same machine:
+Compared with [`onvif`](https://github.com/agsh/onvif) 0.8.3 and 1.0.0-rc.3:
 
 |                                    | `@2bad/onvif` | `onvif`  |             |
 | ---------------------------------- | ------------- | -------- | ----------- |
@@ -45,12 +50,6 @@ Compared with [`onvif`](https://github.com/agsh/onvif) 0.8.3 and 1.0.0-rc.3 on t
 | CPU time for 5,000 events          | 281 ms        | 892 ms   | 3.2x less   |
 
 Snapshots are up to 2.6x faster than plain `fetch`.
-
-## Security
-
-- Credentials are never exposed
-- TLS certificate pinning
-- No runtime dependencies
 
 ## License
 

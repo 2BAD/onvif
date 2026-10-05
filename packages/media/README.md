@@ -8,105 +8,94 @@ ONVIF media profiles, snapshots and stream URLs for [`@2bad/onvif`](https://www.
 npm install @2bad/onvif @2bad/onvif-media
 ```
 
-## Usage
+## Quick start
 
 ```ts
 import { Device } from '@2bad/onvif'
-import { defaultProfile, fetchSnapshot, getProfiles, getSnapshotUri, getStreamUri } from '@2bad/onvif-media'
+import { defaultProfile, media } from '@2bad/onvif-media'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
-const profile = defaultProfile(await getProfiles(device))
+const camera = device.use(media)
+const profile = defaultProfile(await camera.media.getProfiles())
 if (!profile) throw new Error('The camera has no media profiles')
 
-const snapshot = await getSnapshotUri(device, profile)
-const jpeg = await fetchSnapshot(device, snapshot)
+const stream = await camera.media.getStreamUri(profile)
+console.log(stream.uri.href) // rtsp://192.0.2.10:554/stream1
 
-const stream = await getStreamUri(device, profile)
-console.log(stream.uri.href)
+const jpeg = await camera.media.fetchSnapshot(await camera.media.getSnapshotUri(profile))
 ```
 
-## Methods on the device
+Media2 is used when the camera supports it, Media v1 otherwise.
+
+## Examples
+
+- [Stream URLs](examples/stream-urls.md): RTSP, UDP and HTTP addresses for each profile
+- [Snapshots](examples/snapshots.md): save a JPEG from the camera
+- [Encoder settings](examples/encoder-settings.md): change codec, resolution, frame rate and bitrate
+
+## API
 
 ```ts
-import { media } from '@2bad/onvif-media'
+camera.media.getProfiles(options?: MediaOptions): Promise<Profile[]>
+camera.media.getStreamUri(profile: Profile, options?: StreamOptions): Promise<MediaAddress>
+camera.media.getSnapshotUri(profile: Profile, options?: MediaOptions): Promise<MediaAddress>
+camera.media.fetchSnapshot(snapshot: MediaAddress | URL, options?: MediaOptions): Promise<Uint8Array>
+camera.media.getVideoSourceConfigurations(options?: MediaOptions): Promise<VideoSourceConfiguration[]>
+camera.media.getVideoEncoderConfigurations(options?: MediaOptions): Promise<VideoEncoder[]>
+camera.media.getVideoEncoderConfigurationOptions(
+  encoder: VideoEncoder,
+  options?: MediaOptions
+): Promise<VideoEncoderOptions[]> // one per codec
+camera.media.setVideoEncoderConfiguration(
+  encoder: VideoEncoder,
+  changes: VideoEncoderChanges,
+  options?: MediaOptions
+): Promise<VideoEncoder>
 
-const camera = device.use(media)
-const profiles = await camera.media.getProfiles()
-```
+function defaultProfile(profiles: Profile[]): Profile | undefined // first profile with a video source and an encoder
 
-Every function that takes a device is on `camera.media` without the device argument.
+type MediaOptions = { signal?: AbortSignal; timeoutMs?: number }
 
-## Media2 and Media v1
+type Profile = {
+  token: string
+  name: string
+  fixed: boolean // the profile cannot be deleted
+  service: 'media2' | 'media'
+  videoSource?: VideoSourceConfiguration
+  videoEncoder?: VideoEncoder
+  reported: Media2.MediaProfile | Media.Profile // the profile as the camera sent it
+}
 
-Media2 is used when the camera supports it, Media v1 otherwise. If Media2 answers with an error, Media v1 is tried within the same timeout.
+type VideoEncoder = {
+  token: string
+  name: string
+  encoding: string // 'JPEG', 'MPV4-ES', 'H264' or 'H265'
+  resolution: { width: number; height: number }
+  quality: number
+  frameRateLimit?: number
+  bitrateLimit?: number // kbit/s
+  govLength?: number
+  profile?: string // codec profile, such as 'Main' or 'High'
+  service: 'media2' | 'media'
+  reported: Media2.VideoEncoder2Configuration | Media.VideoEncoderConfiguration
+}
 
-Each profile has `service` set to `'media2'` or `'media'`. Pass the profile to `getSnapshotUri()` and `getStreamUri()`. A saved profile works as `{ service, token }`.
-
-## Profiles
-
-```ts
-for (const { name, service, videoEncoder } of await getProfiles(device)) {
-  console.log(name, service, videoEncoder?.encoding) // profile1 media2 H265
+type MediaAddress = {
+  uri: URL // URL to use
+  reported: string // the address as the camera sent it
+  invalidAfterConnect: boolean
+  invalidAfterReboot: boolean
+  timeout: string // 'PT0S' means no limit
 }
 ```
 
-`videoEncoder` has the codec, resolution, quality, frame rate limit, bitrate limit and GOP length. Codecs use the Media2 names: `JPEG`, `MPV4-ES`, `H264`, `H265`. `reported` has the profile as the camera sent it, typed by `service`.
+Each method is also exported as a function that takes the device first, such as `getProfiles(device)`.
 
-`defaultProfile()` picks the first profile with a video source and an encoder.
-
-## Configurations
-
-```ts
-const sources = await getVideoSourceConfigurations(device)
-const encoders = await getVideoEncoderConfigurations(device)
-```
-
-Encoders come in the same shape as `profile.videoEncoder`.
-
-## Encoder settings
-
-```ts
-const encoder = profile.videoEncoder
-if (!encoder) throw new Error('The profile has no encoder')
-
-const options = await getVideoEncoderConfigurationOptions(device, encoder) // one entry per codec
-
-await setVideoEncoderConfiguration(device, encoder, { frameRateLimit: 15, bitrateLimit: 2048 })
-```
-
-`setVideoEncoderConfiguration()` changes only the fields you pass. When switching to `H264` or `MPV4-ES`, pass `govLength` and `profile`.
-
-## Stream URLs
-
-```ts
-const stream = await getStreamUri(device, profile, {
-  // optional, values are the defaults
-  protocol: 'RTSP', // or 'UDP', 'HTTP'
-  multicast: false
-})
-```
-
-## Snapshots
-
-`fetchSnapshot()` returns the JPEG bytes. A response that is not a JPEG image is a `TransportError`.
-
-Cameras that only offer HTTP Basic for snapshots need `basicAuth` on `Device.connect()`.
-
-Media2 has no multicast over HTTP. Asking for it throws an `OnvifError`.
-
-## Addresses
-
-Cameras behind NAT report internal addresses. The returned `uri` uses the host you connected to. Stream URLs keep the port and scheme the camera reported. `reported` has the address as the camera sent it.
-
-With `serviceAddresses: 'reject'`, an address on another host throws an `OnvifError`.
-
-## Timeouts and cancellation
-
-Functions that call the camera take `signal` and `timeoutMs` in their last argument, like `device.call()`.
+`Media` and `Media2` have the generated operations for `device.call()`.
 
 ## Limits
 
-Cameras without Media2 cannot report H.265. Their H.265 profiles may have no `videoEncoder`. Their snapshot and stream addresses still work.
+Cameras without Media2 can't report H.265. Their H.265 profiles may have no `videoEncoder`. Their snapshot and stream addresses still work.
 
 ## License
 

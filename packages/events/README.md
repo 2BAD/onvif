@@ -8,71 +8,64 @@ ONVIF events and motion detection for [`@2bad/onvif`](https://www.npmjs.com/pack
 npm install @2bad/onvif @2bad/onvif-events
 ```
 
-## Usage
+## Quick start
 
 ```ts
 import { Device } from '@2bad/onvif'
-import { motionOf, subscribe } from '@2bad/onvif-events'
+import { events, motionOf } from '@2bad/onvif-events'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
-const events = await subscribe(device, { onError: (error) => logger.warn(error) })
+const camera = device.use(events)
+const subscription = await camera.events.subscribe({ onError: (error) => logger.warn(error) })
 
-for await (const notification of events) {
+for await (const notification of subscription) {
   const motion = motionOf(notification)
-  if (motion) console.log(motion.source['VideoSourceConfigurationToken'], motion.isMotion)
+  if (motion && !motion.initialized) console.log(motion.utcTime, motion.isMotion) // 2026-10-05T09:12:44.000Z true
 }
 ```
 
-## Methods on the device
+The loop recovers from network errors, camera reboots and expired subscriptions. Each one goes to `onError`.
+
+## Examples
+
+- [Motion](examples/motion.md): motion start and end
+- [Other events](examples/other-events.md): every event, filtering by topic, current state
+- [Subscription](examples/subscription.md): options, stopping and errors
+
+## API
 
 ```ts
-import { events } from '@2bad/onvif-events'
+camera.events.subscribe(options: SubscribeOptions): Promise<Subscription>
 
-const camera = device.use(events)
-const subscription = await camera.events.subscribe({ onError: (error) => logger.warn(error) })
+function motionOf(notification: Notification): Motion | undefined
+function isTopic(topic: Topic | undefined, path: string[], namespace?: string): boolean
+
+class Subscription implements AsyncIterableIterator<Notification> {
+  get address(): string | undefined
+  close(): Promise<void>
+}
+
+type Notification = {
+  topic: Topic | undefined // { expression, path, namespace, dialect }
+  utcTime: Date
+  propertyOperation: 'Initialized' | 'Changed' | 'Deleted' | undefined
+  source: Record<string, string> // { VideoSourceConfigurationToken: 'VideoSourceConfig_1' }
+  key: Record<string, string>
+  data: Record<string, string> // { IsMotion: 'true' }
+  message: Message // the whole decoded message
+}
+
+type Motion = {
+  isMotion: boolean
+  initialized: boolean // true for the state sent on subscribe
+  utcTime: Date
+  source: Record<string, string>
+}
 ```
 
-`camera.events.subscribe()` takes the same options as `subscribe()`.
+`subscribe(device, options)` is the same as `camera.events.subscribe(options)` without `use()`.
 
-## Stopping
-
-Stop with `break`, `close()` or an aborted `signal`.
-
-## Errors
-
-`subscribe()` throws when the camera refuses the subscription.
-
-After that, the loop recovers from network errors, camera reboots and expired subscriptions. Each one goes to `onError`. It throws when the camera rejects the credentials or reports an event address that `serviceAddresses` refuses.
-
-## State
-
-After subscribing and after every reconnect, the camera sends the current state of every topic. To get only changes, skip events whose `propertyOperation` is `'Initialized'`.
-
-## Topics
-
-`motionOf()` returns the standard motion event (`RuleEngine/CellMotionDetector/Motion`) or `undefined`. Match other topics with `isTopic()`.
-
-```ts
-isTopic(notification.topic, ['VideoSource', 'MotionAlarm'])
-```
-
-Values in `notification.data` and `notification.source` are strings.
-
-## `subscribe()` options
-
-```ts
-const events = await subscribe(device, {
-  onError: (error) => logger.warn(error), // receives each problem the subscription recovers from
-
-  // optional, values are the defaults
-  pullTimeoutMs: 30_000, // how long each request waits for events
-  messageLimit: 100, // most events per request
-  terminationMs: 60_000, // how long the camera keeps the subscription between requests
-
-  // optional, off by default
-  signal // closes the subscription
-})
-```
+`Events` has the generated operations for `device.call()`.
 
 ## License
 

@@ -8,109 +8,54 @@ ONVIF client for TypeScript with no runtime dependencies.
 npm install @2bad/onvif
 ```
 
-Needs Node.js 26 or later. ESM only. Discovery, events and media are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
+Needs Node.js 26 or later. ESM only.
 
-## Usage
+Discovery, events and media are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
+
+## Quick start
 
 ```ts
 import { Device, DeviceManagement } from '@2bad/onvif'
 
 using device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
 const info = await device.call(DeviceManagement.GetDeviceInformation)
-console.log(info.manufacturer, info.model, info.firmwareVersion)
+console.log(info.manufacturer, info.model, info.firmwareVersion) // DVC DCN-BM2220LPR 2.1.0
 ```
 
-## Calling operations
+`using` closes idle connections at the end of the block.
 
-Every operation has TypeScript types for its request and response, generated from the ONVIF schema.
+## Examples
+
+- [Connecting](examples/connecting.md): every `Device.connect()` option
+- [Calling operations](examples/calling.md): requests, timeouts and cancellation
+- [Errors](examples/errors.md): error classes and what they carry
+- [Security](examples/security.md): authentication, TLS and service addresses
+- [Service packages](examples/service-packages.md): media and events methods on the device
+
+## API
 
 ```ts
-const services = await device.call(DeviceManagement.GetServices, { includeCapability: false })
+class Device {
+  static connect(options: ConnectOptions): Promise<Device>
+
+  call(operation: Operation, request?: Request, options?: CallOptions): Promise<Response>
+  use(extension: (device: Device) => Extension): Device & Extension
+  download(address: string | URL, options?: { signal; timeoutMs }): Promise<{ contentType; body: Uint8Array }>
+  synchronizeClock(options?: { signal; timeoutMs }): Promise<void>
+  resolveAddress(address: string): URL // the URL a reported address is sent to
+  close(): void // closes idle connections, the device still works after it
+
+  readonly address: URL // URL of the device service
+  get services(): ReadonlyMap<string, URL> // service namespace to URL
+  get clock(): { skewMs: number; source: 'device' | 'local' } // camera time minus local time
+  get timeoutMs(): number
+  get serviceAddresses(): 'rewrite' | 'sameHost' | 'reject'
+}
 ```
 
-## `Device.connect()` options
+`DeviceManagement` has `GetCapabilities`, `GetDeviceInformation`, `GetHostname`, `GetNetworkInterfaces`, `GetScopes`, `GetServiceCapabilities`, `GetServices`, `GetSystemDateAndTime` and `SystemReboot`.
 
-```ts
-const device = await Device.connect({
-  hostname: '192.0.2.10', // host name, IPv4 or IPv6 address
-
-  // optional, values are the defaults
-  port: 80, // 443 when secure
-  secure: false, // use HTTPS
-  path: '/onvif/device_service',
-  timeoutMs: 10_000, // deadline for each call, retries included
-  serviceAddresses: 'rewrite', // or 'sameHost', 'reject', see Service addresses
-  verifyCredentials: true, // check credentials with an extra request in connect()
-  maxResponseBytes: 4 * 1024 * 1024,
-
-  // optional, off by default
-  username: 'admin',
-  password: 'secret',
-  retry: { attempts: 2, delayMs: 250 }, // retry Get* calls on connection errors and HTTP 502, 503, 504
-  tls: { fingerprint256: 'AB:CD:...' }, // see TLS
-  basicAuth: 'https', // allow HTTP Basic on HTTPS, or 'always'
-  signal // aborts connect()
-})
-```
-
-A device service URL works in place of `hostname`, `port`, `secure` and `path`.
-
-```ts
-const device = await Device.connect({
-  url: 'http://192.0.2.10/onvif/device_service',
-  username: 'admin',
-  password: 'secret'
-})
-```
-
-## `device.call()` options
-
-The third argument takes `signal` to abort the call and `timeoutMs` to override the timeout for that call.
-`device.timeoutMs` has the timeout set in `connect()`.
-
-```ts
-await device.call(DeviceManagement.GetScopes, {}, { signal: AbortSignal.timeout(2_000) })
-```
-
-## Service packages
-
-```ts
-import { events } from '@2bad/onvif-events'
-import { media } from '@2bad/onvif-media'
-
-const camera = device.use(media).use(events)
-const profiles = await camera.media.getProfiles()
-```
-
-`use()` returns the same device with the functions of the package added. Adding a name the device already has throws an `OnvifError`.
-
-## Authentication
-
-Uses WS-Security digest and HTTP Digest. Works with cameras whose clock is wrong.
-
-## Service addresses
-
-Credentials are only sent to the protocol, host and port you passed to `connect()`. Cameras behind NAT or a proxy often report internal service addresses. `serviceAddresses` sets what happens to them.
-
-- `'rewrite'` (default): use your host and port, keep the path
-- `'sameHost'`: allow another port or HTTPS on your host, rewrite the rest
-- `'reject'`: calls to that service fail with an `OnvifError`
-
-`device.services` lists the address used for each service.
-
-## TLS
-
-```ts
-const device = await Device.connect({
-  hostname: 'camera.example',
-  secure: true,
-  username: 'admin',
-  password: 'secret',
-  tls: { fingerprint256: 'AB:CD:...' }
-})
-```
-
-`tls` takes `ca` (private CA), `cert` and `key` (client certificate), `fingerprint256` (pin a self-signed certificate) and `rejectUnauthorized: false` (accept any certificate).
+Every error is an `OnvifError` with `host`, `service` and `action`.
 
 ## License
 
