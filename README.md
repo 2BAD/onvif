@@ -27,6 +27,10 @@ const info = await device.call(DeviceManagement.GetDeviceInformation)
 console.log(info.manufacturer, info.model) // DVC DCN-BM2220LPR
 ```
 
+## Migrating from `onvif`
+
+See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvif` 0.8 or 1.0.
+
 ## ONVIF profiles
 
 | Profile | Covered  | Missing                      |

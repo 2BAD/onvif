@@ -31,6 +31,7 @@ console.log(info.manufacturer, info.model, info.firmwareVersion) // DVC DCN-BM22
 - [Errors](examples/errors.md): error classes and what they carry
 - [Security](examples/security.md): authentication, TLS and service addresses
 - [Service packages](examples/service-packages.md): media and events methods on the device
+- [Migrating from `onvif`](examples/migrating.md): `Cam` and `Onvif` calls and options in 2.x
 
 ## API
 
