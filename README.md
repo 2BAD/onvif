@@ -2,7 +2,7 @@
 
 High-performance ONVIF client for TypeScript with no runtime dependencies.
 
-New in 2.0:
+Compared with other ONVIF libraries:
 
 - Faster and lighter
 - TypeScript types generated from the ONVIF spec
