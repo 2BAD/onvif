@@ -47,15 +47,56 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 
 Compared with [`onvif`](https://github.com/agsh/onvif) 1.0.0-rc.3, [`onvif-zeep-async`](https://github.com/openvideolibs/python-onvif-zeep-async) 4.3.0 for Python, [`use-go/onvif`](https://github.com/use-go/onvif) 67386c9 for Go and [`onvif-rs`](https://github.com/lumeohq/onvif-rs) fc074aa for Rust:
 
-|                                   | `@2bad/onvif` | `onvif`                | `onvif-zeep-async`   | `use-go/onvif`          | `onvif-rs`             |
-| --------------------------------- | ------------- | ---------------------- | -------------------- | ----------------------- | ---------------------- |
-| Event responses parsed per second | 11,934        | 3,190 (3.7x slower)    | 878 (13.6x slower)   | 6,781 (1.8x slower)     | 395 (30.2x slower)     |
-| Burst of 5,000 events             | 214 ms        | 1,377 ms (6.4x slower) | 840 ms (3.9x slower) | 6,308 ms (29.5x slower) | 1,814 ms (8.5x slower) |
-| CPU time for 5,000 events         | 349 ms        | 936 ms (2.7x more)     | 830 ms (2.4x more)   | 3,981 ms (11.4x more)   | 1,675 ms (4.8x more)   |
-| Requests per second               | 1,104         | 471 (2.3x slower)      | 220 (5.0x slower)    | 836 (1.3x slower)       | 82 (13.5x slower)      |
-| CPU time per request              | 0.48 ms       | 1.73 ms (3.6x more)    | 3.90 ms (8.1x more)  | 1.01 ms (2.1x more)     | 10.9 ms (22.7x more)   |
-| Parsing a 500 KB response         | 5.8 ms        | 33.8 ms (5.9x slower)  | 98 ms (17.0x slower) | 10.7 ms (1.9x slower)   | 354 ms (61.4x slower)  |
-| Cold start                        | 81 ms         | 93 ms (1.1x slower)    | 280 ms (3.5x slower) | 4 ms (20x faster)       | 20 ms (4.1x faster)    |
+```text
+Event responses parsed per second (higher is better)
+  @2bad/onvif       11,934
+  use-go/onvif       6,781   1.8x slower
+  onvif              3,190   3.7x slower
+  onvif-zeep-async     878  13.6x slower
+  onvif-rs             395    30x slower
+
+Burst of 5,000 events (lower is better)
+  @2bad/onvif         214 ms
+  onvif-zeep-async    840 ms  3.9x slower
+  onvif             1,377 ms  6.4x slower
+  onvif-rs          1,814 ms  8.5x slower
+  use-go/onvif      6,308 ms   29x slower
+
+CPU time for 5,000 events (lower is better)
+  @2bad/onvif         349 ms
+  onvif-zeep-async    830 ms   2.4x more
+  onvif               936 ms   2.7x more
+  onvif-rs          1,675 ms   4.8x more
+  use-go/onvif      3,981 ms  11.4x more
+
+Requests per second (higher is better)
+  @2bad/onvif       1,104
+  use-go/onvif        836   1.3x slower
+  onvif               471   2.3x slower
+  onvif-zeep-async    220   5.0x slower
+  onvif-rs             82  13.5x slower
+
+CPU time per request (lower is better)
+  @2bad/onvif        0.48 ms
+  use-go/onvif       1.01 ms  2.1x more
+  onvif              1.73 ms  3.6x more
+  onvif-zeep-async   3.90 ms  8.1x more
+  onvif-rs          10.91 ms   23x more
+
+Parsing a 500 KB response (lower is better)
+  @2bad/onvif         5.8 ms
+  use-go/onvif       10.7 ms   1.9x slower
+  onvif              33.8 ms   5.9x slower
+  onvif-zeep-async   98.1 ms  17.0x slower
+  onvif-rs          353.7 ms    61x slower
+
+Cold start (lower is better)
+  use-go/onvif        4 ms   20x faster
+  onvif-rs           20 ms  4.1x faster
+  @2bad/onvif        81 ms
+  onvif              93 ms  1.1x slower
+  onvif-zeep-async  280 ms  3.5x slower
+```
 
 Snapshots are up to 2.6x faster than plain `fetch`.
 
