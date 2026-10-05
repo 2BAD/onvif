@@ -45,17 +45,17 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 
 ## Performance
 
-Compared with [`onvif`](https://github.com/agsh/onvif) 1.0.0-rc.3 and [`onvif-zeep-async`](https://github.com/openvideolibs/python-onvif-zeep-async) 4.3.0 for Python:
+Compared with [`onvif`](https://github.com/agsh/onvif) 1.0.0-rc.3, [`onvif-zeep-async`](https://github.com/openvideolibs/python-onvif-zeep-async) 4.3.0 for Python, [`use-go/onvif`](https://github.com/use-go/onvif) 67386c9 for Go and [`onvif-rs`](https://github.com/lumeohq/onvif-rs) fc074aa for Rust:
 
-|                                   | `@2bad/onvif` | `onvif`                | `onvif-zeep-async`   |
-| --------------------------------- | ------------- | ---------------------- | -------------------- |
-| Event responses parsed per second | 12,160        | 3,402 (3.6x slower)    | 916 (13.3x slower)   |
-| Burst of 5,000 events             | 171 ms        | 1,179 ms (6.9x slower) | 796 ms (4.7x slower) |
-| CPU time for 5,000 events         | 296 ms        | 804 ms (2.7x more)     | 779 ms (2.6x more)   |
-| Requests per second               | 1,133         | 447 (2.5x slower)      | 216 (5.2x slower)    |
-| CPU time per request              | 0.47 ms       | 1.80 ms (3.8x more)    | 3.98 ms (8.4x more)  |
-| Parsing a 500 KB response         | 5.3 ms        | 30.8 ms (5.9x slower)  | 99 ms (18.9x slower) |
-| Cold start                        | 78 ms         | 92 ms (1.2x slower)    | 280 ms (3.6x slower) |
+|                                   | `@2bad/onvif` | `onvif`                | `onvif-zeep-async`   | `use-go/onvif`          | `onvif-rs`             |
+| --------------------------------- | ------------- | ---------------------- | -------------------- | ----------------------- | ---------------------- |
+| Event responses parsed per second | 11,934        | 3,190 (3.7x slower)    | 878 (13.6x slower)   | 6,781 (1.8x slower)     | 395 (30.2x slower)     |
+| Burst of 5,000 events             | 214 ms        | 1,377 ms (6.4x slower) | 840 ms (3.9x slower) | 6,308 ms (29.5x slower) | 1,814 ms (8.5x slower) |
+| CPU time for 5,000 events         | 349 ms        | 936 ms (2.7x more)     | 830 ms (2.4x more)   | 3,981 ms (11.4x more)   | 1,675 ms (4.8x more)   |
+| Requests per second               | 1,104         | 471 (2.3x slower)      | 220 (5.0x slower)    | 836 (1.3x slower)       | 82 (13.5x slower)      |
+| CPU time per request              | 0.48 ms       | 1.73 ms (3.6x more)    | 3.90 ms (8.1x more)  | 1.01 ms (2.1x more)     | 10.9 ms (22.7x more)   |
+| Parsing a 500 KB response         | 5.8 ms        | 33.8 ms (5.9x slower)  | 98 ms (17.0x slower) | 10.7 ms (1.9x slower)   | 354 ms (61.4x slower)  |
+| Cold start                        | 81 ms         | 93 ms (1.1x slower)    | 280 ms (3.5x slower) | 4 ms (20x faster)       | 20 ms (4.1x faster)    |
 
 Snapshots are up to 2.6x faster than plain `fetch`.
 
