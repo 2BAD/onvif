@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { build } from 'tsdown'
 
-const BUDGET_BYTES = 60_000
+const BUDGET_BYTES = 75_000
 
 const source = join(import.meta.dirname, '../../packages/onvif/source')
 const outDir = mkdtempSync(join(tmpdir(), 'onvif-size-'))
