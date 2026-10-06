@@ -702,7 +702,59 @@ describe('media', () => {
       'fetchSnapshot',
       'getVideoEncoderConfigurations',
       'getVideoEncoderConfigurationOptions',
-      'setVideoEncoderConfiguration'
+      'setVideoEncoderConfiguration',
+      'v1',
+      'v2'
+    ])
+  })
+
+  it('adds a method per Media operation as media.v1', async () => {
+    const mock = await camera()
+    const device = (await connect(mock)).use(media)
+    const { v1 } = device.media
+    const { profiles: [profile] = [] } = await v1.getProfiles()
+    const profileToken = profile?.token ?? ''
+    const streamSetup = { stream: 'RTP-Unicast', transport: { protocol: 'RTSP' } }
+    expect((await v1.getStreamUri({ profileToken, streamSetup })).mediaUri.uri).toMatch(/^rtsp:/)
+    expect((await v1.getSnapshotUri({ profileToken })).mediaUri.uri).toMatch(/^http:/)
+    expect((await v1.getVideoSourceConfigurations()).configurations?.length).toBeGreaterThan(0)
+    const { configurations: [configuration] = [] } = await v1.getVideoEncoderConfigurations()
+    const configurationToken = configuration?.token ?? ''
+    expect((await v1.getVideoEncoderConfigurationOptions({ configurationToken })).options).toBeDefined()
+    if (!configuration) throw new Error('no encoder configuration')
+    await expect(v1.setVideoEncoderConfiguration({ configuration, forcePersistence: true })).resolves.toEqual({})
+    expect(mock.requests.filter(({ service }) => service === 'media').map(({ action }) => action)).toEqual([
+      'GetProfiles',
+      'GetStreamUri',
+      'GetSnapshotUri',
+      'GetVideoSourceConfigurations',
+      'GetVideoEncoderConfigurations',
+      'GetVideoEncoderConfigurationOptions',
+      'SetVideoEncoderConfiguration'
+    ])
+  })
+
+  it('adds a method per Media2 operation as media.v2', async () => {
+    const mock = await camera()
+    const device = (await connect(mock)).use(media)
+    const { v2 } = device.media
+    const { profiles: [profile] = [] } = await v2.getProfiles({ type: ['All'] })
+    const profileToken = profile?.token ?? ''
+    expect((await v2.getStreamUri({ protocol: 'RTSP', profileToken })).uri).toMatch(/^rtsp:/)
+    expect((await v2.getSnapshotUri({ profileToken })).uri).toMatch(/^http:/)
+    expect((await v2.getVideoSourceConfigurations()).configurations?.length).toBeGreaterThan(0)
+    const { configurations: [configuration] = [] } = await v2.getVideoEncoderConfigurations()
+    expect((await v2.getVideoEncoderConfigurationOptions()).options?.length).toBeGreaterThan(0)
+    if (!configuration) throw new Error('no encoder configuration')
+    await expect(v2.setVideoEncoderConfiguration({ configuration })).resolves.toEqual({})
+    expect(mock.requests.filter(({ service }) => service === 'media2').map(({ action }) => action)).toEqual([
+      'GetProfiles',
+      'GetStreamUri',
+      'GetSnapshotUri',
+      'GetVideoSourceConfigurations',
+      'GetVideoEncoderConfigurations',
+      'GetVideoEncoderConfigurationOptions',
+      'SetVideoEncoderConfiguration'
     ])
   })
 })

@@ -8,8 +8,9 @@ export {
 } from '#encoder.ts'
 export { media } from '#extension.ts'
 export * as Media from '#generated/media.ts'
-export type { VideoSourceConfiguration } from '#generated/media.ts'
+export type { MediaClient, VideoSourceConfiguration } from '#generated/media.ts'
 export * as Media2 from '#generated/media2.ts'
+export type { Media2Client } from '#generated/media2.ts'
 export {
   defaultProfile,
   fetchSnapshot,
