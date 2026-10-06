@@ -8,7 +8,7 @@ import {
   type MockCameraOptions,
   startMockCamera
 } from '../../../tools/mock-camera/server.ts'
-import { Management } from '#index.ts'
+import { Management, management } from '#index.ts'
 
 const live = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
 const cleanups: (() => Promise<void> | void)[] = []
@@ -17,7 +17,7 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
 })
 
-const connect = async (options?: MockCameraOptions): Promise<{ mock: MockCamera; device: Device }> => {
+const connect = async (options?: MockCameraOptions) => {
   const mock = await startMockCamera(options)
   cleanups.push(() => mock.close())
   const url = new URL(mock.url)
@@ -28,7 +28,7 @@ const connect = async (options?: MockCameraOptions): Promise<{ mock: MockCamera;
     password: 'password'
   })
   cleanups.push(() => device.close())
-  return { mock, device }
+  return { mock, device: device.use(management) }
 }
 
 const answer = (body: string): ActionOverride => ({ kind: 'status', status: 200, body })
@@ -107,34 +107,54 @@ describe('generated management operations', () => {
   })
 })
 
+describe('management', () => {
+  it('adds a method for every operation as device.management', async () => {
+    const { device } = await connect()
+    const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(device.management))
+    const expected = operations.map(({ name }) => `${name.charAt(0).toLowerCase()}${name.slice(1)}`)
+    expect(methods.filter((name) => name !== 'constructor').toSorted()).toEqual(expected.toSorted())
+    expect(Object.getOwnPropertyDescriptor(device, 'management')).toMatchObject({ writable: false, enumerable: true })
+  })
+
+  it('sends the same request as Device.call', async () => {
+    const { mock, device } = await connect()
+    const request = { fromDHCP: false, ntpManual: [{ type: 'DNS', dnsName: 'pool.ntp.org' }] }
+    await device.call(Management.SetNTP, request)
+    await device.management.setNTP(request)
+    const [byCall, byMethod] = mock.requests.filter(({ action }) => action === 'SetNTP')
+    expect(parseEnvelope(byMethod?.body ?? '').body).toEqual(parseEnvelope(byCall?.body ?? '').body)
+    await expect(device.management.getUsers()).resolves.toEqual(await device.call(Management.GetUsers))
+  })
+})
+
 describe('Management on the lab camera', () => {
   it('reads the network, time, user, filter and relay settings as typed values', async () => {
     const { device } = await connect()
-    expect(await device.call(Management.GetNetworkDefaultGateway)).toEqual({
+    expect(await device.management.getNetworkDefaultGateway()).toEqual({
       networkGateway: { ipv4Address: ['192.0.2.18'] }
     })
-    expect(await device.call(Management.GetUsers)).toEqual({
+    expect(await device.management.getUsers()).toEqual({
       user: [{ username: 'REDACTED3', userLevel: 'Administrator' }]
     })
-    expect(await device.call(Management.GetZeroConfiguration)).toEqual({
+    expect(await device.management.getZeroConfiguration()).toEqual({
       zeroConfiguration: { interfaceToken: 'eth0', enabled: true, addresses: ['192.0.2.20'] }
     })
-    expect(await device.call(Management.GetIPAddressFilter)).toEqual({ ipAddressFilter: { type: 'Deny' } })
-    expect(await device.call(Management.GetRelayOutputs)).toEqual({
+    expect(await device.management.getIPAddressFilter()).toEqual({ ipAddressFilter: { type: 'Deny' } })
+    expect(await device.management.getRelayOutputs()).toEqual({
       relayOutputs: [{ token: '0', properties: { mode: 'Monostable', delayTime: 'PT20S', idleState: 'closed' } }]
     })
   })
 
   it('returns the NTP server the lab camera reports with type IPv4 and a DNS name as it is', async () => {
     const { device } = await connect()
-    expect(await device.call(Management.GetNTP)).toEqual({
+    expect(await device.management.getNTP()).toEqual({
       ntpInformation: { fromDHCP: false, ntpManual: [{ type: 'IPv4', dnsName: 'host10.example' }] }
     })
   })
 
   it('rejects the nil dynamic DNS information of the lab camera with the path of the element', async () => {
     const { device } = await connect()
-    const error = await rejection(() => device.call(Management.GetDynamicDNS))
+    const error = await rejection(() => device.management.getDynamicDNS())
     expect(error).toBeInstanceOf(DecodeError)
     expect(error).toMatchObject({
       path: 'GetDynamicDNSResponse.DynamicDNSInformation',
@@ -159,34 +179,34 @@ describe('Management on the lab camera', () => {
         )
       }
     })
-    expect(await device.call(Management.GetUsers)).toEqual({
+    expect(await device.management.getUsers()).toEqual({
       user: [
         { username: '007', userLevel: 'Operator' },
         { username: '1234', userLevel: 'User' }
       ]
     })
-    expect(await device.call(Management.GetDynamicDNS)).toEqual({
+    expect(await device.management.getDynamicDNS()).toEqual({
       dynamicDNSInformation: { type: 'ClientUpdates', name: 'true', TTL: 'PT1H' }
     })
   })
 
   it('returns no users when the device lists none', async () => {
     const { device } = await connect({ overrides: { 'device.GetUsers': usersAnswer('') } })
-    expect(await device.call(Management.GetUsers)).toEqual({})
+    expect(await device.management.getUsers()).toEqual({})
   })
 
   it('returns no relays from the DCN-BF5365, which has none', async () => {
     const { device } = await connect({
       overrides: { 'device.GetRelayOutputs': answer(fixture('live/dvc/dcn-bf5365/device.GetRelayOutputs.xml').xml) }
     })
-    expect(await device.call(Management.GetRelayOutputs)).toEqual({})
+    expect(await device.management.getRelayOutputs()).toEqual({})
   })
 
   it('rejects the nil dynamic DNS information of the DCN-BF5365 as of the lab camera', async () => {
     const { device } = await connect({
       overrides: { 'device.GetDynamicDNS': answer(fixture('live/dvc/dcn-bf5365/device.GetDynamicDNS.xml').xml) }
     })
-    await expect(device.call(Management.GetDynamicDNS)).rejects.toThrow(
+    await expect(device.management.getDynamicDNS()).rejects.toThrow(
       'Missing required element Type at GetDynamicDNSResponse.DynamicDNSInformation'
     )
   })
@@ -197,7 +217,7 @@ describe('Management on the lab camera', () => {
         'device.GetNetworkDefaultGateway': answer(fixture('live/dvc/drn-3282r/device.GetNetworkDefaultGateway.xml').xml)
       }
     })
-    expect(await device.call(Management.GetNetworkDefaultGateway)).toEqual({
+    expect(await device.management.getNetworkDefaultGateway()).toEqual({
       networkGateway: { ipv4Address: ['192.0.2.18'], ipv6Address: [''] }
     })
   })
@@ -206,7 +226,7 @@ describe('Management on the lab camera', () => {
     const { device } = await connect({
       overrides: { 'device.GetRelayOutputs': answer(fixture('live/dvc/drn-3282r/device.GetRelayOutputs.xml').xml) }
     })
-    const { relayOutputs = [] } = await device.call(Management.GetRelayOutputs)
+    const { relayOutputs = [] } = await device.management.getRelayOutputs()
     expect(relayOutputs).toHaveLength(11)
     expect(relayOutputs[0]).toEqual({
       token: '{00000000-0000-4000-8000-000000000011}',
@@ -224,7 +244,7 @@ describe('Management on the lab camera', () => {
         }
       }
     })
-    const error = await rejection(() => device.call(Management.GetIPAddressFilter))
+    const error = await rejection(() => device.management.getIPAddressFilter())
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({
       code: 'Sender',
@@ -238,7 +258,7 @@ describe('Management on the lab camera', () => {
     const { mock, device } = await connect()
     const username = 'x</Username><UserLevel>Administrator</UserLevel><Username>y'
     const password = `a<b&"c'd]]>`
-    await device.call(Management.CreateUsers, { user: [{ username, password, userLevel: 'User' }] })
+    await device.management.createUsers({ user: [{ username, password, userLevel: 'User' }] })
     const users = (requestOf(mock, 'CreateUsers')['CreateUsers'] as XmlObject)['User']
     expect(users).toEqual({ Username: username, Password: password, UserLevel: 'User' })
   })
@@ -246,9 +266,9 @@ describe('Management on the lab camera', () => {
   it('creates, changes and deletes a user', async () => {
     const { mock, device } = await connect()
     const user = { username: 'operator', password: 'first', userLevel: 'Operator' }
-    expect(await device.call(Management.CreateUsers, { user: [user] })).toEqual({})
-    expect(await device.call(Management.SetUser, { user: [{ ...user, password: 'second' }] })).toEqual({})
-    expect(await device.call(Management.DeleteUsers, { username: ['operator', 'viewer'] })).toEqual({})
+    expect(await device.management.createUsers({ user: [user] })).toEqual({})
+    expect(await device.management.setUser({ user: [{ ...user, password: 'second' }] })).toEqual({})
+    expect(await device.management.deleteUsers({ username: ['operator', 'viewer'] })).toEqual({})
     expect(requestOf(mock, 'SetUser')).toEqual({
       SetUser: { User: { Username: 'operator', Password: 'second', UserLevel: 'Operator' } }
     })
@@ -259,7 +279,7 @@ describe('Management on the lab camera', () => {
     const { device } = await connect({
       overrides: { 'device.DeleteUsers': { kind: 'status', status: 400, body: live('device.DeleteUsersMissingFault') } }
     })
-    const error = await rejection(() => device.call(Management.DeleteUsers, { username: ['nobody'] }))
+    const error = await rejection(() => device.management.deleteUsers({ username: ['nobody'] }))
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({
       subcodes: ['InvalidArgVal', 'UsernameMissing'],
@@ -277,7 +297,7 @@ describe('Management on the lab camera', () => {
     })
     const password = 'Secret-Password-1'
     const error = await rejection(() =>
-      device.call(Management.SetUser, { user: [{ username: 'viewer', password, userLevel: 'User' }] })
+      device.management.setUser({ user: [{ username: 'viewer', password, userLevel: 'User' }] })
     )
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['OperationProhibited', 'PasswordTooWeak'], action: 'SetUser' })
@@ -288,7 +308,7 @@ describe('Management on the lab camera', () => {
     const { mock, device } = await connect()
     const password = 'Secret\u0000Password'
     const error = await rejection(() =>
-      device.call(Management.SetUser, { user: [{ username: 'viewer', password, userLevel: 'User' }] })
+      device.management.setUser({ user: [{ username: 'viewer', password, userLevel: 'User' }] })
     )
     expect(error).toBeInstanceOf(OnvifError)
     expect(`${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`).not.toContain('Secret')
@@ -297,7 +317,7 @@ describe('Management on the lab camera', () => {
 
   it('sends the NTP servers with the spec element names', async () => {
     const { mock, device } = await connect()
-    await device.call(Management.SetNTP, {
+    await device.management.setNTP({
       fromDHCP: false,
       ntpManual: [
         { type: 'IPv4', ipv4Address: '192.0.2.1' },
@@ -318,10 +338,8 @@ describe('Management on the lab camera', () => {
   it('switches the relay and changes its settings', async () => {
     const { mock, device } = await connect()
     const properties = { mode: 'Bistable', delayTime: 'PT1S', idleState: 'open' }
-    expect(await device.call(Management.SetRelayOutputSettings, { relayOutputToken: '0', properties })).toEqual({})
-    expect(
-      await device.call(Management.SetRelayOutputState, { relayOutputToken: '0', logicalState: 'active' })
-    ).toEqual({})
+    expect(await device.management.setRelayOutputSettings({ relayOutputToken: '0', properties })).toEqual({})
+    expect(await device.management.setRelayOutputState({ relayOutputToken: '0', logicalState: 'active' })).toEqual({})
     expect(requestOf(mock, 'SetRelayOutputSettings')).toEqual({
       SetRelayOutputSettings: {
         RelayOutputToken: '0',
@@ -338,7 +356,7 @@ describe('Management on the lab camera', () => {
       overrides: { 'device.SetRelayOutputState': fault(['ter:InvalidArgVal', 'ter:RelayToken'], 'Unknown relay token') }
     })
     const error = await rejection(() =>
-      device.call(Management.SetRelayOutputState, { relayOutputToken: '7', logicalState: 'active' })
+      device.management.setRelayOutputState({ relayOutputToken: '7', logicalState: 'active' })
     )
     expect(error).toMatchObject({ name: 'SoapFaultError', action: 'SetRelayOutputState' })
   })
@@ -346,7 +364,7 @@ describe('Management on the lab camera', () => {
   it('changes the network interface, gateway, zero configuration and dynamic DNS', async () => {
     const { mock, device } = await connect()
     expect(
-      await device.call(Management.SetNetworkInterfaces, {
+      await device.management.setNetworkInterfaces({
         interfaceToken: 'eth0',
         networkInterface: {
           enabled: true,
@@ -355,9 +373,9 @@ describe('Management on the lab camera', () => {
         }
       })
     ).toEqual({ rebootNeeded: false })
-    expect(await device.call(Management.SetNetworkDefaultGateway, { ipv4Address: ['192.0.2.1'] })).toEqual({})
-    expect(await device.call(Management.SetZeroConfiguration, { interfaceToken: 'eth0', enabled: false })).toEqual({})
-    expect(await device.call(Management.SetDynamicDNS, { type: 'NoUpdate' })).toEqual({})
+    expect(await device.management.setNetworkDefaultGateway({ ipv4Address: ['192.0.2.1'] })).toEqual({})
+    expect(await device.management.setZeroConfiguration({ interfaceToken: 'eth0', enabled: false })).toEqual({})
+    expect(await device.management.setDynamicDNS({ type: 'NoUpdate' })).toEqual({})
     expect(requestOf(mock, 'SetNetworkInterfaces')).toEqual({
       SetNetworkInterfaces: {
         InterfaceToken: 'eth0',
@@ -373,9 +391,9 @@ describe('Management on the lab camera', () => {
   it('replaces, adds and removes IP address filter entries', async () => {
     const { mock, device } = await connect()
     const ipAddressFilter = { type: 'Deny', ipv4Address: [{ address: '198.51.100.7', prefixLength: 32 }] }
-    expect(await device.call(Management.SetIPAddressFilter, { ipAddressFilter })).toEqual({})
-    expect(await device.call(Management.AddIPAddressFilter, { ipAddressFilter })).toEqual({})
-    expect(await device.call(Management.RemoveIPAddressFilter, { ipAddressFilter })).toEqual({})
+    expect(await device.management.setIPAddressFilter({ ipAddressFilter })).toEqual({})
+    expect(await device.management.addIPAddressFilter({ ipAddressFilter })).toEqual({})
+    expect(await device.management.removeIPAddressFilter({ ipAddressFilter })).toEqual({})
     expect(requestOf(mock, 'RemoveIPAddressFilter')).toEqual({
       RemoveIPAddressFilter: {
         IPAddressFilter: { Type: 'Deny', IPv4Address: { Address: '198.51.100.7', PrefixLength: '32' } }
