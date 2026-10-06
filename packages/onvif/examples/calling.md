@@ -1,25 +1,24 @@
 # Calling operations
 
 ```ts
-import { Device, DeviceManagement } from '@2bad/onvif'
+import { Device } from '@2bad/onvif'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
 
-const { hostnameInformation } = await device.call(DeviceManagement.GetHostname)
-const { networkInterfaces } = await device.call(DeviceManagement.GetNetworkInterfaces)
+const { hostnameInformation } = await device.getHostname()
+const { networkInterfaces } = await device.getNetworkInterfaces()
 console.log(hostnameInformation.name, networkInterfaces.length) // camera-01 1
 
-const { service } = await device.call(DeviceManagement.GetServices, { includeCapability: false })
+const { service } = await device.getServices({ includeCapability: false })
 for (const { namespace, xAddr } of service) console.log(namespace, xAddr)
 ```
 
-The request and response of every operation have TypeScript types generated from the ONVIF schema. The request can be left out when all of its fields are optional.
+The request and response of every operation have TypeScript types generated from the ONVIF schema. The request can be left out when all of its fields are optional. Each method shows the ONVIF description of its operation in the editor.
 
 ## Options
 
 ```ts
-const response = await device.call(
-  DeviceManagement.GetScopes,
+const response = await device.getScopes(
   {},
   {
     // optional, values are the defaults
@@ -36,16 +35,26 @@ const response = await device.call(
 ## Timeouts
 
 ```ts
-await device.call(DeviceManagement.GetScopes, {}, { timeoutMs: 2_000 })
+await device.getScopes({}, { timeoutMs: 2_000 })
 ```
 
 ## Cancellation
 
 ```ts
 const controller = new AbortController()
-const info = device.call(DeviceManagement.GetDeviceInformation, {}, { signal: controller.signal })
+const info = device.getDeviceInformation({}, { signal: controller.signal })
 controller.abort()
 ```
+
+## `call()`
+
+```ts
+import { DeviceManagement } from '@2bad/onvif'
+
+const info = await device.call(DeviceManagement.GetDeviceInformation)
+```
+
+`call()` takes an operation instead of a method name. It has the same request, options and response types.
 
 ## Files
 

@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `@2bad/onvif-management`: users, NTP, network interface, default gateway, dynamic DNS, zero configuration, IP address filter and relay output operations for `device.call()`
+- `@2bad/onvif-management`: users, NTP, network interface, default gateway, dynamic DNS, zero configuration, IP address filter and relay output operations as methods on `device.management`
+- Added a method on `Device` for each device service operation, such as `device.getDeviceInformation()`
+- Added `device.media.v1` and `device.media.v2` with a method for each Media and Media2 operation
+- Added `getEventProperties()` and `getServiceCapabilities()` to `device.events`
+- These methods show the ONVIF description of their operation in the editor
 
 ### Changed
 

@@ -52,6 +52,9 @@ camera.media.setVideoEncoderConfiguration(
   options?: MediaOptions
 ): Promise<VideoEncoder>
 
+camera.media.v1 // a method per Media operation, such as camera.media.v1.getProfiles()
+camera.media.v2 // a method per Media2 operation, such as camera.media.v2.getProfiles({ type: ['All'] })
+
 function defaultProfile(profiles: Profile[]): Profile | undefined // first profile with a video source and an encoder
 
 type MediaOptions = { signal?: AbortSignal; timeoutMs?: number }
@@ -91,7 +94,9 @@ type MediaAddress = {
 
 Each method is also exported as a function that takes the device first, such as `getProfiles(device)`.
 
-`Media` and `Media2` have the generated operations for `device.call()`.
+`camera.media.v1` and `camera.media.v2` return the responses as the camera sent them.
+
+`Media` and `Media2` have the same operations for `device.call()`.
 
 ## Limits
 

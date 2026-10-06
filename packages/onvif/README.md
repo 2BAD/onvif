@@ -15,10 +15,10 @@ Discovery, events, device management and media are in [`@2bad/onvif-discovery`](
 ## Quick start
 
 ```ts
-import { Device, DeviceManagement } from '@2bad/onvif'
+import { Device } from '@2bad/onvif'
 
 using device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
-const info = await device.call(DeviceManagement.GetDeviceInformation)
+const info = await device.getDeviceInformation()
 console.log(info.manufacturer, info.model, info.firmwareVersion) // DVC DCN-BM2220LPR 2.1.0
 ```
 
@@ -30,7 +30,7 @@ console.log(info.manufacturer, info.model, info.firmwareVersion) // DVC DCN-BM22
 - [Calling operations](examples/calling.md): requests, timeouts and cancellation
 - [Errors](examples/errors.md): error classes and what they carry
 - [Security](examples/security.md): authentication, TLS and service addresses
-- [Service packages](examples/service-packages.md): media and events methods on the device
+- [Service packages](examples/service-packages.md): management, media and events methods on the device
 - [Migrating from `onvif`](examples/migrating.md): `Cam` and `Onvif` calls and options in 2.x
 
 ## API
@@ -38,6 +38,16 @@ console.log(info.manufacturer, info.model, info.firmwareVersion) // DVC DCN-BM22
 ```ts
 class Device {
   static connect(options: ConnectOptions): Promise<Device>
+
+  getCapabilities(request?, options?: CallOptions): Promise<GetCapabilitiesResponse>
+  getDeviceInformation(request?, options?: CallOptions): Promise<GetDeviceInformationResponse>
+  getHostname(request?, options?: CallOptions): Promise<GetHostnameResponse>
+  getNetworkInterfaces(request?, options?: CallOptions): Promise<GetNetworkInterfacesResponse>
+  getScopes(request?, options?: CallOptions): Promise<GetScopesResponse>
+  getServiceCapabilities(request?, options?: CallOptions): Promise<GetServiceCapabilitiesResponse>
+  getServices(request, options?: CallOptions): Promise<GetServicesResponse>
+  getSystemDateAndTime(request?, options?: CallOptions): Promise<GetSystemDateAndTimeResponse>
+  systemReboot(request?, options?: CallOptions): Promise<SystemRebootResponse>
 
   call(operation: Operation, request?: Request, options?: CallOptions): Promise<Response>
   use(extension: (device: Device) => Extension): Device & Extension
@@ -54,7 +64,7 @@ class Device {
 }
 ```
 
-`DeviceManagement` has `GetCapabilities`, `GetDeviceInformation`, `GetHostname`, `GetNetworkInterfaces`, `GetScopes`, `GetServiceCapabilities`, `GetServices`, `GetSystemDateAndTime` and `SystemReboot`.
+`call()` takes the same operations from `DeviceManagement`, such as `DeviceManagement.GetScopes`.
 
 Every error is an `OnvifError` with `host`, `service` and `action`.
 

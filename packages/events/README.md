@@ -36,6 +36,8 @@ The loop recovers from network errors, camera reboots and expired subscriptions.
 
 ```ts
 camera.events.subscribe(options: SubscribeOptions): Promise<Subscription>
+camera.events.getEventProperties(): Promise<GetEventPropertiesResponse> // the topics the camera supports
+camera.events.getServiceCapabilities(): Promise<GetServiceCapabilitiesResponse>
 
 function motionOf(notification: Notification): Motion | undefined
 function isTopic(topic: Topic | undefined, path: string[], namespace?: string): boolean
@@ -65,7 +67,7 @@ type Motion = {
 
 `subscribe(device, options)` is the same as `camera.events.subscribe(options)` without `use()`.
 
-`Events` has the generated operations for `device.call()`.
+`Events` has the generated operations for `device.call()`, including the ones without a method.
 
 ## License
 

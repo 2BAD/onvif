@@ -6,7 +6,7 @@ For code written for [`onvif`](https://www.npmjs.com/package/onvif) 0.8 (`Cam`) 
 
 ```sh
 npm uninstall onvif
-npm install @2bad/onvif @2bad/onvif-media @2bad/onvif-events @2bad/onvif-discovery
+npm install @2bad/onvif @2bad/onvif-media @2bad/onvif-events @2bad/onvif-management @2bad/onvif-discovery
 ```
 
 Install only the packages you use. Needs Node.js 26 or later. ESM only.
@@ -52,19 +52,20 @@ The default `serviceAddresses` works like `preserveAddress: true`. Addresses the
 
 ## Calls
 
-Device operations go to `device.call()`.
-
 | `onvif`                                 | `@2bad/onvif`                                                 |
 | --------------------------------------- | ------------------------------------------------------------- |
-| `getDeviceInformation()`                | `DeviceManagement.GetDeviceInformation`                       |
-| `getSystemDateAndTime()`                | `DeviceManagement.GetSystemDateAndTime`                       |
-| `getCapabilities()`                     | `DeviceManagement.GetCapabilities`                            |
-| `getServices()`                         | `DeviceManagement.GetServices`                                |
-| `getServiceCapabilities()`              | `DeviceManagement.GetServiceCapabilities`                     |
-| `getScopes()`                           | `DeviceManagement.GetScopes`                                  |
-| `getHostname()`                         | `DeviceManagement.GetHostname`                                |
-| `getNetworkInterfaces()`                | `DeviceManagement.GetNetworkInterfaces`                       |
-| `systemReboot()`                        | `DeviceManagement.SystemReboot`                               |
+| `getDeviceInformation()`                | `device.getDeviceInformation()`                               |
+| `getSystemDateAndTime()`                | `device.getSystemDateAndTime()`                               |
+| `getCapabilities()`                     | `device.getCapabilities()`                                    |
+| `getServices()`                         | `device.getServices({ includeCapability })`                   |
+| `getServiceCapabilities()`              | `device.getServiceCapabilities()`                             |
+| `getScopes()`                           | `device.getScopes()`                                          |
+| `getHostname()`                         | `device.getHostname()`                                        |
+| `getNetworkInterfaces()`                | `device.getNetworkInterfaces()`                               |
+| `systemReboot()`                        | `device.systemReboot()`                                       |
+| `getUsers()`                            | `camera.management.getUsers()`                                |
+| `getNTP()`                              | `camera.management.getNTP()`                                  |
+| `setNTP()`                              | `camera.management.setNTP(request)`                           |
 | `getProfiles()`                         | `camera.media.getProfiles()`                                  |
 | `getStreamUri({ protocol })`            | `camera.media.getStreamUri(profile, { protocol })`            |
 | `getSnapshotUri()`                      | `camera.media.getSnapshotUri(profile)`                        |
@@ -73,11 +74,8 @@ Device operations go to `device.call()`.
 | `getVideoEncoderConfigurationOptions()` | `camera.media.getVideoEncoderConfigurationOptions(encoder)`   |
 | `setVideoEncoderConfiguration()`        | `camera.media.setVideoEncoderConfiguration(encoder, changes)` |
 | `on('event')`                           | `camera.events.subscribe()`                                   |
+| `getEventProperties()`                  | `camera.events.getEventProperties()`                          |
 | `Discovery.probe()`                     | `discover()`                                                  |
-
-```ts
-const info = await device.call(DeviceManagement.GetDeviceInformation)
-```
 
 In `onvif` 1.0 these methods are on `onvif.device` and `onvif.media`.
 
@@ -151,4 +149,4 @@ Every error is an `OnvifError` subclass with `host`, `service` and `action`. See
 
 ## Not available yet
 
-PTZ, imaging, recording, replay, search, OSD, users, NTP, network settings and push events.
+PTZ, imaging, recording, replay, search, OSD and push events.

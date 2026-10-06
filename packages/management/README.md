@@ -12,53 +12,56 @@ npm install @2bad/onvif @2bad/onvif-management
 
 ```ts
 import { Device } from '@2bad/onvif'
-import { Management } from '@2bad/onvif-management'
+import { management } from '@2bad/onvif-management'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
+const camera = device.use(management)
 
-const { user = [] } = await device.call(Management.GetUsers)
+const { user = [] } = await camera.management.getUsers()
 console.log(user.map(({ username, userLevel }) => `${username} ${userLevel}`)) // [ 'admin Administrator' ]
 
-await device.call(Management.SetNTP, { fromDHCP: false, ntpManual: [{ type: 'DNS', dnsName: 'pool.ntp.org' }] })
+await camera.management.setNTP({ fromDHCP: false, ntpManual: [{ type: 'DNS', dnsName: 'pool.ntp.org' }] })
 ```
 
 ## Operations
 
 ```ts
-Management.GetUsers
-Management.CreateUsers
-Management.SetUser
-Management.DeleteUsers
+camera.management.getUsers()
+camera.management.createUsers(request)
+camera.management.setUser(request)
+camera.management.deleteUsers(request)
 
-Management.GetNTP
-Management.SetNTP
+camera.management.getNTP()
+camera.management.setNTP(request)
 
-Management.SetNetworkInterfaces // DeviceManagement.GetNetworkInterfaces reads them
-Management.GetNetworkDefaultGateway
-Management.SetNetworkDefaultGateway
-Management.GetDynamicDNS
-Management.SetDynamicDNS
-Management.GetZeroConfiguration
-Management.SetZeroConfiguration
+camera.management.setNetworkInterfaces(request) // device.getNetworkInterfaces() reads them
+camera.management.getNetworkDefaultGateway()
+camera.management.setNetworkDefaultGateway(request)
+camera.management.getDynamicDNS()
+camera.management.setDynamicDNS(request)
+camera.management.getZeroConfiguration()
+camera.management.setZeroConfiguration(request)
 
-Management.GetIPAddressFilter
-Management.SetIPAddressFilter
-Management.AddIPAddressFilter
-Management.RemoveIPAddressFilter
+camera.management.getIPAddressFilter()
+camera.management.setIPAddressFilter(request)
+camera.management.addIPAddressFilter(request)
+camera.management.removeIPAddressFilter(request)
 
-Management.GetRelayOutputs
-Management.SetRelayOutputSettings
-Management.SetRelayOutputState
+camera.management.getRelayOutputs()
+camera.management.setRelayOutputSettings(request)
+camera.management.setRelayOutputState(request)
 ```
 
-Each one is called with `device.call()` and has TypeScript types for its request and response.
+Each method has TypeScript types for its request and response. Each one also takes the options of `device.call()` as second argument.
+
+`Management` has the same operations for `device.call()`, such as `Management.GetUsers`.
 
 ## Users
 
 ```ts
-await device.call(Management.CreateUsers, { user: [{ username: 'viewer', password: 'secret', userLevel: 'User' }] })
-await device.call(Management.SetUser, { user: [{ username: 'viewer', password: 'changed', userLevel: 'User' }] })
-await device.call(Management.DeleteUsers, { username: ['viewer'] })
+await camera.management.createUsers({ user: [{ username: 'viewer', password: 'secret', userLevel: 'User' }] })
+await camera.management.setUser({ user: [{ username: 'viewer', password: 'changed', userLevel: 'User' }] })
+await camera.management.deleteUsers({ username: ['viewer'] })
 ```
 
 After changing the password of the user you are connected as, connect again with the new password.
@@ -66,8 +69,8 @@ After changing the password of the user you are connected as, connect again with
 ## Relays
 
 ```ts
-const { relayOutputs: [relay] = [] } = await device.call(Management.GetRelayOutputs)
-if (relay) await device.call(Management.SetRelayOutputState, { relayOutputToken: relay.token, logicalState: 'active' })
+const { relayOutputs: [relay] = [] } = await camera.management.getRelayOutputs()
+if (relay) await camera.management.setRelayOutputState({ relayOutputToken: relay.token, logicalState: 'active' })
 ```
 
 A relay in `Monostable` mode returns to idle after its `delayTime`.

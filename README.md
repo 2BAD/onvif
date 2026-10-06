@@ -21,10 +21,10 @@ Compared with other ONVIF libraries:
 ## Example
 
 ```ts
-import { Device, DeviceManagement } from '@2bad/onvif'
+import { Device } from '@2bad/onvif'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
-const info = await device.call(DeviceManagement.GetDeviceInformation)
+const info = await device.getDeviceInformation()
 console.log(info.manufacturer, info.model) // DVC DCN-BM2220LPR
 ```
 

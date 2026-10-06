@@ -1,10 +1,10 @@
 # Errors
 
 ```ts
-import { AuthError, DeviceManagement, OnvifError, SoapFaultError } from '@2bad/onvif'
+import { AuthError, OnvifError, SoapFaultError } from '@2bad/onvif'
 
 try {
-  await device.call(DeviceManagement.SystemReboot)
+  await device.systemReboot()
 } catch (error) {
   if (error instanceof AuthError) console.log('wrong password for', error.host)
   else if (error instanceof SoapFaultError)
