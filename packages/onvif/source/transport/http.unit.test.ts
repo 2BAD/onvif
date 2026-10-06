@@ -63,6 +63,18 @@ describe('HttpTransport', () => {
     expect((await client.post(url, 'fault')).status).toBe(500)
   })
 
+  it('capitalizes Content-Length for the DRN-3282R, which ignores a lowercase one', async () => {
+    const names: string[] = []
+    const url = await listen(
+      serve((request, response) => {
+        names.push(...request.rawHeaders.filter((_value, index) => index % 2 === 0))
+        response.end()
+      })
+    )
+    await transport().post(url, '<s:Envelope/>')
+    expect(names).toEqual(expect.arrayContaining(['Content-Type', 'Content-Length']))
+  })
+
   it('gets the body as bytes, without a request body or Content-Type', async () => {
     const bytes = Buffer.from([0xff, 0xd8, 0x00, 0xc3, 0x28, 0xff, 0xd9])
     const seen: IncomingMessage['headers'][] = []
