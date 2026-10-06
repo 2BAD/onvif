@@ -27,6 +27,7 @@
     "fix:code": "oxlint --fix ./packages ./tools",
     "fix:format": "oxfmt ./packages ./tools",
     "fixtures:capture": "tsx --env-file=.env tools/fixtures/capture.ts",
+    "fixtures:import": "tsx tools/fixtures/import.ts",
     "test": "vitest run",
     "test:fuzz": "vitest run fuzz",
     "test:integration": "vitest run integration --coverage",

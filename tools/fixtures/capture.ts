@@ -2,7 +2,9 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { createSocket } from 'node:dgram'
 import { once } from 'node:events'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { request } from 'node:http'
 import { join } from 'node:path'
+import { type DigestChallenge, digestAuthorization, parseChallenge } from '#onvif/transport/digest.ts'
 
 type Capture = { service: string; action: string; status: number; contentType: string; xml: string }
 type SendOptions = { authenticated?: boolean; addressing?: { action: string; to: string } }
@@ -23,6 +25,10 @@ const managementOnly = process.argv.includes('--management')
 // --set-device also sends the device management settings back as read, adds and removes a test IP filter entry, toggles
 // the first relay and creates, changes and deletes a test user; for the lab camera only
 const setDevice = process.argv.includes('--set-device')
+// --stdout prints the scrubbed responses as JSON lines instead of writing them, for devices reached from another machine;
+// tools/fixtures/import.ts writes them into a fixture directory
+const toStdout = process.argv.includes('--stdout')
+const log = toStdout ? console.error : console.log
 const MOTION_WAIT_MS = 300_000
 
 const deviceUrl = `http://${host}/onvif/device_service`
@@ -47,28 +53,74 @@ const securityHeader = (): string => {
   )
 }
 
+let digest: { challenge: DigestChallenge; count: number } | undefined
+
+type Response = { status: number; contentType: string; authenticate: string; xml: string }
+
+const post = (url: string, headers: Record<string, string>, body: string): Promise<Response> =>
+  new Promise((resolve, reject) => {
+    const outgoing = request(
+      url,
+      {
+        method: 'POST',
+        headers: { ...headers, 'Content-Length': String(Buffer.byteLength(body)) },
+        signal: AbortSignal.timeout(15_000)
+      },
+      (incoming) => {
+        const chunks: Buffer[] = []
+        incoming.on('data', (chunk: Buffer) => chunks.push(chunk))
+        incoming.on('error', reject)
+        incoming.on('end', () =>
+          resolve({
+            status: incoming.statusCode ?? 0,
+            contentType: incoming.headers['content-type'] ?? '',
+            authenticate: incoming.headers['www-authenticate'] ?? '',
+            xml: Buffer.concat(chunks).toString('utf8')
+          })
+        )
+      }
+    )
+    outgoing.on('error', reject)
+    outgoing.end(body)
+  })
+
 const send = async (url: string, body: string, options: SendOptions): Promise<Omit<Capture, 'service' | 'action'>> => {
   const { authenticated = true, addressing } = options
   const addressingHeader = addressing
     ? `<a:Action s:mustUnderstand="1">${escapeXml(addressing.action)}</a:Action>` +
       `<a:To s:mustUnderstand="1">${escapeXml(addressing.to)}</a:To>`
     : ''
-  const envelope =
-    '<?xml version="1.0" encoding="UTF-8"?>' +
-    '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing">' +
-    `<s:Header>${addressingHeader}${authenticated && username ? securityHeader() : ''}</s:Header>` +
-    `<s:Body>${body}</s:Body></s:Envelope>`
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/soap+xml; charset=utf-8' },
-    body: envelope,
-    signal: AbortSignal.timeout(15_000)
-  })
-  return {
-    status: response.status,
-    contentType: response.headers.get('content-type') ?? '',
-    xml: await response.text()
+  const signed = authenticated && username !== ''
+  const attempt = () => {
+    const envelope =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing">' +
+      `<s:Header>${addressingHeader}${signed ? securityHeader() : ''}</s:Header>` +
+      `<s:Body>${body}</s:Body></s:Envelope>`
+    const target = new URL(url)
+    if (signed && digest) digest.count += 1
+    const authorization =
+      signed && digest
+        ? digestAuthorization(
+            digest.challenge,
+            { username, password },
+            'POST',
+            target.pathname + target.search,
+            digest.count
+          )
+        : undefined
+    const headers: Record<string, string> = { 'Content-Type': 'application/soap+xml; charset=utf-8' }
+    if (authorization !== undefined) headers['Authorization'] = authorization
+    return post(url, headers, envelope)
   }
+  let response = await attempt()
+  const challenge = response.status === 401 ? parseChallenge([response.authenticate]) : undefined
+  if (signed && challenge) {
+    digest = { challenge, count: 0 }
+    response = await attempt()
+  }
+  const { status, contentType, xml } = response
+  return { status, contentType, xml }
 }
 
 const firstMatch = (xml: string, pattern: RegExp): string | undefined => pattern.exec(xml)?.[1]
@@ -113,7 +165,7 @@ const captures: Capture[] = []
 const capture = async (service: string, action: string, url: string, body: string, options: SendOptions = {}) => {
   const result = await send(url, body, options)
   captures.push({ service, action, ...result })
-  console.log(JSON.stringify({ service, action, status: result.status, bytes: result.xml.length }))
+  log(JSON.stringify({ service, action, status: result.status, bytes: result.xml.length }))
   return result.xml
 }
 
@@ -148,7 +200,7 @@ const captureMotion = async (url: string): Promise<void> => {
   if (!subscriptionAddress) throw new Error('CreatePullPointSubscription returned no address')
   const subscriptionUrl = pinToHost(subscriptionAddress)
   const addressing = (action: string) => ({ addressing: { action, to: subscriptionAddress } })
-  console.log(`waiting up to ${MOTION_WAIT_MS / 1000} s for motion to start and stop`)
+  log(`waiting up to ${MOTION_WAIT_MS / 1000} s for motion to start and stop`)
   try {
     const deadline = Date.now() + MOTION_WAIT_MS
     let started = false
@@ -159,7 +211,7 @@ const captureMotion = async (url: string): Promise<void> => {
         addressing(pullAction)
       )
       const states = motionStates(pulled.xml)
-      console.log(JSON.stringify({ status: pulled.status, motion: states }))
+      log(JSON.stringify({ status: pulled.status, motion: states }))
       if (!started && states.includes('true')) {
         captures.push({ service: 'events', action: 'PullMessagesMotion', ...pulled })
         started = true
@@ -478,7 +530,7 @@ if (!motionOnly && !managementOnly) {
   ] as const) {
     const xml = await probe(types)
     captures.push({ service: 'discovery', action, status: 200, contentType: 'application/soap+xml', xml })
-    console.log(JSON.stringify({ service: 'discovery', action, bytes: xml.length }))
+    log(JSON.stringify({ service: 'discovery', action, bytes: xml.length }))
   }
 }
 
@@ -490,7 +542,7 @@ const slug = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 const outDir = join(outRoot, slug(vendor), slug(model))
-await mkdir(outDir, { recursive: true })
+if (!toStdout) await mkdir(outDir, { recursive: true })
 
 const sensitive = [
   firstMatch(infoXml, /<[\w-]+:SerialNumber>([^<]+)</),
@@ -574,11 +626,15 @@ for (const [index, { service, action, status, contentType, xml }] of captures.en
   if (managementOnly && index < managementFrom) continue
   const name = `${service}.${action}`
   if (only.length > 0 && !only.some((prefix) => name.startsWith(prefix))) continue
+  written += 1
+  if (toStdout) {
+    console.log(JSON.stringify({ name, status, contentType, xml: scrubbed }))
+    continue
+  }
   responses[name] = { status, contentType }
   await writeFile(join(outDir, `${name}.xml`), scrubbed)
-  written += 1
 }
 const today = new Date().toISOString().slice(0, 10)
 const capturedAt = motionOnly || managementOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
-await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
-console.log(JSON.stringify({ outDir, files: written }))
+if (!toStdout) await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
+log(JSON.stringify({ outDir, files: written }))

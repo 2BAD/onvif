@@ -4,7 +4,7 @@ SOAP responses for the benchmark, the conformance and fuzz tests, and the mock c
 
 ## `live/<vendor>/<model>/`
 
-Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS` from `.env`. Files are named `<service>.<Action>.xml`, and `manifest.json` has the HTTP status and content type for each response.
+Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS` from `.env`. It signs requests with WS-Security and answers an HTTP Digest challenge. Files are named `<service>.<Action>.xml`, and `manifest.json` has the HTTP status and content type for each response.
 
 ```sh
 pnpm fixtures:capture
@@ -43,6 +43,13 @@ pnpm fixtures:capture --management --set-device
 Also captures the device management Set calls. Use it on the lab camera only. It sends the network interface, gateway, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
 
 No other call writes to the device.
+
+```sh
+pnpm fixtures:capture --management --stdout > captures.jsonl
+pnpm fixtures:import fixtures/live/<vendor>/<model> < captures.jsonl
+```
+
+`--stdout` prints the scrubbed responses as JSON lines and writes nothing. Use it on a machine that reaches the device but should not keep files. `fixtures:import` writes the lines into an existing fixture directory and its manifest.
 
 Before writing anything it scrubs:
 
