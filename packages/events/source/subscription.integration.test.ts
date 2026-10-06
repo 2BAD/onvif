@@ -1,6 +1,6 @@
 import { Device, type OnvifError } from '@2bad/onvif'
 import { describe, expect, it } from 'vitest'
-import { Events, motionOf, type Notification, subscribe } from '#index.ts'
+import { Events, events, motionOf, type Notification, subscribe } from '#index.ts'
 
 const hostname = process.env['ONVIF_TEST_HOST']
 const username = process.env['ONVIF_TEST_USER']
@@ -49,6 +49,24 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
       expect(errors).toEqual([])
     } finally {
       await subscription.close()
+      device.close()
+    }
+  })
+
+  it('reads the event properties and service capabilities through device.events', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    const device = connected.use(events)
+    try {
+      const { topicNamespaceLocation, topicSet } = await device.events.getEventProperties()
+      expect(topicNamespaceLocation.length).toBeGreaterThan(0)
+      expect(topicSet.$any).toBeDefined()
+      const { capabilities } = await device.events.getServiceCapabilities()
+      expect(capabilities.maxPullPoints).toBeGreaterThan(0)
+    } finally {
       device.close()
     }
   })

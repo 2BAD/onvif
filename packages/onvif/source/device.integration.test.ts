@@ -45,6 +45,19 @@ describe.skipIf(!hostname)('Device on a live camera', () => {
     expect(systemDateAndTime.dateTimeType).toEqual(expect.any(String))
   })
 
+  it('reads the device service through its methods', async () => {
+    const device = await connect()
+    expect((await device.getDeviceInformation()).manufacturer).toEqual(expect.any(String))
+    expect((await device.getScopes()).scopes.length).toBeGreaterThan(0)
+    expect((await device.getSystemDateAndTime()).systemDateAndTime.utcDateTime).toBeDefined()
+    expect((await device.getHostname()).hostnameInformation).toBeDefined()
+    expect((await device.getNetworkInterfaces()).networkInterfaces.length).toBeGreaterThan(0)
+    expect((await device.getServiceCapabilities()).capabilities).toBeDefined()
+    const { service } = await device.getServices({ includeCapability: false })
+    expect(service.map(({ namespace }) => namespace)).toContain(DEVICE_NAMESPACE)
+    expect((await device.getCapabilities({ category: ['All'] })).capabilities.device).toBeDefined()
+  })
+
   it('rejects a wrong password with AuthError', async () => {
     const error = await rejection(async () => {
       const device = await connect(`${password ?? ''}-wrong`)
