@@ -15,6 +15,7 @@ Compared with other ONVIF libraries:
 - [`@2bad/onvif`](packages/onvif): connect to a camera, read its settings and send it commands
 - [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
 - [`@2bad/onvif-events`](packages/events): receive motion and other camera events
+- [`@2bad/onvif-management`](packages/management): manage users, NTP, network settings, IP filter and relay outputs
 - [`@2bad/onvif-media`](packages/media): get RTSP stream URLs and JPEG snapshots, change resolution, frame rate and bitrate
 
 ## Example

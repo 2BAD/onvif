@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `@2bad/onvif-management`: users, NTP, network interface, default gateway, dynamic DNS, zero configuration, IP address filter and relay output operations for `device.call()`
+
 ### Changed
 
 - Importing `@2bad/onvif` now uses about 2 MiB less memory

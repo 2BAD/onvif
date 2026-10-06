@@ -43,6 +43,39 @@ const targets: Target[] = [
     ]
   },
   {
+    output: 'packages/management/source/generated/management.ts',
+    codecImport: '@2bad/onvif/soap',
+    wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver10/device/wsdl',
+        local: 'Device',
+        operations: [
+          'SetNetworkInterfaces',
+          'GetNetworkDefaultGateway',
+          'SetNetworkDefaultGateway',
+          'GetUsers',
+          'CreateUsers',
+          'SetUser',
+          'DeleteUsers',
+          'GetNTP',
+          'SetNTP',
+          'GetDynamicDNS',
+          'SetDynamicDNS',
+          'GetZeroConfiguration',
+          'SetZeroConfiguration',
+          'GetIPAddressFilter',
+          'SetIPAddressFilter',
+          'AddIPAddressFilter',
+          'RemoveIPAddressFilter',
+          'GetRelayOutputs',
+          'SetRelayOutputSettings',
+          'SetRelayOutputState'
+        ]
+      }
+    ]
+  },
+  {
     output: 'packages/events/source/generated/events.ts',
     codecImport: '@2bad/onvif/soap',
     wsdl: 'ver10/events/wsdl/event.wsdl',
