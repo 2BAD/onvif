@@ -28,15 +28,31 @@ Writes only the responses whose `<service>.<Action>` name starts with one of the
 pnpm fixtures:capture --set-encoder
 ```
 
-Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configuration of Media v1 and Media2 back to the device unchanged. No other call writes to the device.
+Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configuration of Media v1 and Media2 back to the device unchanged.
+
+```sh
+pnpm fixtures:capture --management
+```
+
+Writes only the device management responses: gateway, users, NTP, dynamic DNS, zero configuration, IP filter and relays. It sends Get calls only and creates no subscription.
+
+```sh
+pnpm fixtures:capture --management --set-device
+```
+
+Also captures the device management Set calls. Use it on the lab camera only. It sends the network interface, gateway, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
+
+No other call writes to the device.
 
 Before writing anything it scrubs:
 
 - serial number, hardware id, username and password -> `REDACTEDn`
+- user names in `Username` elements -> `REDACTEDn`
+- NTP and dynamic DNS host names -> `hostn.example`
 - hostname and the values of `name` and `location` scopes -> `REDACTEDn`
 - echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
 - unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
-- IPv6 addresses in URLs -> `fe80::n` for link-local, `2001:db8::n` otherwise
+- IPv6 addresses in URLs and address elements -> `fe80::n` for link-local, `2001:db8::n` otherwise
 - MAC addresses -> locally administered `02:00:00:00:00:xx`
 - UUIDs -> `00000000-0000-4000-8000-xxxxxxxxxxxx`
 - credentials in URIs are stripped

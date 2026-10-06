@@ -18,6 +18,11 @@ const motionOnly = process.argv.includes('--motion')
 const only = process.argv.flatMap((argument, index) => (process.argv[index - 1] === '--only' ? [argument] : []))
 // --set-encoder also sends the first video encoder configuration back unchanged, the only call that writes
 const setEncoder = process.argv.includes('--set-encoder')
+// --management only records the device management responses, with Get calls only unless --set-device is given
+const managementOnly = process.argv.includes('--management')
+// --set-device also sends the device management settings back as read, adds and removes a test IP filter entry, toggles
+// the first relay and creates, changes and deletes a test user; for the lab camera only
+const setDevice = process.argv.includes('--set-device')
 const MOTION_WAIT_MS = 300_000
 
 const deviceUrl = `http://${host}/onvif/device_service`
@@ -113,6 +118,7 @@ const capture = async (service: string, action: string, url: string, body: strin
 }
 
 const tds = 'xmlns="http://www.onvif.org/ver10/device/wsdl"'
+const tt = 'xmlns="http://www.onvif.org/ver10/schema"'
 const trt = 'xmlns="http://www.onvif.org/ver10/media/wsdl"'
 const tr2 = 'xmlns="http://www.onvif.org/ver20/media/wsdl"'
 const tev = 'xmlns="http://www.onvif.org/ver10/events/wsdl"'
@@ -166,6 +172,141 @@ const captureMotion = async (url: string): Promise<void> => {
   } finally {
     await send(subscriptionUrl, `<Unsubscribe ${wsnt}/>`, addressing(unsubscribeAction))
   }
+}
+
+const elements = (xml: string, name: string): string[] =>
+  [...xml.matchAll(new RegExp(`<(?:[\\w-]+:)?${name}\\b[^>]*>([\\s\\S]*?)</(?:[\\w-]+:)?${name}>`, 'g'))].map(
+    (match) => match[1] ?? ''
+  )
+
+const text = (xml: string, name: string): string | undefined => elements(xml, name)[0]?.trim()
+
+const optional = (xml: string, name: string): string => {
+  const value = text(xml, name)
+  return value === undefined ? '' : `<${name}>${value}</${name}>`
+}
+
+// namespace declarations of the response envelope, so prefixed content copied out of it stays valid
+const declarations = (xml: string): string =>
+  [...(/<[\w-]+:Envelope\b([^>]*)>/.exec(xml)?.[1] ?? '').matchAll(/\sxmlns:[\w-]+="[^"]*"/g)]
+    .map((match) => match[0])
+    .join('')
+
+const tokenized = (xml: string, name: string): { token: string; content: string } | undefined => {
+  const match = new RegExp(`<([\\w-]+:)?${name}\\b[^>]*\\btoken="([^"]+)"[^>]*>([\\s\\S]*?)</\\1${name}>`).exec(xml)
+  return match ? { token: match[2] ?? '', content: match[3] ?? '' } : undefined
+}
+
+let managementFrom = -1
+
+const captureManagement = async (networkXml: string): Promise<void> => {
+  managementFrom = captures.length
+  const get = (action: string) => capture('device', action, deviceUrl, `<${action} ${tds}/>`)
+  const gatewayXml = await get('GetNetworkDefaultGateway')
+  await get('GetUsers')
+  const ntpXml = await get('GetNTP')
+  const dynamicDnsXml = await get('GetDynamicDNS')
+  const zeroXml = await get('GetZeroConfiguration')
+  const filterXml = await get('GetIPAddressFilter')
+  const relaysXml = await get('GetRelayOutputs')
+  if (!setDevice) return
+
+  const set = (action: string, source: string, content: string) =>
+    capture('device', action, deviceUrl, `<${action} ${tds}${declarations(source)}>${content}</${action}>`)
+
+  const networkInterface = tokenized(networkXml, 'NetworkInterfaces')
+  if (networkInterface) {
+    const ipv4 = elements(networkInterface.content, 'IPv4')[0] ?? ''
+    const manual = elements(ipv4, 'Manual')
+      .map((address) => `<Manual>${address}</Manual>`)
+      .join('')
+    const mtu = text(networkInterface.content, 'MTU')
+    await set(
+      'SetNetworkInterfaces',
+      networkXml,
+      `<InterfaceToken>${networkInterface.token}</InterfaceToken><NetworkInterface>` +
+        `<Enabled ${tt}>${text(networkInterface.content, 'Enabled')}</Enabled>` +
+        (mtu === undefined ? '' : `<MTU ${tt}>${mtu}</MTU>`) +
+        `<IPv4 ${tt}><Enabled>${text(ipv4, 'Enabled')}</Enabled>${manual}<DHCP>${text(ipv4, 'DHCP')}</DHCP></IPv4>` +
+        '</NetworkInterface>'
+    )
+  }
+
+  const gateway = elements(gatewayXml, 'NetworkGateway')[0]
+  if (gateway !== undefined) {
+    const addresses = ['IPv4Address', 'IPv6Address'].flatMap((name) =>
+      elements(gateway, name).map((address) => `<${name}>${address}</${name}>`)
+    )
+    await set('SetNetworkDefaultGateway', gatewayXml, addresses.join(''))
+  }
+
+  const ntp = elements(ntpXml, 'NTPInformation')[0]
+  if (ntp !== undefined) {
+    const manual = elements(ntp, 'NTPManual')
+      .map((host) => `<NTPManual>${host}</NTPManual>`)
+      .join('')
+    await set('SetNTP', ntpXml, `<FromDHCP>${text(ntp, 'FromDHCP')}</FromDHCP>${manual}`)
+  }
+
+  // a nil DynamicDNSInformation is sent back as NoUpdate
+  const dynamicDns = elements(dynamicDnsXml, 'DynamicDNSInformation')[0] ?? ''
+  await set(
+    'SetDynamicDNS',
+    dynamicDnsXml,
+    `<Type>${text(dynamicDns, 'Type') ?? 'NoUpdate'}</Type>${optional(dynamicDns, 'Name')}${optional(dynamicDns, 'TTL')}`
+  )
+
+  const zero = elements(zeroXml, 'ZeroConfiguration')[0]
+  if (zero !== undefined) {
+    await set('SetZeroConfiguration', zeroXml, `${optional(zero, 'InterfaceToken')}${optional(zero, 'Enabled')}`)
+  }
+
+  const filter = elements(filterXml, 'IPAddressFilter')[0]
+  if (filter !== undefined) {
+    await set('SetIPAddressFilter', filterXml, `<IPAddressFilter>${filter}</IPAddressFilter>`)
+    // an Allow filter with one entry would lock everyone else out
+    if (text(filter, 'Type') === 'Deny') {
+      const entry =
+        `<IPAddressFilter><Type ${tt}>Deny</Type><IPv4Address ${tt}><Address>198.51.100.7</Address>` +
+        '<PrefixLength>32</PrefixLength></IPv4Address></IPAddressFilter>'
+      await set('AddIPAddressFilter', filterXml, entry)
+      await set('RemoveIPAddressFilter', filterXml, entry)
+    }
+  }
+
+  const relay = tokenized(relaysXml, 'RelayOutputs')
+  const properties = relay && elements(relay.content, 'Properties')[0]
+  if (relay && properties !== undefined) {
+    const token = `<RelayOutputToken>${relay.token}</RelayOutputToken>`
+    await set('SetRelayOutputSettings', relaysXml, `${token}<Properties>${properties}</Properties>`)
+    try {
+      await set('SetRelayOutputState', relaysXml, `${token}<LogicalState>active</LogicalState>`)
+    } finally {
+      await send(
+        deviceUrl,
+        `<SetRelayOutputState ${tds}>${token}<LogicalState>inactive</LogicalState></SetRelayOutputState>`,
+        {}
+      )
+    }
+  }
+
+  const testUser = (level: string) =>
+    `<User><Username ${tt}>onviftest</Username><Password ${tt}>${randomBytes(12).toString('base64url')}</Password>` +
+    `<UserLevel ${tt}>${level}</UserLevel></User>`
+  const deleteTestUser = `<DeleteUsers ${tds}><Username>onviftest</Username></DeleteUsers>`
+  await capture('device', 'CreateUsers', deviceUrl, `<CreateUsers ${tds}>${testUser('User')}</CreateUsers>`)
+  try {
+    await capture('device', 'SetUser', deviceUrl, `<SetUser ${tds}>${testUser('Operator')}</SetUser>`)
+    await capture(
+      'device',
+      'SetUserWithoutPasswordFault',
+      deviceUrl,
+      `<SetUser ${tds}><User><Username ${tt}>onviftest</Username><UserLevel ${tt}>User</UserLevel></User></SetUser>`
+    )
+  } finally {
+    await capture('device', 'DeleteUsers', deviceUrl, deleteTestUser)
+  }
+  await capture('device', 'DeleteUsersMissingFault', deviceUrl, deleteTestUser)
 }
 
 const captureEncoder = async (
@@ -237,8 +378,10 @@ if (motionOnly) {
   await capture('device', 'GetServiceCapabilities', deviceUrl, `<GetServiceCapabilities ${tds}/>`)
   await capture('device', 'GetScopes', deviceUrl, `<GetScopes ${tds}/>`)
   await capture('device', 'GetHostname', deviceUrl, `<GetHostname ${tds}/>`)
-  await capture('device', 'GetNetworkInterfaces', deviceUrl, `<GetNetworkInterfaces ${tds}/>`)
-
+  const networkXml = await capture('device', 'GetNetworkInterfaces', deviceUrl, `<GetNetworkInterfaces ${tds}/>`)
+  await captureManagement(networkXml)
+}
+if (!motionOnly && !managementOnly) {
   const mediaUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
   if (mediaUrl) {
     const url = pinToHost(mediaUrl)
@@ -367,9 +510,11 @@ const pseudonym = (value: string, kind: string): string => {
         ? `02:00:00:00:00:${(replacements.size + 16).toString(16).padStart(2, '0')}`
         : kind === 'ipv6'
           ? `${value.startsWith('fe80:') ? 'fe80' : '2001:db8'}::${(replacements.size + 1).toString(16)}`
-          : kind === 'uuid'
-            ? `00000000-0000-4000-8000-${(replacements.size + 1).toString().padStart(12, '0')}`
-            : `REDACTED${replacements.size + 1}`
+          : kind === 'host'
+            ? `host${replacements.size + 1}.example`
+            : kind === 'uuid'
+              ? `00000000-0000-4000-8000-${(replacements.size + 1).toString().padStart(12, '0')}`
+              : `REDACTED${replacements.size + 1}`
   replacements.set(value, next)
   return next
 }
@@ -393,6 +538,18 @@ const scrub = (xml: string): string => {
       /(<[\w-]+:HostnameInformation\b[^>]*>(?:(?!HostnameInformation>)[\s\S])*?<[\w-]+:Name>)([^<]+)/g,
       (_, start: string, name: string) => `${start}${pseudonym(name, 'text')}`
     )
+    .replace(/(<[\w-]+:Username>)([^<]+)/g, (_, start: string, name: string) =>
+      name.startsWith('REDACTED') ? `${start}${name}` : `${start}${pseudonym(name, 'text')}`
+    )
+    .replace(/(<[\w-]+:DNSname>)([^<]+)/g, (_, start: string, name: string) => `${start}${pseudonym(name, 'host')}`)
+    .replace(
+      /(<[\w-]+:DynamicDNSInformation\b[^>]*>(?:(?!DynamicDNSInformation>)[\s\S])*?<[\w-]+:Name>)([^<]+)/g,
+      (_, start: string, name: string) => `${start}${pseudonym(name, 'host')}`
+    )
+    .replace(
+      /(<[\w-]+:(?:IPv6Address|Address)>)([0-9a-f]*:[0-9a-f:]*)</gi,
+      (_, start: string, ip: string) => `${start}${pseudonym(ip.toLowerCase(), 'ipv6')}<`
+    )
     .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => (isNonIdentifyingIp(ip) ? ip : pseudonym(ip, 'ip')))
     .replace(/\[([0-9a-f:]+)\]/gi, (_, ip: string) => `[${pseudonym(ip.toLowerCase(), 'ipv6')}]`)
     .replace(/\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi, (mac) => pseudonym(mac.toLowerCase(), 'mac'))
@@ -410,10 +567,11 @@ try {
 }
 const responses: Record<string, unknown> = { ...previous.responses }
 let written = 0
-for (const { service, action, status, contentType, xml } of captures) {
+for (const [index, { service, action, status, contentType, xml }] of captures.entries()) {
   // scrub every response in the same order, so pseudonyms match those of a full capture
   const scrubbed = scrub(xml)
   if (motionOnly && !action.startsWith('PullMessagesMotion')) continue
+  if (managementOnly && index < managementFrom) continue
   const name = `${service}.${action}`
   if (only.length > 0 && !only.some((prefix) => name.startsWith(prefix))) continue
   responses[name] = { status, contentType }
@@ -421,6 +579,6 @@ for (const { service, action, status, contentType, xml } of captures) {
   written += 1
 }
 const today = new Date().toISOString().slice(0, 10)
-const capturedAt = motionOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
+const capturedAt = motionOnly || managementOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
 await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
 console.log(JSON.stringify({ outDir, files: written }))
