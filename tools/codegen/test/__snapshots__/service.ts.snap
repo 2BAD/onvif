@@ -32,6 +32,7 @@ export type Thing = {
   mixed?: string
   percent?: number
   MTU?: number
+  dnsName?: string
   Shared?: Date
   width?: number
   height?: number
@@ -55,7 +56,7 @@ export const schema: Schema = {
   Ns2Status: { fields: [{ name: 'Code', property: 'code', type: 'integer', namespace: ns2 }] },
   SetThingRequest: { fields: [{ name: 'Thing', property: 'thing', type: 'Thing', namespace: ns1 }, { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: ns1, optional: true }] },
   SetThingResponse: { fields: [{ name: 'Status', property: 'status', type: 'Ns1Status', namespace: ns1 }, { name: 'Detail', property: 'detail', type: 'Ns2Status', namespace: ns1, optional: true }] },
-  Thing: { fields: [{ name: 'Name', property: 'name', type: 'string', namespace: ns2 }, { name: 'token', type: 'string', attribute: true }, { name: 'shared', type: 'boolean', namespace: ns2, attribute: true, optional: true }, { name: 'Mode', property: 'mode', type: 'string', namespace: ns2 }, { name: 'Levels', property: 'levels', type: 'integer[]', namespace: ns2, optional: true }, { name: 'Mixed', property: 'mixed', type: 'string', namespace: ns2, optional: true }, { name: 'Percent', property: 'percent', type: 'decimal', namespace: ns2, optional: true }, { name: 'MTU', type: 'integer', namespace: ns2, optional: true }, { name: 'Shared', type: 'dateTime', namespace: ns2, optional: true }, { name: 'Width', property: 'width', type: 'integer', namespace: ns2, optional: true }, { name: 'Height', property: 'height', type: 'integer', namespace: ns2, optional: true }, { name: 'Pair', property: 'pair', type: 'string', namespace: ns2, array: true }, { name: 'Note', property: 'note', type: 'string', namespace: ns2, optional: true }, { name: 'Label', property: 'label', type: 'ThingLabel', namespace: ns2, optional: true }, { name: 'Payload', property: 'payload', type: 'base64', namespace: ns2, optional: true }], any: true },
+  Thing: { fields: [{ name: 'Name', property: 'name', type: 'string', namespace: ns2 }, { name: 'token', type: 'string', attribute: true }, { name: 'shared', type: 'boolean', namespace: ns2, attribute: true, optional: true }, { name: 'Mode', property: 'mode', type: 'string', namespace: ns2 }, { name: 'Levels', property: 'levels', type: 'integer[]', namespace: ns2, optional: true }, { name: 'Mixed', property: 'mixed', type: 'string', namespace: ns2, optional: true }, { name: 'Percent', property: 'percent', type: 'decimal', namespace: ns2, optional: true }, { name: 'MTU', type: 'integer', namespace: ns2, optional: true }, { name: 'DNSname', property: 'dnsName', type: 'string', namespace: ns2, optional: true }, { name: 'Shared', type: 'dateTime', namespace: ns2, optional: true }, { name: 'Width', property: 'width', type: 'integer', namespace: ns2, optional: true }, { name: 'Height', property: 'height', type: 'integer', namespace: ns2, optional: true }, { name: 'Pair', property: 'pair', type: 'string', namespace: ns2, array: true }, { name: 'Note', property: 'note', type: 'string', namespace: ns2, optional: true }, { name: 'Label', property: 'label', type: 'ThingLabel', namespace: ns2, optional: true }, { name: 'Payload', property: 'payload', type: 'base64', namespace: ns2, optional: true }], any: true },
   ThingLabel: { fields: [{ name: 'lang', type: 'string', attribute: true, optional: true }], text: 'string' },
 }
 

@@ -28,7 +28,11 @@ const pascal = (value: string): string =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('')
 
+const misspelledNames: Record<string, string> = { DNSname: 'dnsName' }
+
 const camelCase = (name: string): string => {
+  const misspelled = misspelledNames[name]
+  if (misspelled) return misspelled
   if (!/[a-z]/.test(name)) return name
   const upper = /^[A-Z]+/.exec(name)?.[0] ?? ''
   const rest = name.slice(upper.length)

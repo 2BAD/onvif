@@ -58,6 +58,7 @@
           <xs:element name="Mixed" type="tt:Mixed" minOccurs="0"/>
           <xs:element name="Percent" type="tt:Percent" minOccurs="0"/>
           <xs:element name="MTU" type="xs:int" minOccurs="0"/>
+          <xs:element name="DNSname" type="xs:string" minOccurs="0"/>
           <xs:element ref="tt:Shared" minOccurs="0"/>
           <xs:choice>
             <xs:element name="Width" type="xs:unsignedInt"/>

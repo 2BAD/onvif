@@ -51,6 +51,7 @@ describe('ModelBuilder', () => {
       'Mixed',
       'Percent',
       'MTU',
+      'DNSname',
       'Shared',
       'Width',
       'Height',
@@ -118,6 +119,10 @@ describe('emit', () => {
     expect(source).toContain("{ name: 'Name', property: 'name', type: 'string', namespace: ns2 }")
     expect(source).toContain("{ name: 'token', type: 'string', attribute: true }")
     expect(source).toContain("{ name: 'MTU', type: 'integer', namespace: ns2, optional: true }")
+  })
+
+  it('names the misspelled DNSname field dnsName', () => {
+    expect(source).toContain("{ name: 'DNSname', property: 'dnsName', type: 'string', namespace: ns2, optional: true }")
   })
 
   it('keeps spec names for fields whose camelCase names collide', () => {
