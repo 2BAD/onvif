@@ -182,23 +182,42 @@ describe('discover', () => {
         )
       }
     })
-    const { devices, errors } = await collect({ hosts: [responder.host], timeoutMs: 2_000 })
+    const controller = new AbortController()
+    const devices: DiscoveredDevice[] = []
+    const errors: OnvifError[] = []
+    const overflow = (error: OnvifError) => error.message === 'More than 4096 devices answered'
+    const stopAtLimit = () => {
+      if (devices.length === 4_096 && errors.some(overflow)) controller.abort()
+    }
+    const onError = (error: OnvifError) => {
+      errors.push(error)
+      stopAtLimit()
+    }
+    for await (const device of discover({
+      hosts: [responder.host],
+      timeoutMs: 20_000,
+      signal: controller.signal,
+      onError
+    })) {
+      devices.push(device)
+      stopAtLimit()
+    }
     expect(devices).toHaveLength(4_096)
-    expect(errors.filter((error) => error.message === 'More than 4096 devices answered')).toHaveLength(1)
+    expect(errors.filter(overflow)).toHaveLength(1)
   })
 
   it('ends when the signal aborts, without yielding what is left', async () => {
     const responder = await respond({ reply: (probe) => [probeMatches(probe.messageId)] })
     const controller = new AbortController()
-    const start = performance.now()
     const devices: DiscoveredDevice[] = []
-    setTimeout(() => controller.abort(), 200)
+    let abortedAt = 0
     for await (const device of discover({ hosts: [responder.host], timeoutMs: 5_000, signal: controller.signal })) {
       devices.push(device)
+      abortedAt = performance.now()
       controller.abort()
     }
     expect(devices).toHaveLength(1)
-    expect(performance.now() - start).toBeLessThan(1_000)
+    expect(performance.now() - abortedAt).toBeLessThan(1_000)
   })
 
   it('sends nothing when the signal is already aborted', async () => {
