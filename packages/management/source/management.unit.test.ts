@@ -90,7 +90,7 @@ describe('generated management operations', () => {
     const operation = operations.find((candidate) => candidate.name === match?.[1])
     return operation ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
-  const decodable = fixtures.filter(({ name }) => !name.endsWith('dcn-bm2220lpr/device.GetDynamicDNS.xml'))
+  const decodable = fixtures.filter(({ xml }) => !xml.includes('<tds:DynamicDNSInformation xsi:nil="true"/>'))
 
   it('cover a lab capture for every operation', () => {
     const captured = new Set(
@@ -175,15 +175,63 @@ describe('Management on the lab camera', () => {
     expect(await device.call(Management.GetUsers)).toEqual({})
   })
 
-  it('returns no relays from a device without relay outputs', async () => {
+  it('returns no relays from the DCN-BF5365, which has none', async () => {
     const { device } = await connect({
-      overrides: {
-        'device.GetRelayOutputs': answer(
-          live('device.GetRelayOutputs').replace(/<tds:RelayOutputs\b[\s\S]*<\/tds:RelayOutputs>/, '')
-        )
-      }
+      overrides: { 'device.GetRelayOutputs': answer(fixture('live/dvc/dcn-bf5365/device.GetRelayOutputs.xml').xml) }
     })
     expect(await device.call(Management.GetRelayOutputs)).toEqual({})
+  })
+
+  it('rejects the nil dynamic DNS information of the DCN-BF5365 as of the lab camera', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetDynamicDNS': answer(fixture('live/dvc/dcn-bf5365/device.GetDynamicDNS.xml').xml) }
+    })
+    await expect(device.call(Management.GetDynamicDNS)).rejects.toThrow(
+      'Missing required element Type at GetDynamicDNSResponse.DynamicDNSInformation'
+    )
+  })
+
+  it('keeps the empty IPv6 gateway the DRN-3282R lists', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetNetworkDefaultGateway': answer(fixture('live/dvc/drn-3282r/device.GetNetworkDefaultGateway.xml').xml)
+      }
+    })
+    expect(await device.call(Management.GetNetworkDefaultGateway)).toEqual({
+      networkGateway: { ipv4Address: ['192.0.2.18'], ipv6Address: [''] }
+    })
+  })
+
+  it('reads the eleven relays of the DRN-3282R with their tokens in braces', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetRelayOutputs': answer(fixture('live/dvc/drn-3282r/device.GetRelayOutputs.xml').xml) }
+    })
+    const { relayOutputs = [] } = await device.call(Management.GetRelayOutputs)
+    expect(relayOutputs).toHaveLength(11)
+    expect(relayOutputs[0]).toEqual({
+      token: '{00000000-0000-4000-8000-000000000011}',
+      properties: { mode: 'Monostable', delayTime: 'PT5S', idleState: 'closed' }
+    })
+  })
+
+  it('reports an operation the DRN-3282R does not implement as a SOAP fault without subcodes', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetIPAddressFilter': {
+          kind: 'status',
+          status: 400,
+          body: fixture('live/dvc/drn-3282r/device.UnknownActionFault.xml').xml
+        }
+      }
+    })
+    const error = await rejection(() => device.call(Management.GetIPAddressFilter))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({
+      code: 'Sender',
+      subcodes: [],
+      reason: 'method name or namespace not recognized',
+      action: 'GetIPAddressFilter'
+    })
   })
 
   it('sends user names and passwords as text, whatever characters they contain', async () => {

@@ -94,6 +94,22 @@
     "discovery.ProbeMatchesDevice": {
       "status": 200,
       "contentType": "application/soap+xml"
+    },
+    "device.GetNetworkDefaultGateway": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetUsers": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetNTP": {
+      "status": 200,
+      "contentType": "text/html"
+    },
+    "device.GetRelayOutputs": {
+      "status": 200,
+      "contentType": "text/html"
     }
   }
 }
