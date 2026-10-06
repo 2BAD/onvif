@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createServer as createHttpsServer } from 'node:https'
 import { type AddressInfo, createServer } from 'node:net'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 import {
   type ActionOverride,
   type MockCamera,
@@ -12,9 +12,18 @@ import {
   startMockCamera
 } from '../../../tools/mock-camera/server.ts'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
-import { type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
+import { type CallOptions, type ConnectOptions, DEVICE_NAMESPACE, Device } from '#device.ts'
 import { AuthError, DecodeError, OnvifError, SoapFaultError, TimeoutError, TransportError } from '#errors.ts'
-import { GetDeviceInformation, GetHostname, GetScopes, SystemReboot } from '#generated/device.ts'
+import {
+  DeviceOperations,
+  GetDeviceInformation,
+  type GetDeviceInformationResponse,
+  GetHostname,
+  GetScopes,
+  type GetScopesRequest,
+  type GetServicesRequest,
+  SystemReboot
+} from '#generated/device.ts'
 import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
 
 const MEDIA = 'http://www.onvif.org/ver10/media/wsdl'
@@ -787,6 +796,67 @@ describe('Device.call', () => {
       cause: expect.any(OnvifError)
     })
     expect(actions(mock)).not.toContain('GetScopes')
+  })
+})
+
+describe('device service methods', () => {
+  it('call each device service operation', async () => {
+    const reboot =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl">' +
+      '<env:Body><tds:SystemRebootResponse><tds:Message>Rebooting in 30 seconds</tds:Message></tds:SystemRebootResponse>' +
+      '</env:Body></env:Envelope>'
+    const mock = await camera({ overrides: { 'device.SystemReboot': { kind: 'status', status: 200, body: reboot } } })
+    const device = await connect(mock)
+    await expect(device.getDeviceInformation()).resolves.toEqual(await device.call(GetDeviceInformation))
+    expect((await device.getScopes()).scopes.length).toBeGreaterThan(0)
+    expect((await device.getHostname()).hostnameInformation).toBeDefined()
+    expect((await device.getNetworkInterfaces()).networkInterfaces.length).toBeGreaterThan(0)
+    expect((await device.getServiceCapabilities()).capabilities).toBeDefined()
+    expect((await device.getServices({ includeCapability: false })).service.length).toBeGreaterThan(0)
+    expect((await device.getCapabilities({ category: ['All'] })).capabilities.device).toBeDefined()
+    expect((await device.getSystemDateAndTime()).systemDateAndTime.utcDateTime).toBeDefined()
+    await expect(device.systemReboot()).resolves.toEqual({ message: 'Rebooting in 30 seconds' })
+    expect(actions(mock).slice(4)).toEqual([
+      'GetDeviceInformation',
+      'GetScopes',
+      'GetHostname',
+      'GetNetworkInterfaces',
+      'GetServiceCapabilities',
+      'GetServices',
+      'GetCapabilities',
+      'GetSystemDateAndTime',
+      'SystemReboot'
+    ])
+  })
+
+  it('pass the call options on', async () => {
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'hang' } } })
+    const device = await connect(mock)
+    await expect(device.getScopes(undefined, { timeoutMs: 50 })).rejects.toThrow(TimeoutError)
+    const reason = new Error('stopped')
+    await expect(device.getHostname({}, { signal: AbortSignal.abort(reason) })).rejects.toBe(reason)
+  })
+
+  it('keep their request and response types', () => {
+    expectTypeOf<Parameters<Device['getServices']>[0]>().toEqualTypeOf<GetServicesRequest>()
+    expectTypeOf<Parameters<Device['getScopes']>[0]>().toEqualTypeOf<GetScopesRequest | undefined>()
+    expectTypeOf<Parameters<Device['getScopes']>[1]>().toEqualTypeOf<CallOptions | undefined>()
+    expectTypeOf<ReturnType<Device['getDeviceInformation']>>().resolves.toEqualTypeOf<GetDeviceInformationResponse>()
+  })
+
+  it('are not replaced by members of the device', () => {
+    const generated = Object.getOwnPropertyNames(DeviceOperations.prototype).filter((name) => name !== 'constructor')
+    const own = new Set(Object.getOwnPropertyNames(Device.prototype))
+    expect(generated).toContain('getDeviceInformation')
+    expect(generated.filter((name) => own.has(name))).toEqual([])
+  })
+
+  it('cannot be replaced by an extension', async () => {
+    const device = await connect(await camera())
+    expect(() => device.use(() => ({ getDeviceInformation: () => 1 }))).toThrow(
+      "Device already has 'getDeviceInformation'"
+    )
   })
 })
 

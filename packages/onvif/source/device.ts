@@ -9,14 +9,7 @@ import {
   TimeoutError,
   TransportError
 } from '#errors.ts'
-import {
-  type Capabilities,
-  type DateTime,
-  GetCapabilities,
-  GetDeviceInformation,
-  GetServices,
-  GetSystemDateAndTime
-} from '#generated/device.ts'
+import { type Capabilities, type DateTime, DeviceOperations, GetSystemDateAndTime } from '#generated/device.ts'
 import { addressingHeaders, type EndpointReference, referenceParameterHeaders } from '#soap/addressing.ts'
 import { type Operation, decode, encodeRequest } from '#soap/codec.ts'
 import { buildEnvelope, type Envelope, parseEnvelope } from '#soap/envelope.ts'
@@ -218,7 +211,7 @@ const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
 
-export class Device {
+export class Device extends DeviceOperations {
   /** Address of the device service. */
   readonly address: URL
   readonly #transport: HttpTransport
@@ -234,6 +227,7 @@ export class Device {
   #resynchronizing: Promise<void> | undefined
 
   private constructor(options: ConnectOptions) {
+    super()
     const {
       hostname,
       secure = false,
@@ -366,7 +360,7 @@ export class Device {
    * @throws {TransportError} On connection problems or unexpected HTTP responses
    * @throws {TimeoutError} If the device does not answer in time
    */
-  async call<Request, Response>(
+  override async call<Request, Response>(
     operation: Operation<Request, Response>,
     ...args: CallArguments<Request>
   ): Promise<Response> {
@@ -518,7 +512,7 @@ export class Device {
   async #verifyCredentials(signal?: AbortSignal): Promise<void> {
     if (!this.#credentials) return
     try {
-      await this.call(GetDeviceInformation, {}, { signal })
+      await this.getDeviceInformation({}, { signal })
     } catch (error) {
       if (error instanceof AuthError || !(error instanceof SoapFaultError)) throw error
     }
@@ -528,14 +522,14 @@ export class Device {
     const options = { signal }
     let addresses: [string, string][] | undefined
     try {
-      const { service } = await this.call(GetServices, { includeCapability: false }, options)
+      const { service } = await this.getServices({ includeCapability: false }, options)
       addresses = service.map((entry) => [entry.namespace, entry.xAddr])
     } catch (error) {
       if (!answeredBadly(error)) throw error
     }
     if (!addresses?.some(([namespace]) => namespace !== DEVICE_NAMESPACE)) {
       try {
-        const { capabilities } = await this.call(GetCapabilities, { category: ['All'] }, options)
+        const { capabilities } = await this.getCapabilities({ category: ['All'] }, options)
         addresses = this.#capabilityAddresses(capabilities)
       } catch (error) {
         if (addresses === undefined || !answeredBadly(error)) throw error
