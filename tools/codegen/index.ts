@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
-import { emit } from '#tools/codegen/emit.ts'
+import { type EmitOptions, emit } from '#tools/codegen/emit.ts'
 import { ModelBuilder } from '#tools/codegen/model.ts'
 import { Registry, specsDirectory } from '#tools/codegen/registry.ts'
 
@@ -15,6 +15,7 @@ type Target = {
   elements?: { schema: string; namespace: string; local: string }[]
   /** Operations whose responses hold QNames or endpoint references and are parsed with namespaces. */
   namespaces?: string[]
+  client?: EmitOptions['client']
 }
 
 const root = join(import.meta.dirname, '../..')
@@ -23,6 +24,7 @@ const targets: Target[] = [
   {
     output: 'packages/onvif/source/generated/device.ts',
     codecImport: '#soap/codec.ts',
+    client: { name: 'DeviceOperations', typesImport: '#device.ts', abstract: true },
     wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
     portTypes: [
       {
@@ -45,6 +47,7 @@ const targets: Target[] = [
   {
     output: 'packages/management/source/generated/management.ts',
     codecImport: '@2bad/onvif/soap',
+    client: { name: 'ManagementClient', typesImport: '@2bad/onvif' },
     wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
     portTypes: [
       {
@@ -78,6 +81,11 @@ const targets: Target[] = [
   {
     output: 'packages/events/source/generated/events.ts',
     codecImport: '@2bad/onvif/soap',
+    client: {
+      name: 'EventsClient',
+      typesImport: '@2bad/onvif',
+      operations: ['GetServiceCapabilities', 'GetEventProperties']
+    },
     wsdl: 'ver10/events/wsdl/event.wsdl',
     portTypes: [
       {
@@ -111,6 +119,7 @@ const targets: Target[] = [
   {
     output: 'packages/media/source/generated/media.ts',
     codecImport: '@2bad/onvif/soap',
+    client: { name: 'MediaClient', typesImport: '@2bad/onvif' },
     wsdl: 'ver10/media/wsdl/media.wsdl',
     portTypes: [
       {
@@ -131,6 +140,7 @@ const targets: Target[] = [
   {
     output: 'packages/media/source/generated/media2.ts',
     codecImport: '@2bad/onvif/soap',
+    client: { name: 'Media2Client', typesImport: '@2bad/onvif' },
     wsdl: 'ver20/media/wsdl/media.wsdl',
     portTypes: [
       {
@@ -162,15 +172,22 @@ const generate = (target: Target): string => {
     const available = new Map(registry.operations(portType).map((operation) => [operation.name, operation]))
     return portType.operations.map((name) => {
       const operation = available.get(name)
-      if (!operation?.output) throw new Error(`Operation ${name} not found in ${portType.local} of ${target.wsdl}`)
-      return builder.operation(name, operation.action, operation.input, operation.output)
+      if (!operation) throw new Error(`Operation ${name} not found in ${portType.local} of ${target.wsdl}`)
+      return builder.operation(operation)
     })
   })
   const elements = (target.elements ?? []).map(({ schema, ...element }) => {
     registry.load(join(specsDirectory, schema))
     return builder.element(element)
   })
-  return emit({ commit, codecImport: target.codecImport, operations, elements, namespaces: target.namespaces ?? [] })
+  return emit({
+    commit,
+    codecImport: target.codecImport,
+    operations,
+    elements,
+    namespaces: target.namespaces ?? [],
+    client: target.client
+  })
 }
 
 const format = (files: string[]): void => {

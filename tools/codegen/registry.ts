@@ -21,6 +21,7 @@ export type WsdlOperation = {
   input: QName
   output: QName | undefined
   action: string
+  documentation: string | undefined
 }
 
 const componentKinds = ['complexType', 'simpleType', 'element', 'group', 'attributeGroup', 'attribute'] as const
@@ -42,7 +43,10 @@ export class Registry {
   readonly #loaded = new Set<string>()
   readonly #components = new Map<ComponentKind, Map<string, Component>>(componentKinds.map((kind) => [kind, new Map()]))
   readonly #messages = new Map<string, QName>()
-  readonly #portTypes = new Map<string, { name: string; input: QName; output: QName | undefined }[]>()
+  readonly #portTypes = new Map<
+    string,
+    { name: string; input: QName; output: QName | undefined; documentation: string | undefined }[]
+  >()
   readonly #actions = new Map<string, string>()
 
   load(path: string): void {
@@ -76,7 +80,8 @@ export class Registry {
         namespace: portType.namespace,
         input,
         output,
-        action: this.#actions.get(`${keyOf(portType)}#${operation.name}`) ?? ''
+        action: this.#actions.get(`${keyOf(portType)}#${operation.name}`) ?? '',
+        documentation: operation.documentation
       }
     })
   }
@@ -128,10 +133,15 @@ export class Registry {
               const input = operation.children.find((node) => is(node, WSDL, 'input'))?.attributes['message']
               const output = operation.children.find((node) => is(node, WSDL, 'output'))?.attributes['message']
               if (!input) throw new Error(`Operation ${operation.attributes['name']} has no input in ${path}`)
+              const documentation = operation.children
+                .find((node) => is(node, WSDL, 'documentation'))
+                ?.text.replace(/\s+/g, ' ')
+                .trim()
               return {
                 name: operation.attributes['name'] ?? '',
                 input: resolveQName(input, operation.namespaces),
-                output: output ? resolveQName(output, operation.namespaces) : undefined
+                output: output ? resolveQName(output, operation.namespaces) : undefined,
+                documentation: documentation === '' ? undefined : documentation
               }
             })
         )

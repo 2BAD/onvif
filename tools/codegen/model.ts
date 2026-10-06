@@ -1,4 +1,4 @@
-import { keyOf, type Registry, type SchemaContext, XS } from '#tools/codegen/registry.ts'
+import { keyOf, type Registry, type SchemaContext, type WsdlOperation, XS } from '#tools/codegen/registry.ts'
 import { type QName, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
 
 export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
@@ -37,6 +37,7 @@ export type OperationModel = {
   action: string
   request: { element: QName; type: ComplexModel }
   response: { element: QName; type: ComplexModel }
+  documentation: string | undefined
 }
 
 const builtins: Record<string, [Primitive, boolean]> = {
@@ -106,12 +107,15 @@ export class ModelBuilder {
     this.#registry = registry
   }
 
-  operation(name: string, action: string, input: QName, output: QName): OperationModel {
+  operation(operation: WsdlOperation): OperationModel {
+    const { name, action, input, output, documentation } = operation
+    if (!output) throw new Error(`Operation ${name} has no output`)
     return {
       name,
       action,
       request: { element: input, type: this.#globalElementType(input, `${name}Request`) },
-      response: { element: output, type: this.#globalElementType(output, output.local) }
+      response: { element: output, type: this.#globalElementType(output, output.local) },
+      documentation
     }
   }
 

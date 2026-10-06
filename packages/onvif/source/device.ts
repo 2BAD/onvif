@@ -135,10 +135,10 @@ export type Clock = {
   source: 'device' | 'local'
 }
 
-type CallArguments<Request> =
+export type CallArguments<Request> =
   Record<string, never> extends Request
-    ? [request?: Request, options?: CallOptions]
-    : [request: Request, options?: CallOptions]
+    ? [request?: Request | undefined, options?: CallOptions | undefined]
+    : [request: Request, options?: CallOptions | undefined]
 
 const capabilityNamespaces = {
   analytics: 'http://www.onvif.org/ver20/analytics/wsdl',

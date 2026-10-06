@@ -10,6 +10,21 @@ export type EmitOptions = {
   elements?: ComplexModel[]
   /** Operations whose responses are parsed with namespaces. */
   namespaces?: string[]
+  client?: ClientOptions | undefined
+}
+
+type ClientOptions = {
+  /** Name of the class with one method per operation. */
+  name: string
+  /** Module the `CallOptions` type and, for a concrete client, the `Device` type come from. */
+  typesImport: string
+  /**
+   * Emit an abstract class with an abstract `call` for the device to extend, with `CallArguments` from `typesImport`.
+   * Otherwise the class takes the device in its constructor.
+   */
+  abstract?: boolean
+  /** Operations that get a method, all by default. */
+  operations?: string[]
 }
 
 const tsPrimitives: Record<SimpleModel['primitive'], string> = {
@@ -53,9 +68,14 @@ const properties = (model: ComplexModel): string[] => {
 
 const propertyName = (name: string): string => (/^[A-Za-z_$][\w$]*$/.test(name) ? name : `'${name}'`)
 
-const comment = (text: string | undefined, indent: string): string => {
-  if (!text) return ''
-  const words = text.replaceAll('*/', '* /').split(' ')
+const comment = (text: string | undefined, indent: string, tags: string[] = []): string => {
+  if (!text && tags.length === 0) return ''
+  const words = (text ?? '')
+    .replaceAll('*/', '* /')
+    .replaceAll(/[\u2018\u2019]/g, "'")
+    .replaceAll(/[\u201c\u201d]/g, '"')
+    .replaceAll(/[\u2013\u2014]/g, '-')
+    .split(' ')
   const lines: string[] = []
   let line = ''
   for (const word of words) {
@@ -67,8 +87,11 @@ const comment = (text: string | undefined, indent: string): string => {
     }
   }
   if (line.length > 0) lines.push(line)
-  if (lines.length === 1) return `${indent}/** ${lines[0]} */\n`
-  return `${indent}/**\n${lines.map((entry) => `${indent} * ${entry}`).join('\n')}\n${indent} */\n`
+  if (lines.length === 1 && tags.length === 0) return `${indent}/** ${lines[0]} */\n`
+  if (lines.length > 0 && tags.length > 0) lines.push('')
+  lines.push(...tags)
+  const body = lines.map((entry) => (entry === '' ? `${indent} *` : `${indent} * ${entry}`)).join('\n')
+  return `${indent}/**\n${body}\n${indent} */\n`
 }
 
 // generated types can't shadow these globals or codec types
@@ -189,6 +212,52 @@ const reachable = (operations: OperationModel[], elements: ComplexModel[]): Comp
   return [...found]
 }
 
+const methodName = (operation: string): string => `${operation.charAt(0).toLowerCase()}${operation.slice(1)}`
+
+const emitClient = (client: ClientOptions, operations: OperationModel[], names: Names): string => {
+  const { name, abstract = false, operations: included } = client
+  for (const operation of included ?? []) {
+    if (!operations.some((candidate) => candidate.name === operation)) {
+      throw new Error(`Client ${name} lists the unknown operation ${operation}`)
+    }
+  }
+  const methods = operations.filter((operation) => included?.includes(operation.name) ?? true)
+  const seen = new Set(['call', 'constructor'])
+  let body = ''
+  for (const operation of methods) {
+    const method = methodName(operation.name)
+    if (seen.has(method)) throw new Error(`Colliding method name ${method} in ${name}`)
+    seen.add(method)
+    const { type } = operation.request
+    const optional = !type.text && type.fields.every((field) => field.optional)
+    const request = names.complex(type)
+    const response = names.complex(operation.response.type)
+    const target = abstract ? 'this' : 'this.#device'
+    const tags = [
+      `@param request - The \`${operation.name}\` request`,
+      '@param options - Abort signal, timeout and addressing for this call',
+      `@returns The decoded \`${operation.response.element.local}\``
+    ]
+    body +=
+      `\n${comment(operation.documentation, '  ', tags)}` +
+      `  ${method}(request${optional ? '?' : ''}: ${request}, options?: CallOptions): Promise<${response}> {\n` +
+      `    return ${target}.call(${operation.name}, request, options)\n` +
+      '  }\n'
+  }
+  const head = abstract
+    ? `export abstract class ${name} {\n` +
+      '  abstract call<Request, Response>(\n' +
+      '    operation: Operation<Request, Response>,\n' +
+      '    ...args: CallArguments<Request>\n' +
+      '  ): Promise<Response>\n'
+    : `export class ${name} {\n` +
+      '  readonly #device: Device\n\n' +
+      '  constructor(device: Device) {\n' +
+      '    this.#device = device\n' +
+      '  }\n'
+  return `${head}${body}}\n`
+}
+
 /**
  * Render the types, schema table and operations of one generated module.
  *
@@ -196,10 +265,13 @@ const reachable = (operations: OperationModel[], elements: ComplexModel[]): Comp
  * @returns TypeScript source
  */
 export function emit(options: EmitOptions): string {
-  const { commit, codecImport, operations, elements = [], namespaces = [] } = options
+  const { commit, codecImport, operations, elements = [], namespaces = [], client } = options
   const complexTypes = reachable(operations, elements)
   const enumerations = collectEnumerations(complexTypes)
   const names = new Names(complexTypes, enumerations)
+  if (client && complexTypes.some((model) => names.complex(model) === client.name)) {
+    throw new Error(`Client ${client.name} has the name of a generated type`)
+  }
 
   let types = ''
   for (const model of enumerations.toSorted((a, b) => (names.simple(a) ?? '').localeCompare(names.simple(b) ?? ''))) {
@@ -264,9 +336,18 @@ export function emit(options: EmitOptions): string {
 
   const constants = [...names.namespaces].map(([uri, name]) => `const ${name} = '${uri}'`).join('\n')
 
+  let clientImport = ''
+  let clientSource = ''
+  if (client) {
+    const imported = client.abstract ? 'CallArguments, CallOptions' : 'CallOptions, Device'
+    clientImport = `import type { ${imported} } from '${client.typesImport}'\n`
+    clientSource = emitClient(client, operations, names)
+  }
+
   return (
     `// Generated by tools/codegen from ONVIF specs ${commit}. Do not edit.\n` +
+    clientImport +
     `import type { ${operations.length > 0 ? 'Operation, ' : ''}Schema } from '${codecImport}'\n\n` +
-    `${types}${constants}\n\n${schema}\n${operationsSource}`
+    `${types}${constants}\n\n${schema}\n${operationsSource}${clientSource}`
   )
 }

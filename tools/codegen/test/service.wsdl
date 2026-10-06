@@ -16,6 +16,20 @@
           </xs:sequence>
         </xs:complexType>
       </xs:element>
+      <xs:element name="GetThing">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Token" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="GetThingResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Thing" type="tt:Thing"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
       <xs:element name="SetThingResponse">
         <xs:complexType>
           <xs:sequence>
@@ -28,16 +42,32 @@
   </wsdl:types>
   <wsdl:message name="SetThingRequest"><wsdl:part name="parameters" element="svc:SetThing"/></wsdl:message>
   <wsdl:message name="SetThingResponse"><wsdl:part name="parameters" element="svc:SetThingResponse"/></wsdl:message>
+  <wsdl:message name="GetThingRequest"><wsdl:part name="parameters" element="svc:GetThing"/></wsdl:message>
+  <wsdl:message name="GetThingResponse"><wsdl:part name="parameters" element="svc:GetThingResponse"/></wsdl:message>
   <wsdl:portType name="Service">
     <wsdl:operation name="SetThing">
+      <wsdl:documentation>Change a thing.
+        <ul>
+          <li>The device shall keep the token.</li>
+        </ul>
+      </wsdl:documentation>
       <wsdl:input message="svc:SetThingRequest"/>
       <wsdl:output message="svc:SetThingResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetThing">
+      <wsdl:input message="svc:GetThingRequest"/>
+      <wsdl:output message="svc:GetThingResponse"/>
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="ServiceBinding" type="svc:Service">
     <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
     <wsdl:operation name="SetThing">
       <soap:operation soapAction="urn:test:service/SetThing"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetThing">
+      <soap:operation soapAction="urn:test:service/GetThing"/>
       <wsdl:input><soap:body use="literal"/></wsdl:input>
       <wsdl:output><soap:body use="literal"/></wsdl:output>
     </wsdl:operation>

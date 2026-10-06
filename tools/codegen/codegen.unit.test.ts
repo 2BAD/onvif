@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 import { type Operation, type Schema, decode, encodeRequest } from '#onvif/soap/codec.ts'
 import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
 import { serialize } from '#onvif/soap/serialize.ts'
@@ -21,10 +21,19 @@ const build = () => {
   const registry = new Registry()
   registry.load(join(testDirectory, 'service.wsdl'))
   const [operation] = registry.operations({ namespace: 'urn:test:service', local: 'Service' })
-  if (!operation?.output) throw new Error('SetThing not found')
+  if (!operation) throw new Error('SetThing not found')
   const builder = new ModelBuilder(registry)
-  const model = builder.operation(operation.name, operation.action, operation.input, operation.output)
+  const model = builder.operation(operation)
   return { model, builder }
+}
+
+const buildAll = () => {
+  const registry = new Registry()
+  registry.load(join(testDirectory, 'service.wsdl'))
+  const builder = new ModelBuilder(registry)
+  return registry
+    .operations({ namespace: 'urn:test:service', local: 'Service' })
+    .map((operation) => builder.operation(operation))
 }
 
 describe('ModelBuilder', () => {
@@ -39,6 +48,11 @@ describe('ModelBuilder', () => {
       request: { element: { namespace: 'urn:test:service', local: 'SetThing' } },
       response: { element: { local: 'SetThingResponse' } }
     })
+  })
+
+  it('reads the operation documentation as plain text', () => {
+    expect(model.documentation).toBe('Change a thing. The device shall keep the token.')
+    expect(buildAll()[1]?.documentation).toBeUndefined()
   })
 
   it('puts inherited fields first and flattens attribute groups and attribute refs', () => {
@@ -158,6 +172,135 @@ describe('emit', () => {
   })
 })
 
+describe('client', () => {
+  const operations = buildAll()
+  const client = { name: 'ServiceClient', typesImport: '@2bad/onvif' }
+  const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations, client })
+  const abstractSource = emit({
+    commit: 'test',
+    codecImport: '#soap/codec.ts',
+    operations,
+    client: { name: 'ServiceOperations', typesImport: '#device.ts', abstract: true }
+  })
+
+  it('matches the snapshot', async () => {
+    await expect(source).toMatchFileSnapshot('test/__snapshots__/client.ts.snap')
+  })
+
+  it('emits a method per operation, with the request optional when every field is', () => {
+    expect(source).toContain("import type { CallOptions, Device } from '@2bad/onvif'")
+    expect(source).toContain(
+      '  setThing(request: SetThingRequest, options?: CallOptions): Promise<SetThingResponse> {\n' +
+        '    return this.#device.call(SetThing, request, options)\n'
+    )
+    expect(source).toContain(
+      '  getThing(request?: GetThingRequest, options?: CallOptions): Promise<GetThingResponse> {'
+    )
+  })
+
+  it('documents methods with the operation documentation', () => {
+    expect(source).toContain(
+      '  /**\n' +
+        '   * Change a thing. The device shall keep the token.\n' +
+        '   *\n' +
+        '   * @param request - The `SetThing` request\n' +
+        '   * @param options - Abort signal, timeout and addressing for this call\n' +
+        '   * @returns The decoded `SetThingResponse`\n' +
+        '   */\n' +
+        '  setThing('
+    )
+    expect(source).toContain('  /**\n   * @param request - The `GetThing` request\n')
+  })
+
+  it('replaces typographic quotes and dashes with ASCII', () => {
+    const [first, second] = operations
+    if (!first || !second) throw new Error('operations not found')
+    const documented = { ...first, documentation: '\u2018a\u2019 \u201cb\u201d c\u2013d e\u2014f' }
+    const emitted = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [documented, second], client })
+    expect(emitted).toContain(`   * 'a' "b" c-d e-f\n`)
+  })
+
+  it('emits an abstract class that calls through an abstract call', () => {
+    expect(abstractSource).toContain("import type { CallArguments, CallOptions } from '#device.ts'")
+    expect(abstractSource).toContain('export abstract class ServiceOperations {\n  abstract call<Request, Response>(')
+    expect(abstractSource).toContain('    return this.call(GetThing, request, options)\n')
+    expect(abstractSource).not.toContain('this.#device')
+  })
+
+  it('emits methods only for the listed operations', () => {
+    const listed = emit({
+      commit: 'test',
+      codecImport: '#soap/codec.ts',
+      operations,
+      client: { ...client, operations: ['GetThing'] }
+    })
+    expect(listed).toContain('  getThing(')
+    expect(listed).not.toContain('  setThing(')
+    expect(listed).toContain('export const SetThing: Operation<')
+  })
+
+  it('rejects a listed operation that is not generated', () => {
+    expect(() =>
+      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations, client: { ...client, operations: ['Nope'] } })
+    ).toThrow('Client ServiceClient lists the unknown operation Nope')
+  })
+
+  it('rejects colliding and reserved method names', () => {
+    const [first] = operations
+    if (!first) throw new Error('SetThing not found')
+    const colliding = [first, { ...first, name: 'setThing' }]
+    expect(() => emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: colliding, client })).toThrow(
+      'Colliding method name setThing in ServiceClient'
+    )
+    expect(() =>
+      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [{ ...first, name: 'Call' }], client })
+    ).toThrow('Colliding method name call in ServiceClient')
+  })
+
+  it('rejects a client named like a generated type', () => {
+    expect(() =>
+      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations, client: { ...client, name: 'Thing' } })
+    ).toThrow('Client Thing has the name of a generated type')
+  })
+
+  it('produces classes that send each operation through the device', async () => {
+    const codec = `'${pathToFileURL(codecPath).href}'`
+    const concreteFile = join(scratch, 'client.ts')
+    const abstractFile = join(scratch, 'operations.ts')
+    writeFileSync(concreteFile, source.replace("'#soap/codec.ts'", codec))
+    writeFileSync(abstractFile, abstractSource.replace("'#soap/codec.ts'", codec))
+    type Call = (operation: Operation<unknown, unknown>, request?: unknown, options?: unknown) => Promise<unknown>
+    type Methods = {
+      getThing: (request?: unknown, options?: unknown) => Promise<unknown>
+      setThing: (request: unknown, options?: unknown) => Promise<unknown>
+    }
+    const concrete = (await import(pathToFileURL(concreteFile).href)) as {
+      GetThing: Operation<unknown, unknown>
+      ServiceClient: new (device: { call: Call }) => Methods
+    }
+    const call = vi.fn<Call>(async () => ({ thing: 'decoded' }))
+    const signal = AbortSignal.abort()
+    await expect(new concrete.ServiceClient({ call }).getThing(undefined, { signal })).resolves.toEqual({
+      thing: 'decoded'
+    })
+    expect(call).toHaveBeenCalledWith(concrete.GetThing, undefined, { signal })
+
+    const operationsModule = (await import(pathToFileURL(abstractFile).href)) as {
+      SetThing: Operation<unknown, unknown>
+      ServiceOperations: abstract new () => Methods
+    }
+    const calls: unknown[][] = []
+    class Device extends operationsModule.ServiceOperations {
+      async call(...args: Parameters<Call>): Promise<unknown> {
+        calls.push(args)
+        return 'done'
+      }
+    }
+    await expect(new Device().setThing({ token: 't' })).resolves.toBe('done')
+    expect(calls).toEqual([[operationsModule.SetThing, { token: 't' }, undefined]])
+  })
+})
+
 describe('elements', () => {
   it('emits the types of global elements that no operation uses', () => {
     const registry = new Registry()
@@ -194,13 +337,8 @@ describe('reserved names', () => {
     const registry = new Registry()
     registry.load(join(testDirectory, 'reserved.wsdl'))
     const [operation] = registry.operations({ namespace: 'urn:test:reserved', local: 'Service' })
-    if (!operation?.output) throw new Error('GetDate not found')
-    const model = new ModelBuilder(registry).operation(
-      operation.name,
-      operation.action,
-      operation.input,
-      operation.output
-    )
+    if (!operation) throw new Error('GetDate not found')
+    const model = new ModelBuilder(registry).operation(operation)
     const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [model] })
     expect(source).toMatch(/export type DateType = \{\n {2}year: number\n {2}when: Date\n\}/)
     expect(source).toContain('calendar: DateType')
