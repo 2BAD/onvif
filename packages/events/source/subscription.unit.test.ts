@@ -509,4 +509,22 @@ describe('events', () => {
     expect(await take(subscription, 7)).toHaveLength(7)
     expect(errors).toEqual([])
   })
+
+  it('adds the event properties and service capabilities of the event service', async () => {
+    const mock = await camera()
+    const device = (await connect(mock)).use(events)
+    const { topicNamespaceLocation, topicSet } = await device.events.getEventProperties()
+    expect(topicNamespaceLocation).toEqual(['http://www.onvif.org/onvif/ver10/topics/topicns.xml'])
+    expect(topicSet).toBeDefined()
+    const { capabilities } = await device.events.getServiceCapabilities()
+    expect(capabilities).toMatchObject({
+      maxPullPoints: 10,
+      maxNotificationProducers: 20,
+      persistentNotificationStorage: false
+    })
+    expect(mock.requests.filter(({ service }) => service === 'events').map(({ action }) => action)).toEqual([
+      'GetEventProperties',
+      'GetServiceCapabilities'
+    ])
+  })
 })

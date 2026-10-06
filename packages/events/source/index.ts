@@ -2,6 +2,7 @@ import { Subscription } from '#subscription.ts'
 
 export { events } from '#extension.ts'
 export * as Events from '#generated/events.ts'
+export type { EventsClient } from '#generated/events.ts'
 export {
   decodeNotification,
   isTopic,
