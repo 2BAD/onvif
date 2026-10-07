@@ -39,7 +39,8 @@ camera.events.subscribe(options: SubscribeOptions): Promise<Subscription>
 camera.events.getEventProperties(): Promise<GetEventPropertiesResponse> // the topics the camera supports
 camera.events.getServiceCapabilities(): Promise<GetServiceCapabilitiesResponse>
 
-function motionOf(notification: Notification): Motion | undefined
+function motionOf(notification: Notification): Motion | undefined // RuleEngine/CellMotionDetector/Motion
+function motionAlarmOf(notification: Notification): Motion | undefined // VideoSource/MotionAlarm
 function isTopic(topic: Topic | undefined, path: string[], namespace?: string): boolean
 
 class Subscription implements AsyncIterableIterator<Notification> {

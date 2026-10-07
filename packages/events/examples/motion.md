@@ -18,3 +18,19 @@ for await (const notification of subscription) {
 `motionOf()` reads the standard motion event `RuleEngine/CellMotionDetector/Motion`. It returns `undefined` for other events.
 
 Without the `initialized` check, the loop also gets the motion state at the time of subscribing.
+
+## Motion alarm
+
+```ts
+import { motionAlarmOf } from '@2bad/onvif-events'
+
+for await (const notification of subscription) {
+  const motion = motionAlarmOf(notification)
+  if (!motion || motion.initialized) continue
+  console.log(motion.source['Source'], motion.isMotion ? 'started' : 'ended') // VideoSource_1 started
+}
+```
+
+Some cameras, such as Hikvision and EZVIZ, report motion only as `VideoSource/MotionAlarm`. Use `motionAlarmOf()` for them.
+
+Some cameras send both events for each change. Read only one of them per camera.

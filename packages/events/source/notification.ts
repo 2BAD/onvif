@@ -44,6 +44,7 @@ export type Motion = {
 }
 
 const MOTION_PATH = ['RuleEngine', 'CellMotionDetector', 'Motion']
+const MOTION_ALARM_PATH = ['VideoSource', 'MotionAlarm']
 
 const items = (list: ItemList | undefined): Readonly<Record<string, string>> => {
   const record = Object.create(null) as Record<string, string>
@@ -105,6 +106,19 @@ export function isTopic(topic: Topic | undefined, path: readonly string[], names
   )
 }
 
+const motionFrom = (notification: Notification, name: string): Motion => {
+  const value = notification.data[name]?.trim()
+  if (value !== 'true' && value !== 'false' && value !== '1' && value !== '0') {
+    throw new DecodeError(`Invalid ${name} '${(value ?? '').slice(0, 32)}'`, `Message.Data.${name}`)
+  }
+  return {
+    isMotion: value === 'true' || value === '1',
+    initialized: notification.propertyOperation === 'Initialized',
+    utcTime: notification.utcTime,
+    source: notification.source
+  }
+}
+
 /**
  * Read the cell motion detector state (`tns1:RuleEngine/CellMotionDetector/Motion`) from a notification.
  *
@@ -113,15 +127,16 @@ export function isTopic(topic: Topic | undefined, path: readonly string[], names
  * @throws {DecodeError} If `IsMotion` is missing or not an `xs:boolean`
  */
 export function motionOf(notification: Notification): Motion | undefined {
-  if (!isTopic(notification.topic, MOTION_PATH)) return undefined
-  const value = notification.data['IsMotion']?.trim()
-  if (value !== 'true' && value !== 'false' && value !== '1' && value !== '0') {
-    throw new DecodeError(`Invalid IsMotion '${(value ?? '').slice(0, 32)}'`, 'Message.Data.IsMotion')
-  }
-  return {
-    isMotion: value === 'true' || value === '1',
-    initialized: notification.propertyOperation === 'Initialized',
-    utcTime: notification.utcTime,
-    source: notification.source
-  }
+  return isTopic(notification.topic, MOTION_PATH) ? motionFrom(notification, 'IsMotion') : undefined
+}
+
+/**
+ * Read the video source motion alarm state (`tns1:VideoSource/MotionAlarm`) from a notification.
+ *
+ * @param notification - Any notification
+ * @returns The motion state, or `undefined` for other topics
+ * @throws {DecodeError} If `State` is missing or not an `xs:boolean`
+ */
+export function motionAlarmOf(notification: Notification): Motion | undefined {
+  return isTopic(notification.topic, MOTION_ALARM_PATH) ? motionFrom(notification, 'State') : undefined
 }

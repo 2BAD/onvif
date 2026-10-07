@@ -7,6 +7,7 @@ export {
   decodeNotification,
   isTopic,
   type Motion,
+  motionAlarmOf,
   motionOf,
   type Notification,
   ONVIF_TOPICS,
