@@ -37,12 +37,12 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | Profile | Covered  | Missing                      |
 | ------- | -------- | ---------------------------- |
 | S       | 7 of 7   |                              |
-| T       | 12 of 21 | network, imaging, PTZ        |
+| T       | 15 of 21 | imaging, PTZ                 |
 | M       | 5 of 7   | analytics, metadata          |
 | C       | 7 of 15  | access control, door control |
-| D       | 7 of 19  | network, access, doors       |
+| D       | 10 of 19 | access, doors                |
 | G       | 2 of 8   | recording search, replay     |
-| A       | 5 of 17  | users, credentials, rules    |
+| A       | 9 of 17  | credentials, rules           |
 
 ## Performance
 
