@@ -88,7 +88,7 @@ describe('generated management operations', () => {
   const fixtures = corpus.flatMap((entry) => {
     const match = /^(?:live\/.+\/device\.|upstream\/device\.)(\w+)\.xml$/.exec(entry.name)
     const operation = operations.find((candidate) => candidate.name === match?.[1])
-    return operation ? [{ name: entry.name, xml: entry.xml, operation }] : []
+    return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
   const decodable = fixtures.filter(({ xml }) => !xml.includes('<tds:DynamicDNSInformation xsi:nil="true"/>'))
 

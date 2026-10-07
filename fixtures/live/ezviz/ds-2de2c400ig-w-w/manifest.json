@@ -1,0 +1,227 @@
+{
+  "capturedAt": "2026-10-07",
+  "vendor": "EZVIZ",
+  "model": "DS-2DE2C400IG-W-W",
+  "responses": {
+    "device.GetSystemDateAndTime": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemDateAndTimeUnauthorizedFault": {
+      "status": 401,
+      "contentType": "text/html"
+    },
+    "device.UnknownActionFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetServices": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDeviceInformation": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetScopes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetHostname": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetNetworkInterfaces": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetNetworkDefaultGateway": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetUsers": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetNTP": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDynamicDNS": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetZeroConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetIPAddressFilter": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetRelayOutputs": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetProfiles": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetProfiles": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetVideoEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetSnapshotUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media2.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetNodes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.GetEventProperties": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.CreatePullPointSubscription": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessages": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.Unsubscribe": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "discovery.ProbeMatches": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "discovery.ProbeMatchesDevice": {
+      "status": 200,
+      "contentType": "application/soap+xml"
+    },
+    "media2.SetVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotion": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesMotionEnd": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetNetworkInterfaces": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetNetworkDefaultGateway": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetNTP": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetDynamicDNS": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetZeroConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetIPAddressFilter": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.AddIPAddressFilter": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.RemoveIPAddressFilter": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.CreateUsers": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetUser": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetUserWithoutPasswordFault": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteUsers": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteUsersMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    }
+  }
+}
