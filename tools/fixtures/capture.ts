@@ -361,12 +361,24 @@ const captureManagement = async (networkXml: string): Promise<void> => {
   await capture('device', 'DeleteUsersMissingFault', deviceUrl, deleteTestUser)
 }
 
+// Media2 encodings that a Media v1 configuration can carry.
+// Writing a configuration with any other encoding back through Media v1 changes its encoding.
+const MEDIA1_ENCODINGS = new Set(['JPEG', 'H264', 'MPV4-ES'])
+
+const encodingsByToken = (encodersXml: string): Map<string, string> =>
+  new Map(
+    [
+      ...encodersXml.matchAll(/<([\w-]+):Configurations\b[^>]*\btoken="([^"]+)"[^>]*>([\s\S]*?)<\/\1:Configurations>/g)
+    ].map((match) => [match[2] ?? '', text(match[3] ?? '', 'Encoding') ?? ''])
+  )
+
 const captureEncoder = async (
   service: string,
   url: string,
   namespace: string,
   encodersXml: string,
-  extra: string
+  extra: string,
+  writable: (token: string) => boolean
 ): Promise<void> => {
   const encoder = /<([\w-]+):Configurations\b([^>]*)>([\s\S]*?)<\/\1:Configurations>/.exec(encodersXml)
   const token = encoder && firstMatch(encoder[2] ?? '', /token="([^"]+)"/)
@@ -379,6 +391,10 @@ const captureEncoder = async (
       '</GetVideoEncoderConfigurationOptions>'
   )
   if (!setEncoder) return
+  if (!writable(token)) {
+    log(JSON.stringify({ service, action: 'SetVideoEncoderConfiguration', skipped: token }))
+    return
+  }
   const configuration = `<Configuration xmlns:tt="http://www.onvif.org/ver10/schema"${encoder[2]}>${encoder[3]}</Configuration>`
   await capture(
     service,
@@ -435,6 +451,11 @@ if (motionOnly) {
 }
 if (!motionOnly && !managementOnly) {
   const mediaUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
+  const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
+  const media2Encodings =
+    setEncoder && media2Url
+      ? encodingsByToken((await send(pinToHost(media2Url), `<GetVideoEncoderConfigurations ${tr2}/>`, {})).xml)
+      : undefined
   if (mediaUrl) {
     const url = pinToHost(mediaUrl)
     const profilesXml = await capture('media', 'GetProfiles', url, `<GetProfiles ${trt}/>`)
@@ -446,7 +467,14 @@ if (!motionOnly && !managementOnly) {
       url,
       `<GetVideoEncoderConfigurations ${trt}/>`
     )
-    await captureEncoder('media', url, trt, encodersXml, '<ForcePersistence>true</ForcePersistence>')
+    await captureEncoder(
+      'media',
+      url,
+      trt,
+      encodersXml,
+      '<ForcePersistence>true</ForcePersistence>',
+      (token) => media2Encodings === undefined || MEDIA1_ENCODINGS.has(media2Encodings.get(token) ?? '')
+    )
     const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
     if (profileToken) {
       const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
@@ -461,7 +489,6 @@ if (!motionOnly && !managementOnly) {
     }
   }
 
-  const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
   if (media2Url) {
     const url = pinToHost(media2Url)
     const profilesXml = await capture(
@@ -477,7 +504,7 @@ if (!motionOnly && !managementOnly) {
       url,
       `<GetVideoEncoderConfigurations ${tr2}/>`
     )
-    await captureEncoder('media2', url, tr2, encodersXml, '')
+    await captureEncoder('media2', url, tr2, encodersXml, '', () => true)
     const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
     if (profileToken) {
       const token = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`

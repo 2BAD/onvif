@@ -30,6 +30,8 @@ pnpm fixtures:capture --set-encoder
 
 Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configuration of Media v1 and Media2 back to the device unchanged.
 
+It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264.
+
 ```sh
 pnpm fixtures:capture --management
 ```
