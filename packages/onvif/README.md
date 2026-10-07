@@ -64,8 +64,6 @@ class Device {
 }
 ```
 
-`call()` takes the same operations from `DeviceManagement`, such as `DeviceManagement.GetScopes`.
-
 Every error is an `OnvifError` with `host`, `service` and `action`.
 
 ## License

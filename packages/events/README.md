@@ -67,8 +67,6 @@ type Motion = {
 
 `subscribe(device, options)` is the same as `camera.events.subscribe(options)` without `use()`.
 
-`Events` has the generated operations for `device.call()`, including the ones without a method.
-
 ## License
 
 MIT

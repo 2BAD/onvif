@@ -20,12 +20,8 @@ for await (const notification of subscription) {
 }
 ```
 
-To list the topics a camera offers, call `GetEventProperties`.
-
 ```ts
-import { Events } from '@2bad/onvif-events'
-
-const properties = await device.call(Events.GetEventProperties)
+const { topicSet } = await camera.events.getEventProperties() // the topics the camera offers
 ```
 
 ## Current state

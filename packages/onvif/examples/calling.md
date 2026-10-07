@@ -46,16 +46,6 @@ const info = device.getDeviceInformation({}, { signal: controller.signal })
 controller.abort()
 ```
 
-## `call()`
-
-```ts
-import { DeviceManagement } from '@2bad/onvif'
-
-const info = await device.call(DeviceManagement.GetDeviceInformation)
-```
-
-`call()` takes an operation instead of a method name. It has the same request, options and response types.
-
 ## Files
 
 ```ts

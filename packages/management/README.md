@@ -52,9 +52,7 @@ camera.management.setRelayOutputSettings(request)
 camera.management.setRelayOutputState(request)
 ```
 
-Each method has TypeScript types for its request and response. Each one also takes the options of `device.call()` as second argument.
-
-`Management` has the same operations for `device.call()`, such as `Management.GetUsers`.
+Each method has TypeScript types for its request and response. Each one takes call options as second argument, such as `{ timeoutMs: 2_000 }`.
 
 ## Users
 

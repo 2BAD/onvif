@@ -96,8 +96,6 @@ Each method is also exported as a function that takes the device first, such as 
 
 `camera.media.v1` and `camera.media.v2` return the responses as the camera sent them.
 
-`Media` and `Media2` have the same operations for `device.call()`.
-
 ## Limits
 
 Cameras without Media2 can't report H.265. Their H.265 profiles may have no `videoEncoder`. Their snapshot and stream addresses still work.
