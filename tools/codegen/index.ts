@@ -157,6 +157,39 @@ const targets: Target[] = [
         ]
       }
     ]
+  },
+  {
+    output: 'packages/ptz/source/generated/ptz.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: { name: 'PTZClient', typesImport: '@2bad/onvif' },
+    wsdl: 'ver20/ptz/wsdl/ptz.wsdl',
+    portTypes: [
+      {
+        namespace: 'http://www.onvif.org/ver20/ptz/wsdl',
+        local: 'PTZ',
+        operations: [
+          'GetServiceCapabilities',
+          'GetNodes',
+          'GetNode',
+          'GetConfigurations',
+          'GetConfiguration',
+          'GetConfigurationOptions',
+          'SetConfiguration',
+          'GetStatus',
+          'ContinuousMove',
+          'RelativeMove',
+          'AbsoluteMove',
+          'Stop',
+          'GetPresets',
+          'SetPreset',
+          'RemovePreset',
+          'GotoPreset',
+          'GotoHomePosition',
+          'SetHomePosition',
+          'SendAuxiliaryCommand'
+        ]
+      }
+    ]
   }
 ]
 

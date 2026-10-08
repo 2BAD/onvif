@@ -263,6 +263,12 @@ importers:
 
   packages/onvif: {}
 
+  packages/ptz:
+    devDependencies:
+      '@2bad/onvif':
+        specifier: workspace:^
+        version: link:../onvif
+
 packages:
 
   '@2bad/axiom@2.1.0':

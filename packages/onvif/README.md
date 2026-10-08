@@ -10,7 +10,7 @@ npm install @2bad/onvif
 
 Needs Node.js 26 or later. ESM only.
 
-Discovery, events, device management and media are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events), [`@2bad/onvif-management`](https://www.npmjs.com/package/@2bad/onvif-management) and [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media).
+Discovery, events, device management, media and PTZ are in [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events), [`@2bad/onvif-management`](https://www.npmjs.com/package/@2bad/onvif-management), [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media) and [`@2bad/onvif-ptz`](https://www.npmjs.com/package/@2bad/onvif-ptz).
 
 ## Quick start
 
