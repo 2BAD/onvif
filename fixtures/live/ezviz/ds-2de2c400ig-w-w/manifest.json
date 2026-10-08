@@ -222,6 +222,114 @@
     "device.DeleteUsersMissingFault": {
       "status": 500,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetNode": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetStatus": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresets": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.SetConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.SetPreset": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetsWithPreset": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.ContinuousMove": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetStatusMoving": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetStatusAfterTimeout": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.ContinuousMoveWithoutTimeout": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.Stop": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetStatusStopped": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.ContinuousMoveZoom": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.StopWithoutAxes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.RelativeMove": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.AbsoluteMove": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.StopAfterMoves": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GotoHomePosition": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.SetHomePosition": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.SendAuxiliaryCommand": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GotoPresetMissing": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GotoPreset": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.RemovePreset": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.RemovePresetMissing": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
