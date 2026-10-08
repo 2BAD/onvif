@@ -25,6 +25,11 @@ const managementOnly = process.argv.includes('--management')
 // --set-device also sends the device management settings back as read, adds and removes a test IP filter entry, toggles
 // the first relay and creates, changes and deletes a test user; for the lab camera only
 const setDevice = process.argv.includes('--set-device')
+// --ptz only records the PTZ responses, with Get calls only unless --move-ptz is given
+const ptzOnly = process.argv.includes('--ptz')
+// --move-ptz also saves the position as a preset, pans the camera, stops it, tries every move type and returns to the
+// preset before removing it; for the lab camera only
+const movePtz = process.argv.includes('--move-ptz')
 // --stdout prints the scrubbed responses as JSON lines instead of writing them, for devices reached from another machine;
 // tools/fixtures/import.ts writes them into a fixture directory
 const toStdout = process.argv.includes('--stdout')
@@ -404,6 +409,81 @@ const captureEncoder = async (
   )
 }
 
+const capturePtz = async (servicesXml: string): Promise<void> => {
+  const ptzAddress = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/ptz/wsdl')
+  const mediaAddress = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
+  if (!ptzAddress) return
+  const url = pinToHost(ptzAddress)
+  const call = (action: string, content = '', name = action) =>
+    capture('ptz', name, url, content === '' ? `<${action} ${tptz}/>` : `<${action} ${tptz}>${content}</${action}>`)
+  await call('GetServiceCapabilities')
+  const nodesXml = await call('GetNodes')
+  const configurationsXml = await call('GetConfigurations')
+  const node = tokenized(nodesXml, 'PTZNode')
+  if (node) await call('GetNode', `<NodeToken>${escapeXml(node.token)}</NodeToken>`)
+  const configuration = tokenized(configurationsXml, 'PTZConfiguration')
+  if (configuration) {
+    const token = escapeXml(configuration.token)
+    await call('GetConfiguration', `<PTZConfigurationToken>${token}</PTZConfigurationToken>`)
+    await call('GetConfigurationOptions', `<ConfigurationToken>${token}</ConfigurationToken>`)
+  }
+  const profilesXml = mediaAddress ? (await send(pinToHost(mediaAddress), `<GetProfiles ${trt}/>`, {})).xml : ''
+  const profileToken = firstMatch(profilesXml, /<[\w-]+:Profiles[^>]*token="([^"]+)"/)
+  if (!profileToken) return
+  const profile = `<ProfileToken>${escapeXml(profileToken)}</ProfileToken>`
+  await call('GetStatus', profile)
+  await call('GetPresets', profile)
+  if (!movePtz) return
+
+  if (configuration) {
+    const content =
+      `<PTZConfiguration xmlns:tt="http://www.onvif.org/ver10/schema" token="${configuration.token}">` +
+      `${configuration.content}</PTZConfiguration><ForcePersistence>true</ForcePersistence>`
+    await capture(
+      'ptz',
+      'SetConfiguration',
+      url,
+      `<SetConfiguration ${tptz}${declarations(configurationsXml)}>${content}</SetConfiguration>`
+    )
+  }
+  const presetXml = await call('SetPreset', `${profile}<PresetName>onviftest</PresetName>`)
+  const presetToken = text(presetXml, 'PresetToken')
+  const preset = `<PresetToken>${escapeXml(presetToken ?? '')}</PresetToken>`
+  const panTilt = (x: number, y: number) => `<PanTilt ${tt} x="${x}" y="${y}"/>`
+  const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  try {
+    await call('GetPresets', profile, 'GetPresetsWithPreset')
+    await call('ContinuousMove', `${profile}<Velocity>${panTilt(0.3, 0)}</Velocity><Timeout>PT1S</Timeout>`)
+    await call('GetStatus', profile, 'GetStatusMoving')
+    await pause(2_000)
+    await call('GetStatus', profile, 'GetStatusAfterTimeout')
+    await call('ContinuousMove', `${profile}<Velocity>${panTilt(-0.3, 0)}</Velocity>`, 'ContinuousMoveWithoutTimeout')
+    await pause(500)
+    await call('Stop', `${profile}<PanTilt>true</PanTilt><Zoom>true</Zoom>`)
+    await call('GetStatus', profile, 'GetStatusStopped')
+    await call(
+      'ContinuousMove',
+      `${profile}<Velocity><Zoom ${tt} x="0.5"/></Velocity><Timeout>PT1S</Timeout>`,
+      'ContinuousMoveZoom'
+    )
+    await call('Stop', profile, 'StopWithoutAxes')
+    await call('RelativeMove', `${profile}<Translation>${panTilt(0.1, 0)}</Translation>`)
+    await call('AbsoluteMove', `${profile}<Position>${panTilt(0, 0)}</Position>`)
+    await call('Stop', profile, 'StopAfterMoves')
+    await call('GotoHomePosition', profile)
+    await call('SetHomePosition', profile)
+    await call('SendAuxiliaryCommand', `${profile}<AuxiliaryData>tt:Wiper|On</AuxiliaryData>`)
+    await call('GotoPreset', `${profile}<PresetToken>missing</PresetToken>`, 'GotoPresetMissing')
+  } finally {
+    if (presetToken !== undefined) {
+      await call('GotoPreset', `${profile}${preset}`)
+      await pause(3_000)
+      await call('RemovePreset', `${profile}${preset}`)
+      await call('RemovePreset', `${profile}${preset}`, 'RemovePresetMissing')
+    }
+  }
+}
+
 const timeXml = await capture('device', 'GetSystemDateAndTime', deviceUrl, `<GetSystemDateAndTime ${tds}/>`, {
   authenticated: false
 })
@@ -442,14 +522,15 @@ if (motionOnly) {
   const eventsUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/events/wsdl')
   if (!eventsUrl) throw new Error('The device offers no events service')
   await captureMotion(pinToHost(eventsUrl))
-} else {
+} else if (!ptzOnly) {
   await capture('device', 'GetServiceCapabilities', deviceUrl, `<GetServiceCapabilities ${tds}/>`)
   await capture('device', 'GetScopes', deviceUrl, `<GetScopes ${tds}/>`)
   await capture('device', 'GetHostname', deviceUrl, `<GetHostname ${tds}/>`)
   const networkXml = await capture('device', 'GetNetworkInterfaces', deviceUrl, `<GetNetworkInterfaces ${tds}/>`)
   await captureManagement(networkXml)
 }
-if (!motionOnly && !managementOnly) {
+if (ptzOnly) await capturePtz(servicesXml)
+if (!motionOnly && !managementOnly && !ptzOnly) {
   const mediaUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/media/wsdl')
   const media2Url = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/media/wsdl')
   const media2Encodings =
@@ -518,11 +599,7 @@ if (!motionOnly && !managementOnly) {
     }
   }
 
-  const ptzUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver20/ptz/wsdl')
-  if (ptzUrl) {
-    await capture('ptz', 'GetNodes', pinToHost(ptzUrl), `<GetNodes ${tptz}/>`)
-    await capture('ptz', 'GetConfigurations', pinToHost(ptzUrl), `<GetConfigurations ${tptz}/>`)
-  }
+  await capturePtz(servicesXml)
 
   const eventsUrl = serviceXAddr(servicesXml, 'http://www.onvif.org/ver10/events/wsdl')
   if (eventsUrl) {
@@ -651,6 +728,7 @@ for (const [index, { service, action, status, contentType, xml }] of captures.en
   const scrubbed = scrub(xml)
   if (motionOnly && !action.startsWith('PullMessagesMotion')) continue
   if (managementOnly && index < managementFrom) continue
+  if (ptzOnly && service !== 'ptz') continue
   const name = `${service}.${action}`
   if (only.length > 0 && !only.some((prefix) => name.startsWith(prefix))) continue
   written += 1
@@ -662,6 +740,6 @@ for (const [index, { service, action, status, contentType, xml }] of captures.en
   await writeFile(join(outDir, `${name}.xml`), scrubbed)
 }
 const today = new Date().toISOString().slice(0, 10)
-const capturedAt = motionOnly || managementOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
+const capturedAt = motionOnly || managementOnly || ptzOnly || only.length > 0 ? (previous.capturedAt ?? today) : today
 if (!toStdout) await writeFile(manifestPath, `${JSON.stringify({ capturedAt, vendor, model, responses }, null, 2)}\n`)
 log(JSON.stringify({ outDir, files: written }))
