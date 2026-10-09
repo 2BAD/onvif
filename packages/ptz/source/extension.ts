@@ -8,6 +8,7 @@ import { PTZClient } from '#generated/ptz.ts'
  * @returns The properties to add
  * @example
  * const camera = device.use(ptz)
- * await camera.ptz.continuousMove({ profileToken, velocity: { panTilt: { x: 0.5, y: 0 } }, timeout: 'PT1S' })
+ * const profile = camera.ptz.forProfile('Profile_1')
+ * await profile.continuousMove({ velocity: { panTilt: { x: 0.5, y: 0 } }, timeout: 'PT1S' })
  */
 export const ptz = (device: Device) => ({ ptz: new PTZClient(device) })

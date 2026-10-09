@@ -43,27 +43,28 @@ describe.skipIf(!hostname)('PTZ on a live camera', () => {
   it('pans, stops and returns to a preset', async () => {
     const { ptzNode: [node] = [] } = await device.ptz.getNodes()
     if (!node?.supportedPTZSpaces.continuousPanTiltVelocitySpace) return
-    const { presetToken } = await device.ptz.setPreset({ profileToken, presetName: 'onviftest' })
+    const profile = device.ptz.forProfile(profileToken)
+    const { presetToken } = await profile.setPreset({ presetName: 'onviftest' })
     try {
-      const { preset = [] } = await device.ptz.getPresets({ profileToken })
+      const { preset = [] } = await profile.getPresets()
       expect(preset).toContainEqual(expect.objectContaining({ token: presetToken, name: 'onviftest' }))
 
-      await device.ptz.continuousMove({ profileToken, velocity: { panTilt: { x: 0.3, y: 0 } }, timeout: 'PT1S' })
-      expect((await device.ptz.getStatus({ profileToken })).ptzStatus.moveStatus?.panTilt).toBe('MOVING')
+      await profile.continuousMove({ velocity: { panTilt: { x: 0.3, y: 0 } }, timeout: 'PT1S' })
+      expect((await profile.getStatus()).ptzStatus.moveStatus?.panTilt).toBe('MOVING')
       await sleep(2_000)
-      expect((await device.ptz.getStatus({ profileToken })).ptzStatus.moveStatus?.panTilt).toBe('IDLE')
+      expect((await profile.getStatus()).ptzStatus.moveStatus?.panTilt).toBe('IDLE')
 
-      await device.ptz.continuousMove({ profileToken, velocity: { panTilt: { x: -0.3, y: 0 } } })
+      await profile.continuousMove({ velocity: { panTilt: { x: -0.3, y: 0 } } })
       await sleep(500)
-      await device.ptz.stop({ profileToken, panTilt: true })
+      await profile.stop({ panTilt: true })
       await sleep(1_000)
-      expect((await device.ptz.getStatus({ profileToken })).ptzStatus.moveStatus?.panTilt).toBe('IDLE')
+      expect((await profile.getStatus()).ptzStatus.moveStatus?.panTilt).toBe('IDLE')
     } finally {
-      await device.ptz.gotoPreset({ profileToken, presetToken })
+      await profile.gotoPreset({ presetToken })
       await sleep(3_000)
-      await device.ptz.removePreset({ profileToken, presetToken })
+      await profile.removePreset({ presetToken })
     }
-    const { preset = [] } = await device.ptz.getPresets({ profileToken })
+    const { preset = [] } = await profile.getPresets()
     expect(preset.map(({ token }) => token)).not.toContain(presetToken)
   })
 

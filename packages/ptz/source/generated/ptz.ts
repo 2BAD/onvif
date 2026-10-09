@@ -1280,6 +1280,14 @@ export class PTZClient {
   }
 
   /**
+   * @param profileToken - The `ProfileToken` of every request
+   * @returns The operations that take a `ProfileToken`, without it in the request
+   */
+  forProfile(profileToken: string): PTZProfileClient {
+    return new PTZProfileClient(this.#device, profileToken)
+  }
+
+  /**
    * Returns the capabilities of the PTZ service. The result is returned in a typed answer.
    *
    * @param request - The `GetServiceCapabilities` request
@@ -1552,5 +1560,193 @@ export class PTZClient {
     options?: CallOptions
   ): Promise<SendAuxiliaryCommandResponse> {
     return this.#device.call(SendAuxiliaryCommand, request, options)
+  }
+}
+
+export class PTZProfileClient {
+  readonly #device: Device
+  readonly #profileToken: string
+
+  constructor(device: Device, profileToken: string) {
+    this.#device = device
+    this.#profileToken = profileToken
+  }
+
+  /**
+   * Operation to request PTZ status for the Node in the selected profile.
+   *
+   * @param request - The `GetStatus` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetStatusResponse`
+   */
+  getStatus(request?: Omit<GetStatusRequest, 'profileToken'>, options?: CallOptions): Promise<GetStatusResponse> {
+    return this.#device.call(GetStatus, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation for continuous Pan/Tilt and Zoom movements. The operation is supported if the PTZNode
+   * supports at least one continuous Pan/Tilt or Zoom space. If the space argument is omitted, the
+   * default space set by the PTZConfiguration will be used.
+   *
+   * @param request - The `ContinuousMove` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `ContinuousMoveResponse`
+   */
+  continuousMove(
+    request: Omit<ContinuousMoveRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<ContinuousMoveResponse> {
+    return this.#device.call(ContinuousMove, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation for Relative Pan/Tilt and Zoom Move. The operation is supported if the PTZNode supports at
+   * least one relative Pan/Tilt or Zoom space. The speed argument is optional. If an x/y speed value is
+   * given it is up to the device to either use the x value as absolute resoluting speed vector or to map
+   * x and y to the component speed. If the speed argument is omitted, the default speed set by the
+   * PTZConfiguration will be used.
+   *
+   * @param request - The `RelativeMove` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RelativeMoveResponse`
+   */
+  relativeMove(
+    request: Omit<RelativeMoveRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<RelativeMoveResponse> {
+    return this.#device.call(RelativeMove, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to move pan,tilt or zoom to a absolute destination. The speed argument is optional. If an
+   * x/y speed value is given it is up to the device to either use the x value as absolute resoluting
+   * speed vector or to map x and y to the component speed. If the speed argument is omitted, the default
+   * speed set by the PTZConfiguration will be used.
+   *
+   * @param request - The `AbsoluteMove` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AbsoluteMoveResponse`
+   */
+  absoluteMove(
+    request: Omit<AbsoluteMoveRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<AbsoluteMoveResponse> {
+    return this.#device.call(AbsoluteMove, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to stop ongoing pan, tilt and zoom movements of absolute relative and continuous type. If
+   * no stop argument for pan, tilt or zoom is set, the device will stop all ongoing pan, tilt and zoom
+   * movements.
+   *
+   * @param request - The `Stop` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `StopResponse`
+   */
+  stop(request?: Omit<StopRequest, 'profileToken'>, options?: CallOptions): Promise<StopResponse> {
+    return this.#device.call(Stop, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to request all PTZ presets for the PTZNode in the selected profile. The operation is
+   * supported if there is support for at least on PTZ preset by the PTZNode.
+   *
+   * @param request - The `GetPresets` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetsResponse`
+   */
+  getPresets(request?: Omit<GetPresetsRequest, 'profileToken'>, options?: CallOptions): Promise<GetPresetsResponse> {
+    return this.#device.call(GetPresets, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * The SetPreset command saves the current device position parameters so that the device can move to
+   * the saved preset position through the GotoPreset operation. In order to create a new preset, the
+   * SetPresetRequest contains no PresetToken. If creation is successful, the Response contains the
+   * PresetToken which uniquely identifies the Preset. An existing Preset can be overwritten by
+   * specifying the PresetToken of the corresponding Preset. In both cases (overwriting or creation) an
+   * optional PresetName can be specified. The operation fails if the PTZ device is moving during the
+   * SetPreset operation. The device MAY internally save additional states such as imaging properties in
+   * the PTZ Preset which then should be recalled in the GotoPreset operation.
+   *
+   * @param request - The `SetPreset` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetPresetResponse`
+   */
+  setPreset(request?: Omit<SetPresetRequest, 'profileToken'>, options?: CallOptions): Promise<SetPresetResponse> {
+    return this.#device.call(SetPreset, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to remove a PTZ preset for the Node in the selected profile. The operation is supported if
+   * the PresetPosition capability exists for teh Node in the selected profile.
+   *
+   * @param request - The `RemovePreset` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemovePresetResponse`
+   */
+  removePreset(
+    request: Omit<RemovePresetRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<RemovePresetResponse> {
+    return this.#device.call(RemovePreset, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to go to a saved preset position for the PTZNode in the selected profile. The operation is
+   * supported if there is support for at least on PTZ preset by the PTZNode.
+   *
+   * @param request - The `GotoPreset` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GotoPresetResponse`
+   */
+  gotoPreset(request: Omit<GotoPresetRequest, 'profileToken'>, options?: CallOptions): Promise<GotoPresetResponse> {
+    return this.#device.call(GotoPreset, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to move the PTZ device to it's "home" position. The operation is supported if the
+   * HomeSupported element in the PTZNode is true.
+   *
+   * @param request - The `GotoHomePosition` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GotoHomePositionResponse`
+   */
+  gotoHomePosition(
+    request?: Omit<GotoHomePositionRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<GotoHomePositionResponse> {
+    return this.#device.call(GotoHomePosition, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to save current position as the home position. The SetHomePosition command returns with a
+   * failure if the "home" position is fixed and cannot be overwritten. If the SetHomePosition is
+   * successful, it is possible to recall the Home Position with the GotoHomePosition command.
+   *
+   * @param request - The `SetHomePosition` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetHomePositionResponse`
+   */
+  setHomePosition(
+    request?: Omit<SetHomePositionRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<SetHomePositionResponse> {
+    return this.#device.call(SetHomePosition, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to send auxiliary commands to the PTZ device mapped by the PTZNode in the selected
+   * profile. The operation is supported if the AuxiliarySupported element of the PTZNode is true
+   *
+   * @param request - The `SendAuxiliaryCommand` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SendAuxiliaryCommandResponse`
+   */
+  sendAuxiliaryCommand(
+    request: Omit<SendAuxiliaryCommandRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<SendAuxiliaryCommandResponse> {
+    return this.#device.call(SendAuxiliaryCommand, { ...request, profileToken: this.#profileToken }, options)
   }
 }

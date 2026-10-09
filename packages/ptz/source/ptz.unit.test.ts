@@ -113,8 +113,59 @@ describe('ptz', () => {
     const { device } = await connect()
     const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(device.ptz))
     const expected = operations.map(({ name }) => `${name.charAt(0).toLowerCase()}${name.slice(1)}`)
-    expect(methods.filter((name) => name !== 'constructor').toSorted()).toEqual(expected.toSorted())
+    expect(methods.filter((name) => name !== 'constructor').toSorted()).toEqual([...expected, 'forProfile'].toSorted())
     expect(Object.getOwnPropertyDescriptor(device, 'ptz')).toMatchObject({ writable: false, enumerable: true })
+  })
+
+  it('adds a method for every operation that takes a profile token to forProfile()', async () => {
+    const { device } = await connect()
+    const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(device.ptz.forProfile(profileToken)))
+    expect(methods.filter((name) => name !== 'constructor').toSorted()).toEqual(
+      [
+        'getStatus',
+        'continuousMove',
+        'relativeMove',
+        'absoluteMove',
+        'stop',
+        'getPresets',
+        'setPreset',
+        'removePreset',
+        'gotoPreset',
+        'gotoHomePosition',
+        'setHomePosition',
+        'sendAuxiliaryCommand'
+      ].toSorted()
+    )
+  })
+
+  it('sends the same request through forProfile() as with the profile token', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'ptz.ContinuousMove': answer(hik('ptz.ContinuousMove')),
+        'ptz.Stop': answer(hik('ptz.Stop')),
+        'ptz.GetStatus': answer(hik('ptz.GetStatus'))
+      }
+    })
+    const profile = device.ptz.forProfile(profileToken)
+    const velocity = { panTilt: { x: 0.3, y: 0 } }
+    await device.ptz.continuousMove({ profileToken, velocity, timeout: 'PT1S' })
+    await profile.continuousMove({ velocity, timeout: 'PT1S' })
+    await device.ptz.stop({ profileToken })
+    await profile.stop()
+    for (const action of ['ContinuousMove', 'Stop']) {
+      const [direct, scoped] = mock.requests.filter((request) => request.action === action)
+      expect(parseEnvelope(scoped?.body ?? '').body).toEqual(parseEnvelope(direct?.body ?? '').body)
+    }
+    expect(await profile.getStatus()).toEqual(await device.ptz.getStatus({ profileToken }))
+  })
+
+  it('keeps one profile per forProfile() client', async () => {
+    const { mock, device } = await connect({ overrides: { 'ptz.Stop': answer(hik('ptz.Stop')) } })
+    await device.ptz.forProfile('Profile_1').stop()
+    await device.ptz.forProfile('Profile_2').stop()
+    expect(mock.requests.filter(({ action }) => action === 'Stop').map(({ body }) => parseEnvelope(body).body)).toEqual(
+      [{ Stop: { ProfileToken: 'Profile_1' } }, { Stop: { ProfileToken: 'Profile_2' } }]
+    )
   })
 
   it('sends the same request as Device.call', async () => {

@@ -161,7 +161,11 @@ const targets: Target[] = [
   {
     output: 'packages/ptz/source/generated/ptz.ts',
     codecImport: '@2bad/onvif/soap',
-    client: { name: 'PTZClient', typesImport: '@2bad/onvif' },
+    client: {
+      name: 'PTZClient',
+      typesImport: '@2bad/onvif',
+      scoped: { name: 'PTZProfileClient', method: 'forProfile', field: 'ProfileToken' }
+    },
     wsdl: 'ver20/ptz/wsdl/ptz.wsdl',
     portTypes: [
       {
