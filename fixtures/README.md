@@ -10,13 +10,19 @@ Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TES
 pnpm fixtures:capture
 ```
 
-It only calls read-only operations (plus one pull point subscription, which it unsubscribes again). It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
+Captures every suite except `motion`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
 
 ```sh
-pnpm fixtures:capture --motion
+pnpm fixtures:capture management ptz
 ```
 
-Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device. The other captures and their manifest entries stay as they are.
+Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `events`, `discovery` and `motion`. The other captures and their manifest entries stay as they are.
+
+```sh
+pnpm fixtures:capture motion
+```
+
+Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device.
 
 ```sh
 pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOptions
@@ -25,29 +31,19 @@ pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOp
 Writes only the responses whose `<service>.<Action>` name starts with one of the prefixes.
 
 ```sh
-pnpm fixtures:capture --set-encoder
+pnpm fixtures:capture management --write
 ```
 
-Also captures `SetVideoEncoderConfiguration`. It sends the first encoder configuration of Media v1 and Media2 back to the device unchanged.
+Also captures the Set calls of the `management`, `media` and `ptz` suites. Use it on the lab camera only.
 
-It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264.
-
-```sh
-pnpm fixtures:capture --management
-```
-
-Writes only the device management responses: gateway, users, NTP, dynamic DNS, zero configuration, IP filter and relays. It sends Get calls only and creates no subscription.
-
-```sh
-pnpm fixtures:capture --management --set-device
-```
-
-Also captures the device management Set calls. Use it on the lab camera only. It sends the network interface, gateway, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
+- `management` sends the network interface, gateway, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
+- `media` sends the first encoder configuration of Media v1 and Media2 back unchanged. It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264.
+- `ptz` sends the first configuration back unchanged. It saves the position as the preset `onviftest`, tries every move type and returns to the preset before removing it. It sets the home position and sends the wiper auxiliary command.
 
 No other call writes to the device.
 
 ```sh
-pnpm fixtures:capture --management --stdout > captures.jsonl
+pnpm fixtures:capture management --stdout > captures.jsonl
 pnpm fixtures:import fixtures/live/<vendor>/<model> < captures.jsonl
 ```
 
