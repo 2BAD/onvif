@@ -25,6 +25,11 @@ type ClientOptions = {
   abstract?: boolean
   /** Operations that get a method, all by default. */
   operations?: string[]
+  /**
+   * A second class, returned by `method`, that fills the request element `field` from its constructor. It has a
+   * method for each operation of the client whose request has that element. Not for an abstract client.
+   */
+  scoped?: { name: string; method: string; field: string }
 }
 
 const tsPrimitives: Record<SimpleModel['primitive'], string> = {
@@ -215,7 +220,7 @@ const reachable = (operations: OperationModel[], elements: ComplexModel[]): Comp
 const methodName = (operation: string): string => `${operation.charAt(0).toLowerCase()}${operation.slice(1)}`
 
 const emitClient = (client: ClientOptions, operations: OperationModel[], names: Names): string => {
-  const { name, abstract = false, operations: included } = client
+  const { name, abstract = false, operations: included, scoped } = client
   for (const operation of included ?? []) {
     if (!operations.some((candidate) => candidate.name === operation)) {
       throw new Error(`Client ${name} lists the unknown operation ${operation}`)
@@ -224,6 +229,17 @@ const emitClient = (client: ClientOptions, operations: OperationModel[], names: 
   const methods = operations.filter((operation) => included?.includes(operation.name) ?? true)
   const seen = new Set(['call', 'constructor'])
   let body = ''
+  const key = scoped && scopedKey(scoped, methods)
+  if (scoped && key) {
+    if (abstract) throw new Error(`Abstract client ${name} cannot have a scoped client`)
+    seen.add(scoped.method)
+    body +=
+      `\n  /**\n   * @param ${key} - The \`${scoped.field}\` of every request\n` +
+      `   * @returns The operations that take a \`${scoped.field}\`, without it in the request\n   */\n` +
+      `  ${scoped.method}(${key}: string): ${scoped.name} {\n` +
+      `    return new ${scoped.name}(this.#device, ${key})\n` +
+      '  }\n'
+  }
   for (const operation of methods) {
     const method = methodName(operation.name)
     if (seen.has(method)) throw new Error(`Colliding method name ${method} in ${name}`)
@@ -255,7 +271,66 @@ const emitClient = (client: ClientOptions, operations: OperationModel[], names: 
       '  constructor(device: Device) {\n' +
       '    this.#device = device\n' +
       '  }\n'
-  return `${head}${body}}\n`
+  return `${head}${body}}\n${scoped && key ? `\n${emitScopedClient(scoped, key, methods, names)}` : ''}`
+}
+
+type ScopedOptions = NonNullable<ClientOptions['scoped']>
+
+const scopedField = (operation: OperationModel, field: string): number => {
+  const index = operation.request.type.fields.findIndex((candidate) => candidate.name === field)
+  const found = operation.request.type.fields[index]
+  return found && !found.attribute && !found.array && found.type.kind === 'simple' && found.type.primitive === 'string'
+    ? index
+    : -1
+}
+
+const scopedOperations = (scoped: ScopedOptions, operations: OperationModel[]): OperationModel[] => {
+  const matching = operations.filter((operation) => scopedField(operation, scoped.field) >= 0)
+  if (matching.length === 0) throw new Error(`No operation of ${scoped.name} has a request element ${scoped.field}`)
+  return matching
+}
+
+const scopedKey = (scoped: ScopedOptions, operations: OperationModel[]): string => {
+  const keys = new Set(
+    scopedOperations(scoped, operations).map((operation) => {
+      const { type } = operation.request
+      return properties(type)[scopedField(operation, scoped.field)] ?? scoped.field
+    })
+  )
+  const [key] = keys
+  if (keys.size !== 1 || key === undefined) throw new Error(`${scoped.field} has different property names`)
+  return key
+}
+
+const emitScopedClient = (scoped: ScopedOptions, key: string, operations: OperationModel[], names: Names): string => {
+  let body = ''
+  for (const operation of scopedOperations(scoped, operations)) {
+    const { type } = operation.request
+    const index = scopedField(operation, scoped.field)
+    const optional = !type.text && type.fields.every((field, position) => field.optional || position === index)
+    const request = `Omit<${names.complex(type)}, '${key}'>`
+    const response = names.complex(operation.response.type)
+    const tags = [
+      `@param request - The \`${operation.name}\` request without \`${key}\``,
+      '@param options - Abort signal, timeout and addressing for this call',
+      `@returns The decoded \`${operation.response.element.local}\``
+    ]
+    body +=
+      `\n${comment(operation.documentation, '  ', tags)}` +
+      `  ${methodName(operation.name)}(request${optional ? '?' : ''}: ${request}, options?: CallOptions): Promise<${response}> {\n` +
+      `    return this.#device.call(${operation.name}, { ...request, ${key}: this.#${key} }, options)\n` +
+      '  }\n'
+  }
+  return (
+    `export class ${scoped.name} {\n` +
+    '  readonly #device: Device\n' +
+    `  readonly #${key}: string\n\n` +
+    `  constructor(device: Device, ${key}: string) {\n` +
+    '    this.#device = device\n' +
+    `    this.#${key} = ${key}\n` +
+    '  }\n' +
+    `${body}}\n`
+  )
 }
 
 /**
@@ -269,8 +344,10 @@ export function emit(options: EmitOptions): string {
   const complexTypes = reachable(operations, elements)
   const enumerations = collectEnumerations(complexTypes)
   const names = new Names(complexTypes, enumerations)
-  if (client && complexTypes.some((model) => names.complex(model) === client.name)) {
-    throw new Error(`Client ${client.name} has the name of a generated type`)
+  for (const clientName of [client?.name, client?.scoped?.name]) {
+    if (clientName && complexTypes.some((model) => names.complex(model) === clientName)) {
+      throw new Error(`Client ${clientName} has the name of a generated type`)
+    }
   }
 
   let types = ''

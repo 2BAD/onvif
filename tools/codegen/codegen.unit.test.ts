@@ -263,6 +263,69 @@ describe('client', () => {
     ).toThrow('Client Thing has the name of a generated type')
   })
 
+  describe('scoped', () => {
+    const scoped = { name: 'ThingClient', method: 'forToken', field: 'Token' }
+    const scopedSource = emit({
+      commit: 'test',
+      codecImport: '#soap/codec.ts',
+      operations,
+      client: { ...client, scoped }
+    })
+
+    it('adds a method that returns the scoped client', () => {
+      expect(scopedSource).toContain(
+        '  forToken(token: string): ThingClient {\n    return new ThingClient(this.#device, token)\n  }\n'
+      )
+    })
+
+    it('emits a scoped method only for operations whose request has the element, without it', () => {
+      const scopedClass = scopedSource.slice(scopedSource.indexOf('export class ThingClient'))
+      expect(scopedClass).toContain(
+        "  getThing(request?: Omit<GetThingRequest, 'token'>, options?: CallOptions): Promise<GetThingResponse> {\n" +
+          '    return this.#device.call(GetThing, { ...request, token: this.#token }, options)\n'
+      )
+      expect(scopedClass).toContain('   * @param request - The `GetThing` request without `token`\n')
+      expect(scopedClass).not.toContain('setThing(')
+    })
+
+    it('fills the element from the constructor over any value in the request', async () => {
+      const file = join(scratch, 'scoped.ts')
+      writeFileSync(file, scopedSource.replace("'#soap/codec.ts'", `'${pathToFileURL(codecPath).href}'`))
+      type Call = (operation: Operation<unknown, unknown>, request?: unknown, options?: unknown) => Promise<unknown>
+      const module = (await import(pathToFileURL(file).href)) as {
+        GetThing: Operation<unknown, unknown>
+        ServiceClient: new (device: { call: Call }) => {
+          forToken: (token: string) => { getThing: (request?: unknown) => Promise<unknown> }
+        }
+      }
+      const call = vi.fn<Call>(async () => 'done')
+      const scopedClient = new module.ServiceClient({ call }).forToken('t1')
+      await scopedClient.getThing()
+      await scopedClient.getThing({ token: 'other' })
+      expect(call.mock.calls).toEqual([
+        [module.GetThing, { token: 't1' }, undefined],
+        [module.GetThing, { token: 't1' }, undefined]
+      ])
+    })
+
+    it('rejects an element no operation has, an abstract client and a taken name', () => {
+      const build =
+        (options: Partial<typeof scoped>, abstract = false) =>
+        () =>
+          emit({
+            commit: 'test',
+            codecImport: '#soap/codec.ts',
+            operations,
+            client: { ...client, abstract, scoped: { ...scoped, ...options } }
+          })
+      expect(build({ field: 'Nope' })).toThrow('No operation of ThingClient has a request element Nope')
+      expect(build({ field: 'Thing' })).toThrow('No operation of ThingClient has a request element Thing')
+      expect(build({}, true)).toThrow('Abstract client ServiceClient cannot have a scoped client')
+      expect(build({ name: 'Thing' })).toThrow('Client Thing has the name of a generated type')
+      expect(build({ method: 'getThing' })).toThrow('Colliding method name getThing in ServiceClient')
+    })
+  })
+
   it('produces classes that send each operation through the device', async () => {
     const codec = `'${pathToFileURL(codecPath).href}'`
     const concreteFile = join(scratch, 'client.ts')
