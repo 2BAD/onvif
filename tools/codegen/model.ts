@@ -40,46 +40,27 @@ export type OperationModel = {
   documentation: string | undefined
 }
 
-const builtins: Record<string, [Primitive, boolean]> = {
-  string: ['string', false],
-  normalizedString: ['string', false],
-  token: ['string', false],
-  anyURI: ['string', false],
-  QName: ['string', false],
-  NCName: ['string', false],
-  Name: ['string', false],
-  ID: ['string', false],
-  IDREF: ['string', false],
-  IDREFS: ['string', true],
-  NMTOKEN: ['string', false],
-  NMTOKENS: ['string', true],
-  language: ['string', false],
-  hexBinary: ['string', false],
-  duration: ['string', false],
-  date: ['string', false],
-  time: ['string', false],
-  anySimpleType: ['string', false],
-  int: ['integer', false],
-  integer: ['integer', false],
-  long: ['integer', false],
-  short: ['integer', false],
-  byte: ['integer', false],
-  unsignedInt: ['integer', false],
-  unsignedLong: ['integer', false],
-  unsignedShort: ['integer', false],
-  unsignedByte: ['integer', false],
-  positiveInteger: ['integer', false],
-  nonNegativeInteger: ['integer', false],
-  negativeInteger: ['integer', false],
-  nonPositiveInteger: ['integer', false],
-  float: ['decimal', false],
-  double: ['decimal', false],
-  decimal: ['decimal', false],
-  boolean: ['boolean', false],
-  dateTime: ['dateTime', false],
-  base64Binary: ['base64', false],
-  anyType: ['any', false]
+const builtinNames: Record<Primitive, string> = {
+  string:
+    'string normalizedString token anyURI QName NCName Name ID IDREF IDREFS NMTOKEN NMTOKENS language hexBinary ' +
+    'duration date time anySimpleType',
+  integer:
+    'int integer long short byte unsignedInt unsignedLong unsignedShort unsignedByte positiveInteger ' +
+    'nonNegativeInteger negativeInteger nonPositiveInteger',
+  decimal: 'float double decimal',
+  boolean: 'boolean',
+  dateTime: 'dateTime',
+  base64: 'base64Binary',
+  any: 'anyType'
 }
+
+const builtins = new Map(
+  Object.entries(builtinNames).flatMap(([primitive, names]) =>
+    names.split(' ').map((name) => [name, primitive as Primitive] as const)
+  )
+)
+
+const listBuiltins = new Set(['IDREFS', 'NMTOKENS'])
 
 const isXs = (node: SchemaNode, local: string): boolean => node.name.namespace === XS && node.name.local === local
 
@@ -141,12 +122,12 @@ export class ModelBuilder {
   }
 
   #builtin(local: string): SimpleModel {
-    const builtin = builtins[local]
-    if (!builtin) throw new Error(`Unsupported built-in type xs:${local}`)
+    const primitive = builtins.get(local)
+    if (!primitive) throw new Error(`Unsupported built-in type xs:${local}`)
     return {
       kind: 'simple',
-      primitive: builtin[0],
-      list: builtin[1],
+      primitive,
+      list: listBuiltins.has(local),
       enumeration: undefined,
       qname: undefined,
       documentation: undefined
@@ -309,35 +290,20 @@ export class ModelBuilder {
 
   #element(model: ComplexModel, node: SchemaNode, context: SchemaContext, optional: boolean, array: boolean): void {
     const own = occurs(node)
-    const ref = node.attributes['ref']
-    let field: FieldModel
-    if (ref) {
-      const name = resolveQName(ref, node.namespaces)
-      const global = this.#registry.component('element', name)
-      field = {
-        name: name.local,
-        namespace: name.namespace,
-        attribute: false,
-        optional: optional || own.optional,
-        array: array || own.array,
-        type: this.#elementType(global.node, global.context, `${model.suggestedName}${pascal(name.local)}`),
-        documentation: documentationOf(node) ?? documentationOf(global.node)
-      }
-    } else {
-      const name = node.attributes['name']
-      if (!name) throw new Error(`Element without name in ${model.suggestedName}`)
-      const qualified = node.attributes['form'] ? node.attributes['form'] === 'qualified' : context.elementsQualified
-      field = {
-        name,
-        namespace: qualified ? context.targetNamespace : undefined,
-        attribute: false,
-        optional: optional || own.optional,
-        array: array || own.array,
-        type: this.#elementType(node, context, `${model.suggestedName}${pascal(name)}`),
-        documentation: documentationOf(node)
-      }
-    }
-    this.#addField(model, field)
+    const ref = node.attributes['ref'] ? resolveQName(node.attributes['ref'], node.namespaces) : undefined
+    const name = ref?.local ?? node.attributes['name']
+    if (!name) throw new Error(`Element without name in ${model.suggestedName}`)
+    const declaration = ref ? this.#registry.component('element', ref) : { node, context }
+    const qualified = node.attributes['form'] ? node.attributes['form'] === 'qualified' : context.elementsQualified
+    this.#addField(model, {
+      name,
+      namespace: ref ? ref.namespace : qualified ? context.targetNamespace : undefined,
+      attribute: false,
+      optional: optional || own.optional,
+      array: array || own.array,
+      type: this.#elementType(declaration.node, declaration.context, `${model.suggestedName}${pascal(name)}`),
+      documentation: documentationOf(node) ?? documentationOf(declaration.node)
+    })
   }
 
   #attributes(model: ComplexModel, node: SchemaNode, context: SchemaContext): void {

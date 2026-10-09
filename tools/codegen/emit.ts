@@ -100,22 +100,9 @@ const comment = (text: string | undefined, indent: string, tags: string[] = []):
 }
 
 // generated types can't shadow these globals or codec types
-const reservedNames = new Set([
-  'Array',
-  'Boolean',
-  'Date',
-  'Error',
-  'Map',
-  'Number',
-  'Object',
-  'Operation',
-  'Promise',
-  'Record',
-  'Schema',
-  'Set',
-  'String',
-  'Uint8Array'
-])
+const reservedNames = new Set(
+  'Array Boolean Date Error Map Number Object Operation Promise Record Schema Set String Uint8Array'.split(' ')
+)
 
 class Names {
   readonly #complex = new Map<ComplexModel, string>()
@@ -217,119 +204,73 @@ const reachable = (operations: OperationModel[], elements: ComplexModel[]): Comp
   return [...found]
 }
 
-const methodName = (operation: string): string => `${operation.charAt(0).toLowerCase()}${operation.slice(1)}`
+type Scope = { key: string; index: number }
+
+const method = (operation: OperationModel, names: Names, target: string, scope?: Scope): string => {
+  const { type } = operation.request
+  const optional = !type.text && type.fields.every((field, index) => field.optional || index === scope?.index)
+  const request = scope ? `Omit<${names.complex(type)}, '${scope.key}'>` : names.complex(type)
+  const response = names.complex(operation.response.type)
+  const name = `${operation.name.charAt(0).toLowerCase()}${operation.name.slice(1)}`
+  const argument = scope ? `{ ...request, ${scope.key}: this.#${scope.key} }` : 'request'
+  const tags = [
+    `@param request - The \`${operation.name}\` request${scope ? ` without \`${scope.key}\`` : ''}`,
+    '@param options - Abort signal, timeout and addressing for this call',
+    `@returns The decoded \`${operation.response.element.local}\``
+  ]
+  return (
+    `\n${comment(operation.documentation, '  ', tags)}` +
+    `  ${name}(request${optional ? '?' : ''}: ${request}, options?: CallOptions): Promise<${response}> {\n` +
+    `    return ${target}.call(${operation.name}, ${argument}, options)\n  }\n`
+  )
+}
+
+const deviceClass = (name: string, body: string, key?: string): string =>
+  `export class ${name} {\n  readonly #device: Device\n${key ? `  readonly #${key}: string\n` : ''}\n` +
+  `  constructor(device: Device${key ? `, ${key}: string` : ''}) {\n    this.#device = device\n` +
+  `${key ? `    this.#${key} = ${key}\n` : ''}  }\n${body}}\n`
+
+const scopedClient = (scoped: NonNullable<ClientOptions['scoped']>, operations: OperationModel[], names: Names) => {
+  const scopes = operations.flatMap((operation) => {
+    const { fields } = operation.request.type
+    const index = fields.findIndex(
+      (field) =>
+        field.name === scoped.field &&
+        !field.attribute &&
+        !field.array &&
+        field.type.kind === 'simple' &&
+        field.type.primitive === 'string'
+    )
+    if (index === -1) return []
+    return [{ operation, scope: { key: properties(operation.request.type)[index] ?? scoped.field, index } }]
+  })
+  const keys = new Set(scopes.map(({ scope }) => scope.key))
+  const [key] = keys
+  if (key === undefined) throw new Error(`No operation of ${scoped.name} has a request element ${scoped.field}`)
+  if (keys.size > 1) throw new Error(`${scoped.field} has different property names`)
+  const factory =
+    `\n  /**\n   * @param ${key} - The \`${scoped.field}\` of every request\n` +
+    `   * @returns The operations that take a \`${scoped.field}\`, without it in the request\n   */\n` +
+    `  ${scoped.method}(${key}: string): ${scoped.name} {\n    return new ${scoped.name}(this.#device, ${key})\n  }\n`
+  const body = scopes.map(({ operation, scope }) => method(operation, names, 'this.#device', scope)).join('')
+  return { factory, source: `\n${deviceClass(scoped.name, body, key)}` }
+}
 
 const emitClient = (client: ClientOptions, operations: OperationModel[], names: Names): string => {
   const { name, abstract = false, operations: included, scoped } = client
-  for (const operation of included ?? []) {
-    if (!operations.some((candidate) => candidate.name === operation)) {
-      throw new Error(`Client ${name} lists the unknown operation ${operation}`)
-    }
-  }
+  const unknown = included?.find((operation) => !operations.some((candidate) => candidate.name === operation))
+  if (unknown) throw new Error(`Client ${name} lists the unknown operation ${unknown}`)
   const methods = operations.filter((operation) => included?.includes(operation.name) ?? true)
-  const seen = new Set(['call', 'constructor'])
-  let body = ''
-  const key = scoped && scopedKey(scoped, methods)
-  if (scoped && key) {
-    if (abstract) throw new Error(`Abstract client ${name} cannot have a scoped client`)
-    seen.add(scoped.method)
-    body +=
-      `\n  /**\n   * @param ${key} - The \`${scoped.field}\` of every request\n` +
-      `   * @returns The operations that take a \`${scoped.field}\`, without it in the request\n   */\n` +
-      `  ${scoped.method}(${key}: string): ${scoped.name} {\n` +
-      `    return new ${scoped.name}(this.#device, ${key})\n` +
-      '  }\n'
-  }
-  for (const operation of methods) {
-    const method = methodName(operation.name)
-    if (seen.has(method)) throw new Error(`Colliding method name ${method} in ${name}`)
-    seen.add(method)
-    const { type } = operation.request
-    const optional = !type.text && type.fields.every((field) => field.optional)
-    const request = names.complex(type)
-    const response = names.complex(operation.response.type)
-    const target = abstract ? 'this' : 'this.#device'
-    const tags = [
-      `@param request - The \`${operation.name}\` request`,
-      '@param options - Abort signal, timeout and addressing for this call',
-      `@returns The decoded \`${operation.response.element.local}\``
-    ]
-    body +=
-      `\n${comment(operation.documentation, '  ', tags)}` +
-      `  ${method}(request${optional ? '?' : ''}: ${request}, options?: CallOptions): Promise<${response}> {\n` +
-      `    return ${target}.call(${operation.name}, request, options)\n` +
-      '  }\n'
-  }
-  const head = abstract
-    ? `export abstract class ${name} {\n` +
-      '  abstract call<Request, Response>(\n' +
-      '    operation: Operation<Request, Response>,\n' +
-      '    ...args: CallArguments<Request>\n' +
-      '  ): Promise<Response>\n'
-    : `export class ${name} {\n` +
-      '  readonly #device: Device\n\n' +
-      '  constructor(device: Device) {\n' +
-      '    this.#device = device\n' +
-      '  }\n'
-  return `${head}${body}}\n${scoped && key ? `\n${emitScopedClient(scoped, key, methods, names)}` : ''}`
-}
-
-type ScopedOptions = NonNullable<ClientOptions['scoped']>
-
-const scopedField = (operation: OperationModel, field: string): number => {
-  const index = operation.request.type.fields.findIndex((candidate) => candidate.name === field)
-  const found = operation.request.type.fields[index]
-  return found && !found.attribute && !found.array && found.type.kind === 'simple' && found.type.primitive === 'string'
-    ? index
-    : -1
-}
-
-const scopedOperations = (scoped: ScopedOptions, operations: OperationModel[]): OperationModel[] => {
-  const matching = operations.filter((operation) => scopedField(operation, scoped.field) >= 0)
-  if (matching.length === 0) throw new Error(`No operation of ${scoped.name} has a request element ${scoped.field}`)
-  return matching
-}
-
-const scopedKey = (scoped: ScopedOptions, operations: OperationModel[]): string => {
-  const keys = new Set(
-    scopedOperations(scoped, operations).map((operation) => {
-      const { type } = operation.request
-      return properties(type)[scopedField(operation, scoped.field)] ?? scoped.field
-    })
-  )
-  const [key] = keys
-  if (keys.size !== 1 || key === undefined) throw new Error(`${scoped.field} has different property names`)
-  return key
-}
-
-const emitScopedClient = (scoped: ScopedOptions, key: string, operations: OperationModel[], names: Names): string => {
-  let body = ''
-  for (const operation of scopedOperations(scoped, operations)) {
-    const { type } = operation.request
-    const index = scopedField(operation, scoped.field)
-    const optional = !type.text && type.fields.every((field, position) => field.optional || position === index)
-    const request = `Omit<${names.complex(type)}, '${key}'>`
-    const response = names.complex(operation.response.type)
-    const tags = [
-      `@param request - The \`${operation.name}\` request without \`${key}\``,
-      '@param options - Abort signal, timeout and addressing for this call',
-      `@returns The decoded \`${operation.response.element.local}\``
-    ]
-    body +=
-      `\n${comment(operation.documentation, '  ', tags)}` +
-      `  ${methodName(operation.name)}(request${optional ? '?' : ''}: ${request}, options?: CallOptions): Promise<${response}> {\n` +
-      `    return this.#device.call(${operation.name}, { ...request, ${key}: this.#${key} }, options)\n` +
-      '  }\n'
-  }
+  const scope = scoped ? scopedClient(scoped, methods, names) : { factory: '', source: '' }
+  const body =
+    scope.factory + methods.map((operation) => method(operation, names, abstract ? 'this' : 'this.#device')).join('')
+  if (!abstract) return `${deviceClass(name, body)}${scope.source}`
   return (
-    `export class ${scoped.name} {\n` +
-    '  readonly #device: Device\n' +
-    `  readonly #${key}: string\n\n` +
-    `  constructor(device: Device, ${key}: string) {\n` +
-    '    this.#device = device\n' +
-    `    this.#${key} = ${key}\n` +
-    '  }\n' +
-    `${body}}\n`
+    `export abstract class ${name} {\n` +
+    '  abstract call<Request, Response>(\n' +
+    '    operation: Operation<Request, Response>,\n' +
+    '    ...args: CallArguments<Request>\n' +
+    `  ): Promise<Response>\n${body}}\n`
   )
 }
 
@@ -344,11 +285,6 @@ export function emit(options: EmitOptions): string {
   const complexTypes = reachable(operations, elements)
   const enumerations = collectEnumerations(complexTypes)
   const names = new Names(complexTypes, enumerations)
-  for (const clientName of [client?.name, client?.scoped?.name]) {
-    if (clientName && complexTypes.some((model) => names.complex(model) === clientName)) {
-      throw new Error(`Client ${clientName} has the name of a generated type`)
-    }
-  }
 
   let types = ''
   for (const model of enumerations.toSorted((a, b) => (names.simple(a) ?? '').localeCompare(names.simple(b) ?? ''))) {

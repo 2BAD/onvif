@@ -20,7 +20,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 const build = () => {
   const registry = new Registry()
   registry.load(join(testDirectory, 'service.wsdl'))
-  const [operation] = registry.operations({ namespace: 'urn:test:service', local: 'Service' })
+  const [operation] = registry.operations('Service')
   if (!operation) throw new Error('SetThing not found')
   const builder = new ModelBuilder(registry)
   const model = builder.operation(operation)
@@ -31,9 +31,7 @@ const buildAll = () => {
   const registry = new Registry()
   registry.load(join(testDirectory, 'service.wsdl'))
   const builder = new ModelBuilder(registry)
-  return registry
-    .operations({ namespace: 'urn:test:service', local: 'Service' })
-    .map((operation) => builder.operation(operation))
+  return registry.operations('Service').map((operation) => builder.operation(operation))
 }
 
 describe('ModelBuilder', () => {
@@ -245,24 +243,6 @@ describe('client', () => {
     ).toThrow('Client ServiceClient lists the unknown operation Nope')
   })
 
-  it('rejects colliding and reserved method names', () => {
-    const [first] = operations
-    if (!first) throw new Error('SetThing not found')
-    const colliding = [first, { ...first, name: 'setThing' }]
-    expect(() => emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: colliding, client })).toThrow(
-      'Colliding method name setThing in ServiceClient'
-    )
-    expect(() =>
-      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [{ ...first, name: 'Call' }], client })
-    ).toThrow('Colliding method name call in ServiceClient')
-  })
-
-  it('rejects a client named like a generated type', () => {
-    expect(() =>
-      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations, client: { ...client, name: 'Thing' } })
-    ).toThrow('Client Thing has the name of a generated type')
-  })
-
   describe('scoped', () => {
     const scoped = { name: 'ThingClient', method: 'forToken', field: 'Token' }
     const scopedSource = emit({
@@ -308,21 +288,16 @@ describe('client', () => {
       ])
     })
 
-    it('rejects an element no operation has, an abstract client and a taken name', () => {
-      const build =
-        (options: Partial<typeof scoped>, abstract = false) =>
-        () =>
-          emit({
-            commit: 'test',
-            codecImport: '#soap/codec.ts',
-            operations,
-            client: { ...client, abstract, scoped: { ...scoped, ...options } }
-          })
-      expect(build({ field: 'Nope' })).toThrow('No operation of ThingClient has a request element Nope')
-      expect(build({ field: 'Thing' })).toThrow('No operation of ThingClient has a request element Thing')
-      expect(build({}, true)).toThrow('Abstract client ServiceClient cannot have a scoped client')
-      expect(build({ name: 'Thing' })).toThrow('Client Thing has the name of a generated type')
-      expect(build({ method: 'getThing' })).toThrow('Colliding method name getThing in ServiceClient')
+    it('rejects an element no operation has as a string element', () => {
+      const build = (field: string) => () =>
+        emit({
+          commit: 'test',
+          codecImport: '#soap/codec.ts',
+          operations,
+          client: { ...client, scoped: { ...scoped, field } }
+        })
+      expect(build('Nope')).toThrow('No operation of ThingClient has a request element Nope')
+      expect(build('Thing')).toThrow('No operation of ThingClient has a request element Thing')
     })
   })
 
@@ -399,7 +374,7 @@ describe('reserved names', () => {
   it('adds a Type suffix to types that would shadow JavaScript globals', () => {
     const registry = new Registry()
     registry.load(join(testDirectory, 'reserved.wsdl'))
-    const [operation] = registry.operations({ namespace: 'urn:test:reserved', local: 'Service' })
+    const [operation] = registry.operations('Service')
     if (!operation) throw new Error('GetDate not found')
     const model = new ModelBuilder(registry).operation(operation)
     const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [model] })

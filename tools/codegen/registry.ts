@@ -17,7 +17,6 @@ export type Component = { node: SchemaNode; context: SchemaContext }
 
 export type WsdlOperation = {
   name: string
-  namespace: string
   input: QName
   output: QName | undefined
   action: string
@@ -68,21 +67,15 @@ export class Registry {
     return found
   }
 
-  operations(portType: QName): WsdlOperation[] {
-    const operations = this.#portTypes.get(keyOf(portType))
-    if (!operations) throw new Error(`Unknown portType ${keyOf(portType)}`)
+  operations(portType: string): WsdlOperation[] {
+    const operations = this.#portTypes.get(portType)
+    if (!operations) throw new Error(`Unknown portType ${portType}`)
     return operations.map((operation) => {
       const input = this.#messages.get(keyOf(operation.input))
       if (!input) throw new Error(`Unknown message ${keyOf(operation.input)}`)
       const output = operation.output ? this.#messages.get(keyOf(operation.output)) : undefined
-      return {
-        name: operation.name,
-        namespace: portType.namespace,
-        input,
-        output,
-        action: this.#actions.get(`${keyOf(portType)}#${operation.name}`) ?? '',
-        documentation: operation.documentation
-      }
+      const action = this.#actions.get(`${portType}#${operation.name}`) ?? ''
+      return { ...operation, input, output, action }
     })
   }
 
@@ -124,7 +117,8 @@ export class Registry {
           this.#messages.set(keyOf(name), resolveQName(element, part?.namespaces ?? {}))
         }
       } else if (is(child, WSDL, 'portType')) {
-        const name = keyOf({ namespace: targetNamespace, local: child.attributes['name'] ?? '' })
+        const name = child.attributes['name'] ?? ''
+        if (this.#portTypes.has(name)) throw new Error(`Duplicate portType ${name} in ${path}`)
         this.#portTypes.set(
           name,
           child.children
@@ -148,7 +142,7 @@ export class Registry {
       } else if (is(child, WSDL, 'binding')) {
         const type = child.attributes['type']
         if (!type) continue
-        const portType = keyOf(resolveQName(type, child.namespaces))
+        const portType = resolveQName(type, child.namespaces).local
         for (const operation of child.children.filter((node) => is(node, WSDL, 'operation'))) {
           const action = operation.children.find((node) => is(node, SOAP12, 'operation'))?.attributes['soapAction']
           if (action) this.#actions.set(`${portType}#${operation.attributes['name']}`, action)
