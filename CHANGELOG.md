@@ -14,11 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a method on `Device` for each device service operation, such as `device.getDeviceInformation()`
 - Added `device.media.v1` and `device.media.v2` with a method for each Media and Media2 operation
 - Added `getEventProperties()` and `getServiceCapabilities()` to `device.events`
-- Added `motionAlarmOf()` for cameras that report motion as `VideoSource/MotionAlarm`, such as Hikvision
+- Added `camera.events.motion()` to read motion start and end for each video source
 - These methods show the ONVIF description of their operation in the editor
 
 ### Changed
 
+- `@2bad/onvif-events` now needs `@2bad/onvif-media` installed next to it
 - Importing `@2bad/onvif` now uses about 2 MiB less memory
 
 ## [2.0.0] - 2026-10-05

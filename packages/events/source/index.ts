@@ -3,11 +3,11 @@ import { Subscription } from '#subscription.ts'
 export { events } from '#extension.ts'
 export * as Events from '#generated/events.ts'
 export type { EventsClient } from '#generated/events.ts'
+export { type MotionState, motion } from '#motion.ts'
 export {
   decodeNotification,
   isTopic,
   type Motion,
-  motionAlarmOf,
   motionOf,
   type Notification,
   ONVIF_TOPICS,

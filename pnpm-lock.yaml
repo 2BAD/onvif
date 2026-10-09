@@ -248,6 +248,9 @@ importers:
       '@2bad/onvif':
         specifier: workspace:^
         version: link:../onvif
+      '@2bad/onvif-media':
+        specifier: workspace:^
+        version: link:../media
 
   packages/management:
     devDependencies:

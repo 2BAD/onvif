@@ -5,7 +5,6 @@ import { type MockCamera, startMockCamera } from '../../../tools/mock-camera/ser
 import {
   decodeNotification,
   isTopic,
-  motionAlarmOf,
   motionOf,
   type Notification,
   ONVIF_TOPICS,
@@ -179,16 +178,8 @@ describe('notifications', () => {
     ])
     expect(stopped.map((notification) => motionOf(notification)?.isMotion)).toEqual([undefined, false])
     expect(stopped[1]?.utcTime).toEqual(new Date('2026-10-01T04:14:53.404Z'))
-    expect(started.map((notification) => motionAlarmOf(notification))).toEqual([
-      {
-        isMotion: true,
-        initialized: false,
-        utcTime: new Date('2026-10-01T04:14:37.113Z'),
-        source: { Source: 'VideoSource_token_1' }
-      },
-      undefined
-    ])
-    expect(stopped.map((notification) => motionAlarmOf(notification)?.isMotion)).toEqual([false, undefined])
+    const alarms = [...started, ...stopped].filter(({ topic }) => isTopic(topic, ['VideoSource', 'MotionAlarm']))
+    expect(alarms.map(({ data }) => data['State'])).toEqual(['true', 'false'])
   })
 
   it('reads the states the DCN-BF5365 reports on subscribe', async () => {
@@ -211,12 +202,6 @@ describe('notifications', () => {
         VideoAnalyticsConfigurationToken: 'VideoAnalyticsToken',
         Rule: 'MotionDetectorRule'
       }
-    })
-    expect(motionAlarmOf(received[1] as Notification)).toEqual({
-      isMotion: false,
-      initialized: true,
-      utcTime: new Date('2026-10-03T02:27:19Z'),
-      source: { Source: 'VideoSource_token_1' }
     })
   })
 
@@ -243,61 +228,6 @@ describe('notifications', () => {
     ])
     expect(stopped.map((notification) => motionOf(notification)?.isMotion)).toEqual([undefined, false])
     expect(stopped[1]?.utcTime).toEqual(new Date('2026-10-03T02:56:40Z'))
-  })
-
-  it('reads motion starting and stopping as captured from the EZVIZ DS-2DE2C400IG-W-W', async () => {
-    const started = await replay('events.PullMessagesMotion.xml', 'ezviz/ds-2de2c400ig-w-w')
-    const stopped = await replay('events.PullMessagesMotionEnd.xml', 'ezviz/ds-2de2c400ig-w-w')
-    expect(errors).toEqual([])
-    expect([...started, ...stopped].map(({ topic }) => topic?.path.join('/'))).toEqual([
-      'VideoSource/MotionAlarm',
-      'VideoSource/MotionAlarm'
-    ])
-    expect([...started, ...stopped].map((notification) => motionOf(notification))).toEqual([undefined, undefined])
-    expect([...started, ...stopped].map((notification) => motionAlarmOf(notification))).toEqual([
-      {
-        isMotion: true,
-        initialized: false,
-        utcTime: new Date('2026-10-07T18:41:46Z'),
-        source: { Source: 'VideoSource_1' }
-      },
-      {
-        isMotion: false,
-        initialized: false,
-        utcTime: new Date('2026-10-07T18:42:16Z'),
-        source: { Source: 'VideoSource_1' }
-      }
-    ])
-  })
-
-  it('reads a motion alarm State of 1 and 0', async () => {
-    const [on, off] = await collect(
-      ['1', '0'].map(
-        (value) =>
-          `<wsnt:NotificationMessage>${topic('tns1:VideoSource/MotionAlarm')}<wsnt:Message>` +
-          `${message(`<tt:SimpleItem Name="State" Value="${value}"/>`)}</wsnt:Message></wsnt:NotificationMessage>`
-      )
-    )
-    expect([on, off].map((notification) => notification && motionAlarmOf(notification)?.isMotion)).toEqual([
-      true,
-      false
-    ])
-  })
-
-  it('rejects a motion alarm without State', async () => {
-    const [notification] = await receive(
-      topic('tns1:VideoSource/MotionAlarm'),
-      message('<tt:SimpleItem Name="IsMotion" Value="true"/>')
-    )
-    expect(() => notification && motionAlarmOf(notification)).toThrow("Invalid State '' at Message.Data.State")
-  })
-
-  it('rejects a motion alarm State that is not an xs:boolean', async () => {
-    const [notification] = await receive(
-      topic('tns1:VideoSource/MotionAlarm'),
-      message('<tt:SimpleItem Name="State" Value="active"/>')
-    )
-    expect(() => notification && motionAlarmOf(notification)).toThrow("Invalid State 'active' at Message.Data.State")
   })
 
   it('rejects a motion notification without IsMotion', async () => {

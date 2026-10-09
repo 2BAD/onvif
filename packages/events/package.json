@@ -51,10 +51,12 @@
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
-    "@2bad/onvif": "workspace:^"
+    "@2bad/onvif": "workspace:^",
+    "@2bad/onvif-media": "workspace:^"
   },
   "peerDependencies": {
-    "@2bad/onvif": "workspace:^"
+    "@2bad/onvif": "workspace:^",
+    "@2bad/onvif-media": "workspace:^"
   },
   "engines": {
     "node": ">=26"

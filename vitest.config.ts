@@ -5,7 +5,8 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^@2bad\/onvif$/, replacement: `${import.meta.dirname}/packages/onvif/source/index.ts` },
-      { find: /^@2bad\/onvif\/soap$/, replacement: `${import.meta.dirname}/packages/onvif/source/soap/index.ts` }
+      { find: /^@2bad\/onvif\/soap$/, replacement: `${import.meta.dirname}/packages/onvif/source/soap/index.ts` },
+      { find: /^@2bad\/onvif-media$/, replacement: `${import.meta.dirname}/packages/media/source/index.ts` }
     ]
   },
   test: {

@@ -5,22 +5,20 @@ ONVIF events and motion detection for [`@2bad/onvif`](https://www.npmjs.com/pack
 ## Install
 
 ```sh
-npm install @2bad/onvif @2bad/onvif-events
+npm install @2bad/onvif @2bad/onvif-media @2bad/onvif-events
 ```
 
 ## Quick start
 
 ```ts
 import { Device } from '@2bad/onvif'
-import { events, motionOf } from '@2bad/onvif-events'
+import { events } from '@2bad/onvif-events'
 
 const device = await Device.connect({ hostname: '192.0.2.10', username: 'admin', password: 'secret' })
 const camera = device.use(events)
-const subscription = await camera.events.subscribe({ onError: (error) => logger.warn(error) })
 
-for await (const notification of subscription) {
-  const motion = motionOf(notification)
-  if (motion && !motion.initialized) console.log(motion.utcTime, motion.isMotion) // 2026-10-05T09:12:44.000Z true
+for await (const motion of camera.events.motion({ onError: (error) => logger.warn(error) })) {
+  console.log(motion.videoSource, motion.isMotion) // VideoSource_1 true
 }
 ```
 
@@ -38,9 +36,9 @@ The loop recovers from network errors, camera reboots and expired subscriptions.
 camera.events.subscribe(options: SubscribeOptions): Promise<Subscription>
 camera.events.getEventProperties(): Promise<GetEventPropertiesResponse> // the topics the camera supports
 camera.events.getServiceCapabilities(): Promise<GetServiceCapabilitiesResponse>
+camera.events.motion(options: SubscribeOptions): AsyncGenerator<MotionState>
 
 function motionOf(notification: Notification): Motion | undefined // RuleEngine/CellMotionDetector/Motion
-function motionAlarmOf(notification: Notification): Motion | undefined // VideoSource/MotionAlarm
 function isTopic(topic: Topic | undefined, path: string[], namespace?: string): boolean
 
 class Subscription implements AsyncIterableIterator<Notification> {
@@ -58,6 +56,13 @@ type Notification = {
   message: Message // the whole decoded message
 }
 
+type MotionState = {
+  videoSource: string // VideoSource_1
+  isMotion: boolean
+  initialized: boolean // true for the state sent on subscribe
+  utcTime: Date
+}
+
 type Motion = {
   isMotion: boolean
   initialized: boolean // true for the state sent on subscribe
@@ -66,7 +71,7 @@ type Motion = {
 }
 ```
 
-`subscribe(device, options)` is the same as `camera.events.subscribe(options)` without `use()`.
+`subscribe(device, options)` and `motion(device, options)` are the same as the `camera.events` methods without `use()`.
 
 ## License
 

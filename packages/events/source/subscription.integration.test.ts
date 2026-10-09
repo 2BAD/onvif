@@ -53,6 +53,29 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
     }
   })
 
+  it('reads the motion state of a video source through device.events.motion', async () => {
+    const device = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    const camera = device.use(events)
+    const errors: OnvifError[] = []
+    const states = camera.events.motion({
+      onError: (error) => errors.push(error),
+      pullTimeoutMs: 2_000,
+      signal: AbortSignal.timeout(10_000)
+    })
+    try {
+      const { value } = await states.next()
+      await states.return()
+      expect(value).toMatchObject({ videoSource: expect.any(String), isMotion: expect.any(Boolean), initialized: true })
+      expect(errors).toEqual([])
+    } finally {
+      device.close()
+    }
+  })
+
   it('reads the event properties and service capabilities through device.events', async () => {
     const connected = await Device.connect({
       hostname: hostname ?? '',

@@ -9,7 +9,8 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@2bad/onvif": ["./packages/onvif/source/index.ts"],
-      "@2bad/onvif/soap": ["./packages/onvif/source/soap/index.ts"]
+      "@2bad/onvif/soap": ["./packages/onvif/source/soap/index.ts"],
+      "@2bad/onvif-media": ["./packages/media/source/index.ts"]
     }
   }
 }
