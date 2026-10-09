@@ -77,7 +77,13 @@ export class MockEvents {
 
   constructor(pullMessagesFixture: string, options: MockEventsOptions = {}) {
     this.#options = options
-    this.#envelopeStart = /<SOAP-ENV:Envelope[^>]*>/.exec(pullMessagesFixture)?.[0] ?? ''
+    const declarations = (/<[\w.-]+:Envelope([^>]*)>/.exec(pullMessagesFixture)?.[1] ?? '').replaceAll(
+      /\s+xmlns:(SOAP-ENV|wsa5)="[^"]*"/g,
+      ''
+    )
+    this.#envelopeStart =
+      '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" ' +
+      `xmlns:wsa5="http://www.w3.org/2005/08/addressing"${declarations}>`
     this.#initial = pullMessagesFixture.match(/<wsnt:NotificationMessage>[\s\S]*?<\/wsnt:NotificationMessage>/g) ?? []
   }
 
