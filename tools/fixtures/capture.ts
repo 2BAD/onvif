@@ -14,12 +14,12 @@ const username = process.env['ONVIF_TEST_USER'] ?? ''
 const password = process.env['ONVIF_TEST_PASS'] ?? ''
 if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
-const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion', 'reboot']
+const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion', 'reset']
 const args = process.argv.slice(2)
 const only = args.filter((_, index) => args[index - 1] === '--only')
 const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--only')
 for (const name of named) if (!suites.includes(name)) throw new Error(`Unknown suite ${name}`)
-const selected = named.length > 0 ? named : suites.filter((suite) => suite !== 'motion' && suite !== 'reboot')
+const selected = named.length > 0 ? named : suites.filter((suite) => suite !== 'motion' && suite !== 'reset')
 const write = args.includes('--write')
 const toStdout = args.includes('--stdout')
 const log = toStdout ? console.error : console.log
@@ -195,7 +195,7 @@ const servicesXml = await device.call('GetServices', '<IncludeCapability>true</I
 await device.call('GetCapabilities', '<Category>All</Category>')
 const infoXml = await device.call('GetDeviceInformation')
 await device.call('GetServiceCapabilities')
-await device.call('GetScopes')
+const scopesXml = await device.call('GetScopes')
 await device.call('GetHostname')
 const networkXml = await device.call('GetNetworkInterfaces')
 
@@ -222,7 +222,45 @@ const captureManagement = async (): Promise<void> => {
   const zeroXml = await management.call('GetZeroConfiguration')
   const filterXml = await management.call('GetIPAddressFilter')
   const relaysXml = await management.call('GetRelayOutputs')
+  const dnsXml = await management.call('GetDNS')
   if (!write) return
+
+  const dns = elements(dnsXml, 'DNSInformation')[0]
+  if (dns !== undefined) {
+    const repeated = (name: string) =>
+      elements(dns, name)
+        .map((value) => `<${name}>${value}</${name}>`)
+        .join('')
+    await management.call(
+      'SetDNS',
+      `<FromDHCP>${text(dns, 'FromDHCP')}</FromDHCP>${repeated('SearchDomain')}${repeated('DNSManual')}`,
+      { from: dnsXml }
+    )
+  }
+
+  const configurableScopes = elements(scopesXml, 'Scopes')
+    .filter((scope) => text(scope, 'ScopeDef') === 'Configurable')
+    .map((scope) => `<Scopes>${text(scope, 'ScopeItem')}</Scopes>`)
+  if (configurableScopes.length > 0) await management.call('SetScopes', configurableScopes.join(''))
+
+  const time = elements(timeXml, 'SystemDateAndTime')[0]
+  if (time !== undefined) {
+    const type = text(time, 'DateTimeType')
+    const zone = text(elements(time, 'TimeZone')[0] ?? '', 'TZ')
+    const now = new Date(Date.now() + clockSkewMs)
+    const manual =
+      type === 'Manual'
+        ? `<UTCDateTime><Date ${tt}><Year>${now.getUTCFullYear()}</Year><Month>${now.getUTCMonth() + 1}</Month>` +
+          `<Day>${now.getUTCDate()}</Day></Date><Time ${tt}><Hour>${now.getUTCHours()}</Hour>` +
+          `<Minute>${now.getUTCMinutes()}</Minute><Second>${now.getUTCSeconds()}</Second></Time></UTCDateTime>`
+        : ''
+    await management.call(
+      'SetSystemDateAndTime',
+      `<DateTimeType>${type}</DateTimeType><DaylightSavings>${text(time, 'DaylightSavings')}</DaylightSavings>` +
+        (zone === undefined ? '' : `<TimeZone><TZ ${tt}>${zone}</TZ></TimeZone>`) +
+        manual
+    )
+  }
 
   const [networkInterface] = tokenized(networkXml, 'NetworkInterfaces')
   if (networkInterface) {
@@ -379,6 +417,55 @@ const captureMedia = async (): Promise<void> => {
       await media.call('GetSnapshotUri', token)
       await media.call('GetStreamUri', `${service.stream}${token}`)
     }
+  }
+  if (media1Url) await captureMediaConfiguration(media1Url)
+}
+
+const captureMediaConfiguration = async (url: string): Promise<void> => {
+  const media = client('media', 'media', url, ns.trt)
+  await media.call('GetServiceCapabilities')
+  const [videoSource] = tokenized((await media.send('GetVideoSourceConfigurations')).xml, 'Configurations')
+  const [videoEncoder] = tokenized((await media.send('GetVideoEncoderConfigurations')).xml, 'Configurations')
+  if (videoEncoder) {
+    await media.call('GetVideoEncoderConfiguration', `<ConfigurationToken>${videoEncoder.token}</ConfigurationToken>`)
+  }
+  await media.call('GetAudioSources')
+  const [audioSource] = tokenized(await media.call('GetAudioSourceConfigurations'), 'Configurations')
+  const [audioEncoder] = tokenized(await media.call('GetAudioEncoderConfigurations'), 'Configurations')
+  if (audioEncoder) {
+    const token = `<ConfigurationToken>${audioEncoder.token}</ConfigurationToken>`
+    await media.call('GetAudioEncoderConfiguration', token)
+    await media.call('GetAudioEncoderConfigurationOptions', token)
+  }
+  if (!write) return
+
+  if (audioEncoder) {
+    await media.call(
+      'SetAudioEncoderConfiguration',
+      `<Configuration xmlns:tt="${ns.tt}"${audioEncoder.attributes}>${audioEncoder.content}</Configuration>` +
+        '<ForcePersistence>true</ForcePersistence>'
+    )
+  }
+  const created = tokenized(await media.call('CreateProfile', '<Name>onviftest</Name>'), 'Profile')[0]
+  if (!created) return
+  const profile = `<ProfileToken>${created.token}</ProfileToken>`
+  const add = async (kind: string, configuration: { token: string } | undefined) => {
+    if (configuration) {
+      await media.call(
+        `Add${kind}Configuration`,
+        `${profile}<ConfigurationToken>${configuration.token}</ConfigurationToken>`
+      )
+    }
+  }
+  try {
+    await add('VideoSource', videoSource)
+    await add('VideoEncoder', videoEncoder)
+    await add('AudioSource', audioSource)
+    await add('AudioEncoder', audioEncoder)
+    if (audioEncoder) await media.call('RemoveAudioEncoderConfiguration', profile)
+    if (audioSource) await media.call('RemoveAudioSourceConfiguration', profile)
+  } finally {
+    await media.call('DeleteProfile', profile)
   }
 }
 
@@ -612,8 +699,10 @@ const captureDiscovery = async (): Promise<void> => {
   record('discovery', 'discovery.ProbeMatchesDevice', await probe('tds:Device'))
 }
 
-const captureReboot = async (): Promise<void> => {
-  await client('reboot', 'device', deviceUrl, ns.tds).call('SystemReboot')
+const captureReset = async (): Promise<void> => {
+  const reset = client('reset', 'device', deviceUrl, ns.tds)
+  await reset.call('SetSystemFactoryDefault', '<FactoryDefault>Soft</FactoryDefault>')
+  await reset.call('SystemReboot')
 }
 
 const runs: Record<string, () => Promise<void>> = {
@@ -624,7 +713,7 @@ const runs: Record<string, () => Promise<void>> = {
   events: captureEvents,
   discovery: captureDiscovery,
   motion: captureMotion,
-  reboot: captureReboot
+  reset: captureReset
 }
 for (const suite of suites) if (selected.includes(suite)) await runs[suite]?.()
 
@@ -680,7 +769,9 @@ const scrub = (xml: string): string =>
     )
     .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => (isNonIdentifyingIp(ip) ? ip : pseudonym('ip')(ip)))
     .replace(/\[([0-9a-f:]+)\]/gi, (_, ip: string) => `[${pseudonym('ipv6')(ip.toLowerCase())}]`)
-    .replace(/\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b/gi, (mac) => pseudonym('mac')(mac.toLowerCase()))
+    .replace(/\b[0-9a-f]{2}([:-])[0-9a-f]{2}(?:\1[0-9a-f]{2}){4}\b/gi, (mac) =>
+      pseudonym('mac')(mac.toLowerCase().replaceAll('-', ':'))
+    )
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, (uuid) =>
       pseudonym('uuid')(uuid.toLowerCase())
     )

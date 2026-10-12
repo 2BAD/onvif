@@ -10,13 +10,13 @@ Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TES
 pnpm fixtures:capture
 ```
 
-Captures every suite except `motion` and `reboot`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
+Captures every suite except `motion` and `reset`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
 
 ```sh
 pnpm fixtures:capture management ptz
 ```
 
-Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reboot`. The other captures and their manifest entries stay as they are.
+Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reset`. The other captures and their manifest entries stay as they are.
 
 ```sh
 pnpm fixtures:capture motion
@@ -25,7 +25,7 @@ pnpm fixtures:capture motion
 Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device.
 
 ```sh
-pnpm fixtures:capture reboot
+pnpm fixtures:capture reset
 ```
 
 Reboots the device and writes `device.SystemReboot.xml`. Use it on a simulator only.
@@ -40,11 +40,12 @@ Writes only the responses whose `<service>.<Action>` name starts with one of the
 pnpm fixtures:capture management --write
 ```
 
-Also captures the Set calls of the `management`, `media` and `ptz` suites. Use it on the lab camera only.
+Also captures the Set calls of the `management`, `media`, `ptz` and `imaging` suites. Use it on the lab camera only.
 
-- `management` sends the network interface, gateway, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
-- `media` sends the first encoder configuration of Media v1 and Media2 back unchanged. It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264.
+- `management` sends the network interface, gateway, DNS, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. It sends the configurable scopes and the date and time settings back as read. A manual clock is set to the current device time. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
+- `media` sends the first encoder configuration of Media v1 and Media2 back unchanged. It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264. It sends the first Media v1 audio encoder configuration back unchanged. It creates the profile `onviftest`, adds the first video and audio configurations, removes the audio ones and deletes the profile.
 - `ptz` sends the first configuration back unchanged. It saves the position as the preset `onviftest`, tries every move type and returns to the preset before removing it. It sets the home position and sends the wiper auxiliary command.
+- `imaging` sends the imaging settings and the brightness back as read. It moves the focus to where it is and stops. It sets the current imaging preset to the one it reads.
 
 No other call writes to the device.
 
@@ -77,6 +78,6 @@ Captured from the Happytime ONVIF server in `tools/happytime/`. They are not dev
 ```sh
 docker compose -f tools/happytime/compose.yaml up -d --build
 ONVIF_TEST_HOST=172.30.0.10 ONVIF_TEST_USER=admin ONVIF_TEST_PASS=admin \
-  pnpm fixtures:capture --write --stdout device management media ptz imaging events discovery reboot > captures.jsonl
+  pnpm fixtures:capture --write --stdout device management media ptz imaging events discovery reset > captures.jsonl
 pnpm fixtures:import fixtures/simulator/happytimesoft/ipcamera < captures.jsonl
 ```
