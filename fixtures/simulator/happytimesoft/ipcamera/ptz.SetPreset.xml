@@ -47,7 +47,7 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 </s:Header>
 <s:Body>
 <tptz:SetPresetResponse>
-<tptz:PresetToken>PTZPresetToken_3</tptz:PresetToken>
+<tptz:PresetToken>PTZPresetToken_1</tptz:PresetToken>
 </tptz:SetPresetResponse>
 </s:Body>
 </s:Envelope>

@@ -55,9 +55,9 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 </tt:TimeZone>
 <tt:UTCDateTime>
 <tt:Time>
-<tt:Hour>9</tt:Hour>
-<tt:Minute>49</tt:Minute>
-<tt:Second>56</tt:Second>
+<tt:Hour>11</tt:Hour>
+<tt:Minute>44</tt:Minute>
+<tt:Second>19</tt:Second>
 </tt:Time>
 <tt:Date>
 <tt:Year>2026</tt:Year>

@@ -46,5 +46,5 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 <s:Header>
 </s:Header>
 <s:Body>
-<tds:GetUsersResponse><tds:User><tt:Username>REDACTED2</tt:Username><tt:UserLevel>Administrator</tt:UserLevel></tds:User><tds:User><tt:Username>REDACTED8</tt:Username><tt:UserLevel>User</tt:UserLevel></tds:User></tds:GetUsersResponse></s:Body>
+<tds:GetUsersResponse><tds:User><tt:Username>REDACTED2</tt:Username><tt:UserLevel>Administrator</tt:UserLevel></tds:User><tds:User><tt:Username>REDACTED9</tt:Username><tt:UserLevel>User</tt:UserLevel></tds:User></tds:GetUsersResponse></s:Body>
 </s:Envelope>

@@ -46,7 +46,7 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 <s:Header>
 </s:Header>
 <s:Body>
-<tptz:GetPresetsResponse><tptz:Preset token="PTZPresetToken_3">
+<tptz:GetPresetsResponse><tptz:Preset token="PTZPresetToken_1">
 <tt:Name>onviftest</tt:Name>
 <tt:PTZPosition>
 <tt:PanTilt x="0.0" y="0.0" />

@@ -46,5 +46,5 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 <s:Header>
 </s:Header>
 <s:Body>
-<tds:GetNetworkInterfacesResponse><tds:NetworkInterfaces token="NetworkInterfaceToken_1"><tt:Enabled>true</tt:Enabled><tt:Info><tt:Name>eth0</tt:Name><tt:HwAddress>BE-0C-1E-89-23-AF</tt:HwAddress><tt:MTU>1500</tt:MTU></tt:Info><tt:IPv4><tt:Enabled>true</tt:Enabled><tt:Config><tt:Manual><tt:Address>192.0.2.12</tt:Address><tt:PrefixLength>24</tt:PrefixLength></tt:Manual><tt:DHCP>false</tt:DHCP></tt:Config></tt:IPv4><tt:IPv6><tt:Enabled>false</tt:Enabled><tt:Config><tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert><tt:DHCP>Auto</tt:DHCP></tt:Config></tt:IPv6></tds:NetworkInterfaces></tds:GetNetworkInterfacesResponse></s:Body>
+<tds:GetNetworkInterfacesResponse><tds:NetworkInterfaces token="NetworkInterfaceToken_1"><tt:Enabled>true</tt:Enabled><tt:Info><tt:Name>eth0</tt:Name><tt:HwAddress>02:00:00:00:00:16</tt:HwAddress><tt:MTU>1500</tt:MTU></tt:Info><tt:IPv4><tt:Enabled>true</tt:Enabled><tt:Config><tt:Manual><tt:Address>192.0.2.12</tt:Address><tt:PrefixLength>24</tt:PrefixLength></tt:Manual><tt:DHCP>false</tt:DHCP></tt:Config></tt:IPv4><tt:IPv6><tt:Enabled>false</tt:Enabled><tt:Config><tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert><tt:DHCP>Auto</tt:DHCP></tt:Config></tt:IPv6></tds:NetworkInterfaces></tds:GetNetworkInterfacesResponse></s:Body>
 </s:Envelope>

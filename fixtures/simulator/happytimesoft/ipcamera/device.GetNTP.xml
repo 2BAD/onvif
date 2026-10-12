@@ -51,7 +51,7 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 <tt:FromDHCP>false</tt:FromDHCP>
 <tt:NTPManual>
 <tt:Type>DNS</tt:Type>
-<tt:DNSname>host9.example</tt:DNSname>
+<tt:DNSname>host10.example</tt:DNSname>
 </tt:NTPManual>
 </tds:NTPInformation>
 </tds:GetNTPResponse>

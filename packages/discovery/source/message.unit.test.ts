@@ -165,7 +165,7 @@ describe('readProbeMatches', () => {
     const { devices } = readProbeMatches(xml, '192.0.2.12', probes, 'sender')
     expect(devices).toMatchObject([
       {
-        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000012',
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000014',
         xaddrs: [new URL('http://192.0.2.12/onvif/device_service')],
         name: 'REDACTED5',
         hardware: 'HI3518C',

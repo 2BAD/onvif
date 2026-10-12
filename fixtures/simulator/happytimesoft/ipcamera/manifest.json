@@ -71,6 +71,22 @@
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
     },
+    "device.GetDNS": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetDNS": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetScopes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetSystemDateAndTime": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
     "device.SetNetworkInterfaces": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
@@ -180,6 +196,70 @@
       "contentType": "application/soap+xml; charset=utf-8"
     },
     "media2.GetStreamUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.CreateProfile": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.DeleteProfile": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
     },
@@ -378,6 +458,10 @@
     "discovery.ProbeMatchesDevice": {
       "status": 200,
       "contentType": "application/soap+xml"
+    },
+    "device.SetSystemFactoryDefault": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     },
     "device.SystemReboot": {
       "status": 200,
