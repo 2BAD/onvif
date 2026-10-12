@@ -3,16 +3,17 @@
   "version": "2.3.0",
   "description": "ONVIF device management for @2bad/onvif: users, NTP, network settings, IP filter and relay outputs",
   "keywords": [
-    "camera",
     "cctv",
-    "ip camera",
-    "network",
+    "device-management",
+    "ip-camera",
+    "ip-filter",
+    "nodejs",
     "ntp",
     "onvif",
-    "relay",
+    "relay-output",
+    "security-camera",
     "surveillance",
-    "typescript",
-    "users"
+    "typescript"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {

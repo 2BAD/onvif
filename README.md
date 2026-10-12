@@ -1,6 +1,6 @@
 # @2bad/onvif
 
-High-performance ONVIF client for TypeScript with no runtime dependencies.
+High-performance ONVIF client for Node and TypeScript with zero runtime dependencies.
 
 Compared with other ONVIF libraries:
 

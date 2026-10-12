@@ -3,17 +3,18 @@
   "version": "2.3.0",
   "description": "ONVIF imaging for @2bad/onvif: brightness, exposure, focus, white balance and IR cut filter",
   "keywords": [
-    "camera",
     "cctv",
+    "day-night",
     "exposure",
     "focus",
-    "imaging",
-    "ip camera",
-    "ir cut filter",
+    "ip-camera",
+    "ir-cut-filter",
+    "nodejs",
     "onvif",
+    "security-camera",
     "surveillance",
     "typescript",
-    "white balance"
+    "white-balance"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {

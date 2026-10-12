@@ -3,11 +3,13 @@
   "version": "2.3.0",
   "description": "Find ONVIF cameras on the local network with WS-Discovery for @2bad/onvif",
   "keywords": [
-    "camera",
+    "camera-discovery",
     "cctv",
-    "discovery",
-    "ip camera",
+    "ip-camera",
+    "network-scan",
+    "nodejs",
     "onvif",
+    "security-camera",
     "surveillance",
     "typescript",
     "ws-discovery"

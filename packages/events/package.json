@@ -3,15 +3,18 @@
   "version": "2.3.0",
   "description": "ONVIF events and motion detection for @2bad/onvif",
   "keywords": [
-    "camera",
+    "alarm",
     "cctv",
-    "events",
-    "ip camera",
-    "motion detection",
+    "ip-camera",
+    "motion-detection",
+    "nodejs",
     "onvif",
-    "pull point",
+    "onvif-events",
+    "pull-point",
+    "security-camera",
     "surveillance",
-    "typescript"
+    "typescript",
+    "ws-notification"
   ],
   "homepage": "https://github.com/2BAD/onvif#readme",
   "bugs": {
