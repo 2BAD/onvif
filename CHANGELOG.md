@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-12
+
 ### Added
 
 - `@2bad/onvif-management`: users, NTP, network interface, default gateway, dynamic DNS, zero configuration, IP address filter and relay output operations as methods on `device.management`
@@ -102,5 +104,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Passwords with non-ASCII characters now work with WS-Security
 - Errors never contain credentials, including WS-Security headers echoed by cameras
 
-[Unreleased]: https://github.com/2BAD/onvif/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/2BAD/onvif/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/2BAD/onvif/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0

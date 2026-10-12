@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-management",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "ONVIF device management for @2bad/onvif: users, NTP, network settings, IP filter and relay outputs",
   "keywords": [
     "camera",
