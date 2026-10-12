@@ -16,6 +16,8 @@ type Target = {
   elements?: { schema: string; namespace: string; local: string }[]
   /** Operations whose responses hold QNames or endpoint references and are parsed with namespaces. */
   namespaces?: string[]
+  /** Required response elements that devices omit, as `Response.Element`, decoded as optional. */
+  optional?: string[]
   client?: EmitOptions['client']
 }
 
@@ -186,6 +188,13 @@ const generate = (target: Target): string => {
       return builder.operation(operation)
     })
   })
+  for (const path of target.optional ?? []) {
+    const [element, name] = path.split('.')
+    const response = operations.find((operation) => operation.response.element.local === element)?.response
+    const field = response?.type.fields.find((candidate) => candidate.name === name && !candidate.attribute)
+    if (!field) throw new Error(`Response element ${path} not found in ${target.wsdl}`)
+    field.optional = true
+  }
   const elements = (target.elements ?? []).map(({ schema, ...element }) => {
     registry.load(join(specsDirectory, schema))
     return builder.element(element)
