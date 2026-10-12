@@ -1,83 +1,45 @@
 # Fixtures
 
-SOAP responses for the benchmark, the conformance and fuzz tests, and the mock camera.
+SOAP responses for the unit, conformance, fuzz and benchmark tests and the mock camera.
 
-## `live/<vendor>/<model>/`
-
-Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS` from `.env`. It signs requests with WS-Security and answers an HTTP Digest challenge. Files are named `<service>.<Action>.xml`, and `manifest.json` has the HTTP status and content type for each response.
-
-```sh
-pnpm fixtures:capture
+```text
+live/<vendor>/<model>/       real devices
+simulator/<vendor>/<model>/  Happytime ONVIF server
+tls/                         test certificates
 ```
 
-Captures every suite except `motion` and `reset`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
+Responses are named `<service>.<Action>.xml`. `manifest.json` has the HTTP status and content type of each.
+
+## Capturing
+
+`.env` sets `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS`.
 
 ```sh
-pnpm fixtures:capture management ptz
+pnpm fixtures:capture                        # every read-only suite
+pnpm fixtures:capture ptz imaging            # only these suites
+pnpm fixtures:capture --only media2.         # only names with this prefix
+pnpm fixtures:capture media --write          # the Set calls too
+pnpm fixtures:capture --stdout > out.jsonl   # print instead of writing
+pnpm fixtures:import <dir> < out.jsonl       # write printed captures into <dir>
 ```
 
-Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reset`. The other captures and their manifest entries stay as they are.
+Suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reset`.
 
-```sh
-pnpm fixtures:capture motion
-```
+- `motion` waits up to five minutes for motion to start and stop. Walk through the camera's view while it runs.
+- `reset` resets the device to factory defaults and reboots it. Simulator only.
+- `--write` sends settings back as read and creates and deletes a test user, preset and profile named `onviftest`. Lab camera only.
 
-Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device.
+`motion` and `reset` run only when named.
 
-```sh
-pnpm fixtures:capture reset
-```
+## Scrubbing
 
-Reboots the device and writes `device.SystemReboot.xml`. Use it on a simulator only.
+- serial number, hardware id, user names, password, hostname, `name` and `location` scopes: `REDACTEDn`
+- NTP and dynamic DNS hosts: `hostn.example`
+- echoed WS-Security `Password` and `Nonce`: `REDACTED`
+- unicast IPv4: `192.0.2.0/24`
+- IPv6: `fe80::n` or `2001:db8::n`
+- MAC: `02:00:00:00:00:xx`
+- UUID: `00000000-0000-4000-8000-xxxxxxxxxxxx`
+- credentials in URLs: removed
 
-```sh
-pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOptions
-```
-
-Writes only the responses whose `<service>.<Action>` name starts with one of the prefixes.
-
-```sh
-pnpm fixtures:capture management --write
-```
-
-Also captures the Set calls of the `management`, `media`, `ptz` and `imaging` suites. Use it on the lab camera only.
-
-- `management` sends the network interface, gateway, DNS, NTP, dynamic DNS, zero configuration, IP filter and relay settings back as read. It sends the configurable scopes and the date and time settings back as read. A manual clock is set to the current device time. Dynamic DNS that reads as nil is sent as `NoUpdate`. On a `Deny` filter it adds and removes `198.51.100.7`. It switches the first relay on and off. It creates the user `onviftest`, changes its password and deletes it.
-- `media` sends the first encoder configuration of Media v1 and Media2 back unchanged. It skips the Media v1 call when Media2 reports an encoding that Media v1 cannot carry, such as H265. Sending that configuration back through Media v1 would switch the encoder to H264. It sends the first Media v1 audio encoder configuration back unchanged. It creates the profile `onviftest`, adds the first video and audio configurations, removes the audio ones and deletes the profile.
-- `ptz` sends the first configuration back unchanged. It saves the position as the preset `onviftest`, tries every move type and returns to the preset before removing it. It sets the home position and sends the wiper auxiliary command.
-- `imaging` sends the imaging settings and the brightness back as read. It moves the focus to where it is and stops. It sets the current imaging preset to the one it reads.
-
-No other call writes to the device.
-
-```sh
-pnpm fixtures:capture management --stdout > captures.jsonl
-pnpm fixtures:import fixtures/live/<vendor>/<model> < captures.jsonl
-```
-
-`--stdout` prints the scrubbed responses as JSON lines and writes nothing. Use it on a machine that reaches the device but should not keep files. `fixtures:import` writes the lines into an existing fixture directory and its manifest.
-
-Before writing anything it scrubs:
-
-- serial number, hardware id, username and password -> `REDACTEDn`. A serial number or hardware id that is a decimal number such as `1.0` stays
-- user names in `Username` elements -> `REDACTEDn`
-- NTP and dynamic DNS host names -> `hostn.example`
-- hostname and the values of `name` and `location` scopes -> `REDACTEDn`
-- echoed WS-Security `Password` and `Nonce` values -> `REDACTED`
-- unicast IPv4 addresses -> `192.0.2.0/24` (TEST-NET-1). Multicast addresses stay as they are
-- IPv6 addresses in URLs and address elements -> `fe80::n` for link-local, `2001:db8::n` otherwise
-- MAC addresses -> locally administered `02:00:00:00:00:xx`
-- UUIDs -> `00000000-0000-4000-8000-xxxxxxxxxxxx`
-- credentials in URIs are stripped
-
-Check the output before committing a new capture. The scrubbing is pattern based, so a new vendor can put identifiers somewhere the patterns don't catch.
-
-## `simulator/<vendor>/<model>/`
-
-Captured from the Happytime ONVIF server in `tools/happytime/`. They are not device quirks.
-
-```sh
-docker compose -f tools/happytime/compose.yaml up -d --build
-ONVIF_TEST_HOST=172.30.0.10 ONVIF_TEST_USER=admin ONVIF_TEST_PASS=admin \
-  pnpm fixtures:capture --write --stdout device management media ptz imaging events discovery reset > captures.jsonl
-pnpm fixtures:import fixtures/simulator/happytimesoft/ipcamera < captures.jsonl
-```
+Scrubbing is pattern based. Review every capture before committing it.
