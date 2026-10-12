@@ -38,7 +38,7 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | Profile | Covered  | Missing                      |
 | ------- | -------- | ---------------------------- |
 | S       | 7 of 7   |                              |
-| T       | 15 of 21 | imaging, PTZ                 |
+| T       | 18 of 21 | imaging                      |
 | M       | 5 of 7   | analytics, metadata          |
 | C       | 7 of 15  | access control, door control |
 | D       | 10 of 19 | access, doors                |
