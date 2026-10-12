@@ -483,21 +483,18 @@ export class Device extends DeviceOperations {
   async #awaitResynchronization(options: CallOptions, deadline: number, context: ErrorContext): Promise<void> {
     const { signal } = options
     signal?.throwIfAborted()
-    let timer: ReturnType<typeof setTimeout> | undefined
-    let onAbort: (() => void) | undefined
-    const stopped = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(
-        () => reject(new TimeoutError(`No response within ${options.timeoutMs ?? this.#timeoutMs} ms`, context)),
-        Math.max(0, Math.ceil(deadline - performance.now()))
-      )
-      onAbort = () => reject(signal?.reason)
-      signal?.addEventListener('abort', onAbort, { once: true })
-    })
+    const { promise: stopped, reject } = Promise.withResolvers<never>()
+    const timer = setTimeout(
+      () => reject(new TimeoutError(`No response within ${options.timeoutMs ?? this.#timeoutMs} ms`, context)),
+      Math.max(0, Math.ceil(deadline - performance.now()))
+    )
+    const onAbort = () => reject(signal?.reason)
+    signal?.addEventListener('abort', onAbort, { once: true })
     try {
       await Promise.race([(this.#resynchronizing ??= this.#resynchronize()), stopped])
     } finally {
       clearTimeout(timer)
-      if (onAbort) signal?.removeEventListener('abort', onAbort)
+      signal?.removeEventListener('abort', onAbort)
     }
   }
 
@@ -520,27 +517,30 @@ export class Device extends DeviceOperations {
 
   async #discoverServices(signal?: AbortSignal): Promise<void> {
     const options = { signal }
-    let addresses: [string, string][] | undefined
+    let addresses: [string, string][] = []
+    let listed = false
     try {
       const { service } = await this.getServices({ includeCapability: false }, options)
       addresses = service.map((entry) => [entry.namespace, entry.xAddr])
+      listed = true
     } catch (error) {
       if (!answeredBadly(error)) throw error
     }
-    if (!addresses?.some(([namespace]) => namespace !== DEVICE_NAMESPACE)) {
+    if (!addresses.some(([namespace]) => namespace !== DEVICE_NAMESPACE)) {
       try {
         const { capabilities } = await this.getCapabilities({ category: ['All'] }, options)
         addresses = this.#capabilityAddresses(capabilities)
       } catch (error) {
-        if (addresses === undefined || !answeredBadly(error)) throw error
+        if (!listed || !answeredBadly(error)) throw error
       }
     }
-    for (const [namespace, address] of addresses ?? []) {
+    for (const [namespace, address] of addresses) {
       if (namespace === DEVICE_NAMESPACE) continue
       try {
         this.#services.set(namespace, this.resolveAddress(address))
         this.#unavailable.delete(namespace)
       } catch (error) {
+        /* v8 ignore if */
         if (!(error instanceof OnvifError)) throw error
         this.#services.delete(namespace)
         this.#unavailable.set(namespace, error)

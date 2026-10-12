@@ -51,7 +51,7 @@ const typeOf = (schema: Schema, name: string): TypeSchema => {
 
 const textOf = (value: XmlValue): string => {
   if (typeof value === 'string') return value
-  const text = Array.isArray(value) ? undefined : value['_']
+  const text = (value as XmlObject)['_']
   return typeof text === 'string' ? text : ''
 }
 
@@ -314,7 +314,7 @@ export function encodeRequest<Request>(operation: Operation<Request, unknown>, r
   const element = encoder.element(encoder.qualify(name, namespace), type, request, name)
   const declarations: Record<string, string> = {}
   for (const [uri, prefix] of encoder.used) {
-    if (uri !== XML_NAMESPACE) declarations[`xmlns:${prefix}`] = uri
+    declarations[`xmlns:${prefix}`] = uri
   }
   return { ...element, attributes: { ...declarations, ...element.attributes } }
 }

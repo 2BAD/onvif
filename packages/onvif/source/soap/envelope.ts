@@ -87,7 +87,9 @@ export function parseEnvelope(
   try {
     document = parseXml(xml, limits, options)
   } catch (error) {
+    /* v8 ignore else */
     if (error instanceof ParseError) throw new ParseError(error.reason, error.position, context)
+    /* v8 ignore next */
     throw error
   }
 

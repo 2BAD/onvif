@@ -8,7 +8,7 @@ export type XmlElement = {
 
 export type XmlNode = XmlElement | string
 
-const escapes: Record<string, string> = {
+const escapes = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
@@ -27,12 +27,12 @@ const checkCharacters = (value: string): void => {
 
 export const escapeText = (value: string): string => {
   checkCharacters(value)
-  return value.replace(/[&<>\r]/g, (char) => escapes[char] ?? char)
+  return value.replace(/[&<>\r]/g, (char) => escapes[char as keyof typeof escapes])
 }
 
 export const escapeAttribute = (value: string): string => {
   checkCharacters(value)
-  return value.replace(/[&<>"'\t\n\r]/g, (char) => escapes[char] ?? char)
+  return value.replace(/[&<>"'\t\n\r]/g, (char) => escapes[char as keyof typeof escapes])
 }
 
 /**

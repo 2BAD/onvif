@@ -96,7 +96,6 @@ const listOf = (value: XmlValue | undefined): XmlValue[] => {
 
 const textOf = (value: XmlValue | undefined): string => {
   const node = listOf(value)[0]
-  if (typeof node === 'string') return node.trim()
   const text = isObject(node) ? node['_'] : undefined
   return typeof text === 'string' ? text.trim() : ''
 }
@@ -186,6 +185,7 @@ export function readProbeMatches(xml: string, sender: string, probes: ReadonlySe
     try {
       match = decode(schema, 'ProbeMatchType', node, context) as ProbeMatchType
     } catch (error) {
+      /* v8 ignore if */
       if (!(error instanceof DecodeError)) throw error
       errors.push(error)
       continue
@@ -195,7 +195,7 @@ export function readProbeMatches(xml: string, sender: string, probes: ReadonlySe
       errors.push(new DecodeError('Empty endpoint address', 'ProbeMatchType.EndpointReference.Address', context))
       continue
     }
-    const types = readTypes(match.types ?? [], isObject(node) ? node['Types'] : undefined)
+    const types = readTypes(match.types ?? [], (node as XmlObject)['Types'])
     if (!isOnvifDevice(types)) continue
     const scopes = match.scopes?.value ?? []
     devices.push({

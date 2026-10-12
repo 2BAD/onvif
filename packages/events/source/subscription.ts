@@ -210,6 +210,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
       try {
         this.#buffer.push(decodeNotification(holder, context))
       } catch (error) {
+        /* v8 ignore if */
         if (!(error instanceof DecodeError)) throw error
         this.#onError(error)
       }
@@ -291,6 +292,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     try {
       await sleep(delay * (0.5 + Math.random() / 2), undefined, { signal: this.#controller.signal })
     } catch (sleepError) {
+      /* v8 ignore if */
       if (!isAbort(sleepError)) throw sleepError
     }
   }

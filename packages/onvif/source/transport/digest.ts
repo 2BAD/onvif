@@ -15,7 +15,7 @@ const hashNames = { MD5: 'md5', 'SHA-256': 'sha256' } as const
 const parseParameters = (challenge: string): Record<string, string> => {
   const parameters: Record<string, string> = {}
   for (const [, key, quoted, token] of challenge.matchAll(/([\w-]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^,\s]*))/g)) {
-    if (key) parameters[key.toLowerCase()] = quoted === undefined ? (token ?? '') : quoted.replace(/\\(.)/g, '$1')
+    parameters[String(key).toLowerCase()] = quoted === undefined ? String(token) : quoted.replace(/\\(.)/g, '$1')
   }
   return parameters
 }
