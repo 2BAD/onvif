@@ -169,6 +169,32 @@ const targets: Target[] = [
         'SendAuxiliaryCommand'
       ]
     }
+  },
+  {
+    output: 'packages/imaging/source/generated/imaging.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: {
+      name: 'ImagingClient',
+      typesImport: '@2bad/onvif',
+      scoped: { name: 'ImagingVideoSourceClient', method: 'forVideoSource', field: 'VideoSourceToken' }
+    },
+    wsdl: 'ver20/imaging/wsdl/imaging.wsdl',
+    optional: ['GetPresetsResponse.Preset'],
+    operations: {
+      ImagingPort: [
+        'GetServiceCapabilities',
+        'GetImagingSettings',
+        'SetImagingSettings',
+        'GetOptions',
+        'Move',
+        'GetMoveOptions',
+        'Stop',
+        'GetStatus',
+        'GetPresets',
+        'GetCurrentPreset',
+        'SetCurrentPreset'
+      ]
+    }
   }
 ]
 

@@ -101,7 +101,8 @@ const servicesByPath: Record<string, string> = {
   '/onvif/Media': 'media',
   '/onvif/Media2': 'media2',
   '/onvif/Events': 'events',
-  '/onvif/PTZ': 'ptz'
+  '/onvif/PTZ': 'ptz',
+  '/onvif/Imaging': 'imaging'
 }
 
 const soapFault = (subcode: string, reason: string): string =>

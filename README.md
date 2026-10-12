@@ -15,6 +15,7 @@ Compared with other ONVIF libraries:
 - [`@2bad/onvif`](packages/onvif): connect to a camera, read its settings and send it commands
 - [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
 - [`@2bad/onvif-events`](packages/events): receive motion and other camera events
+- [`@2bad/onvif-imaging`](packages/imaging): change brightness, exposure, focus, white balance and the IR cut filter
 - [`@2bad/onvif-management`](packages/management): manage users, NTP, network settings, IP filter and relay outputs
 - [`@2bad/onvif-media`](packages/media): get RTSP stream URLs and JPEG snapshots, change resolution, frame rate and bitrate
 - [`@2bad/onvif-ptz`](packages/ptz): pan, tilt and zoom a camera, save and recall presets
@@ -38,7 +39,7 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | Profile | Covered  | Missing                      |
 | ------- | -------- | ---------------------------- |
 | S       | 7 of 7   |                              |
-| T       | 18 of 21 | imaging                      |
+| T       | 21 of 21 |                              |
 | M       | 5 of 7   | analytics, metadata          |
 | C       | 7 of 15  | access control, door control |
 | D       | 10 of 19 | access, doors                |

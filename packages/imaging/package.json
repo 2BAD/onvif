@@ -1,0 +1,64 @@
+{
+  "name": "@2bad/onvif-imaging",
+  "version": "2.1.0",
+  "description": "ONVIF imaging for @2bad/onvif: brightness, exposure, focus, white balance and IR cut filter",
+  "keywords": [
+    "camera",
+    "cctv",
+    "exposure",
+    "focus",
+    "imaging",
+    "ip camera",
+    "ir cut filter",
+    "onvif",
+    "surveillance",
+    "typescript",
+    "white balance"
+  ],
+  "homepage": "https://github.com/2BAD/onvif#readme",
+  "bugs": {
+    "url": "https://github.com/2BAD/onvif/issues"
+  },
+  "license": "MIT",
+  "author": "2BAD (https://github.com/2BAD)",
+  "contributors": [
+    {
+      "name": "Jason Hyde",
+      "email": "github@2bad.me",
+      "url": "https://github.com/mrhyde"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2BAD/onvif.git",
+    "directory": "packages/imaging"
+  },
+  "files": [
+    "build"
+  ],
+  "type": "module",
+  "imports": {
+    "#*": "./source/*"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@2bad/onvif": "workspace:^"
+  },
+  "peerDependencies": {
+    "@2bad/onvif": "workspace:^"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}
