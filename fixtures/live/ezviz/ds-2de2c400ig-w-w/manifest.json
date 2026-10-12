@@ -382,6 +382,166 @@
     "imaging.StopAfterMove": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetProfile": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetCompatibleVideoSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetCompatibleVideoEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetCompatibleAudioSourceConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetAudioEncoderConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetCompatibleAudioEncoderConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetMetadataConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetMetadataConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetMetadataConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetCompatibleMetadataConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.SetMetadataConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.CreateProfile": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddMetadataConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.AddPTZConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.StartMulticastStreaming": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.StopMulticastStreaming": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemovePTZConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveMetadataConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveAudioEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveVideoEncoderConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.RemoveVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.DeleteProfile": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
