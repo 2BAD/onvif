@@ -19,6 +19,18 @@ describe('parseXml', () => {
     })
   })
 
+  it('trims whitespace around attribute values', () => {
+    expect(plain(parseXml('<a x=" JPEG H264 "/>'))).toEqual({ a: { $: { x: 'JPEG H264' } } })
+  })
+
+  it('keeps escaped whitespace around attribute values', () => {
+    expect(plain(parseXml('<a x="&#32;a&#9;"/>'))).toEqual({ a: { $: { x: ' a\t' } } })
+  })
+
+  it('reports the position of a bad entity after leading whitespace in an attribute', () => {
+    expect(() => parseXml('<a x="  &bad;"/>')).toThrow('at position 8')
+  })
+
   it('turns repeated elements into arrays', () => {
     expect(plain(parseXml('<a><b>1</b><c/><b>2</b><b>3</b></a>'))).toEqual({ a: { b: ['1', '2', '3'], c: '' } })
   })

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `@2bad/onvif-imaging`: imaging settings, options, focus and imaging preset operations as methods on `device.imaging`, and on `device.imaging.forVideoSource()` without the video source token
 
+### Fixed
+
+- Fixed attribute values from cameras keeping spaces at either end, such as a token
+
 ## [2.1.0] - 2026-10-12
 
 ### Added

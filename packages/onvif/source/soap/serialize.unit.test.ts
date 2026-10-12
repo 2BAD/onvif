@@ -31,6 +31,10 @@ describe('serialize', () => {
     expect(escapeText('a\r\nb')).toBe('a&#13;\nb')
   })
 
+  it('escapes spaces at the ends of attribute values', () => {
+    expect(escapeAttribute('  a b  ')).toBe('&#32; a b &#32;')
+  })
+
   it('accepts characters outside the basic plane', () => {
     expect(escapeAttribute('\u{1F600}')).toBe('\u{1F600}')
   })

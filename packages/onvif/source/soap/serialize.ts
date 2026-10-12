@@ -16,7 +16,8 @@ const escapes = {
   "'": '&apos;',
   '\t': '&#9;',
   '\n': '&#10;',
-  '\r': '&#13;'
+  '\r': '&#13;',
+  ' ': '&#32;'
 }
 
 const invalidCharacter = /[^\t\n\r\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u
@@ -32,7 +33,7 @@ export const escapeText = (value: string): string => {
 
 export const escapeAttribute = (value: string): string => {
   checkCharacters(value)
-  return value.replace(/[&<>"'\t\n\r]/g, (char) => escapes[char as keyof typeof escapes])
+  return value.replace(/[&<>"'\t\n\r]|^ | $/g, (char) => escapes[char as keyof typeof escapes])
 }
 
 /**
