@@ -276,6 +276,39 @@ describe('Device.connect', () => {
     expect([...device.services.keys()]).toEqual([DEVICE_NAMESPACE])
   })
 
+  it('leaves out a service GetCapabilities does not report', async () => {
+    const capabilities = fixture('live/dvc/dcn-bm2220lpr/device.GetCapabilities.xml').xml.replace(
+      /<tt:Imaging>.*?<\/tt:Imaging>/,
+      ''
+    )
+    const mock = await camera({
+      overrides: {
+        'device.GetServices': { kind: 'status', status: 400 },
+        'device.GetCapabilities': { kind: 'status', status: 200, body: capabilities }
+      }
+    })
+    const device = await connect(mock)
+    expect(device.services.has(MEDIA)).toBe(true)
+    expect(device.services.has('http://www.onvif.org/ver20/imaging/wsdl')).toBe(false)
+  })
+
+  it('stops when GetCapabilities fails with an error other than a bad answer', async () => {
+    const listed = await camera({
+      overrides: {
+        'device.GetServices': { kind: 'status', status: 200, body: deviceServiceOnly },
+        'device.GetCapabilities': { kind: 'hang' }
+      }
+    })
+    await expect(connect(listed, { timeoutMs: 100 })).rejects.toThrow(TimeoutError)
+    const unlisted = await camera({
+      overrides: {
+        'device.GetServices': { kind: 'status', status: 400 },
+        'device.GetCapabilities': { kind: 'status', status: 500 }
+      }
+    })
+    await expect(connect(unlisted)).rejects.toThrow(SoapFaultError)
+  })
+
   it('rejects wrong credentials', async () => {
     const mock = await camera()
     await expect(connect(mock, { password: 'wrong' })).rejects.toThrow(AuthError)
@@ -365,6 +398,13 @@ describe('Device.connect', () => {
     const fromOrigin = await Device.connect({ url: new URL(mock.url), ...options })
     cleanups.push(() => fromOrigin.close())
     expect(fromOrigin.address.href).toBe(`${mock.url}/onvif/device_service`)
+  })
+
+  it('uses the default port for a device service URL without one', async () => {
+    const error = await rejection(() =>
+      Device.connect({ url: 'http://192.0.2.1/onvif/device_service', timeoutMs: 100 })
+    )
+    expect(error).toMatchObject({ host: '192.0.2.1' })
   })
 
   it('keeps the query of a device service URL', async () => {
@@ -661,6 +701,15 @@ describe('Device.call', () => {
     expect(actions(mock).filter((action) => action === 'GetSystemDateAndTime')).toHaveLength(2)
   })
 
+  it('stops waiting for a shared clock resynchronization at the connection timeout', async () => {
+    const overrides: Record<string, ActionOverride> = {}
+    const mock = await camera({ unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices'], overrides })
+    const device = await connect(mock, { password: 'wrong', verifyCredentials: false, timeoutMs: 200 })
+    overrides['device.GetSystemDateAndTime'] = { kind: 'hang' }
+    aMinuteLater(mock)
+    await expect(device.call(GetDeviceInformation)).rejects.toThrow('No response within 200 ms')
+  })
+
   it('keeps valid timestamps when the local clock jumps after connecting', async () => {
     const mock = await camera()
     const device = await connect(mock)
@@ -680,6 +729,13 @@ describe('Device.call', () => {
     )
     expect(body).toContain('>http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation</wsa:Action>')
     expect(body).toMatch(/<wsa:MessageID[^>]*>urn:uuid:[0-9a-f-]{36}<\/wsa:MessageID>/)
+  })
+
+  it('addresses WS-Addressing headers to the service URL when no address is given', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    await device.call(GetDeviceInformation, {}, { addressing: true })
+    expect(mock.requests.at(-1)?.body).toContain(`s:mustUnderstand="1">${mock.url}/onvif/device_service</wsa:To>`)
   })
 
   it('sends the reference parameters of an endpoint reference as headers', async () => {
@@ -1023,6 +1079,14 @@ describe('Device.download', () => {
     expect(error).toBeInstanceOf(AuthError)
     expect(error).toMatchObject({ message: 'Not authorized (HTTP 401)', host: device.address.host, action: 'GET' })
     expect(mock.requests.filter(({ service }) => service === 'snapshot')).toHaveLength(2)
+  })
+
+  it('rejects a 401 without a challenge as an AuthError', async () => {
+    const mock = await camera({ snapshot: { auth: 'none', status: 401 } })
+    const device = await connect(mock)
+    const error = await rejection(() => device.download(`${mock.url}/snapshot.JPG`))
+    expect(error).toBeInstanceOf(AuthError)
+    expect(error).toMatchObject({ message: 'Not authorized (HTTP 401)' })
   })
 
   it('does not answer an HTTP Basic challenge and says why', async () => {

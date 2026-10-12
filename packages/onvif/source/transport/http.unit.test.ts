@@ -319,6 +319,27 @@ describe('HttpTransport digest authentication', () => {
     expect(camera.requests).toHaveLength(2)
   })
 
+  it('does not retry when the device rejects a known nonce again', async () => {
+    let accept = true
+    let requests = 0
+    const url = await listen(
+      serve((request, response) => {
+        requests++
+        if (accept && request.headers.authorization) {
+          accept = false
+          response.end('ok')
+          return
+        }
+        response.writeHead(401, { 'WWW-Authenticate': 'Digest realm="r", nonce="n", qop="auth"' })
+        response.end()
+      })
+    )
+    const client = transport({ credentials: { username: 'admin', password: 'password' } })
+    expect((await client.post(url, envelope)).status).toBe(200)
+    expect((await client.post(url, envelope)).status).toBe(401)
+    expect(requests).toBe(3)
+  })
+
   it('answers the retry after a reset with a new nonce count and cnonce', async () => {
     const seen = new WeakSet<object>()
     const authorizations: string[] = []
@@ -561,6 +582,24 @@ describe('HttpTransport TLS', () => {
     requests = 0
     await expect(client.post(url, 'secret')).rejects.toThrow(/does not match the pinned fingerprint/)
     expect(requests).toBe(0)
+    expect(resumed).toBe(2)
+  })
+
+  it('resumes pinned sessions over TLS 1.2', async () => {
+    let resumed = 0
+    const server = createTlsServer(
+      { cert: certificate, key: privateKey, maxVersion: 'TLSv1.2' },
+      (_request, response) => {
+        response.writeHead(200, { Connection: 'close' })
+        response.end('secure')
+      }
+    )
+    server.on('secureConnection', (socket) => {
+      if (socket.isSessionReused()) resumed++
+    })
+    const url = await listen(server, 'https')
+    const client = transport({ tls: { fingerprint256: fingerprint } })
+    for (let index = 0; index < 3; index++) expect((await client.post(url, 'x')).body).toBe('secure')
     expect(resumed).toBe(2)
   })
 

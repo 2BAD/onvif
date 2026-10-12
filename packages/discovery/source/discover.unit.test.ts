@@ -1,4 +1,4 @@
-import { createSocket } from 'node:dgram'
+import { createSocket, type Socket } from 'node:dgram'
 import { once } from 'node:events'
 import type { NetworkInterfaceInfo } from 'node:os'
 import { OnvifError, ParseError, TransportError } from '@2bad/onvif'
@@ -18,6 +18,20 @@ vi.mock('node:os', async (original) => ({
   ...(await original<typeof import('node:os')>()),
   networkInterfaces: () => interfaces.current
 }))
+
+const sockets = vi.hoisted(() => ({ created: [] as Socket[] }))
+
+vi.mock('node:dgram', async (original) => {
+  const dgram = await original<typeof import('node:dgram')>()
+  return {
+    ...dgram,
+    createSocket: (...parameters: Parameters<typeof dgram.createSocket>) => {
+      const socket = dgram.createSocket(...parameters)
+      sockets.created.push(socket)
+      return socket
+    }
+  }
+})
 
 const ipv4 = (address: string, internal: boolean): NetworkInterfaceInfo => ({
   address,
@@ -65,6 +79,7 @@ const rejection = async (run: () => Promise<unknown>): Promise<unknown> => {
 
 afterEach(async () => {
   interfaces.current = {}
+  sockets.created = []
   await Promise.all(responders.splice(0).map((responder) => responder.close()))
 })
 
@@ -186,8 +201,11 @@ describe('discover', () => {
     const devices: DiscoveredDevice[] = []
     const errors: OnvifError[] = []
     const overflow = (error: OnvifError) => error.message === 'More than 4096 devices answered'
+    let stopping = false
     const stopAtLimit = () => {
-      if (devices.length === 4_096 && errors.some(overflow)) controller.abort()
+      if (stopping || devices.length < 4_096 || !errors.some(overflow)) return
+      stopping = true
+      setTimeout(() => controller.abort(), 200)
     }
     const onError = (error: OnvifError) => {
       errors.push(error)
@@ -251,6 +269,38 @@ describe('discover', () => {
     probe.close()
     await collect({ hosts: [responder.host], port })
     expect(responder.probes[0]?.from.port).toBe(port)
+  })
+
+  it.skipIf(process.platform === 'win32')('fails when the local port is taken', async () => {
+    const taken = createSocket('udp4')
+    taken.bind(0)
+    await once(taken, 'listening')
+    const { port } = taken.address()
+    try {
+      const error = await rejection(() => collect({ hosts: ['127.0.0.1'], port }))
+      expect(error).toBeInstanceOf(TransportError)
+      expect(error).toMatchObject({ message: 'Cannot listen for discovery replies on all addresses', host: undefined })
+    } finally {
+      taken.close()
+    }
+  })
+
+  it('reports an error of a socket that is listening and goes on', async () => {
+    const responder = await respond()
+    const errors: OnvifError[] = []
+    const devices: DiscoveredDevice[] = []
+    for await (const device of discover({
+      hosts: [responder.host],
+      timeoutMs: 400,
+      onError: (error) => errors.push(error)
+    })) {
+      devices.push(device)
+      sockets.created.at(-1)?.emit('error', new Error('network is down'))
+    }
+    expect(devices).toHaveLength(1)
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toBeInstanceOf(TransportError)
+    expect(errors[0]).toMatchObject({ message: 'Discovery socket failed', service: 'discovery', host: undefined })
   })
 
   it('rejects invalid options', async () => {

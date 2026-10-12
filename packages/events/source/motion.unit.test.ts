@@ -167,6 +167,17 @@ describe('motion', () => {
     expect(lookups(mock)).toBe(3)
   })
 
+  it('throws an error from outside the library from the loop instead of reporting it', async () => {
+    const { device, states, errors } = await start()
+    const call = device.call.bind(device)
+    const failure = new TypeError('another copy of @2bad/onvif')
+    vi.spyOn(device, 'call').mockImplementation((operation, ...rest) =>
+      operation.name === 'GetVideoSourceConfigurations' ? Promise.reject(failure) : call(operation, ...rest)
+    )
+    await expect(states.next()).rejects.toBe(failure)
+    expect(errors).toEqual([])
+  })
+
   it('closes its pull point when the loop ends', async () => {
     const { mock, device } = await start()
     const camera = device.use(events)

@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { AuthError, DecodeError, Device, OnvifError, SoapFaultError, TimeoutError, TransportError } from '@2bad/onvif'
 import { afterEach, describe, expect, it } from 'vitest'
 import { fixture } from '../../../tools/fixtures/corpus.ts'
@@ -18,6 +19,7 @@ import {
   getVideoSourceConfigurations,
   media
 } from '#index.ts'
+import { fromEitherService } from '#service.ts'
 
 const live = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
 const cleanups: (() => Promise<void> | void)[] = []
@@ -163,6 +165,28 @@ describe('getProfiles', () => {
     expect(second?.videoEncoder).not.toHaveProperty('govLength')
   })
 
+  it('leaves out what a Media v1 profile does not have and reads a missing fixed as false', async () => {
+    const bare = live('media.GetProfiles')
+      .replace('<trt:Profiles fixed="true" token="profile1">', '<trt:Profiles token="profile1">')
+      .replace(/(token="profile1">[\s\S]*?)<tt:VideoSourceConfiguration [\s\S]*?<\/tt:VideoSourceConfiguration>/, '$1')
+      .replace(
+        /(token="profile1">[\s\S]*?)<tt:VideoEncoderConfiguration [\s\S]*?<\/tt:VideoEncoderConfiguration>/,
+        '$1'
+      )
+    const mock = await camera(mediaOnly({ 'media.GetProfiles': answer(bare) }))
+    const [first] = await getProfiles(await connect(mock))
+    expect(first).toMatchObject({ token: 'profile1', fixed: false, service: 'media' })
+    expect(first).not.toHaveProperty('videoSource')
+    expect(first).not.toHaveProperty('videoEncoder')
+  })
+
+  it('reads a missing fixed attribute of a Media2 profile as false', async () => {
+    const unfixed = live('media2.GetProfiles').replaceAll(' fixed="true"', '')
+    const mock = await camera({ overrides: { 'media2.GetProfiles': answer(unfixed) } })
+    const profiles = await getProfiles(await connect(mock))
+    expect(profiles.map(({ fixed }) => fixed)).toEqual([false, false, false])
+  })
+
   it('uses Media v1 when the device does not offer Media2', async () => {
     const mock = await camera(mediaOnly())
     const profiles = await getProfiles(await connect(mock))
@@ -235,6 +259,14 @@ describe('getProfiles', () => {
     expect(actionsOf(mock, 'media')).toEqual([])
   })
 
+  it('does not fall back after a dropped connection', async () => {
+    const mock = await camera({ overrides: { 'media2.GetProfiles': { kind: 'destroy' } } })
+    const error = await rejection(async () => getProfiles(await connect(mock)))
+    expect(error).toBeInstanceOf(TransportError)
+    expect(error).toMatchObject({ status: undefined, service: 'tr2' })
+    expect(actionsOf(mock, 'media')).toEqual([])
+  })
+
   it('passes the Media2 error on when Media v1 is not available', async () => {
     const services = live('device.GetServices').replace(
       /<tds:Service><tds:Namespace>http:\/\/www\.onvif\.org\/ver10\/media\/wsdl<\/tds:Namespace>[\s\S]*?<\/tds:Service>/,
@@ -260,6 +292,30 @@ describe('getProfiles', () => {
     expect(error).toBeInstanceOf(TimeoutError)
     expect(error).toMatchObject({ service: 'trt', action: 'GetProfiles' })
     await expect(getProfiles(device, { timeoutMs: 1_000 })).resolves.toHaveLength(3)
+  })
+
+  it('does not try Media v1 when Media2 fails right at the deadline', async () => {
+    const device = await connect(await camera())
+    const media2Fault = new SoapFaultError({ code: 'Sender', subcodes: [], reason: 'busy' }, {})
+    let fallbacks = 0
+    const error = await rejection(async () =>
+      fromEitherService(
+        device,
+        'GetProfiles',
+        { timeoutMs: 50 },
+        async () => {
+          await sleep(60)
+          throw media2Fault
+        },
+        async () => {
+          fallbacks++
+          return []
+        }
+      )
+    )
+    expect(error).toBeInstanceOf(TimeoutError)
+    expect(error).toMatchObject({ message: 'No response within 50 ms', service: 'trt', cause: media2Fault })
+    expect(fallbacks).toBe(0)
   })
 
   it('stops at the connection timeout when the call sets none', async () => {
@@ -486,6 +542,18 @@ describe('getSnapshotUri', () => {
     await expect(getSnapshotUri(device, media2)).rejects.toMatchObject({ service: 'tr2', action: 'GetSnapshotUri' })
   })
 
+  it('passes on an error from resolving the address that is not an OnvifError', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const failure = new TypeError('broken')
+    Object.defineProperty(device, 'resolveAddress', {
+      value: () => {
+        throw failure
+      }
+    })
+    expect(await rejection(async () => getSnapshotUri(device, media1))).toBe(failure)
+  })
+
   it('refuses an address that is not HTTP', async () => {
     const mock = await camera({ overrides: { 'media.GetSnapshotUri': withUri('media.GetSnapshotUri', 'rtsp://x/s') } })
     await expect(getSnapshotUri(await connect(mock), media1)).rejects.toThrow(
@@ -675,6 +743,15 @@ describe('fetchSnapshot', () => {
     const device = await connect(mock)
     await expect(fetchSnapshot(device, new URL(`${mock.url}/snapshot.JPG`))).rejects.toThrow(
       "Expected a JPEG snapshot, got 0 bytes with Content-Type ''"
+    )
+  })
+
+  it('rejects a body without a Content-Type header', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    Object.defineProperty(device, 'download', { value: async () => ({ body: Buffer.from('x') }) })
+    await expect(fetchSnapshot(device, new URL(`${mock.url}/snapshot.JPG`))).rejects.toThrow(
+      "Expected a JPEG snapshot, got 1 bytes with Content-Type ''"
     )
   })
 

@@ -434,6 +434,34 @@ describe('close', () => {
     await expect(open(device, { signal: AbortSignal.abort() })).rejects.toThrow('This operation was aborted')
   })
 
+  it('throws an error from outside the library from the iteration', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const { subscription, errors } = await open(device)
+    const call = device.call.bind(device)
+    const failure = new TypeError('another copy of @2bad/onvif')
+    vi.spyOn(device, 'call').mockImplementation((operation, ...rest) =>
+      operation.name === 'PullMessages' ? Promise.reject(failure) : call(operation, ...rest)
+    )
+    await expect(subscription.next()).rejects.toBe(failure)
+    expect(errors).toEqual([])
+  })
+
+  it('closes a subscription whose signal aborted while it was created', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const controller = new AbortController()
+    const call = device.call.bind(device)
+    vi.spyOn(device, 'call').mockImplementation(async (operation, ...rest) => {
+      const response = await call(operation, ...rest)
+      if (operation.name === 'CreatePullPointSubscription') controller.abort()
+      return response
+    })
+    const { subscription } = await open(device, { signal: controller.signal })
+    expect(mock.pullPoints()).toEqual([])
+    expect(await subscription.next()).toEqual({ value: undefined, done: true })
+  })
+
   it('stops a pull point rebuild at once when closed', async () => {
     const overrides: Record<string, ActionOverride> = {}
     const mock = await camera({ overrides })

@@ -86,6 +86,33 @@ describe('parseEnvelope', () => {
     expect((soap11 as SoapFaultError).message.length).toBeLessThan(700)
   })
 
+  it.each([
+    ['an empty fault', '<s:Fault/>', { code: '', subcodes: [], reason: '' }],
+    [
+      'text instead of Code and Reason elements',
+      '<s:Fault><s:Code>s:Sender</s:Code><s:Reason>busy</s:Reason></s:Fault>',
+      { code: '', subcodes: [], reason: '' }
+    ],
+    [
+      'repeated codes and subcodes',
+      '<s:Fault><s:Code><s:Value>s:Sender</s:Value><s:Subcode><s:Value>ter:A</s:Value></s:Subcode>' +
+        '<s:Subcode><s:Value>ter:B</s:Value></s:Subcode></s:Code><s:Code><s:Value>s:Receiver</s:Value></s:Code>' +
+        '<s:Reason><s:Text>first</s:Text><s:Text>second</s:Text></s:Reason></s:Fault>',
+      { code: 'Sender', subcodes: ['A'], reason: 'first' }
+    ],
+    [
+      'values with attributes or child elements',
+      '<s:Fault><s:Code><s:Value id="1">s:Sender</s:Value><s:Subcode><s:Value><b/></s:Value></s:Subcode></s:Code>' +
+        '<s:Reason><s:Text xml:lang="en">busy</s:Text></s:Reason></s:Fault>',
+      { code: 'Sender', subcodes: [''], reason: 'busy' }
+    ]
+  ])('reads %s as a SoapFaultError', (_name, fault, details) => {
+    const xml = `<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>${fault}</s:Body></s:Envelope>`
+    const error = thrown(() => parseEnvelope(xml, context))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject(details)
+  })
+
   it('reads SOAP 1.1 faults', () => {
     const xml =
       '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><SOAP-ENV:Fault>' +

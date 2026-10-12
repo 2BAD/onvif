@@ -72,6 +72,8 @@ describe('parseXml rejects', () => {
     ['NUL character references', '<a>&#0;</a>', /Invalid character reference/],
     ['surrogate character references', '<a>&#xD800;</a>', /Invalid character reference/],
     ['out of range character references', '<a>&#x110000;</a>', /Invalid character reference/],
+    ['empty character references', '<a>&#;</a>', /Invalid character reference/],
+    ['character references with letters', '<a>&#xZZ;</a>', /Invalid character reference/],
     ['processing instructions', '<a><?php echo 1 ?></a>', /Processing instructions/],
     ['late XML declarations', '<a/><?xml version="1.0"?>', /Processing instructions/],
     ['__proto__ elements', '<a><__proto__><polluted>1</polluted></__proto__></a>', /Forbidden name/],

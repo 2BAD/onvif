@@ -210,7 +210,8 @@ describe('getVideoEncoderConfigurationOptions', () => {
       `<tt:JPEG>${resolution}${range('FrameRateRange', 1, 15)}${range('EncodingIntervalRange', 1, 1)}</tt:JPEG>` +
       `<tt:MPEG4>${resolution}${range('GovLengthRange', 1, 60)}${range('FrameRateRange', 1, 30)}` +
       `${range('EncodingIntervalRange', 1, 1)}<tt:Mpeg4ProfilesSupported>SP</tt:Mpeg4ProfilesSupported>` +
-      '<tt:Mpeg4ProfilesSupported>ASP</tt:Mpeg4ProfilesSupported></tt:MPEG4>'
+      '<tt:Mpeg4ProfilesSupported>ASP</tt:Mpeg4ProfilesSupported>' +
+      '<tt:Mpeg4ProfilesSupported>Core</tt:Mpeg4ProfilesSupported></tt:MPEG4>'
     const xml = live('media.GetVideoEncoderConfigurationOptions').replace(/<tt:H264>[\s\S]*<\/tt:Extension>/, codecs)
     const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurationOptions': answer(xml) }))
     const [device, encoder] = await firstEncoder(mock)
@@ -227,7 +228,7 @@ describe('getVideoEncoderConfigurationOptions', () => {
         qualityRange: { min: 1, max: 5 },
         frameRateRange: { min: 1, max: 30 },
         govLengthRange: { min: 1, max: 60 },
-        profiles: ['Simple', 'AdvancedSimple']
+        profiles: ['Simple', 'AdvancedSimple', 'Core']
       }
     ])
   })
@@ -352,6 +353,48 @@ describe('setVideoEncoderConfiguration', () => {
     expect(error).toBeInstanceOf(OnvifError)
     expect(error).toMatchObject({ message: 'The encoder reports no rate control to change', service: 'tr2' })
     expect(await setVideoEncoderConfiguration(device, encoder, { quality: 2 })).not.toHaveProperty('frameRateLimit')
+  })
+
+  it('changes the Media v1 resolution and one rate limit and keeps the codec settings', async () => {
+    const mock = await camera(mediaOnly())
+    const [device, encoder] = await firstEncoder(mock)
+    const resolution = { width: 1280, height: 720 }
+    expect(await setVideoEncoderConfiguration(device, encoder, { resolution, bitrateLimit: 2048 })).toMatchObject({
+      resolution,
+      frameRateLimit: 30,
+      bitrateLimit: 2048,
+      govLength: 120
+    })
+    expect(await setVideoEncoderConfiguration(device, encoder, { frameRateLimit: 15 })).toMatchObject({
+      frameRateLimit: 15,
+      bitrateLimit: 3072
+    })
+  })
+
+  it('reads and sends a Media v1 encoder without rate control', async () => {
+    const noRateControl = live('media.GetVideoEncoderConfigurations').replace(
+      /<tt:RateControl[\s\S]*?<\/tt:RateControl>/,
+      ''
+    )
+    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(noRateControl) }))
+    const [device, encoder] = await firstEncoder(mock)
+    expect(encoder).not.toHaveProperty('frameRateLimit')
+    expect(await setVideoEncoderConfiguration(device, encoder, { quality: 2 })).not.toHaveProperty('bitrateLimit')
+    expect(requestBody(mock, 'media', 'SetVideoEncoderConfiguration')).not.toContain('RateControl')
+  })
+
+  it('keeps an MPEG-4 profile Media v1 does not name', async () => {
+    const mpeg4 = live('media.GetVideoEncoderConfigurations').replace(
+      /<tt:Encoding>H264<\/tt:Encoding>([\s\S]*?)<tt:H264>[\s\S]*?<\/tt:H264>/,
+      '<tt:Encoding>MPEG4</tt:Encoding>$1<tt:MPEG4><tt:GovLength>30</tt:GovLength><tt:Mpeg4Profile>Core</tt:Mpeg4Profile></tt:MPEG4>'
+    )
+    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
+    const [device, encoder] = await firstEncoder(mock)
+    expect(encoder).toMatchObject({ encoding: 'MPV4-ES', profile: 'Core' })
+    await setVideoEncoderConfiguration(device, encoder, { profile: 'Core' })
+    expect(requestBody(mock, 'media', 'SetVideoEncoderConfiguration')).toContain(
+      '<tt:MPEG4><tt:GovLength>30</tt:GovLength><tt:Mpeg4Profile>Core</tt:Mpeg4Profile></tt:MPEG4>'
+    )
   })
 
   it('passes a refused configuration on as a SoapFaultError', async () => {

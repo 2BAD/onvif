@@ -330,6 +330,18 @@ describe('encodeRequest', () => {
       { Sample: { token: 't', Name: 'a', Levels: 1 } },
       'Expected an array at SetSample.Sample.Levels'
     ],
+    ['a number for a string', { Sample: { token: 't', Name: 1 } }, 'Invalid string value at SetSample.Sample.Name'],
+    [
+      'a string for a boolean',
+      { Sample: { token: 't', Name: 'a', Enabled: 'true' } },
+      'Invalid boolean value at SetSample.Sample.Enabled'
+    ],
+    [
+      'a string for base64',
+      { Sample: { token: 't', Name: 'a', Blob: 'AQID' } },
+      'Invalid base64 value at SetSample.Sample.Blob'
+    ],
+    ['an object for any', { Sample: { token: 't', Name: 'a', Raw: {} } }, 'Invalid any value at SetSample.Sample.Raw'],
     ['a string for an object', { Sample: 'x' }, 'Expected an object at SetSample.Sample'],
     ['NaN', { Sample: { token: 't', Name: 'a', Ratio: Number.NaN } }, 'Invalid decimal value at SetSample.Sample.Ratio']
   ])('rejects %s', (_name, request, message) => {
@@ -345,6 +357,20 @@ describe('encodeRequest', () => {
       `<tds:SetRenamed xmlns:tds="${tds}" xmlns:tt="${tt}" Id="3"><tt:HwAddress>a</tt:HwAddress></tds:SetRenamed>`
     )
     expect(() => encodeRequest(renamed, { id: 3 })).toThrow('Missing required hwAddress at SetRenamed')
+  })
+
+  it('writes an any value as escaped text', () => {
+    const xml = serialize(encodeRequest(operation, { Sample: { token: 't', Name: 'a', Raw: '<b>' } }))
+    expect(xml).toContain('<tt:Raw>&lt;b&gt;</tt:Raw>')
+  })
+
+  it('rejects a schema with an unknown primitive', () => {
+    const broken: Schema = { Request: { fields: [{ name: 'Value', type: 'float[]' }] } }
+    const brokenOperation = { ...operation, schema: broken }
+    expect(() => encodeRequest(brokenOperation, { Value: [1] })).toThrow('Unknown primitive float')
+    expect(() => decode(broken, 'Request', parsed('<Sample><Value>1</Value></Sample>'))).toThrow(
+      'Unknown primitive float'
+    )
   })
 
   it('escapes values so they cannot add elements', () => {
