@@ -49,9 +49,11 @@ const typeOf = (schema: Schema, name: string): TypeSchema => {
   return type
 }
 
-const textOf = (value: XmlValue): string => {
+const firstOf = (value: XmlValue): string | XmlObject => (Array.isArray(value) ? firstOf(value[0] ?? '') : value)
+
+const textOf = (value: string | XmlObject): string => {
   if (typeof value === 'string') return value
-  const text = (value as XmlObject)['_']
+  const text = value['_']
   return typeof text === 'string' ? text : ''
 }
 
@@ -97,7 +99,7 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
   }
 }
 
-const decodeSimple = (type: string, value: XmlValue, path: string, context: ErrorContext): unknown => {
+const decodeSimple = (type: string, value: string | XmlObject, path: string, context: ErrorContext): unknown => {
   if (type === 'any') return value
   const text = textOf(value)
   if (type.endsWith('[]')) {
@@ -123,18 +125,24 @@ const namesOf = (type: TypeSchema): Set<string> => {
   return names
 }
 
-const decodeValue = (schema: Schema, type: string, value: XmlValue, path: string, context: ErrorContext): unknown =>
+const decodeValue = (
+  schema: Schema,
+  type: string,
+  value: string | XmlObject,
+  path: string,
+  context: ErrorContext
+): unknown =>
   isSimple(type) ? decodeSimple(type, value, path, context) : decodeComplex(schema, type, value, path, context)
 
 const decodeComplex = (
   schema: Schema,
   typeName: string,
-  value: XmlValue,
+  value: string | XmlObject,
   path: string,
   context: ErrorContext
 ): Record<string, unknown> => {
   const type = typeOf(schema, typeName)
-  const node: XmlObject = typeof value === 'string' || Array.isArray(value) ? {} : value
+  const node: XmlObject = typeof value === 'string' ? {} : value
   const attributes = node['$']
   const result: Record<string, unknown> = {}
 
@@ -158,19 +166,16 @@ const decodeComplex = (
     const fieldPath = `${path}.${field.name}`
     if (field.array) {
       const items = Array.isArray(raw) ? raw : [raw]
-      result[key] = items.map((item, index) => decodeValue(schema, field.type, item, `${fieldPath}[${index}]`, context))
+      result[key] = items.map((item, index) =>
+        decodeValue(schema, field.type, firstOf(item), `${fieldPath}[${index}]`, context)
+      )
     } else {
-      result[key] = decodeValue(schema, field.type, Array.isArray(raw) ? (raw[0] as XmlValue) : raw, fieldPath, context)
+      result[key] = decodeValue(schema, field.type, firstOf(raw), fieldPath, context)
     }
   }
 
   if (type.text !== undefined) {
-    result['value'] = decodeSimple(
-      type.text,
-      typeof value === 'string' ? value : (node['_'] ?? ''),
-      `${path}#text`,
-      context
-    )
+    result['value'] = decodeSimple(type.text, value, `${path}#text`, context)
   }
 
   const info = namespaceInfo(node)
@@ -201,7 +206,7 @@ const decodeComplex = (
  * @throws {DecodeError} If a required element is missing or a value does not match its type
  */
 export function decode(schema: Schema, type: string, value: XmlValue, context: ErrorContext = {}): unknown {
-  return decodeValue(schema, type, value, type, context)
+  return decodeValue(schema, type, firstOf(value), type, context)
 }
 
 class Encoder {

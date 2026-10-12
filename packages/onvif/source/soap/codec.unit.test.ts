@@ -252,6 +252,13 @@ describe('decode', () => {
     )
   })
 
+  it('decodes the first item of a list given to decode, and an empty list as an empty value', () => {
+    expect(decode(schema, 'Item', [parseXml('<Item><Value>1</Value></Item>')['Item'] ?? '', '<x/>'])).toEqual({
+      Value: 1
+    })
+    expect(decode(schema, 'string', [])).toBe('')
+  })
+
   it('rejects unknown schema types', () => {
     expect(() => decode(schema, 'Missing', '')).toThrow(OnvifError)
   })

@@ -180,7 +180,7 @@ export function readProbeMatches(xml: string, sender: string, probes: ReadonlySe
 
   const devices: DiscoveredDevice[] = []
   const errors: DecodeError[] = []
-  for (const node of listOf(matches['ProbeMatch'])) {
+  for (const node of listOf(matches['ProbeMatch']).filter(isObject)) {
     let match: ProbeMatchType
     try {
       match = decode(schema, 'ProbeMatchType', node, context) as ProbeMatchType
@@ -195,7 +195,7 @@ export function readProbeMatches(xml: string, sender: string, probes: ReadonlySe
       errors.push(new DecodeError('Empty endpoint address', 'ProbeMatchType.EndpointReference.Address', context))
       continue
     }
-    const types = readTypes(match.types ?? [], (node as XmlObject)['Types'])
+    const types = readTypes(match.types ?? [], node['Types'])
     if (!isOnvifDevice(types)) continue
     const scopes = match.scopes?.value ?? []
     devices.push({
