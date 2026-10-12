@@ -56,7 +56,7 @@ xmlns:ter="http://www.onvif.org/ver10/error">
 <tt:PanTilt>IDLE</tt:PanTilt>
 <tt:Zoom>IDLE</tt:Zoom>
 </tt:MoveStatus>
-<tt:UtcTime>2026-10-12T11:44:19Z</tt:UtcTime>
+<tt:UtcTime>2026-10-12T12:49:37Z</tt:UtcTime>
 </tptz:PTZStatus>
 </tptz:GetStatusResponse>
 </s:Body>
