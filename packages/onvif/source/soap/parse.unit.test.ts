@@ -90,7 +90,8 @@ describe('parseXml rejects', () => {
     ['unquoted attribute values', '<a x=1/>', /Expected quoted/],
     ["'<' in attribute values", '<a x="<"/>', /'<' in attribute value/],
     ['unterminated comments', '<a><!-- x</a>', /Unterminated comment/],
-    ['unterminated CDATA', '<a><![CDATA[x</a>', /Unterminated CDATA/]
+    ['unterminated CDATA', '<a><![CDATA[x</a>', /Unterminated CDATA/],
+    ['CDATA outside the root element', '<![CDATA[x]]><a/>', /CDATA outside of the root element/]
   ] as const)('%s', (_name, xml, message) => {
     expect(() => parseXml(xml)).toThrow(ParseError)
     expect(() => parseXml(xml)).toThrow(message)
