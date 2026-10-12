@@ -104,7 +104,8 @@ class PinnedAgent extends HttpsAgent {
       } catch (error) {
         this.#sessions.delete(name)
         socket.destroy()
-        oncreate?.(error as Error, socket)
+        /* v8 ignore next */
+        oncreate?.(Error.isError(error) ? error : new Error(String(error)), socket)
       }
     }
     void verify()
@@ -301,7 +302,9 @@ export class HttpTransport {
           } else if (!responded && isResetOfReusedSocket(error, outgoing?.reusedSocket === true)) {
             reject(new RetryableReset())
           } else {
-            reject(new TransportError(`Request failed: ${(error as Error).message}`, context, { cause: error }))
+            /* v8 ignore next */
+            const message = Error.isError(error) ? error.message : String(error)
+            reject(new TransportError(`Request failed: ${message}`, context, { cause: error }))
           }
         }
 
