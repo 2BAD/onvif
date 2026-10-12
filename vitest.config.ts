@@ -32,7 +32,7 @@ function loadDotenv(path: string): Record<string, string> {
     const out: Record<string, string> = {}
     for (const line of readFileSync(path, 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/)
-      if (m) out[m[1]!] = m[2]!
+      if (m && process.env[m[1]!] === undefined) out[m[1]!] = m[2]!
     }
     return out
   } catch {

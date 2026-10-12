@@ -12,7 +12,7 @@ Responses are named `<service>.<Action>.xml`. `manifest.json` has the HTTP statu
 
 ## Capturing
 
-`.env` sets `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS`.
+`.env` sets `ONVIF_TEST_HOST`, `ONVIF_TEST_USER` and `ONVIF_TEST_PASS`. The same variables in the shell take precedence.
 
 ```sh
 pnpm fixtures:capture                        # every read-only suite
@@ -27,7 +27,7 @@ Suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discove
 
 - `motion` waits up to five minutes for motion to start and stop. Walk through the camera's view while it runs.
 - `reset` resets the device to factory defaults and reboots it. Simulator only.
-- `--write` sends settings back as read and creates and deletes a test user, preset and profile named `onviftest`. Lab camera only.
+- `--write` sends settings back as read and creates and deletes a test user, preset and profile named `onviftest`. Test cameras and simulators only.
 
 `motion` and `reset` run only when named.
 
