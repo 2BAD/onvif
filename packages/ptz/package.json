@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-ptz",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "ONVIF PTZ for @2bad/onvif: pan, tilt, zoom, presets and home position",
   "keywords": [
     "camera",

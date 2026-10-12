@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-12
+
 ### Added
 
 - Added Media profile, video source, audio, metadata, PTZ and multicast configuration methods to `device.media.v1`
@@ -118,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Passwords with non-ASCII characters now work with WS-Security
 - Errors never contain credentials, including WS-Security headers echoed by cameras
 
-[Unreleased]: https://github.com/2BAD/onvif/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/2BAD/onvif/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/2BAD/onvif/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/2BAD/onvif/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/2BAD/onvif/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/2BAD/onvif/compare/v1.0.0-beta.6...v2.0.0

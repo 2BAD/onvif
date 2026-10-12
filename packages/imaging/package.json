@@ -1,6 +1,6 @@
 {
   "name": "@2bad/onvif-imaging",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "ONVIF imaging for @2bad/onvif: brightness, exposure, focus, white balance and IR cut filter",
   "keywords": [
     "camera",
