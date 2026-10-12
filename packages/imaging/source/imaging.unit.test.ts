@@ -11,6 +11,7 @@ import {
 import { Imaging, imaging } from '#index.ts'
 
 const lab = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
+const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
 const moved: Record<string, ActionOverride> = {
   'imaging.Move': { kind: 'status', status: 200, body: lab('imaging.MoveContinuous') }
 }
@@ -496,6 +497,72 @@ describe('imaging on the DCN-BM2220LPR', () => {
       service: 'timg',
       action: 'GetImagingSettings'
     })
+  })
+})
+
+describe('imaging on the Hikvision DS-2DE2C400IG-W-W', () => {
+  const hikAnswers = (names: string[]): Record<string, ActionOverride> =>
+    Object.fromEntries(names.map((name) => [`imaging.${name}`, answer(hik(`imaging.${name}`))]))
+
+  it('reads the service capabilities without the presets attribute', async () => {
+    const { device } = await connect({ overrides: hikAnswers(['GetServiceCapabilities']) })
+    expect(await device.imaging.getServiceCapabilities()).toEqual({ capabilities: { imageStabilization: false } })
+  })
+
+  it('reads backlight compensation, wide dynamic range and noise reduction in the third extension', async () => {
+    const { device } = await connect({ overrides: hikAnswers(['GetImagingSettings']) })
+    const { imagingSettings } = await device.imaging.getImagingSettings({ videoSourceToken })
+    expect(imagingSettings).toMatchObject({
+      backlightCompensation: { mode: 'OFF' },
+      focus: { autoFocusMode: 'MANUAL', defaultSpeed: 1 },
+      wideDynamicRange: { mode: 'OFF' },
+      whiteBalance: { mode: 'AUTO' },
+      extension: { extension: { extension: { noiseReduction: { level: 0.5 } } } }
+    })
+  })
+
+  it('sends the settings back with the noise reduction it read', async () => {
+    const { mock, device } = await connect({ overrides: hikAnswers(['GetImagingSettings', 'SetImagingSettings']) })
+    const { imagingSettings } = await device.imaging.getImagingSettings({ videoSourceToken })
+    expect(await device.imaging.setImagingSettings({ videoSourceToken, imagingSettings })).toEqual({})
+    expect(requestOf(mock, 'SetImagingSettings')).toMatchObject({
+      SetImagingSettings: {
+        ImagingSettings: {
+          BacklightCompensation: { Mode: 'OFF' },
+          Extension: { Extension: { Extension: { NoiseReduction: { Level: '0.5' } } } }
+        }
+      }
+    })
+  })
+
+  it('reads one auto focus mode as an array and noise reduction options as a boolean', async () => {
+    const { device } = await connect({ overrides: hikAnswers(['GetOptions']) })
+    const { imagingOptions: options } = await device.imaging.getOptions({ videoSourceToken })
+    expect(options.focus).toEqual({ autoFocusModes: ['MANUAL'], defaultSpeed: { min: 1, max: 1 } })
+    expect(options.wideDynamicRange).toEqual({ mode: ['ON', 'OFF'], level: { min: 1, max: 100 } })
+    expect(options.extension?.extension?.extension?.noiseReductionOptions).toEqual({ level: true })
+  })
+
+  it('reads a focus status of UNKNOWN with a position of 0.0', async () => {
+    const { device } = await connect({ overrides: hikAnswers(['GetMoveOptions', 'GetStatus']) })
+    expect(await device.imaging.getMoveOptions({ videoSourceToken })).toEqual({
+      moveOptions: { continuous: { speed: { min: -7, max: 7 } } }
+    })
+    expect(await device.imaging.getStatus({ videoSourceToken })).toEqual({
+      status: { focusStatus20: { position: 0, moveStatus: 'UNKNOWN', error: 'no error' } }
+    })
+  })
+
+  it.each([
+    ['GetPresets', 'getPresets', ['ActionNotSupported', 'InvalidOperation']],
+    ['GetCurrentPreset', 'getCurrentPreset', ['ActionNotSupported', 'InvalidOperation']],
+    ['GetImagingSettingsMissingFault', 'getImagingSettings', ['InvalidArgVal', 'NoSource']]
+  ] as const)('reports the %s fault with its subcodes', async (name, method, subcodes) => {
+    const action = name.replace(/MissingFault$/, '')
+    const { device } = await connect({ overrides: { [`imaging.${action}`]: answer(hik(`imaging.${name}`), 500) } })
+    const error = await rejection(() => device.imaging[method]({ videoSourceToken }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes, service: 'timg', action })
   })
 })
 
