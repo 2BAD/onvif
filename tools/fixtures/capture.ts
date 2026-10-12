@@ -14,12 +14,12 @@ const username = process.env['ONVIF_TEST_USER'] ?? ''
 const password = process.env['ONVIF_TEST_PASS'] ?? ''
 if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
-const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion']
+const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion', 'reboot']
 const args = process.argv.slice(2)
 const only = args.filter((_, index) => args[index - 1] === '--only')
 const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--only')
 for (const name of named) if (!suites.includes(name)) throw new Error(`Unknown suite ${name}`)
-const selected = named.length > 0 ? named : suites.filter((suite) => suite !== 'motion')
+const selected = named.length > 0 ? named : suites.filter((suite) => suite !== 'motion' && suite !== 'reboot')
 const write = args.includes('--write')
 const toStdout = args.includes('--stdout')
 const log = toStdout ? console.error : console.log
@@ -612,6 +612,10 @@ const captureDiscovery = async (): Promise<void> => {
   record('discovery', 'discovery.ProbeMatchesDevice', await probe('tds:Device'))
 }
 
+const captureReboot = async (): Promise<void> => {
+  await client('reboot', 'device', deviceUrl, ns.tds).call('SystemReboot')
+}
+
 const runs: Record<string, () => Promise<void>> = {
   management: captureManagement,
   media: captureMedia,
@@ -619,12 +623,13 @@ const runs: Record<string, () => Promise<void>> = {
   imaging: captureImaging,
   events: captureEvents,
   discovery: captureDiscovery,
-  motion: captureMotion
+  motion: captureMotion,
+  reboot: captureReboot
 }
 for (const suite of suites) if (selected.includes(suite)) await runs[suite]?.()
 
 const sensitive = [text(infoXml, 'SerialNumber'), text(infoXml, 'HardwareId'), username, password].filter(
-  (value): value is string => value !== undefined && value.length > 2
+  (value): value is string => value !== undefined && value.length > 2 && !/^\d+\.\d+$/.test(value)
 )
 
 const replacements = new Map<string, string>()
