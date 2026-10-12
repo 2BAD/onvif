@@ -421,49 +421,66 @@ const captureMedia = async (): Promise<void> => {
   if (media1Url) await captureMediaConfiguration(media1Url)
 }
 
+const configurationKinds = ['VideoSource', 'VideoEncoder', 'AudioSource', 'AudioEncoder', 'Metadata']
+
 const captureMediaConfiguration = async (url: string): Promise<void> => {
   const media = client('media', 'media', url, ns.trt)
+  // the media suite already captures the video configurations and encoder options of both media services
+  const captured = (action: string) => /^GetVideo\w+Configurations$|^GetVideoEncoderConfigurationOptions$/.test(action)
+  const get = async (action: string, content = '') =>
+    captured(action) ? (await media.send(action, content)).xml : await media.call(action, content)
   await media.call('GetServiceCapabilities')
-  const [videoSource] = tokenized((await media.send('GetVideoSourceConfigurations')).xml, 'Configurations')
-  const [videoEncoder] = tokenized((await media.send('GetVideoEncoderConfigurations')).xml, 'Configurations')
-  if (videoEncoder) {
-    await media.call('GetVideoEncoderConfiguration', `<ConfigurationToken>${videoEncoder.token}</ConfigurationToken>`)
-  }
   await media.call('GetAudioSources')
-  const [audioSource] = tokenized(await media.call('GetAudioSourceConfigurations'), 'Configurations')
-  const [audioEncoder] = tokenized(await media.call('GetAudioEncoderConfigurations'), 'Configurations')
-  if (audioEncoder) {
-    const token = `<ConfigurationToken>${audioEncoder.token}</ConfigurationToken>`
-    await media.call('GetAudioEncoderConfiguration', token)
-    await media.call('GetAudioEncoderConfigurationOptions', token)
+  const token = await profileToken()
+  if (token !== undefined) await media.call('GetProfile', `<ProfileToken>${token}</ProfileToken>`)
+  const first = new Map<string, { xml: string; attributes: string; token: string; content: string }>()
+  for (const kind of configurationKinds) {
+    const xml = await get(`Get${kind}Configurations`)
+    const [configuration] = tokenized(xml, 'Configurations')
+    if (!configuration) continue
+    first.set(kind, { xml, ...configuration })
+    const configurationToken = `<ConfigurationToken>${configuration.token}</ConfigurationToken>`
+    await media.call(`Get${kind}Configuration`, configurationToken)
+    await get(`Get${kind}ConfigurationOptions`, configurationToken)
+    if (token !== undefined) {
+      await media.call(`GetCompatible${kind}Configurations`, `<ProfileToken>${token}</ProfileToken>`)
+    }
   }
   if (!write) return
 
-  if (audioEncoder) {
+  for (const kind of configurationKinds.filter((name) => name !== 'VideoEncoder')) {
+    const configuration = first.get(kind)
+    if (!configuration) continue
     await media.call(
-      'SetAudioEncoderConfiguration',
-      `<Configuration xmlns:tt="${ns.tt}"${audioEncoder.attributes}>${audioEncoder.content}</Configuration>` +
-        '<ForcePersistence>true</ForcePersistence>'
+      `Set${kind}Configuration`,
+      `<Configuration${configuration.attributes}>${configuration.content}</Configuration>` +
+        '<ForcePersistence>true</ForcePersistence>',
+      { from: configuration.xml }
     )
   }
   const created = tokenized(await media.call('CreateProfile', '<Name>onviftest</Name>'), 'Profile')[0]
   if (!created) return
   const profile = `<ProfileToken>${created.token}</ProfileToken>`
-  const add = async (kind: string, configuration: { token: string } | undefined) => {
-    if (configuration) {
+  const ptzUrl = serviceUrl(ns.tptz)
+  const ptzConfiguration =
+    ptzUrl && tokenized((await client('', 'ptz', ptzUrl, ns.tptz).send('GetConfigurations')).xml, 'PTZConfiguration')[0]
+  const attached = [
+    ...configurationKinds.flatMap((kind) => {
+      const configuration = first.get(kind)
+      return configuration ? [{ kind, token: configuration.token }] : []
+    }),
+    ...(ptzConfiguration ? [{ kind: 'PTZ', token: ptzConfiguration.token }] : [])
+  ]
+  try {
+    for (const { kind, token: configurationToken } of attached) {
       await media.call(
         `Add${kind}Configuration`,
-        `${profile}<ConfigurationToken>${configuration.token}</ConfigurationToken>`
+        `${profile}<ConfigurationToken>${configurationToken}</ConfigurationToken>`
       )
     }
-  }
-  try {
-    await add('VideoSource', videoSource)
-    await add('VideoEncoder', videoEncoder)
-    await add('AudioSource', audioSource)
-    await add('AudioEncoder', audioEncoder)
-    if (audioEncoder) await media.call('RemoveAudioEncoderConfiguration', profile)
-    if (audioSource) await media.call('RemoveAudioSourceConfiguration', profile)
+    await media.call('StartMulticastStreaming', profile)
+    await media.call('StopMulticastStreaming', profile)
+    for (const { kind } of attached.toReversed()) await media.call(`Remove${kind}Configuration`, profile)
   } finally {
     await media.call('DeleteProfile', profile)
   }
