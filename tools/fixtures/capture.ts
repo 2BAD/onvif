@@ -14,7 +14,7 @@ const username = process.env['ONVIF_TEST_USER'] ?? ''
 const password = process.env['ONVIF_TEST_PASS'] ?? ''
 if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
-const suites = ['device', 'management', 'media', 'ptz', 'events', 'discovery', 'motion']
+const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion']
 const args = process.argv.slice(2)
 const only = args.filter((_, index) => args[index - 1] === '--only')
 const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--only')
@@ -31,6 +31,7 @@ const ns = {
   tr2: 'http://www.onvif.org/ver20/media/wsdl',
   tev: 'http://www.onvif.org/ver10/events/wsdl',
   tptz: 'http://www.onvif.org/ver20/ptz/wsdl',
+  timg: 'http://www.onvif.org/ver20/imaging/wsdl',
   wsnt: 'http://docs.oasis-open.org/wsn/b-2'
 }
 const tt = `xmlns="${ns.tt}"`
@@ -445,6 +446,74 @@ const capturePtz = async (): Promise<void> => {
   }
 }
 
+const videoSourceToken = async (): Promise<string | undefined> => {
+  const media1Url = serviceUrl(ns.trt)
+  if (media1Url) {
+    return tokenized((await client('', 'media', media1Url, ns.trt).send('GetVideoSources')).xml, 'VideoSources')[0]
+      ?.token
+  }
+  const media2Url = serviceUrl(ns.tr2)
+  const configurations =
+    media2Url && (await client('', 'media2', media2Url, ns.tr2).send('GetVideoSourceConfigurations')).xml
+  return configurations ? text(configurations, 'SourceToken') : undefined
+}
+
+const captureImaging = async (): Promise<void> => {
+  const url = serviceUrl(ns.timg)
+  const token = await videoSourceToken()
+  if (!url || !token) return
+  const imaging = client('imaging', 'imaging', url, ns.timg)
+  const source = `<VideoSourceToken>${token}</VideoSourceToken>`
+  await imaging.call('GetServiceCapabilities')
+  const settingsXml = await imaging.call('GetImagingSettings', source)
+  await imaging.call('GetOptions', source)
+  const moveOptionsXml = await imaging.call('GetMoveOptions', source)
+  const statusXml = await imaging.call('GetStatus', source)
+  const presetsXml = await imaging.call('GetPresets', source)
+  const currentPresetXml = await imaging.call('GetCurrentPreset', source)
+  await imaging.call('GetImagingSettings', '<VideoSourceToken>missing</VideoSourceToken>', {
+    as: 'GetImagingSettingsMissingFault'
+  })
+  if (!write) return
+
+  // every write sends back what the camera reported, so the image does not change
+  const settings = elements(settingsXml, 'ImagingSettings')[0]
+  if (settings !== undefined) {
+    await imaging.call(
+      'SetImagingSettings',
+      `${source}<ImagingSettings>${settings}</ImagingSettings><ForcePersistence>true</ForcePersistence>`,
+      { from: settingsXml }
+    )
+    const brightness = text(settings, 'Brightness')
+    if (brightness !== undefined) {
+      await imaging.call(
+        'SetImagingSettings',
+        `${source}<ImagingSettings><Brightness ${tt}>${brightness}</Brightness></ImagingSettings>`,
+        {
+          as: 'SetImagingSettingsBrightness'
+        }
+      )
+    }
+  }
+  const position = text(elements(statusXml, 'FocusStatus20')[0] ?? '', 'Position')
+  if (position !== undefined && elements(moveOptionsXml, 'Absolute').length > 0) {
+    await imaging.call('Move', `${source}<Focus><Absolute ${tt}><Position>${position}</Position></Absolute></Focus>`)
+  } else if (elements(moveOptionsXml, 'Relative').length > 0) {
+    await imaging.call('Move', `${source}<Focus><Relative ${tt}><Distance>0</Distance></Relative></Focus>`, {
+      as: 'MoveRelative'
+    })
+  }
+  await imaging.call('Stop', source)
+  await imaging.call('Move', `${source}<Focus><Continuous ${tt}><Speed>0</Speed></Continuous></Focus>`, {
+    as: 'MoveContinuous'
+  })
+  await imaging.call('Stop', source, { as: 'StopAfterMove' })
+  const currentPreset = tokenized(currentPresetXml, 'Preset')[0]?.token ?? tokenized(presetsXml, 'Preset')[0]?.token
+  if (currentPreset !== undefined) {
+    await imaging.call('SetCurrentPreset', `${source}<PresetToken>${currentPreset}</PresetToken>`)
+  }
+}
+
 const subscription = (suite: string, subscriptionXml: string) => {
   const address = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
   if (!address) return undefined
@@ -547,6 +616,7 @@ const runs: Record<string, () => Promise<void>> = {
   management: captureManagement,
   media: captureMedia,
   ptz: capturePtz,
+  imaging: captureImaging,
   events: captureEvents,
   discovery: captureDiscovery,
   motion: captureMotion
