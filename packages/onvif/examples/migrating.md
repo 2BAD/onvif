@@ -149,4 +149,4 @@ Every error is an `OnvifError` subclass with `host`, `service` and `action`. See
 
 ## Not available yet
 
-PTZ, imaging, recording, replay, search, OSD and push events.
+Recording, replay, search, OSD and push events.
