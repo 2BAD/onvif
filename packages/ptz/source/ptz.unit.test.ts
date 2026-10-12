@@ -159,6 +159,50 @@ describe('ptz', () => {
     expect(await profile.getStatus()).toEqual(await device.ptz.getStatus({ profileToken }))
   })
 
+  it('sends the profile token with every forProfile() method', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'ptz.RelativeMove': answer(hik('ptz.ContinuousMove').replaceAll('ContinuousMove', 'RelativeMove')),
+        'ptz.AbsoluteMove': answer(hik('ptz.ContinuousMove').replaceAll('ContinuousMove', 'AbsoluteMove')),
+        'ptz.GetPresets': answer(hik('ptz.GetPresetsWithPreset')),
+        'ptz.SetPreset': answer(hik('ptz.SetPreset')),
+        'ptz.RemovePreset': answer(hik('ptz.RemovePreset')),
+        'ptz.GotoPreset': answer(hik('ptz.GotoPreset')),
+        'ptz.GotoHomePosition': answer(hik('ptz.GotoHomePosition')),
+        'ptz.SetHomePosition': answer(hik('ptz.SetHomePosition')),
+        'ptz.SendAuxiliaryCommand': answer(hik('ptz.SendAuxiliaryCommand'), 500)
+      }
+    })
+    const profile = device.ptz.forProfile(profileToken)
+    const speed = { panTilt: { x: 0.5, y: 0.5 } }
+    const calls = [
+      ['RelativeMove', () => profile.relativeMove({ translation: { panTilt: { x: 0.1, y: 0 } } })],
+      ['AbsoluteMove', () => profile.absoluteMove({ position: { panTilt: { x: 0, y: 0 } }, speed })],
+      ['GetPresets', () => profile.getPresets()],
+      ['SetPreset', () => profile.setPreset({ presetName: 'gate' })],
+      ['RemovePreset', () => profile.removePreset({ presetToken: '1' })],
+      ['GotoPreset', () => profile.gotoPreset({ presetToken: '1', speed })],
+      ['GotoHomePosition', () => profile.gotoHomePosition({ speed })],
+      ['SetHomePosition', () => profile.setHomePosition()]
+    ] as const
+    for (const [action, call] of calls) {
+      await call()
+      expect(requestOf(mock, action)[action]).toMatchObject({ ProfileToken: profileToken })
+    }
+    expect(await profile.getPresets()).toEqual({ preset: [{ token: '1', name: 'onviftest' }] })
+    expect(await rejection(() => profile.sendAuxiliaryCommand({ auxiliaryData: 'tt:Wiper|On' }))).toBeInstanceOf(
+      SoapFaultError
+    )
+    expect(requestOf(mock, 'RelativeMove')).toEqual({
+      RelativeMove: { ProfileToken: profileToken, Translation: { PanTilt: { $: { x: '0.1', y: '0' } } } }
+    })
+    expect(requestOf(mock, 'RemovePreset')).toEqual({ RemovePreset: { ProfileToken: profileToken, PresetToken: '1' } })
+    expect(requestOf(mock, 'SetHomePosition')).toEqual({ SetHomePosition: { ProfileToken: profileToken } })
+    expect(requestOf(mock, 'SendAuxiliaryCommand')).toEqual({
+      SendAuxiliaryCommand: { ProfileToken: profileToken, AuxiliaryData: 'tt:Wiper|On' }
+    })
+  })
+
   it('keeps one profile per forProfile() client', async () => {
     const { mock, device } = await connect({ overrides: { 'ptz.Stop': answer(hik('ptz.Stop')) } })
     await device.ptz.forProfile('Profile_1').stop()
@@ -305,6 +349,79 @@ describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
     expect(node).toMatchObject({ maximumNumberOfPresets: 12, homeSupported: false })
     const { ptzConfiguration: [configuration] = [] } = await device.ptz.getConfigurations()
     expect(configuration).toMatchObject({ defaultContinuousZoomVelocitySpace: '', defaultPTZTimeout: 'PT300S' })
+  })
+
+  it('reads the service capabilities', async () => {
+    const { device } = await connect({ overrides: hikAnswers(['GetServiceCapabilities']) })
+    expect(await device.ptz.getServiceCapabilities()).toEqual({
+      capabilities: {
+        eFlip: false,
+        reverse: false,
+        getCompatibleConfigurations: true,
+        moveStatus: true,
+        statusPosition: false
+      }
+    })
+  })
+
+  it('reads the node and the configuration by token as in their lists', async () => {
+    const { mock, device } = await connect({
+      overrides: hikAnswers(['GetNodes', 'GetNode', 'GetConfigurations', 'GetConfiguration'])
+    })
+    const { ptzNode: [node] = [] } = await device.ptz.getNodes()
+    expect((await device.ptz.getNode({ nodeToken: 'PTZNodeToken_1' })).ptzNode).toEqual(node)
+    expect(requestOf(mock, 'GetNode')).toEqual({ GetNode: { NodeToken: 'PTZNodeToken_1' } })
+    const { ptzConfiguration: [configuration] = [] } = await device.ptz.getConfigurations()
+    expect((await device.ptz.getConfiguration({ ptzConfigurationToken: 'PTZToken' })).ptzConfiguration).toEqual(
+      configuration
+    )
+    expect(requestOf(mock, 'GetConfiguration')).toEqual({ GetConfiguration: { PTZConfigurationToken: 'PTZToken' } })
+  })
+
+  it('reads the configuration options with their timeout range', async () => {
+    const { mock, device } = await connect({ overrides: hikAnswers(['GetConfigurationOptions']) })
+    const { ptzConfigurationOptions: options } = await device.ptz.getConfigurationOptions({
+      configurationToken: 'PTZToken'
+    })
+    expect(requestOf(mock, 'GetConfigurationOptions')).toEqual({
+      GetConfigurationOptions: { ConfigurationToken: 'PTZToken' }
+    })
+    expect(options.ptzTimeout).toEqual({ min: 'PT1S', max: 'PT600S' })
+    expect(options.spaces.continuousPanTiltVelocitySpace?.map(({ URI }) => URI)).toEqual([
+      'http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace',
+      'http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocitySpaceFOV'
+    ])
+  })
+
+  it('sends a configuration back as it was read', async () => {
+    const { mock, device } = await connect({ overrides: hikAnswers(['GetConfiguration', 'SetConfiguration']) })
+    const { ptzConfiguration } = await device.ptz.getConfiguration({ ptzConfigurationToken: 'PTZToken' })
+    expect(await device.ptz.setConfiguration({ ptzConfiguration, forcePersistence: false })).toEqual({})
+    expect(requestOf(mock, 'SetConfiguration')).toEqual({
+      SetConfiguration: {
+        PTZConfiguration: {
+          $: { token: 'PTZToken' },
+          Name: 'PTZ',
+          UseCount: '2',
+          NodeToken: 'PTZNodeToken_1',
+          DefaultContinuousPanTiltVelocitySpace: 'http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace',
+          DefaultContinuousZoomVelocitySpace: '',
+          DefaultPTZTimeout: 'PT300S'
+        },
+        ForcePersistence: 'false'
+      }
+    })
+  })
+
+  it('accepts removing a preset that does not exist and setting a home position it does not support', async () => {
+    const { device } = await connect({
+      overrides: {
+        'ptz.RemovePreset': answer(hik('ptz.RemovePresetMissing')),
+        'ptz.SetHomePosition': answer(hik('ptz.SetHomePosition'))
+      }
+    })
+    expect(await device.ptz.removePreset({ profileToken, presetToken: 'missing' })).toEqual({})
+    expect(await device.ptz.setHomePosition({ profileToken })).toEqual({})
   })
 
   it('reads a status without a position while it moves', async () => {
