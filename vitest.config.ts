@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
+
+if (existsSync('.env')) process.loadEnvFile('.env')
 
 export default defineConfig({
   resolve: {
@@ -22,20 +24,6 @@ export default defineConfig({
         statements: 90
       }
     },
-    env: loadDotenv('.env'),
     testTimeout: 30000
   }
 })
-
-function loadDotenv(path: string): Record<string, string> {
-  try {
-    const out: Record<string, string> = {}
-    for (const line of readFileSync(path, 'utf8').split('\n')) {
-      const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/)
-      if (m && process.env[m[1]!] === undefined) out[m[1]!] = m[2]!
-    }
-    return out
-  } catch {
-    return {}
-  }
-}
