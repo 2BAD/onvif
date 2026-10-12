@@ -7,8 +7,7 @@ try {
   await device.systemReboot()
 } catch (error) {
   if (error instanceof AuthError) console.log('wrong password for', error.host)
-  else if (error instanceof SoapFaultError)
-    console.log(error.subcodes) // [ 'ActionNotSupported' ]
+  else if (error instanceof SoapFaultError) console.log(error.subcodes) // [ 'ActionNotSupported' ]
   else if (error instanceof OnvifError) console.log(error.action, error.message)
 }
 ```
