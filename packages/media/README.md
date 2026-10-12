@@ -52,7 +52,7 @@ camera.media.setVideoEncoderConfiguration(
   options?: MediaOptions
 ): Promise<VideoEncoder>
 
-camera.media.v1 // a method per Media operation, such as camera.media.v1.getProfiles()
+camera.media.v1 // a method per Media operation, including profile, audio, metadata and multicast configuration
 camera.media.v2 // a method per Media2 operation, such as camera.media.v2.getProfiles({ type: ['All'] })
 
 function defaultProfile(profiles: Profile[]): Profile | undefined // first profile with a video source and an encoder
@@ -95,6 +95,24 @@ type MediaAddress = {
 Each method is also exported as a function that takes the device first, such as `getProfiles(device)`.
 
 `camera.media.v1` and `camera.media.v2` return the responses as the camera sent them.
+
+## Profiles
+
+```ts
+const { v1 } = camera.media
+const { profile } = await v1.createProfile({ name: 'analytics' })
+const profileToken = profile.token
+
+const { configurations: [source] = [] } = await v1.getCompatibleVideoSourceConfigurations({ profileToken })
+const { configurations: [encoder] = [] } = await v1.getCompatibleVideoEncoderConfigurations({ profileToken })
+if (!source || !encoder) throw new Error('No compatible configurations')
+await v1.addVideoSourceConfiguration({ profileToken, configurationToken: source.token })
+await v1.addVideoEncoderConfiguration({ profileToken, configurationToken: encoder.token })
+
+await v1.deleteProfile({ profileToken })
+```
+
+Audio, metadata and PTZ configurations are added the same way. Profiles with `fixed: true` can't be deleted.
 
 ## Limits
 

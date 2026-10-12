@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added Media profile, video source, audio, metadata, PTZ and multicast configuration methods to `device.media.v1`
+
 ## [2.2.0] - 2026-10-12
 
 ### Added

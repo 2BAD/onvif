@@ -109,4 +109,36 @@ describe.skipIf(!hostname)('Media on a live camera', () => {
       device.close()
     }
   })
+
+  it('builds a Media profile from compatible configurations and deletes it', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    const { v1 } = connected.use(media).media
+    const { profile } = await v1.createProfile({ name: 'onviftest' })
+    const profileToken = profile.token
+    let deleted = false
+    try {
+      const [source] = (await v1.getCompatibleVideoSourceConfigurations({ profileToken })).configurations ?? []
+      if (!source) throw new Error('The camera reported no compatible video source configuration')
+      await v1.addVideoSourceConfiguration({ profileToken, configurationToken: source.token })
+      const [encoder] = (await v1.getCompatibleVideoEncoderConfigurations({ profileToken })).configurations ?? []
+      if (!encoder) throw new Error('The camera reported no compatible video encoder configuration')
+      await v1.addVideoEncoderConfiguration({ profileToken, configurationToken: encoder.token })
+      const { profile: built } = await v1.getProfile({ profileToken })
+      expect(built.videoSourceConfiguration?.token).toBe(source.token)
+      expect(built.videoEncoderConfiguration?.token).toBe(encoder.token)
+      await v1.removeVideoEncoderConfiguration({ profileToken })
+      await v1.removeVideoSourceConfiguration({ profileToken })
+      await v1.deleteProfile({ profileToken })
+      deleted = true
+      const { profiles = [] } = await v1.getProfiles()
+      expect(profiles.map(({ token }) => token)).not.toContain(profileToken)
+    } finally {
+      if (!deleted) await v1.deleteProfile({ profileToken })
+      connected.close()
+    }
+  })
 })
