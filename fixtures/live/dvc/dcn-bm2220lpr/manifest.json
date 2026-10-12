@@ -242,6 +242,10 @@
     "device.SetDynamicDNS": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetNode": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

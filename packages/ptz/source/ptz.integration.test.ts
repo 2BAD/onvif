@@ -29,7 +29,7 @@ describe.skipIf(!hostname)('PTZ on a live camera', () => {
     const { ptzNode = [] } = await device.ptz.getNodes()
     expect(ptzNode.length).toBeGreaterThan(0)
     for (const node of ptzNode) {
-      expect((await device.ptz.getNode({ nodeToken: node.token })).ptzNode).toEqual(node)
+      expect((await device.ptz.getNode({ nodeToken: node.token })).ptzNode).toMatchObject(node)
     }
     const { ptzConfiguration = [] } = await device.ptz.getConfigurations()
     for (const { token } of ptzConfiguration) {
@@ -40,9 +40,10 @@ describe.skipIf(!hostname)('PTZ on a live camera', () => {
     await device.ptz.getServiceCapabilities()
   })
 
-  it('pans, stops and returns to a preset', async () => {
+  it('pans, stops and returns to a preset', async (context) => {
     const { ptzNode: [node] = [] } = await device.ptz.getNodes()
     if (!node?.supportedPTZSpaces.continuousPanTiltVelocitySpace) return
+    if (node.maximumNumberOfPresets === 0) context.skip('The node has no preset to return to')
     const profile = device.ptz.forProfile(profileToken)
     const { presetToken } = await profile.setPreset({ presetName: 'onviftest' })
     try {

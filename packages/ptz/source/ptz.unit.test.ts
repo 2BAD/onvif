@@ -469,6 +469,18 @@ describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
 })
 
 describe('PTZ on the DCN-BM2220LPR', () => {
+  it('reads the preset tour extension GetNode adds to the node of GetNodes, and no preset slots', async () => {
+    const { device } = await connect()
+    const { ptzNode: [listed] = [] } = await device.ptz.getNodes()
+    const { ptzNode: single } = await device.ptz.getNode({ nodeToken: 'PTZToken' })
+    expect(listed).not.toHaveProperty('extension')
+    expect(single).toEqual({
+      ...listed,
+      extension: { supportedPresetTour: { maximumNumberOfPresetTours: 0, ptzPresetTourOperation: ['Start', 'Stop'] } }
+    })
+    expect(single.maximumNumberOfPresets).toBe(0)
+  })
+
   it('reads a default speed with an empty space', async () => {
     const { device } = await connect()
     const { ptzConfiguration: [configuration] = [] } = await device.ptz.getConfigurations()
