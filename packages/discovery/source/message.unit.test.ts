@@ -157,16 +157,19 @@ describe('readProbeMatches', () => {
     expect(devices[0]?.droppedXAddrs).toHaveLength(2)
   })
 
-  it('reads the upstream mock reply with a uuid: endpoint, ReplyTo and AppSequence', () => {
-    const xml = fixture('upstream/Probe.xml').xml.replace('RELATES_TO', probeId)
-    const { devices } = readProbeMatches(xml, '192.0.2.1', probes, 'sender')
+  it('reads the Happytime simulator reply', () => {
+    const xml = fixture('simulator/happytimesoft/ipcamera/discovery.ProbeMatches.xml').xml.replace(
+      /(<wsa:RelatesTo>)[^<]*/,
+      `$1${probeId}`
+    )
+    const { devices } = readProbeMatches(xml, '192.0.2.12', probes, 'sender')
     expect(devices).toMatchObject([
       {
-        endpoint: 'uuid:c9790c3a-701b-464d-a189-0060351c8ada',
-        xaddrs: [new URL('http://192.0.2.1/onvif/device_service')],
-        name: 'PREDATOR',
-        hardware: 'HD_PREDATOR',
-        profiles: ['Streaming']
+        endpoint: 'urn:uuid:00000000-0000-4000-8000-000000000012',
+        xaddrs: [new URL('http://192.0.2.12/onvif/device_service')],
+        name: 'REDACTED5',
+        hardware: 'HI3518C',
+        profiles: ['Streaming', 'T', 'G', 'C', 'A', 'M']
       }
     ])
   })

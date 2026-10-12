@@ -10,19 +10,25 @@ Captured from real devices with `tools/fixtures/capture.ts`. It reads `ONVIF_TES
 pnpm fixtures:capture
 ```
 
-Captures every suite except `motion`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
+Captures every suite except `motion` and `reboot`. It only calls read-only operations, plus one pull point subscription that it unsubscribes again. It also sends two WS-Discovery probes to the camera. The replies go to `discovery.ProbeMatches.xml` and `discovery.ProbeMatchesDevice.xml`.
 
 ```sh
 pnpm fixtures:capture management ptz
 ```
 
-Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `events`, `discovery` and `motion`. The other captures and their manifest entries stay as they are.
+Writes only the responses of the named suites. The suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reboot`. The other captures and their manifest entries stay as they are.
 
 ```sh
 pnpm fixtures:capture motion
 ```
 
 Pulls events for up to five minutes and writes only `events.PullMessagesMotion.xml`, the first response in which a motion topic turns `true`, and `events.PullMessagesMotionEnd.xml`, the next one in which it turns `false`. Move in front of the camera while it runs, then leave its view. Motion detection has to be enabled on the device.
+
+```sh
+pnpm fixtures:capture reboot
+```
+
+Reboots the device and writes `device.SystemReboot.xml`. Use it on a simulator only.
 
 ```sh
 pnpm fixtures:capture --only media2. --only media.GetVideoEncoderConfigurationOptions
@@ -51,7 +57,7 @@ pnpm fixtures:import fixtures/live/<vendor>/<model> < captures.jsonl
 
 Before writing anything it scrubs:
 
-- serial number, hardware id, username and password -> `REDACTEDn`
+- serial number, hardware id, username and password -> `REDACTEDn`. A serial number or hardware id that is a decimal number such as `1.0` stays
 - user names in `Username` elements -> `REDACTEDn`
 - NTP and dynamic DNS host names -> `hostn.example`
 - hostname and the values of `name` and `location` scopes -> `REDACTEDn`
@@ -64,6 +70,13 @@ Before writing anything it scrubs:
 
 Check the output before committing a new capture. The scrubbing is pattern based, so a new vendor can put identifiers somewhere the patterns don't catch.
 
-## `upstream/`
+## `simulator/<vendor>/<model>/`
 
-Responses from the [agsh/onvif](https://github.com/agsh/onvif) mock server (`test/serverMockup/`, branch `v0.x`, commit `4ac697bc`). MIT licensed, see `upstream/LICENSE`. The doT templates were rendered to static XML with fixed values: `192.0.2.1:80`, dates on 2026-01-01, and the conditional fault sections removed.
+Captured from the Happytime ONVIF server in `tools/happytime/`. They are not device quirks.
+
+```sh
+docker compose -f tools/happytime/compose.yaml up -d --build
+ONVIF_TEST_HOST=172.30.0.10 ONVIF_TEST_USER=admin ONVIF_TEST_PASS=admin \
+  pnpm fixtures:capture --write --stdout device management media ptz imaging events discovery reboot > captures.jsonl
+pnpm fixtures:import fixtures/simulator/happytimesoft/ipcamera < captures.jsonl
+```

@@ -14,7 +14,9 @@ const sender = '192.0.2.14'
 
 const replies = [
   fixture('live/dvc/dcn-bm2220lpr/discovery.ProbeMatches.xml').xml.replace(/(<wsa:RelatesTo>)[^<]*/, `$1${probeId}`),
-  fixture('upstream/Probe.xml').xml.replace('RELATES_TO', probeId).replaceAll('192.0.2.1', sender)
+  fixture('simulator/happytimesoft/ipcamera/discovery.ProbeMatches.xml')
+    .xml.replace(/(<wsa:RelatesTo>)[^<]*/, `$1${probeId}`)
+    .replaceAll('192.0.2.12', sender)
 ]
 
 const readsOrRejects = (xml: string): void => {

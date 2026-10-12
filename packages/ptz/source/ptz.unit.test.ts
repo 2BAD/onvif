@@ -85,7 +85,7 @@ describe('generated ptz operations', () => {
         undefined
       )
   const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live\/.+|upstream)\/ptz\.(\w+)\.xml$/.exec(entry.name)?.[1]
+    const action = /^(?:live|simulator)\/.+\/ptz\.(\w+)\.xml$/.exec(entry.name)?.[1]
     const operation = action === undefined ? undefined : operationOf(action)
     return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })

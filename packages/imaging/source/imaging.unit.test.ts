@@ -84,7 +84,7 @@ describe('generated imaging operations', () => {
         undefined
       )
   const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live\/.+|upstream)\/imaging\.(\w+)\.xml$/.exec(entry.name)?.[1]
+    const action = /^(?:live|simulator)\/.+\/imaging\.(\w+)\.xml$/.exec(entry.name)?.[1]
     const operation = action === undefined ? undefined : operationOf(action)
     return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
@@ -99,18 +99,12 @@ describe('generated imaging operations', () => {
     ).toEqual([])
   })
 
-  // a response that breaks the schema, with a test below
-  const invalid = ['upstream/imaging.GetCurrentPreset.xml']
-
-  it.each(fixtures.filter(({ name }) => !invalid.includes(name)).map((entry) => [entry.name, entry] as const))(
-    'decode %s',
-    (_name, { xml, operation }) => {
-      const { body } = parseEnvelope(xml)
-      const response = body[operation.response.name]
-      expect(response).toBeDefined()
-      expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
-    }
-  )
+  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
+    const { body } = parseEnvelope(xml)
+    const response = body[operation.response.name]
+    expect(response).toBeDefined()
+    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  })
 })
 
 describe('imaging', () => {
@@ -506,10 +500,13 @@ describe('imaging on the DCN-BM2220LPR', () => {
 })
 
 describe('imaging responses the schema does not allow', () => {
-  it('rejects the upstream mock preset with its token as an element instead of an attribute', async () => {
-    const { device } = await connect({
-      overrides: { 'imaging.GetCurrentPreset': answer(fixture('upstream/imaging.GetCurrentPreset.xml').xml) }
-    })
+  it('rejects a preset with its token as an element instead of an attribute', async () => {
+    const text = lab('imaging.GetCurrentPreset').replace(
+      '<timg:GetCurrentPresetResponse></timg:GetCurrentPresetResponse>',
+      '<timg:GetCurrentPresetResponse><timg:Preset><tt:token>main</tt:token><tt:type>128</tt:type>' +
+        '<tt:Name>main</tt:Name></timg:Preset></timg:GetCurrentPresetResponse>'
+    )
+    const { device } = await connect({ overrides: { 'imaging.GetCurrentPreset': answer(text) } })
     const error = await rejection(() => device.imaging.getCurrentPreset({ videoSourceToken }))
     expect(error).toBeInstanceOf(DecodeError)
     expect(error).toMatchObject({ path: 'GetCurrentPresetResponse.Preset', action: 'GetCurrentPreset' })

@@ -328,11 +328,10 @@ describe('getProfiles', () => {
     await expect(getProfiles(await connect(mock, { timeoutMs: 300 }))).rejects.toBeInstanceOf(TimeoutError)
   })
 
-  it('decodes the profiles of the upstream mock device', async () => {
-    const mock = await camera(mediaOnly({ 'media.GetProfiles': answer(fixture('upstream/GetProfiles.xml').xml) }))
-    const profiles = await getProfiles(await connect(mock))
-    expect(profiles.length).toBeGreaterThan(0)
-    expect(profiles[0]?.token).toBe('main')
+  it('decodes the profiles of the Happytime simulator', async () => {
+    const xml = fixture('simulator/happytimesoft/ipcamera/media.GetProfiles.xml').xml
+    const profiles = await getProfiles(await connect(await camera(mediaOnly({ 'media.GetProfiles': answer(xml) }))))
+    expect(profiles.map(({ token }) => token)).toEqual(['ProfileToken_1', 'ProfileToken_2'])
   })
 
   it('reads the profiles and addresses of the DCN-BF5365', async () => {
