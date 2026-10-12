@@ -246,6 +246,58 @@
     "ptz.GetNode": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetImagingSettings": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetMoveOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetStatus": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetPresets": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetCurrentPreset": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.GetImagingSettingsMissingFault": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.SetImagingSettings": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.SetImagingSettingsBrightness": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.Stop": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.MoveContinuous": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "imaging.StopAfterMove": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
