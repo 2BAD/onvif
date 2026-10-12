@@ -10,7 +10,7 @@ import {
 } from '../../../tools/mock-camera/server.ts'
 import { Media, media } from '#index.ts'
 
-const lab = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
+const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
 const cleanups: (() => Promise<void> | void)[] = []
 
 afterEach(async () => {
@@ -59,7 +59,7 @@ describe('generated media operations', () => {
     return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
 
-  it('cover a lab capture for every operation', () => {
+  it('cover a camera capture for every operation', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
@@ -83,7 +83,7 @@ describe('media.v1', () => {
     )
   })
 
-  it('builds a profile from the configurations of the lab camera and removes it again', async () => {
+  it('builds a profile from the configurations of the camera and removes it again', async () => {
     const { mock, v1 } = await connect()
     const { profile } = await v1.createProfile({ name: 'onviftest' })
     const profileToken = profile.token
@@ -117,7 +117,7 @@ describe('media.v1', () => {
     expect(mock.requests.filter(({ service }) => service === 'media')).toHaveLength(21)
   })
 
-  it('lists the sources and configurations of the lab camera', async () => {
+  it('lists the sources and configurations of the camera', async () => {
     const { v1 } = await connect()
     expect(
       (await v1.getServiceCapabilities()).capabilities.profileCapabilities?.maximumNumberOfProfiles
@@ -146,7 +146,7 @@ describe('media.v1', () => {
 describe('media.v1 requests', () => {
   const kinds = ['VideoSource', 'VideoEncoder', 'AudioSource', 'AudioEncoder', 'Metadata'] as const
 
-  it.each(kinds)('sends a %s configuration back exactly as the lab camera reported it', async (kind) => {
+  it.each(kinds)('sends a %s configuration back exactly as the camera reported it', async (kind) => {
     const { mock, v1 } = await connect()
     const get = v1[`get${kind}Configuration`].bind(v1) as (request: {
       configurationToken: string
@@ -157,7 +157,7 @@ describe('media.v1 requests', () => {
     }) => Promise<unknown>
     const { configuration } = await get({ configurationToken: 'any' })
     await set({ configuration, forcePersistence: false })
-    const reported = parseEnvelope(lab(`media.Get${kind}Configuration`)).body
+    const reported = parseEnvelope(cam(`media.Get${kind}Configuration`)).body
     const sent = requestOf(mock, `Set${kind}Configuration`)
     expect(sent).toEqual({
       [`Set${kind}Configuration`]: {
@@ -220,7 +220,7 @@ describe('media.v1 requests', () => {
 
 describe('media.v1 responses', () => {
   it('keeps tokens that look like numbers as strings', async () => {
-    const xml = lab('media.GetProfile').replace(/(<trt:Profile\b[^>]*\btoken=")[^"]*"/, '$1007"')
+    const xml = cam('media.GetProfile').replace(/(<trt:Profile\b[^>]*\btoken=")[^"]*"/, '$1007"')
     const { v1 } = await connect({ overrides: { 'media.GetProfile': answer(xml) } })
     expect((await v1.getProfile({ profileToken: '007' })).profile.token).toBe('007')
   })
@@ -238,7 +238,7 @@ describe('media.v1 responses', () => {
   })
 
   it('rejects a multicast configuration without an address with the path of the element', async () => {
-    const xml = lab('media.GetAudioEncoderConfiguration').replace(/<tt:Address>[\s\S]*?<\/tt:Address>/, '')
+    const xml = cam('media.GetAudioEncoderConfiguration').replace(/<tt:Address>[\s\S]*?<\/tt:Address>/, '')
     const { v1 } = await connect({ overrides: { 'media.GetAudioEncoderConfiguration': answer(xml) } })
     const error = await rejection(() => v1.getAudioEncoderConfiguration({ configurationToken: 'any' }))
     expect(error).toBeInstanceOf(DecodeError)

@@ -10,12 +10,12 @@ import {
 } from '../../../tools/mock-camera/server.ts'
 import { Imaging, imaging } from '#index.ts'
 
-const lab = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
+const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
 const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
 const moved: Record<string, ActionOverride> = {
-  'imaging.Move': { kind: 'status', status: 200, body: lab('imaging.MoveContinuous') }
+  'imaging.Move': { kind: 'status', status: 200, body: cam('imaging.MoveContinuous') }
 }
-const presets = lab('imaging.GetPresets').replace(
+const presets = cam('imaging.GetPresets').replace(
   '<timg:GetPresetsResponse></timg:GetPresetsResponse>',
   '<timg:GetPresetsResponse><timg:Preset token="preset_1" type="Sunny &amp; Bright"><timg:Name>Day</timg:Name></timg:Preset>' +
     '</timg:GetPresetsResponse>'
@@ -90,7 +90,7 @@ describe('generated imaging operations', () => {
     return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
 
-  it('cover a lab capture for every operation', () => {
+  it('cover a camera capture for every operation', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
@@ -149,7 +149,7 @@ describe('imaging', () => {
         ...moved,
         'imaging.GetPresets': answer(presets),
         'imaging.SetCurrentPreset': answer(
-          lab('imaging.SetImagingSettings').replaceAll('SetImagingSettings', 'SetCurrentPreset')
+          cam('imaging.SetImagingSettings').replaceAll('SetImagingSettings', 'SetCurrentPreset')
         )
       }
     })
@@ -186,7 +186,7 @@ describe('imaging', () => {
     const { mock, device } = await connect({
       overrides: {
         'imaging.SetCurrentPreset': answer(
-          lab('imaging.SetImagingSettings').replaceAll('SetImagingSettings', 'SetCurrentPreset')
+          cam('imaging.SetImagingSettings').replaceAll('SetImagingSettings', 'SetCurrentPreset')
         )
       }
     })
@@ -217,7 +217,7 @@ describe('imaging', () => {
   })
 
   it('reports a device without an imaging service before sending anything', async () => {
-    const services = lab('device.GetServices').replace(
+    const services = cam('device.GetServices').replace(
       /<tds:Service>(?:(?!<\/tds:Service>)[\s\S])*?ver20\/imaging\/wsdl[\s\S]*?<\/tds:Service>/,
       ''
     )
@@ -255,7 +255,7 @@ describe('imaging requests', () => {
     const { mock, device } = await connect()
     const { imagingSettings } = await device.imaging.getImagingSettings({ videoSourceToken })
     await device.imaging.setImagingSettings({ videoSourceToken, imagingSettings, forcePersistence: true })
-    const read = parseEnvelope(lab('imaging.GetImagingSettings')).body['GetImagingSettingsResponse']
+    const read = parseEnvelope(cam('imaging.GetImagingSettings')).body['GetImagingSettingsResponse']
     expect(requestOf(mock, 'SetImagingSettings')).toEqual({
       SetImagingSettings: {
         VideoSourceToken: videoSourceToken,
@@ -295,7 +295,7 @@ describe('imaging requests', () => {
 
 describe('imaging failure modes of other clients', () => {
   const settingsWith = (content: string) =>
-    lab('imaging.GetImagingSettings').replace(
+    cam('imaging.GetImagingSettings').replace(
       /<timg:ImagingSettings>[\s\S]*<\/timg:ImagingSettings>/,
       `<timg:ImagingSettings>${content}</timg:ImagingSettings>`
     )
@@ -389,7 +389,7 @@ describe('imaging failure modes of other clients', () => {
   })
 
   it('reads a single mode as an array', async () => {
-    const single = lab('imaging.GetOptions').replace(
+    const single = cam('imaging.GetOptions').replace(
       /<tt:IrCutFilterModes>ON<\/tt:IrCutFilterModes><tt:IrCutFilterModes>OFF<\/tt:IrCutFilterModes>/,
       ''
     )
@@ -398,7 +398,7 @@ describe('imaging failure modes of other clients', () => {
   })
 
   it('reads xs:boolean 1 and 0 as booleans', async () => {
-    const numeric = lab('imaging.GetServiceCapabilities').replace(
+    const numeric = cam('imaging.GetServiceCapabilities').replace(
       'Presets="false" ImageStabilization="false"',
       'Presets="1" ImageStabilization="0"'
     )
@@ -488,7 +488,7 @@ describe('imaging on the DCN-BM2220LPR', () => {
 
   it('reports a missing video source as a SOAP fault with its subcodes', async () => {
     const { device } = await connect({
-      overrides: { 'imaging.GetImagingSettings': answer(lab('imaging.GetImagingSettingsMissingFault'), 400) }
+      overrides: { 'imaging.GetImagingSettings': answer(cam('imaging.GetImagingSettingsMissingFault'), 400) }
     })
     const error = await rejection(() => device.imaging.getImagingSettings({ videoSourceToken: 'missing' }))
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -568,7 +568,7 @@ describe('imaging on the Hikvision DS-2DE2C400IG-W-W', () => {
 
 describe('imaging responses the schema does not allow', () => {
   it('rejects a preset with its token as an element instead of an attribute', async () => {
-    const text = lab('imaging.GetCurrentPreset').replace(
+    const text = cam('imaging.GetCurrentPreset').replace(
       '<timg:GetCurrentPresetResponse></timg:GetCurrentPresetResponse>',
       '<timg:GetCurrentPresetResponse><timg:Preset><tt:token>main</tt:token><tt:type>128</tt:type>' +
         '<tt:Name>main</tt:Name></timg:Preset></timg:GetCurrentPresetResponse>'
@@ -580,7 +580,7 @@ describe('imaging responses the schema does not allow', () => {
   })
 
   it('rejects a brightness that is not a number with the path of the element', async () => {
-    const text = lab('imaging.GetImagingSettings').replace('<tt:Brightness>25<', '<tt:Brightness>bright<')
+    const text = cam('imaging.GetImagingSettings').replace('<tt:Brightness>25<', '<tt:Brightness>bright<')
     const { device } = await connect({ overrides: { 'imaging.GetImagingSettings': answer(text) } })
     const error = await rejection(() => device.imaging.getImagingSettings({ videoSourceToken }))
     expect(error).toBeInstanceOf(DecodeError)
@@ -592,7 +592,7 @@ describe('imaging responses the schema does not allow', () => {
   })
 
   it('rejects a response without ImagingSettings', async () => {
-    const missing = lab('imaging.GetImagingSettings').replace(
+    const missing = cam('imaging.GetImagingSettings').replace(
       /<timg:ImagingSettings>[\s\S]*<\/timg:ImagingSettings>/,
       ''
     )

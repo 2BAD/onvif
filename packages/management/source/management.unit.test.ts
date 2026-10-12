@@ -92,7 +92,7 @@ describe('generated management operations', () => {
   })
   const decodable = fixtures.filter(({ xml }) => !xml.includes('<tds:DynamicDNSInformation xsi:nil="true"/>'))
 
-  it('cover a lab capture for every operation', () => {
+  it('cover a camera capture for every operation', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
@@ -127,7 +127,7 @@ describe('management', () => {
   })
 })
 
-describe('Management on the lab camera', () => {
+describe('Management on the camera', () => {
   it('reads the network, time, user, filter and relay settings as typed values', async () => {
     const { device } = await connect()
     expect(await device.management.getNetworkDefaultGateway()).toEqual({
@@ -145,14 +145,14 @@ describe('Management on the lab camera', () => {
     })
   })
 
-  it('returns the NTP server the lab camera reports with type IPv4 and a DNS name as it is', async () => {
+  it('returns the NTP server the camera reports with type IPv4 and a DNS name as it is', async () => {
     const { device } = await connect()
     expect(await device.management.getNTP()).toEqual({
       ntpInformation: { fromDHCP: false, ntpManual: [{ type: 'IPv4', dnsName: 'host10.example' }] }
     })
   })
 
-  it('rejects the nil dynamic DNS information of the lab camera with the path of the element', async () => {
+  it('rejects the nil dynamic DNS information of the camera with the path of the element', async () => {
     const { device } = await connect()
     const error = await rejection(() => device.management.getDynamicDNS())
     expect(error).toBeInstanceOf(DecodeError)
@@ -202,7 +202,7 @@ describe('Management on the lab camera', () => {
     expect(await device.management.getRelayOutputs()).toEqual({})
   })
 
-  it('rejects the nil dynamic DNS information of the DCN-BF5365 as of the lab camera', async () => {
+  it('rejects the nil dynamic DNS information of the DCN-BF5365 as of the camera', async () => {
     const { device } = await connect({
       overrides: { 'device.GetDynamicDNS': answer(fixture('live/dvc/dcn-bf5365/device.GetDynamicDNS.xml').xml) }
     })

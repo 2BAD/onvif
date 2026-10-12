@@ -10,7 +10,7 @@ import {
 } from '../../../tools/mock-camera/server.ts'
 import { PTZ, ptz } from '#index.ts'
 
-const lab = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
+const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
 const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
 const cleanups: (() => Promise<void> | void)[] = []
 
@@ -90,7 +90,7 @@ describe('generated ptz operations', () => {
     return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
 
-  it('cover a lab capture for every operation', () => {
+  it('cover a camera capture for every operation', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
@@ -223,7 +223,7 @@ describe('ptz', () => {
   })
 
   it('reports a device without a PTZ service before sending anything', async () => {
-    const services = lab('device.GetServices').replace(
+    const services = cam('device.GetServices').replace(
       /<tds:Service>(?:(?!<\/tds:Service>)[\s\S])*?ver20\/ptz\/wsdl[\s\S]*?<\/tds:Service>/,
       ''
     )
