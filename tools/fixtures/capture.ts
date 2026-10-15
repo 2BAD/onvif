@@ -160,8 +160,15 @@ const client = (suite: string, service: string, url: string, namespace: string, 
       : `<${action} xmlns="${namespace}"${source ? declarations(source) : ''}>${content}</${action}>`
   return {
     send: (action: string, content = '') => send(url, body(action, content), options),
-    call: async (action: string, content = '', { as = action, from = '' } = {}) =>
-      record(suite, `${service}.${as}`, await send(url, body(action, content, from), options))
+    call: async (action: string, content = '', { as = action, from = '' } = {}) => {
+      try {
+        return record(suite, `${service}.${as}`, await send(url, body(action, content, from), options))
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ECONNRESET') throw error
+        log(JSON.stringify({ name: `${service}.${as}`, error: 'connection closed without a response' }))
+        return ''
+      }
+    }
   }
 }
 
