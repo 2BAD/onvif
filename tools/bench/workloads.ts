@@ -26,4 +26,6 @@ export const workloads = {
   )
 }
 
-export const successCorpus = corpus.filter((entry) => entry.status === 200 && !/Fault|Error/.test(entry.name))
+export const successCorpus = corpus.filter(
+  (entry) => entry.status === 200 && !entry.fault && !/Fault|Error/.test(entry.name)
+)

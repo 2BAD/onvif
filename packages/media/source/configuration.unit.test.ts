@@ -56,7 +56,7 @@ describe('generated media operations', () => {
   const fixtures = corpus.flatMap((entry) => {
     const action = /^(?:live|simulator)\/.+\/media\.(\w+)\.xml$/.exec(entry.name)?.[1]
     const operation = operations.find(({ name }) => name === action)
-    return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
+    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
 
   it('cover a camera capture for every operation', () => {

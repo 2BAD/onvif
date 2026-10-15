@@ -87,7 +87,7 @@ describe('generated ptz operations', () => {
   const fixtures = corpus.flatMap((entry) => {
     const action = /^(?:live|simulator)\/.+\/ptz\.(\w+)\.xml$/.exec(entry.name)?.[1]
     const operation = action === undefined ? undefined : operationOf(action)
-    return operation && entry.status === 200 ? [{ name: entry.name, xml: entry.xml, operation }] : []
+    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
 
   it('cover a camera capture for every operation', () => {

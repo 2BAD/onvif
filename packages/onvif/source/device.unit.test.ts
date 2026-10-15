@@ -780,6 +780,17 @@ describe('Device.call', () => {
     await expect(device.call(GetScopes)).rejects.toBeInstanceOf(SoapFaultError)
   })
 
+  it('reports SOAP faults sent with HTTP 200', async () => {
+    const body = fixture('live/dahua/dhi-itc413-pw4d-z1/device.GetIPAddressFilter.xml').xml
+    const mock = await camera({ overrides: { 'device.GetScopes': { kind: 'status', status: 200, body } } })
+    const device = await connect(mock)
+    await expect(device.call(GetScopes)).rejects.toMatchObject({
+      name: 'SoapFaultError',
+      subcodes: ['ActionNotSupported', 'NotImplemented'],
+      action: 'GetScopes'
+    })
+  })
+
   it.each([
     ['an empty 200 response', { kind: 'status', status: 200, body: '' }, /Empty response/],
     ['a non-SOAP error page', { kind: 'status', status: 502, body: 'Bad gateway' }, /Unexpected HTTP 502/],

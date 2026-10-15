@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-export type Fixture = { name: string; xml: string; status: number }
+export type Fixture = { name: string; xml: string; status: number; fault: boolean }
 
 const root = join(import.meta.dirname, '../../fixtures')
 
@@ -24,11 +24,15 @@ const statusOf = (path: string): number => {
   }
 }
 
-export const corpus: Fixture[] = collect(root).map((path) => ({
-  name: relative(root, path).split(sep).join('/'),
-  xml: readFileSync(path, 'utf8'),
-  status: statusOf(path)
-}))
+export const corpus: Fixture[] = collect(root).map((path) => {
+  const xml = readFileSync(path, 'utf8')
+  return {
+    name: relative(root, path).split(sep).join('/'),
+    xml,
+    status: statusOf(path),
+    fault: /<(?:[\w-]+:)?Body\b[^>]*>\s*<(?:[\w-]+:)?Fault\b/.test(xml)
+  }
+})
 
 export const fixture = (name: string): Fixture => {
   const found = corpus.find((entry) => entry.name === name)
