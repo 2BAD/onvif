@@ -7,6 +7,15 @@ const hostname = process.env['ONVIF_TEST_HOST']
 const username = process.env['ONVIF_TEST_USER']
 const password = process.env['ONVIF_TEST_PASS']
 
+const unlessNotSupported = async <T>(action: () => Promise<T>): Promise<T | undefined> => {
+  try {
+    return await action()
+  } catch (error) {
+    if (error instanceof SoapFaultError && error.subcodes.includes('ActionNotSupported')) return undefined
+    throw error
+  }
+}
+
 describe.skipIf(!hostname)('Management on a live camera', () => {
   let device: Device & { management: ManagementClient }
 
@@ -21,29 +30,38 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
 
   afterAll(() => device.close())
 
-  it('sends the NTP, gateway, zero configuration and IP filter settings back unchanged', async () => {
+  it('sends the NTP, gateway and zero configuration settings back unchanged', async () => {
     const { ntpInformation } = await device.management.getNTP()
     const { networkGateway } = await device.management.getNetworkDefaultGateway()
     const { zeroConfiguration } = await device.management.getZeroConfiguration()
-    const { ipAddressFilter } = await device.management.getIPAddressFilter()
 
     const { fromDHCP, ntpManual } = ntpInformation
     await device.management.setNTP({ fromDHCP, ...(ntpManual && { ntpManual }) })
-    await device.management.setNetworkDefaultGateway(networkGateway)
+    await device.management.setNetworkDefaultGateway({
+      ipv4Address: (networkGateway.ipv4Address ?? []).filter((address) => address !== ''),
+      ipv6Address: (networkGateway.ipv6Address ?? []).filter((address) => address !== '')
+    })
     await device.management.setZeroConfiguration({
       interfaceToken: zeroConfiguration.interfaceToken,
       enabled: zeroConfiguration.enabled
     })
-    await device.management.setIPAddressFilter({ ipAddressFilter })
 
     expect((await device.management.getNTP()).ntpInformation).toEqual(ntpInformation)
     expect((await device.management.getNetworkDefaultGateway()).networkGateway).toEqual(networkGateway)
     expect((await device.management.getZeroConfiguration()).zeroConfiguration).toEqual(zeroConfiguration)
-    expect((await device.management.getIPAddressFilter()).ipAddressFilter).toEqual(ipAddressFilter)
   })
 
-  it('adds and removes an entry of a deny filter', async () => {
-    const { ipAddressFilter } = await device.management.getIPAddressFilter()
+  it('sends the IP filter back unchanged', async (context) => {
+    const filter = await unlessNotSupported(() => device.management.getIPAddressFilter())
+    if (!filter) return context.skip('The device does not implement the IP address filter')
+    await device.management.setIPAddressFilter(filter)
+    expect((await device.management.getIPAddressFilter()).ipAddressFilter).toEqual(filter.ipAddressFilter)
+  })
+
+  it('adds and removes an entry of a deny filter', async (context) => {
+    const filter = await unlessNotSupported(() => device.management.getIPAddressFilter())
+    if (!filter) return context.skip('The device does not implement the IP address filter')
+    const { ipAddressFilter } = filter
     if (ipAddressFilter.type !== 'Deny') return
     const entry = { type: 'Deny', ipv4Address: [{ address: '198.51.100.7', prefixLength: 32 }] }
     await device.management.addIPAddressFilter({ ipAddressFilter: entry })
