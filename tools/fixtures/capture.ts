@@ -265,36 +265,8 @@ const captureCertificates = async (management: Client): Promise<void> => {
   const directory = await mkdtemp(join(tmpdir(), 'onviftest-'))
   const openssl = (...args: string[]) => execFileSync('openssl', args, { cwd: directory, stdio: 'pipe' })
   try {
-    openssl(
-      'req',
-      '-x509',
-      '-newkey',
-      'rsa:2048',
-      '-nodes',
-      '-keyout',
-      'ca.key',
-      '-out',
-      'ca.pem',
-      '-days',
-      '2',
-      '-subj',
-      '/CN=onviftest-ca'
-    )
-    openssl(
-      'req',
-      '-x509',
-      '-newkey',
-      'rsa:2048',
-      '-nodes',
-      '-keyout',
-      'own.key',
-      '-out',
-      'own.pem',
-      '-days',
-      '2',
-      '-subj',
-      '/CN=onviftest'
-    )
+    openssl(...'req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.pem -days 2 -subj /CN=onviftest-ca'.split(' '))
+    openssl(...'req -x509 -newkey rsa:2048 -nodes -keyout own.key -out own.pem -days 2 -subj /CN=onviftest'.split(' '))
     const der = (file: string) => openssl('x509', '-in', file, '-outform', 'DER')
     const now = new Date(Date.now() + clockSkewMs)
     const validity = (days: number) => new Date(now.getTime() + days * 86_400_000).toISOString().replace(/\.\d+Z$/, 'Z')
@@ -313,22 +285,7 @@ const captureCertificates = async (management: Client): Promise<void> => {
       const csr = text(elements(csrXml, 'Pkcs10Request')[0] ?? '', 'Data')
       if (csr) await writeFile(join(directory, 'own.csr'), Buffer.from(csr, 'base64'))
       const certificate = csr
-        ? openssl(
-            'x509',
-            '-req',
-            '-inform',
-            'DER',
-            '-in',
-            'own.csr',
-            '-CA',
-            'ca.pem',
-            '-CAkey',
-            'ca.key',
-            '-days',
-            '2',
-            '-outform',
-            'DER'
-          )
+        ? openssl(...'x509 -req -inform DER -in own.csr -CA ca.pem -CAkey ca.key -days 2 -outform DER'.split(' '))
         : der('own.pem')
       await management.call(
         'LoadCertificates',
@@ -571,21 +528,14 @@ const captureManagement = async (): Promise<void> => {
     await management.call('SetRemoteUser')
   }
 
-  const children = (xml: string, response: string) =>
-    (elements(xml, response)[0] ?? '').replace(/<(\/?)[\w-]+:/g, '<$1')
-  if (complexityXml.includes('GetPasswordComplexityConfigurationResponse')) {
-    const content = children(complexityXml, 'GetPasswordComplexityConfigurationResponse')
-    await management.call('SetPasswordComplexityConfiguration', content)
-  }
-  if (historyXml.includes('GetPasswordHistoryConfigurationResponse')) {
-    await management.call(
-      'SetPasswordHistoryConfiguration',
-      children(historyXml, 'GetPasswordHistoryConfigurationResponse')
-    )
-  }
-  if (warningXml.includes('GetAuthFailureWarningConfigurationResponse')) {
-    const content = children(warningXml, 'GetAuthFailureWarningConfigurationResponse')
-    await management.call('SetAuthFailureWarningConfiguration', content)
+  for (const [name, xml] of [
+    ['PasswordComplexityConfiguration', complexityXml],
+    ['PasswordHistoryConfiguration', historyXml],
+    ['AuthFailureWarningConfiguration', warningXml]
+  ] as const) {
+    const response = `Get${name}Response`
+    if (!xml.includes(response)) continue
+    await management.call(`Set${name}`, (elements(xml, response)[0] ?? '').replace(/<(\/?)[\w-]+:/g, '<$1'))
   }
   const policy = elements(policyXml, 'PolicyFile')[0]
   if (policy !== undefined && text(policy, 'Data') !== undefined) {
@@ -1087,6 +1037,7 @@ const searchResults = async (
   const token = text(findXml, 'SearchToken')
   if (token === undefined) return
   const searchToken = `<SearchToken>${token}</SearchToken>`
+  const suffix = name === 'Recording' ? '' : 'AfterEvents'
   try {
     for (let page = 0; page < 10; page += 1) {
       const xml = await search.call(
@@ -1097,11 +1048,9 @@ const searchResults = async (
       const state = text(xml, 'SearchState')
       if (state !== 'Searching' && state !== 'Queued') break
     }
-    await search.call('GetSearchState', searchToken, {
-      as: name === 'Recording' ? 'GetSearchState' : 'GetSearchStateAfterEvents'
-    })
+    await search.call('GetSearchState', searchToken, { as: `GetSearchState${suffix}` })
   } finally {
-    await search.call('EndSearch', searchToken, { as: name === 'Recording' ? 'EndSearch' : 'EndSearchAfterEvents' })
+    await search.call('EndSearch', searchToken, { as: `EndSearch${suffix}` })
   }
 }
 
@@ -1209,6 +1158,14 @@ const captureDeviceIO = async (): Promise<void> => {
   }
 }
 
+// sends a created configuration back as the device reported it
+const sendBack = async (recording: Client, operation: string, element: string, request: string): Promise<void> => {
+  const xml = await recording.call(`Get${operation}`, request, { as: `Get${operation}Created` })
+  const configuration = elements(xml, element)[0]
+  if (configuration === undefined) return
+  await recording.call(`Set${operation}`, `${request}<${element}>${configuration}</${element}>`, { from: xml })
+}
+
 const captureRecording = async (): Promise<void> => {
   const recordingUrl = serviceUrl(ns.trc)
   const searchUrl = serviceUrl(ns.tse)
@@ -1259,24 +1216,22 @@ const captureRecording = async (): Promise<void> => {
       'Recording',
       await search.call('FindRecordings', '<Scope/><MaxMatches>20</MaxMatches><KeepAliveTime>PT10S</KeepAliveTime>')
     )
-    {
-      // the last day of device time, since some devices refuse the 1970 and 2038 bounds of an empty summary
-      const deviceTime = (offsetMs: number) =>
-        `${new Date(Date.now() + clockSkewMs + offsetMs).toISOString().slice(0, 19)}Z`
-      const scope =
-        recordingToken === undefined
-          ? '<Scope/>'
-          : `<Scope><IncludedRecordings ${tt}>${recordingToken}</IncludedRecordings></Scope>`
-      await searchResults(
-        search,
-        'Event',
-        await search.call(
-          'FindEvents',
-          `<StartPoint>${deviceTime(-86_400_000)}</StartPoint><EndPoint>${deviceTime(0)}</EndPoint>${scope}<SearchFilter/>` +
-            '<IncludeStartState>false</IncludeStartState><MaxMatches>20</MaxMatches><KeepAliveTime>PT10S</KeepAliveTime>'
-        )
+    // the last day of device time, since some devices refuse the 1970 and 2038 bounds of an empty summary
+    const deviceTime = (offsetMs: number) =>
+      `${new Date(Date.now() + clockSkewMs + offsetMs).toISOString().slice(0, 19)}Z`
+    const scope =
+      recordingToken === undefined
+        ? '<Scope/>'
+        : `<Scope><IncludedRecordings ${tt}>${recordingToken}</IncludedRecordings></Scope>`
+    await searchResults(
+      search,
+      'Event',
+      await search.call(
+        'FindEvents',
+        `<StartPoint>${deviceTime(-86_400_000)}</StartPoint><EndPoint>${deviceTime(0)}</EndPoint>${scope}<SearchFilter/>` +
+          '<IncludeStartState>false</IncludeStartState><MaxMatches>20</MaxMatches><KeepAliveTime>PT10S</KeepAliveTime>'
       )
-    }
+    )
     await search.call(
       'GetRecordingSearchResults',
       '<SearchToken>missing</SearchToken><MaxResults>1</MaxResults><WaitTime>PT1S</WaitTime>',
@@ -1317,17 +1272,7 @@ const captureRecording = async (): Promise<void> => {
   if (created === undefined) return
   const token = `<RecordingToken>${created}</RecordingToken>`
   try {
-    const configurationXml = await recording.call('GetRecordingConfiguration', token, {
-      as: 'GetRecordingConfigurationCreated'
-    })
-    const recordingConfiguration = elements(configurationXml, 'RecordingConfiguration')[0]
-    if (recordingConfiguration !== undefined) {
-      await recording.call(
-        'SetRecordingConfiguration',
-        `${token}<RecordingConfiguration>${recordingConfiguration}</RecordingConfiguration>`,
-        { from: configurationXml }
-      )
-    }
+    await sendBack(recording, 'RecordingConfiguration', 'RecordingConfiguration', token)
     if (/DynamicTracks="(?:true|1)"/.test(recordingCapabilities)) {
       const track = text(
         await recording.call(
@@ -1340,17 +1285,7 @@ const captureRecording = async (): Promise<void> => {
       if (track !== undefined) {
         const trackToken = `${token}<TrackToken>${track}</TrackToken>`
         try {
-          const trackXml = await recording.call('GetTrackConfiguration', trackToken, {
-            as: 'GetTrackConfigurationCreated'
-          })
-          const trackConfiguration = elements(trackXml, 'TrackConfiguration')[0]
-          if (trackConfiguration !== undefined) {
-            await recording.call(
-              'SetTrackConfiguration',
-              `${trackToken}<TrackConfiguration>${trackConfiguration}</TrackConfiguration>`,
-              { from: trackXml }
-            )
-          }
+          await sendBack(recording, 'TrackConfiguration', 'TrackConfiguration', trackToken)
         } finally {
           await recording.call('DeleteTrack', trackToken)
         }
@@ -1368,17 +1303,7 @@ const captureRecording = async (): Promise<void> => {
       const jobToken = `<JobToken>${job}</JobToken>`
       try {
         await recording.call('GetRecordingJobState', jobToken, { as: 'GetRecordingJobStateCreated' })
-        const jobXml = await recording.call('GetRecordingJobConfiguration', jobToken, {
-          as: 'GetRecordingJobConfigurationCreated'
-        })
-        const jobConfiguration = elements(jobXml, 'JobConfiguration')[0]
-        if (jobConfiguration !== undefined) {
-          await recording.call(
-            'SetRecordingJobConfiguration',
-            `${jobToken}<JobConfiguration>${jobConfiguration}</JobConfiguration>`,
-            { from: jobXml }
-          )
-        }
+        await sendBack(recording, 'RecordingJobConfiguration', 'JobConfiguration', jobToken)
         await recording.call('SetRecordingJobMode', `${jobToken}<Mode>Idle</Mode>`)
       } finally {
         await recording.call('DeleteRecordingJob', jobToken)
