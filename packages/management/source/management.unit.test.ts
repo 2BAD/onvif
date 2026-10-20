@@ -1,37 +1,25 @@
-import { AuthError, DecodeError, Device, OnvifError, SoapFaultError, TimeoutError, TransportError } from '@2bad/onvif'
-import { decode, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
+import { AuthError, DecodeError, OnvifError, SoapFaultError, TimeoutError, TransportError } from '@2bad/onvif'
+import { parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { corpus, decodeCapture, fixture } from '../../../tools/fixtures/corpus.ts'
 import {
-  type ActionOverride,
-  type MockCamera,
-  type MockCameraOptions,
-  startMockCamera
-} from '../../../tools/mock-camera/server.ts'
+  answer,
+  cam,
+  connectMock,
+  dahua,
+  hik,
+  rawRequestOf,
+  rejection,
+  requestOf,
+  simulator
+} from '../../../tools/mock-camera/harness.ts'
+import { type ActionOverride, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { Management, management } from '#index.ts'
 
-const live = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
-
 const connect = async (options?: MockCameraOptions) => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options)
   return { mock, device: device.use(management) }
 }
-
-const answer = (body: string): ActionOverride => ({ kind: 'status', status: 200, body })
 
 const fault = (subcodes: string[], reason: string): ActionOverride => ({
   kind: 'status',
@@ -44,22 +32,11 @@ const fault = (subcodes: string[], reason: string): ActionOverride => ({
     `</s:Code><s:Reason><s:Text xml:lang="en">${reason}</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>`
 })
 
+const leaks = (error: unknown, secret: string): boolean =>
+  `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`.includes(secret)
+
 const usersAnswer = (users: string): ActionOverride =>
-  answer(live('device.GetUsers').replace(/<tds:User>[\s\S]*<\/tds:User>/, users))
-
-const requestOf = (mock: MockCamera, action: string): XmlObject => {
-  const body = mock.requests.findLast((request) => request.action === action)?.body ?? ''
-  return parseEnvelope(body).body
-}
-
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
+  answer(cam('device.GetUsers').replace(/<tds:User>[\s\S]*<\/tds:User>/, users))
 
 const operations = [
   Management.SetNetworkInterfaces,
@@ -206,11 +183,8 @@ describe('generated management operations', () => {
     expect(missing).toEqual([])
   })
 
-  it.each(decodable.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml)
-    const response = body[operation.response.name]
-    expect(response).toBeDefined()
-    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  it.each(decodable.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
+    expect(() => decodeCapture(capture)).not.toThrow()
   })
 })
 
@@ -281,7 +255,7 @@ describe('Management on the camera', () => {
             '<tds:User><tt:Username>1234</tt:Username><tt:UserLevel>User</tt:UserLevel></tds:User>'
         ),
         'device.GetDynamicDNS': answer(
-          live('device.GetDynamicDNS').replace(
+          cam('device.GetDynamicDNS').replace(
             '<tds:DynamicDNSInformation xsi:nil="true"/>',
             '<tds:DynamicDNSInformation><tt:Type>ClientUpdates</tt:Type><tt:Name>true</tt:Name>' +
               '<tt:TTL>PT1H</tt:TTL></tds:DynamicDNSInformation>'
@@ -347,11 +321,7 @@ describe('Management on the camera', () => {
   it('reports an operation the DRN-3282R does not implement as a SOAP fault without subcodes', async () => {
     const { device } = await connect({
       overrides: {
-        'device.GetIPAddressFilter': {
-          kind: 'status',
-          status: 400,
-          body: fixture('live/dvc/drn-3282r/device.UnknownActionFault.xml').xml
-        }
+        'device.GetIPAddressFilter': answer(fixture('live/dvc/drn-3282r/device.UnknownActionFault.xml').xml, 400)
       }
     })
     const error = await rejection(() => device.management.getIPAddressFilter())
@@ -387,7 +357,7 @@ describe('Management on the camera', () => {
 
   it('reports a user the device does not know as a SOAP fault with the action', async () => {
     const { device } = await connect({
-      overrides: { 'device.DeleteUsers': { kind: 'status', status: 400, body: live('device.DeleteUsersMissingFault') } }
+      overrides: { 'device.DeleteUsers': answer(cam('device.DeleteUsersMissingFault'), 400) }
     })
     const error = await rejection(() => device.management.deleteUsers({ username: ['nobody'] }))
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -402,7 +372,7 @@ describe('Management on the camera', () => {
   it('keeps the password out of the error when the device rejects it', async () => {
     const { device } = await connect({
       overrides: {
-        'device.SetUser': { kind: 'status', status: 400, body: live('device.SetUserWithoutPasswordFault') }
+        'device.SetUser': answer(cam('device.SetUserWithoutPasswordFault'), 400)
       }
     })
     const password = 'Secret-Password-1'
@@ -411,7 +381,7 @@ describe('Management on the camera', () => {
     )
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['OperationProhibited', 'PasswordTooWeak'], action: 'SetUser' })
-    expect(`${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`).not.toContain(password)
+    expect(leaks(error, password)).toBe(false)
   })
 
   it('keeps the password out of the error when it cannot be sent', async () => {
@@ -421,7 +391,7 @@ describe('Management on the camera', () => {
       device.management.setUser({ user: [{ username: 'viewer', password, userLevel: 'User' }] })
     )
     expect(error).toBeInstanceOf(OnvifError)
-    expect(`${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`).not.toContain('Secret')
+    expect(leaks(error, 'Secret')).toBe(false)
     expect(mock.requests.some(({ action }) => action === 'SetUser')).toBe(false)
   })
 
@@ -513,9 +483,6 @@ describe('Management on the camera', () => {
 })
 
 describe('Network settings on the camera', () => {
-  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-  const happytime = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
-
   it('reads the manual DNS servers and search domain', async () => {
     const { device } = await connect()
     expect(await device.management.getDNS()).toEqual({
@@ -531,7 +498,7 @@ describe('Network settings on the camera', () => {
   })
 
   it('reads the DNS servers the DS-2DE2C400IG-W-W got from DHCP', async () => {
-    const { device } = await connect({ overrides: { 'device.GetDNS': answer(hikvision('device.GetDNS')) } })
+    const { device } = await connect({ overrides: { 'device.GetDNS': answer(hik('device.GetDNS')) } })
     expect(await device.management.getDNS()).toEqual({
       dnsInformation: { fromDHCP: true, dnsFromDHCP: [{ type: 'IPv4', ipv4Address: '192.0.2.21' }] }
     })
@@ -617,11 +584,7 @@ describe('Network settings on the camera', () => {
   it('reports remote discovery on a device without it as a SOAP fault', async () => {
     const { device } = await connect({
       overrides: {
-        'device.GetRemoteDiscoveryMode': {
-          kind: 'status',
-          status: 400,
-          body: happytime('device.GetRemoteDiscoveryMode')
-        }
+        'device.GetRemoteDiscoveryMode': answer(simulator('device.GetRemoteDiscoveryMode'), 400)
       }
     })
     const error = await rejection(() => device.management.getRemoteDiscoveryMode())
@@ -656,7 +619,7 @@ describe('Network settings on the camera', () => {
 
   it('reports the DS-2DE2C400IG-W-W rejecting the discovery proxy request as a SOAP fault', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetDPAddresses': { kind: 'status', status: 500, body: hikvision('device.GetDPAddresses') } }
+      overrides: { 'device.GetDPAddresses': answer(hik('device.GetDPAddresses'), 500) }
     })
     const error = await rejection(() => device.management.getDPAddresses())
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -685,7 +648,7 @@ describe('Network settings on the camera', () => {
     'simulator/happytimesoft/ipcamera'
   ])('reports the invalid hostname fault of %s with the InvalidHostname subcode', async (directory) => {
     const { xml, status } = fixture(`${directory}/device.SetHostnameInvalidFault.xml`)
-    const { device } = await connect({ overrides: { 'device.SetHostname': { kind: 'status', status, body: xml } } })
+    const { device } = await connect({ overrides: { 'device.SetHostname': answer(xml, status) } })
     const error = await rejection(() => device.management.setHostname({ name: '-invalid_name-' }))
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'InvalidHostname'], action: 'SetHostname' })
@@ -693,7 +656,7 @@ describe('Network settings on the camera', () => {
 
   it('reports a hostname the device rejects as a SOAP fault with the subcodes', async () => {
     const { device } = await connect({
-      overrides: { 'device.SetHostname': { kind: 'status', status: 400, body: live('device.SetHostnameInvalidFault') } }
+      overrides: { 'device.SetHostname': answer(cam('device.SetHostnameInvalidFault'), 400) }
     })
     const error = await rejection(() => device.management.setHostname({ name: '-invalid_name-' }))
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -712,7 +675,7 @@ describe('Network settings on the camera', () => {
 
   it('returns the reboot the DS-2DE2C400IG-W-W asks for after the hostname source changed', async () => {
     const { device } = await connect({
-      overrides: { 'device.SetHostnameFromDHCP': answer(hikvision('device.SetHostnameFromDHCP')) }
+      overrides: { 'device.SetHostnameFromDHCP': answer(hik('device.SetHostnameFromDHCP')) }
     })
     expect(await device.management.setHostnameFromDHCP({ fromDHCP: false })).toEqual({ rebootNeeded: true })
   })
@@ -726,14 +689,14 @@ describe('Network settings on the camera', () => {
 
   it('reads a GUID without the urn:uuid prefix as it is', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetEndpointReference': answer(happytime('device.GetEndpointReference')) }
+      overrides: { 'device.GetEndpointReference': answer(simulator('device.GetEndpointReference')) }
     })
     expect(await device.management.getEndpointReference()).toEqual({ GUID: '00000000-0000-4000-8000-000000000012' })
   })
 
   it('reads the wireless capabilities of the DS-2DE2C400IG-W-W', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetDot11Capabilities': answer(hikvision('device.GetDot11Capabilities')) }
+      overrides: { 'device.GetDot11Capabilities': answer(hik('device.GetDot11Capabilities')) }
     })
     expect(await device.management.getDot11Capabilities()).toEqual({
       capabilities: {
@@ -762,7 +725,7 @@ describe('Network settings on the camera', () => {
 
   it('reads an empty wireless status as empty names', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetDot11Status': answer(happytime('device.GetDot11Status')) }
+      overrides: { 'device.GetDot11Status': answer(simulator('device.GetDot11Status')) }
     })
     expect(await device.management.getDot11Status({ interfaceToken: 'wlan0' })).toEqual({
       status: { SSID: '', activeConfigAlias: '' }
@@ -778,7 +741,7 @@ describe('Network settings on the camera', () => {
     const { mock, device } = await connect({
       overrides: {
         'device.ScanAvailableDot11Networks': answer(
-          live('device.ScanAvailableDot11Networks').replace(
+          cam('device.ScanAvailableDot11Networks').replace(
             '<tds:ScanAvailableDot11NetworksResponse></tds:ScanAvailableDot11NetworksResponse>',
             `<tds:ScanAvailableDot11NetworksResponse>${networks}</tds:ScanAvailableDot11NetworksResponse>`
           )
@@ -805,7 +768,7 @@ describe('Network settings on the camera', () => {
   it('reports the wireless status the DS-2DE2C400IG-W-W does not implement as a SOAP fault', async () => {
     const { device } = await connect({
       overrides: {
-        'device.GetDot11Status': { kind: 'status', status: 500, body: hikvision('device.GetDot11Status') }
+        'device.GetDot11Status': answer(hik('device.GetDot11Status'), 500)
       }
     })
     const error = await rejection(() => device.management.getDot11Status({ interfaceToken: 'wlan0' }))
@@ -815,12 +778,6 @@ describe('Network settings on the camera', () => {
 })
 
 describe('System settings on the camera', () => {
-  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-  const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
-  const happytime = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
-  const rawRequest = (mock: MockCamera, action: string): string =>
-    mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
   it('sets, adds and removes scopes', async () => {
     const { mock, device } = await connect()
     const scope = 'onvif://www.onvif.org/location/hall&gate'
@@ -829,11 +786,11 @@ describe('System settings on the camera', () => {
     expect(await device.management.removeScopes({ scopeItem: [scope] })).toEqual({})
     expect(requestOf(mock, 'SetScopes')).toEqual({ SetScopes: { Scopes: [scope, 'onvif://www.onvif.org/name/door'] } })
     expect(requestOf(mock, 'AddScopes')).toEqual({ AddScopes: { ScopeItem: scope } })
-    expect(rawRequest(mock, 'RemoveScopes')).toContain('<tds:ScopeItem>onvif://www.onvif.org/location/hall&amp;gate<')
+    expect(rawRequestOf(mock, 'RemoveScopes')).toContain('<tds:ScopeItem>onvif://www.onvif.org/location/hall&amp;gate<')
   })
 
   it('returns the one removed scope the DS-2DE2C400IG-W-W lists as an array', async () => {
-    const { device } = await connect({ overrides: { 'device.RemoveScopes': answer(hikvision('device.RemoveScopes')) } })
+    const { device } = await connect({ overrides: { 'device.RemoveScopes': answer(hik('device.RemoveScopes')) } })
     expect(await device.management.removeScopes({ scopeItem: ['onvif://www.onvif.org/onviftest'] })).toEqual({
       scopeItem: ['onvif://www.onvif.org/onviftest']
     })
@@ -846,7 +803,7 @@ describe('System settings on the camera', () => {
     'simulator/happytimesoft/ipcamera'
   ])('reports removing a scope %s does not have with the NoScope subcode', async (directory) => {
     const { xml, status } = fixture(`${directory}/device.RemoveScopesMissingFault.xml`)
-    const { device } = await connect({ overrides: { 'device.RemoveScopes': { kind: 'status', status, body: xml } } })
+    const { device } = await connect({ overrides: { 'device.RemoveScopes': answer(xml, status) } })
     const error = await rejection(() => device.management.removeScopes({ scopeItem: ['onvif://www.onvif.org/x'] }))
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'NoScope'], action: 'RemoveScopes' })
@@ -862,7 +819,7 @@ describe('System settings on the camera', () => {
     expect(requestOf(mock, 'SetSystemDateAndTime')).toEqual({
       SetSystemDateAndTime: { DateTimeType: 'NTP', DaylightSavings: 'false', TimeZone: { TZ: 'CST-8:00:00' } }
     })
-    expect(rawRequest(mock, 'SetSystemDateAndTime')).toContain(
+    expect(rawRequestOf(mock, 'SetSystemDateAndTime')).toContain(
       '<tds:TimeZone><tt:TZ>CST-8:00:00</tt:TZ></tds:TimeZone>'
     )
   })
@@ -883,7 +840,7 @@ describe('System settings on the camera', () => {
         UTCDateTime: { Time: { Hour: '0', Minute: '0', Second: '5' }, Date: { Year: '2026', Month: '1', Day: '2' } }
       }
     })
-    expect(rawRequest(mock, 'SetSystemDateAndTime')).toContain(
+    expect(rawRequestOf(mock, 'SetSystemDateAndTime')).toContain(
       '<tds:UTCDateTime><tt:Time><tt:Hour>0</tt:Hour><tt:Minute>0</tt:Minute><tt:Second>5</tt:Second></tt:Time>'
     )
   })
@@ -915,7 +872,7 @@ describe('System settings on the camera', () => {
   it('reports a clock that cannot be measured after it was set with the action that failed', async () => {
     const overrides: Record<string, ActionOverride> = {}
     const { device } = await connect({ overrides })
-    overrides['device.GetSystemDateAndTime'] = { kind: 'status', status: 503, body: '' }
+    overrides['device.GetSystemDateAndTime'] = answer('', 503)
     const error = await rejection(() =>
       device.management.setSystemDateAndTime({ dateTimeType: 'NTP', daylightSavings: false })
     )
@@ -946,7 +903,7 @@ describe('System settings on the camera', () => {
   ])('reports the %s fault of %s with its subcode', async (kind, directory) => {
     const { xml, status } = fixture(`${directory}/device.SetSystemDateAndTime${kind}Fault.xml`)
     const { mock, device } = await connect({
-      overrides: { 'device.SetSystemDateAndTime': { kind: 'status', status, body: xml } }
+      overrides: { 'device.SetSystemDateAndTime': answer(xml, status) }
     })
     const error = await rejection(() =>
       device.management.setSystemDateAndTime({ dateTimeType: 'NTP', daylightSavings: false, timeZone: { TZ: '!' } })
@@ -961,7 +918,7 @@ describe('System settings on the camera', () => {
 
   it('sends the factory default type', async () => {
     const { mock, device } = await connect({
-      overrides: { 'device.SetSystemFactoryDefault': answer(happytime('device.SetSystemFactoryDefault')) }
+      overrides: { 'device.SetSystemFactoryDefault': answer(simulator('device.SetSystemFactoryDefault')) }
     })
     expect(await device.management.setSystemFactoryDefault({ factoryDefault: 'Soft' })).toEqual({})
     expect(requestOf(mock, 'SetSystemFactoryDefault')).toEqual({ SetSystemFactoryDefault: { FactoryDefault: 'Soft' } })
@@ -983,9 +940,9 @@ describe('System settings on the camera', () => {
   it('keeps log text that looks like a number or boolean as a string', async () => {
     const { device } = await connect({
       overrides: {
-        'device.GetSystemLog': answer(live('device.GetSystemLog').replace('No available system logs', '123')),
+        'device.GetSystemLog': answer(cam('device.GetSystemLog').replace('No available system logs', '123')),
         'device.GetSystemSupportInformation': answer(
-          hikvision('device.GetSystemSupportInformation').replace('No available system support information', 'true')
+          hik('device.GetSystemSupportInformation').replace('No available system support information', 'true')
         )
       }
     })
@@ -1000,7 +957,7 @@ describe('System settings on the camera', () => {
     const { device } = await connect({
       overrides: {
         'device.GetSystemLog': answer(
-          live('device.GetSystemLog').replace('<tt:String>No available system logs</tt:String>', binary)
+          cam('device.GetSystemLog').replace('<tt:String>No available system logs</tt:String>', binary)
         )
       }
     })
@@ -1028,7 +985,7 @@ describe('System settings on the camera', () => {
     const { mock, device } = await connect({
       overrides: {
         'device.SendAuxiliaryCommand': answer(
-          live('device.GetWsdlUrl').replace(/<tds:GetWsdlUrlResponse>[\s\S]*<\/tds:GetWsdlUrlResponse>/, response)
+          cam('device.GetWsdlUrl').replace(/<tds:GetWsdlUrlResponse>[\s\S]*<\/tds:GetWsdlUrlResponse>/, response)
         )
       }
     })
@@ -1043,7 +1000,7 @@ describe('System settings on the camera', () => {
   it('reports an auxiliary command the DS-2DE2C400IG-W-W does not support as a SOAP fault', async () => {
     const { device } = await connect({
       overrides: {
-        'device.SendAuxiliaryCommand': { kind: 'status', status: 500, body: hikvision('device.SendAuxiliaryCommand') }
+        'device.SendAuxiliaryCommand': answer(hik('device.SendAuxiliaryCommand'), 500)
       }
     })
     const error = await rejection(() => device.management.sendAuxiliaryCommand({ auxiliaryCommand: 'tt:x|On' }))
@@ -1060,14 +1017,14 @@ describe('System settings on the camera', () => {
     }
     expect(await device.management.setGeoLocation({ location: [location] })).toEqual({})
     expect(await device.management.deleteGeoLocation({ location: [location] })).toEqual({})
-    expect(rawRequest(mock, 'SetGeoLocation')).toContain(
+    expect(rawRequestOf(mock, 'SetGeoLocation')).toContain(
       '<tds:Location Entity="Device" Token="onviftest" Fixed="false"><tt:GeoLocation lon="13.405" lat="52.52" elevation="0"/></tds:Location>'
     )
   })
 
   it('reads a location with its attributes', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetGeoLocation': answer(happytime('device.GetGeoLocationWithAdded')) }
+      overrides: { 'device.GetGeoLocation': answer(simulator('device.GetGeoLocationWithAdded')) }
     })
     expect(await device.management.getGeoLocation()).toEqual({
       location: [{ entity: 'Device', token: 'onviftest', fixed: false, geoLocation: { lon: 0, lat: 0, elevation: 0 } }]
@@ -1082,7 +1039,7 @@ describe('System settings on the camera', () => {
         'SetStorageConfiguration',
         'GetStorageConfigurationsWithAdded',
         'DeleteStorageConfiguration'
-      ].map((name) => [`device.${name.replace('WithAdded', '')}`, answer(happytime(`device.${name}`))])
+      ].map((name) => [`device.${name.replace('WithAdded', '')}`, answer(simulator(`device.${name}`))])
     )
     const { mock, device } = await connect({ overrides: answers })
     const data = { type: 'NFS', localPath: '/onviftest', storageUri: 'nfs://192.0.2.22/onviftest' }
@@ -1094,10 +1051,10 @@ describe('System settings on the camera', () => {
     expect(await device.management.getStorageConfigurations()).toEqual({ storageConfigurations: [{ token, data }] })
     expect(await device.management.setStorageConfiguration({ storageConfiguration: { token, data } })).toEqual({})
     expect(await device.management.deleteStorageConfiguration({ token })).toEqual({})
-    expect(rawRequest(mock, 'CreateStorageConfiguration')).toContain(
+    expect(rawRequestOf(mock, 'CreateStorageConfiguration')).toContain(
       '<tds:StorageConfiguration type="NFS"><tds:LocalPath>/onviftest</tds:LocalPath>'
     )
-    expect(rawRequest(mock, 'SetStorageConfiguration')).toContain(
+    expect(rawRequestOf(mock, 'SetStorageConfiguration')).toContain(
       `<tds:StorageConfiguration token="${token}"><tds:Data type="NFS">`
     )
   })
@@ -1105,11 +1062,7 @@ describe('System settings on the camera', () => {
   it('reports a storage configuration HappyTime does not have as a SOAP fault', async () => {
     const { device } = await connect({
       overrides: {
-        'device.GetStorageConfiguration': {
-          kind: 'status',
-          status: 400,
-          body: happytime('device.GetStorageConfigurationMissingFault')
-        }
+        'device.GetStorageConfiguration': answer(simulator('device.GetStorageConfigurationMissingFault'), 400)
       }
     })
     const error = await rejection(() => device.management.getStorageConfiguration({ token: 'missing' }))
@@ -1121,14 +1074,14 @@ describe('System settings on the camera', () => {
     const request = { storageConfiguration: { type: 'NFS', localPath: '/x' } }
     expect(await device.management.createStorageConfiguration(request)).toEqual({ token: '' })
     const other = await connect({
-      overrides: { 'device.CreateStorageConfiguration': answer(hikvision('device.CreateStorageConfiguration')) }
+      overrides: { 'device.CreateStorageConfiguration': answer(hik('device.CreateStorageConfiguration')) }
     })
     expect(await other.device.management.createStorageConfiguration(request)).toEqual({ token: '' })
   })
 
   it('rejects the list the DS-2DE2C400IG-W-W returns for one storage configuration', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetStorageConfiguration': answer(hikvision('device.GetStorageConfiguration')) }
+      overrides: { 'device.GetStorageConfiguration': answer(hik('device.GetStorageConfiguration')) }
     })
     await expect(device.management.getStorageConfiguration({ token: '' })).rejects.toMatchObject({
       name: 'DecodeError',
@@ -1139,11 +1092,7 @@ describe('System settings on the camera', () => {
   it('keeps the storage password out of the error when the device rejects the configuration', async () => {
     const { device } = await connect({
       overrides: {
-        'device.SetStorageConfiguration': {
-          kind: 'status',
-          status: 500,
-          body: hikvision('device.SetStorageConfiguration')
-        }
+        'device.SetStorageConfiguration': answer(hik('device.SetStorageConfiguration'), 500)
       }
     })
     const password = 'Storage-Secret-9'
@@ -1156,21 +1105,13 @@ describe('System settings on the camera', () => {
       })
     )
     expect(error).toBeInstanceOf(SoapFaultError)
-    expect(`${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`).not.toContain(password)
+    expect(leaks(error, password)).toBe(false)
   })
 })
 
 describe('Security settings on the camera', () => {
-  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-  const rawRequest = (mock: MockCamera, action: string): string =>
-    mock.requests.findLast((request) => request.action === action)?.body ?? ''
   const response = (body: string): ActionOverride =>
-    answer(
-      live('device.GetRemoteUser').replace(/<tds:GetRemoteUserResponse>[\s\S]*<\/tds:GetRemoteUserResponse>/, body)
-    )
-  const leaks = (error: unknown, secret: string): boolean =>
-    `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`.includes(secret)
-
+    answer(cam('device.GetRemoteUser').replace(/<tds:GetRemoteUserResponse>[\s\S]*<\/tds:GetRemoteUserResponse>/, body))
   it('reads user roles with their functions as a list', async () => {
     const roles =
       '<tds:GetUserRolesResponse><tds:UserRole><tt:Name>operator</tt:Name>' +
@@ -1192,7 +1133,7 @@ describe('Security settings on the camera', () => {
     const userRole = { name: 'viewer', functions: ['trt:GetProfiles', 'trt:GetStreamUri'] }
     expect(await device.management.setUserRole({ userRole })).toEqual({})
     expect(await device.management.deleteUserRole({ userRole: 'viewer' })).toEqual({})
-    expect(rawRequest(mock, 'SetUserRole')).toContain(
+    expect(rawRequestOf(mock, 'SetUserRole')).toContain(
       '<tds:UserRole><tt:Name>viewer</tt:Name><tt:Functions>trt:GetProfiles trt:GetStreamUri</tt:Functions></tds:UserRole>'
     )
     expect(requestOf(mock, 'DeleteUserRole')).toEqual({ DeleteUserRole: { UserRole: 'viewer' } })
@@ -1200,7 +1141,7 @@ describe('Security settings on the camera', () => {
 
   it('reports roles on the camera as a SOAP fault without subcodes', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetUserRoles': { kind: 'status', status: 400, body: live('device.GetUserRoles') } }
+      overrides: { 'device.GetUserRoles': answer(cam('device.GetUserRoles'), 400) }
     })
     const error = await rejection(() => device.management.getUserRoles())
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -1227,7 +1168,7 @@ describe('Security settings on the camera', () => {
   it('sends the remote user password as text and keeps it out of the error', async () => {
     const { mock, device } = await connect({
       overrides: {
-        'device.SetRemoteUser': { kind: 'status', status: 500, body: hikvision('device.GetRemoteUser') }
+        'device.SetRemoteUser': answer(hik('device.GetRemoteUser'), 500)
       }
     })
     const password = `Remote<&>"'-Secret`
@@ -1331,26 +1272,26 @@ describe('Security settings on the camera', () => {
   it('reads the access policy of the DS-2DE2C400IG-W-W as bytes and sends it back as base64', async () => {
     const { mock, device } = await connect({
       overrides: {
-        'device.GetAccessPolicy': answer(hikvision('device.GetAccessPolicy')),
-        'device.SetAccessPolicy': answer(hikvision('device.SetAccessPolicy'))
+        'device.GetAccessPolicy': answer(hik('device.GetAccessPolicy')),
+        'device.SetAccessPolicy': answer(hik('device.SetAccessPolicy'))
       }
     })
     const { policyFile } = await device.management.getAccessPolicy()
     expect(policyFile).toEqual({ data: new Uint8Array(Buffer.from('eFY0EgHvzas=', 'base64')) })
     expect(await device.management.setAccessPolicy({ policyFile })).toEqual({})
-    expect(rawRequest(mock, 'SetAccessPolicy')).toContain(
+    expect(rawRequestOf(mock, 'SetAccessPolicy')).toContain(
       '<tds:PolicyFile><tt:Data>eFY0EgHvzas=</tt:Data></tds:PolicyFile>'
     )
   })
 
   it('sends the content type of the access policy as an xmime attribute', async () => {
     const { mock, device } = await connect({
-      overrides: { 'device.SetAccessPolicy': answer(hikvision('device.SetAccessPolicy')) }
+      overrides: { 'device.SetAccessPolicy': answer(hik('device.SetAccessPolicy')) }
     })
     await device.management.setAccessPolicy({
       policyFile: { data: new TextEncoder().encode('<policy/>'), contentType: 'application/xml' }
     })
-    const body = rawRequest(mock, 'SetAccessPolicy')
+    const body = rawRequestOf(mock, 'SetAccessPolicy')
     expect(body).toContain('xmlns:xmime="http://www.w3.org/2005/05/xmlmime"')
     expect(body).toMatch(
       /<tds:PolicyFile [^>]*xmime:contentType="application\/xml"[^>]*><tt:Data>PHBvbGljeS8\+<\/tt:Data>/
@@ -1370,28 +1311,16 @@ describe('Security settings on the camera', () => {
       overrides: { 'device.SetHashingAlgorithm': response('<tds:SetHashingAlgorithmResponse/>') }
     })
     expect(await device.management.setHashingAlgorithm({ algorithm: ['SHA-256', 'MD5'] })).toEqual({})
-    expect(rawRequest(mock, 'SetHashingAlgorithm')).toContain('<tds:Algorithm>SHA-256 MD5</tds:Algorithm>')
+    expect(rawRequestOf(mock, 'SetHashingAlgorithm')).toContain('<tds:Algorithm>SHA-256 MD5</tds:Algorithm>')
   })
 })
 
 describe('Certificates and 802.1X on the camera', () => {
-  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-  const rawRequest = (mock: MockCamera, action: string): string =>
-    mock.requests.findLast((request) => request.action === action)?.body ?? ''
   const response = (body: string): ActionOverride =>
     answer(
-      live('device.GetCertificates').replace(
-        /<tds:GetCertificatesResponse>[\s\S]*<\/tds:GetCertificatesResponse>/,
-        body
-      )
+      cam('device.GetCertificates').replace(/<tds:GetCertificatesResponse>[\s\S]*<\/tds:GetCertificatesResponse>/, body)
     )
-  const notSupported = (): ActionOverride => ({
-    kind: 'status',
-    status: 500,
-    body: hikvision('device.GetCertificates')
-  })
-  const leaks = (error: unknown, secret: string): boolean =>
-    `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`.includes(secret)
+  const notSupported = (): ActionOverride => answer(hik('device.GetCertificates'), 500)
   const der = new Uint8Array([0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01, 0x00, 0xff])
   const base64 = Buffer.from(der).toString('base64')
   const certificate = (id: string) =>
@@ -1495,7 +1424,7 @@ describe('Certificates and 802.1X on the camera', () => {
     expect(
       await device.management.getPkcs10Request({ certificateID: 'onviftest', subject: 'CN=onviftest', attributes })
     ).toEqual({ pkcs10Request: { data: der } })
-    expect(rawRequest(mock, 'GetPkcs10Request')).toMatch(
+    expect(rawRequestOf(mock, 'GetPkcs10Request')).toMatch(
       /<tds:Attributes [^>]*xmime:contentType="application\/octet-stream"[^>]*><tt:Data>AQID<\/tt:Data><\/tds:Attributes>/
     )
   })
@@ -1505,10 +1434,10 @@ describe('Certificates and 802.1X on the camera', () => {
     const loaded = { certificateID: 'onviftest', certificate: { data: der } }
     expect(await device.management.loadCertificates({ nvtCertificate: [loaded] })).toEqual({})
     expect(await device.management.loadCACertificates({ caCertificate: [loaded] })).toEqual({})
-    expect(rawRequest(mock, 'LoadCertificates')).toContain(
+    expect(rawRequestOf(mock, 'LoadCertificates')).toContain(
       `<tds:NVTCertificate>${certificate('onviftest')}</tds:NVTCertificate>`
     )
-    expect(rawRequest(mock, 'LoadCACertificates')).toContain(
+    expect(rawRequestOf(mock, 'LoadCACertificates')).toContain(
       `<tds:CACertificate>${certificate('onviftest')}</tds:CACertificate>`
     )
   })
@@ -1530,7 +1459,7 @@ describe('Certificates and 802.1X on the camera', () => {
     })
     expect(leaks(error, Buffer.from(privateKey).toString('base64'))).toBe(false)
     expect(leaks(error, 'Private-Key-Material')).toBe(false)
-    expect(rawRequest(mock, 'LoadCertificateWithPrivateKey')).toContain(
+    expect(rawRequestOf(mock, 'LoadCertificateWithPrivateKey')).toContain(
       `<tt:PrivateKey><tt:Data>${Buffer.from(privateKey).toString('base64')}</tt:Data></tt:PrivateKey>`
     )
   })
@@ -1607,7 +1536,7 @@ describe('Certificates and 802.1X on the camera', () => {
     expect(await device.management.getDot1XConfigurations()).toEqual({ dot1XConfiguration: [expected] })
     expect(await device.management.setDot1XConfiguration({ dot1XConfiguration: expected })).toEqual({})
     expect(await device.management.deleteDot1XConfiguration({ dot1XConfigurationToken: ['onviftest'] })).toEqual({})
-    expect(rawRequest(mock, 'CreateDot1XConfiguration')).toContain(
+    expect(rawRequestOf(mock, 'CreateDot1XConfiguration')).toContain(
       '<tds:Dot1XConfiguration><tt:Dot1XConfigurationToken>onviftest</tt:Dot1XConfigurationToken>'
     )
     expect(requestOf(mock, 'DeleteDot1XConfiguration')).toEqual({
@@ -1647,20 +1576,17 @@ describe('Certificates and 802.1X on the camera', () => {
 })
 
 describe('Firmware upgrade and system restore on the camera', () => {
-  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-  const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
-  const happytime = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
   const firmware = new Uint8Array([0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01])
   const startAnswer = (uploadUri: string, uploadDelay: string): ActionOverride =>
     answer(
-      happytime('device.StartFirmwareUpgrade')
+      simulator('device.StartFirmwareUpgrade')
         .replace('http://192.0.2.12:80/FirmwareUpgrade', uploadUri)
         .replace('<tds:UploadDelay>PT5S</tds:UploadDelay>', `<tds:UploadDelay>${uploadDelay}</tds:UploadDelay>`)
     )
 
   it('reads the download addresses of logs, support information and backup', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetSystemUris': answer(happytime('device.GetSystemUris')) }
+      overrides: { 'device.GetSystemUris': answer(simulator('device.GetSystemUris')) }
     })
     expect(await device.management.getSystemUris()).toEqual({
       systemLogUris: {
@@ -1676,7 +1602,7 @@ describe('Firmware upgrade and system restore on the camera', () => {
 
   it('reads the empty addresses of the DS-2DE2C400IG-W-W as empty strings', async () => {
     const { device } = await connect({
-      overrides: { 'device.GetSystemUris': answer(hikvision('device.GetSystemUris')) }
+      overrides: { 'device.GetSystemUris': answer(hik('device.GetSystemUris')) }
     })
     expect(await device.management.getSystemUris()).toEqual({
       systemLogUris: { systemLog: [{ type: 'System', uri: '' }] },
@@ -1686,7 +1612,7 @@ describe('Firmware upgrade and system restore on the camera', () => {
 
   it('uploads the firmware to the address the DS-2DE2C400IG-W-W returns, on the configured device', async () => {
     const { mock, device } = await connect({
-      overrides: { 'device.StartFirmwareUpgrade': answer(hikvision('device.StartFirmwareUpgrade')) }
+      overrides: { 'device.StartFirmwareUpgrade': answer(hik('device.StartFirmwareUpgrade')) }
     })
     expect(await device.management.uploadFirmware(firmware)).toEqual({ expectedDownTime: 'PT180S' })
     expect(mock.uploads).toEqual([
@@ -1786,7 +1712,7 @@ describe('Firmware upgrade and system restore on the camera', () => {
 
   it('uploads a backup to the address HappyTime returns', async () => {
     const { mock, device } = await connect({
-      overrides: { 'device.StartSystemRestore': answer(happytime('device.StartSystemRestore')) }
+      overrides: { 'device.StartSystemRestore': answer(simulator('device.StartSystemRestore')) }
     })
     const backup = new TextEncoder().encode('<config/>')
     expect(await device.management.uploadBackup(backup)).toEqual({ expectedDownTime: 'PT300S' })
@@ -1808,7 +1734,7 @@ describe('Firmware upgrade and system restore on the camera', () => {
     const { mock, device } = await connect({
       overrides: {
         'device.UpgradeFirmware': answer(
-          happytime('device.StartSystemRestore').replace(
+          simulator('device.StartSystemRestore').replace(
             /<tds:StartSystemRestoreResponse>[\s\S]*<\/tds:StartSystemRestoreResponse>/,
             '<tds:UpgradeFirmwareResponse><tds:ExpectedDownTime>PT10M</tds:ExpectedDownTime></tds:UpgradeFirmwareResponse>'
           )

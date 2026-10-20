@@ -1,74 +1,29 @@
-import { Device, OnvifError, SoapFaultError, TimeoutError } from '@2bad/onvif'
-import { decode, type Operation, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
+import { OnvifError, SoapFaultError, TimeoutError } from '@2bad/onvif'
+import { parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { capturesOf, decodeCapture, operationsOf } from '../../../tools/fixtures/corpus.ts'
 import {
-  type ActionOverride,
-  type MockCamera,
-  type MockCameraOptions,
-  startMockCamera
-} from '../../../tools/mock-camera/server.ts'
-import { Recording, Replay, recording, Search } from '#index.ts'
-
-const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-const simulator = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
+  answer,
+  cam,
+  connectMock,
+  hik,
+  rawRequestOf,
+  rejection,
+  simulator
+} from '../../../tools/mock-camera/harness.ts'
+import { type MockCamera, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
+import { Recording, recording, Replay, Search } from '#index.ts'
 
 const connect = async (options?: MockCameraOptions, serviceAddresses?: 'rewrite' | 'reject') => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password',
-    ...(serviceAddresses ? { serviceAddresses } : {})
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options, serviceAddresses)
   return { mock, device: device.use(recording) }
 }
-
-const answer = (body: string, status = 200, times?: number): ActionOverride => ({
-  kind: 'status',
-  status,
-  body,
-  ...(times === undefined ? {} : { times })
-})
 
 const requestsOf = (mock: MockCamera, action: string): XmlObject[] =>
   mock.requests.filter((request) => request.action === action).map(({ body }) => parseEnvelope(body).body)
 
-const rawRequestOf = (mock: MockCamera, action: string): string =>
-  mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
 const actionsOf = (mock: MockCamera, service: string): string[] =>
   mock.requests.filter((request) => request.service === service).map(({ action }) => action)
-
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
-const collect = async <Item>(items: AsyncIterable<Item>): Promise<Item[]> => {
-  const collected: Item[] = []
-  for await (const item of items) collected.push(item)
-  return collected
-}
-
-const operationsOf = (module: object) =>
-  Object.values(module).filter(
-    (value): value is Operation<never, never> => typeof value === 'object' && value !== null && 'response' in value
-  )
 
 const services = { recording: Recording, search: Search, replay: Replay }
 
@@ -84,15 +39,9 @@ const searchToken = /<tse:SearchToken>([^<]+)</.exec(cam('search.FindRecordings'
 const queuedState = cam('search.GetSearchState').replace('>Completed<', '>Queued<')
 
 describe('generated recording, search and replay operations', () => {
-  const fixtures = corpus.flatMap((entry) => {
-    const match = /^(?:live|simulator)\/.+\/(recording|search|replay)\.(\w+)\.xml$/.exec(entry.name)
-    if (!match || entry.status !== 200 || entry.fault) return []
-    const [, service = '', action = ''] = match
-    const operation = operationsOf(services[service as keyof typeof services])
-      .filter(({ name }) => action.startsWith(name))
-      .toSorted((left, right) => right.name.length - left.name.length)[0]
-    return operation ? [{ name: entry.name, xml: entry.xml, service, operation }] : []
-  })
+  const fixtures = Object.entries(services).flatMap(([service, module]) =>
+    capturesOf(service, operationsOf(module)).map((capture) => ({ ...capture, service }))
+  )
 
   it.each(Object.entries(services))('cover a capture for every %s operation', (service, module) => {
     const captured = new Set(
@@ -119,11 +68,8 @@ describe('generated recording, search and replay operations', () => {
     expect(reads.filter((name) => !captured.has(name))).toEqual(['search.GetMediaAttributes'])
   })
 
-  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml, {}, undefined, { namespaces: operation.namespaces === true })
-    const response = body[operation.response.name]
-    expect(response).toBeDefined()
-    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
+    expect(() => decodeCapture(capture)).not.toThrow()
   })
 })
 
@@ -272,7 +218,7 @@ describe('search.recordings()', () => {
     const { mock, device } = await connect({
       overrides: { 'search.GetRecordingSearchResults': answer(completedPage) }
     })
-    const found = await collect(device.search.recordings())
+    const found = await Array.fromAsync(device.search.recordings())
     expect(found.map(({ recordingToken }) => recordingToken)).toEqual(['RecordingToken_1'])
     expect(actionsOf(mock, 'search')).toEqual(['FindRecordings', 'GetRecordingSearchResults', 'EndSearch'])
     expect(requestsOf(mock, 'EndSearch')).toEqual([{ EndSearch: { SearchToken: searchToken } }])
@@ -285,7 +231,7 @@ describe('search.recordings()', () => {
         'search.GetSearchState': answer(queuedState, 200, 1)
       }
     })
-    const found = await collect(device.search.recordings())
+    const found = await Array.fromAsync(device.search.recordings())
     expect(found.map(({ recordingToken }) => recordingToken)).toEqual(['RecordingToken_1'])
     expect(actionsOf(mock, 'search')).toEqual([
       'FindRecordings',
@@ -301,7 +247,7 @@ describe('search.recordings()', () => {
 
   it('ends a search whose pages stay queued once GetSearchState reports it completed (DCN-BM2220LPR)', async () => {
     const { mock, device } = await connect()
-    expect(await collect(device.search.recordings())).toEqual([])
+    expect(await Array.fromAsync(device.search.recordings())).toEqual([])
     expect(actionsOf(mock, 'search')).toEqual([
       'FindRecordings',
       'GetRecordingSearchResults',
@@ -314,7 +260,7 @@ describe('search.recordings()', () => {
   it('sends the scope, the most results and the keep alive time', async () => {
     const { mock, device } = await connect()
     const scope = { includedRecordings: ['0'], recordingInformationFilter: 'boolean(//Track[TrackType = "Video"])' }
-    await collect(device.search.recordings({ scope, maxMatches: 5 }, { pageSize: 2, keepAliveTime: 'PT30S' }))
+    await Array.fromAsync(device.search.recordings({ scope, maxMatches: 5 }, { pageSize: 2, keepAliveTime: 'PT30S' }))
     expect(requestsOf(mock, 'FindRecordings')).toEqual([
       {
         FindRecordings: {
@@ -327,7 +273,7 @@ describe('search.recordings()', () => {
     expect(requestsOf(mock, 'GetRecordingSearchResults')[0]).toEqual({
       GetRecordingSearchResults: { SearchToken: searchToken, MinResults: '1', MaxResults: '2', WaitTime: 'PT1S' }
     })
-    await collect(device.search.recordings())
+    await Array.fromAsync(device.search.recordings())
     expect(requestsOf(mock, 'FindRecordings')[1]).toEqual({ FindRecordings: { Scope: '', KeepAliveTime: 'PT60S' } })
   })
 
@@ -339,7 +285,7 @@ describe('search.recordings()', () => {
     const { mock, device } = await connect({
       overrides: { 'search.GetRecordingSearchResults': answer(completedPage) }
     })
-    await collect(device.search.recordings({}, { timeoutMs }))
+    await Array.fromAsync(device.search.recordings({}, { timeoutMs }))
     expect(requestsOf(mock, 'FindRecordings')[0]).toMatchObject({ FindRecordings: { KeepAliveTime: keepAliveTime } })
   })
 
@@ -347,7 +293,7 @@ describe('search.recordings()', () => {
     const { device } = await connect({
       overrides: { 'search.GetRecordingSearchResults': answer(hik('search.GetRecordingSearchResults')) }
     })
-    const [found] = await collect(device.search.recordings())
+    const [found] = await Array.fromAsync(device.search.recordings())
     expect(found).toMatchObject({ recordingToken: 'OnvifRecordingToken_1', content: 'RecordContent' })
     expect(found?.earliestRecording).toBeUndefined()
     expect(found?.latestRecording).toBeUndefined()
@@ -371,7 +317,7 @@ describe('search.recordings()', () => {
 
   it('stops a search that never completes at the deadline and ends it', async () => {
     const { mock, device } = await connect({ overrides: { 'search.GetSearchState': answer(queuedState) } })
-    const error = await rejection(() => collect(device.search.recordings({}, { timeoutMs: 1_200 })))
+    const error = await rejection(() => Array.fromAsync(device.search.recordings({}, { timeoutMs: 1_200 })))
     expect(error).toBeInstanceOf(TimeoutError)
     expect(error).toMatchObject({ service: 'tse', message: 'The search did not complete within 1200 ms' })
     const pages = requestsOf(mock, 'GetRecordingSearchResults').length
@@ -382,7 +328,7 @@ describe('search.recordings()', () => {
 
   it('stops at the deadline when it passes during the pause between pages', async () => {
     const { mock, device } = await connect({ overrides: { 'search.GetSearchState': answer(queuedState) } })
-    const error = await rejection(() => collect(device.search.recordings({}, { timeoutMs: 250 })))
+    const error = await rejection(() => Array.fromAsync(device.search.recordings({}, { timeoutMs: 250 })))
     expect(error).toBeInstanceOf(TimeoutError)
     expect(error).toMatchObject({ action: 'GetRecordingSearchResults' })
     expect(actionsOf(mock, 'search').at(-1)).toBe('EndSearch')
@@ -410,7 +356,7 @@ describe('search.recordings()', () => {
         'search.EndSearch': answer(hik('search.GetRecordingSearchResultsMissingFault'), 500)
       }
     })
-    const error = await rejection(() => collect(device.search.recordings()))
+    const error = await rejection(() => Array.fromAsync(device.search.recordings()))
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'InavlidToken'], action: 'GetRecordingSearchResults' })
     expect(actionsOf(mock, 'search').at(-1)).toBe('EndSearch')
@@ -423,7 +369,7 @@ describe('search.recordings()', () => {
         'search.EndSearch': answer(cam('search.GetRecordingSearchResultsMissingFault'), 400)
       }
     })
-    const error = await rejection(() => collect(device.search.recordings()))
+    const error = await rejection(() => Array.fromAsync(device.search.recordings()))
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'InvalidToken'], action: 'EndSearch' })
   })
@@ -434,7 +380,7 @@ describe('search.events()', () => {
 
   it('reads the recorded events with their topic, message and track', async () => {
     const { device } = await connect({ overrides: happyTimeEvents })
-    const found = await collect(device.search.events({ startPoint: new Date('2026-10-19T00:00:00Z') }))
+    const found = await Array.fromAsync(device.search.events({ startPoint: new Date('2026-10-19T00:00:00Z') }))
     const [first, second] = found
     expect(first).toMatchObject({
       recordingToken: 'RecordingToken_1',
@@ -456,7 +402,7 @@ describe('search.events()', () => {
     const topicExpression = [
       { dialect: 'http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet', value: 'tns1:RecordingHistory//.' }
     ]
-    await collect(
+    await Array.fromAsync(
       device.search.events({
         startPoint: new Date('2026-10-20T12:00:00+02:00'),
         endPoint: new Date('2026-10-19T10:00:00Z'),
@@ -479,7 +425,7 @@ describe('search.events()', () => {
 
   it('leaves out the end point and an empty filter when not given', async () => {
     const { mock, device } = await connect({ overrides: happyTimeEvents })
-    await collect(device.search.events({ startPoint: new Date('2026-10-19T00:00:00Z') }))
+    await Array.fromAsync(device.search.events({ startPoint: new Date('2026-10-19T00:00:00Z') }))
     expect(requestsOf(mock, 'FindEvents')).toEqual([
       {
         FindEvents: {
@@ -495,7 +441,7 @@ describe('search.events()', () => {
 
   it('reads an event search that completes without results', async () => {
     const { mock, device } = await connect()
-    expect(await collect(device.search.events({ startPoint: new Date(0) }))).toEqual([])
+    expect(await Array.fromAsync(device.search.events({ startPoint: new Date(0) }))).toEqual([])
     expect(actionsOf(mock, 'search')).toEqual(['FindEvents', 'GetEventSearchResults', 'EndSearch'])
   })
 
@@ -507,7 +453,7 @@ describe('search.events()', () => {
       }
     })
     const error = await rejection(() =>
-      collect(device.search.events({ startPoint: new Date(0) }, { timeoutMs: 1_200 }))
+      Array.fromAsync(device.search.events({ startPoint: new Date(0) }, { timeoutMs: 1_200 }))
     )
     expect(error).toBeInstanceOf(TimeoutError)
     expect(actionsOf(mock, 'search').at(-1)).toBe('EndSearch')

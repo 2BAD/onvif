@@ -1,41 +1,25 @@
-import { DecodeError, Device, OnvifError, SoapFaultError } from '@2bad/onvif'
-import { decode, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
-import { type ActionOverride, type MockCameraOptions, startMockCamera } from '../../../tools/mock-camera/server.ts'
+import { DecodeError, OnvifError, SoapFaultError } from '@2bad/onvif'
+import { decode, parseEnvelope } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { capturesOf, decodeCapture, operationsOf } from '../../../tools/fixtures/corpus.ts'
+import {
+  answer,
+  cam,
+  connectMock,
+  dahua,
+  hik,
+  rawRequestOf,
+  rejection,
+  requestOf,
+  simulator
+} from '../../../tools/mock-camera/harness.ts'
+import { type ActionOverride, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { DeviceIO, io } from '#index.ts'
 
-const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
-const simulator = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
-
-const answer = (body: string, status = 200): ActionOverride => ({ kind: 'status', status, body })
-
 const connect = async (options?: MockCameraOptions) => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options)
   return { mock, device: device.use(io) }
 }
-
-const rawRequestOf = (mock: Awaited<ReturnType<typeof connect>>['mock'], action: string): string =>
-  mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
-const requestOf = (mock: Awaited<ReturnType<typeof connect>>['mock'], action: string): XmlObject =>
-  parseEnvelope(rawRequestOf(mock, action)).body
 
 const decodedRequestOf = (
   mock: Awaited<ReturnType<typeof connect>>['mock'],
@@ -45,46 +29,7 @@ const decodedRequestOf = (
   return decode(operation.schema, operation.request.type, body[operation.request.name] ?? '')
 }
 
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
-const operations = [
-  DeviceIO.GetServiceCapabilities,
-  DeviceIO.GetRelayOutputOptions,
-  DeviceIO.GetAudioSources,
-  DeviceIO.GetAudioOutputs,
-  DeviceIO.GetVideoSources,
-  DeviceIO.GetVideoOutputs,
-  DeviceIO.GetVideoSourceConfiguration,
-  DeviceIO.GetVideoOutputConfiguration,
-  DeviceIO.GetAudioSourceConfiguration,
-  DeviceIO.GetAudioOutputConfiguration,
-  DeviceIO.SetVideoSourceConfiguration,
-  DeviceIO.SetVideoOutputConfiguration,
-  DeviceIO.SetAudioSourceConfiguration,
-  DeviceIO.SetAudioOutputConfiguration,
-  DeviceIO.GetVideoSourceConfigurationOptions,
-  DeviceIO.GetVideoOutputConfigurationOptions,
-  DeviceIO.GetAudioSourceConfigurationOptions,
-  DeviceIO.GetAudioOutputConfigurationOptions,
-  DeviceIO.GetRelayOutputs,
-  DeviceIO.SetRelayOutputSettings,
-  DeviceIO.SetRelayOutputState,
-  DeviceIO.GetDigitalInputs,
-  DeviceIO.GetDigitalInputConfigurationOptions,
-  DeviceIO.SetDigitalInputConfigurations,
-  DeviceIO.GetSerialPorts,
-  DeviceIO.GetSerialPortConfiguration,
-  DeviceIO.SetSerialPortConfiguration,
-  DeviceIO.GetSerialPortConfigurationOptions,
-  DeviceIO.SendReceiveSerialCommand
-]
+const operations = operationsOf(DeviceIO)
 
 const methodName = (name: string): string => `${name.charAt(0).toLowerCase()}${name.slice(1)}`
 
@@ -96,19 +41,7 @@ const nilCaptures = [
 ]
 
 describe('generated device IO operations', () => {
-  // captures of one operation in another state are named after it, such as deviceio.GetRelayOutputOptionsForRelayOutput
-  const operationOf = (action: string) =>
-    operations
-      .filter(({ name }) => action.startsWith(name))
-      .reduce<(typeof operations)[number] | undefined>(
-        (longest, operation) => (operation.name.length > (longest?.name.length ?? 0) ? operation : longest),
-        undefined
-      )
-  const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live|simulator)\/.+\/deviceio\.(\w+)\.xml$/.exec(entry.name)?.[1]
-    const operation = action === undefined ? undefined : operationOf(action)
-    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
-  })
+  const fixtures = capturesOf('deviceio', operations)
 
   it('cover a capture for every operation', () => {
     const captured = new Set(fixtures.map(({ operation }) => operation.name))
@@ -136,11 +69,8 @@ describe('generated device IO operations', () => {
 
   it.each(fixtures.filter(({ name }) => !nilCaptures.includes(name)).map((entry) => [entry.name, entry] as const))(
     'decode %s',
-    (_name, { xml, operation }) => {
-      const { body } = parseEnvelope(xml)
-      const response = body[operation.response.name]
-      expect(response).toBeDefined()
-      expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+    (_name, capture) => {
+      expect(() => decodeCapture(capture)).not.toThrow()
     }
   )
 

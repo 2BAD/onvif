@@ -1,21 +1,20 @@
-import { Device, OnvifError, SoapFaultError } from '@2bad/onvif'
-import { decode, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
-import { type ActionOverride, type MockCameraOptions, startMockCamera } from '../../../tools/mock-camera/server.ts'
+import { OnvifError, SoapFaultError } from '@2bad/onvif'
+import { decode, parseEnvelope } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { capturesOf, decodeCapture, operationsOf } from '../../../tools/fixtures/corpus.ts'
+import {
+  answer,
+  cam,
+  connectMock,
+  dahua,
+  hik,
+  rawRequestOf,
+  rejection,
+  requestOf,
+  simulator
+} from '../../../tools/mock-camera/harness.ts'
+import { type ActionOverride, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { Analytics, analytics } from '#index.ts'
-
-const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
-const simulator = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
-
-const answer = (body: string, status = 200): ActionOverride => ({ kind: 'status', status, body })
 
 const emptyResponse = (action: string): ActionOverride =>
   answer(cam('analytics.ModifyRules').replaceAll('ModifyRulesResponse', `${action}Response`))
@@ -30,24 +29,9 @@ const writes: Record<string, ActionOverride> = {
 }
 
 const connect = async (options?: MockCameraOptions) => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options)
   return { mock, device: device.use(analytics) }
 }
-
-const rawRequestOf = (mock: Awaited<ReturnType<typeof connect>>['mock'], action: string): string =>
-  mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
-const requestOf = (mock: Awaited<ReturnType<typeof connect>>['mock'], action: string): XmlObject =>
-  parseEnvelope(rawRequestOf(mock, action)).body
 
 // the request as the device reads it, with every QName resolved against the declarations in the request
 const decodedRequestOf = (
@@ -58,50 +42,14 @@ const decodedRequestOf = (
   return decode(operation.schema, operation.request.type, body[operation.request.name] ?? '')
 }
 
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
 const configurationToken = 'VideoAnalytics0'
 
-const operations = [
-  Analytics.GetServiceCapabilities,
-  Analytics.GetSupportedAnalyticsModules,
-  Analytics.GetAnalyticsModules,
-  Analytics.CreateAnalyticsModules,
-  Analytics.ModifyAnalyticsModules,
-  Analytics.DeleteAnalyticsModules,
-  Analytics.GetAnalyticsModuleOptions,
-  Analytics.GetSupportedMetadata,
-  Analytics.GetSupportedRules,
-  Analytics.GetRules,
-  Analytics.CreateRules,
-  Analytics.ModifyRules,
-  Analytics.DeleteRules,
-  Analytics.GetRuleOptions
-]
+const operations = operationsOf(Analytics)
 
 const methodName = (name: string): string => `${name.charAt(0).toLowerCase()}${name.slice(1)}`
 
 describe('generated analytics operations', () => {
-  // captures of one operation in another state are named after it, such as analytics.GetRulesAfterCreate
-  const operationOf = (action: string) =>
-    operations
-      .filter(({ name }) => action.startsWith(name))
-      .reduce<(typeof operations)[number] | undefined>(
-        (longest, operation) => (operation.name.length > (longest?.name.length ?? 0) ? operation : longest),
-        undefined
-      )
-  const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live|simulator)\/.+\/analytics\.(\w+)\.xml$/.exec(entry.name)?.[1]
-    const operation = action === undefined ? undefined : operationOf(action)
-    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
-  })
+  const fixtures = capturesOf('analytics', operations)
 
   it('cover a capture for every operation', () => {
     const captured = new Set(fixtures.map(({ operation }) => operation.name))
@@ -127,11 +75,8 @@ describe('generated analytics operations', () => {
     )
   })
 
-  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml, {}, undefined, { namespaces: operation.namespaces === true })
-    const response = body[operation.response.name]
-    expect(response).toBeDefined()
-    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
+    expect(() => decodeCapture(capture)).not.toThrow()
   })
 })
 
@@ -157,30 +102,6 @@ describe('analytics', () => {
         .map(({ name }) => methodName(name))
         .toSorted()
     )
-  })
-
-  it('sends the configuration token with every forConfiguration() method', async () => {
-    const { mock, device } = await connect({ overrides: writes })
-    const configuration = device.analytics.forConfiguration(configurationToken)
-    const rule = { name: 'Rule', type: 'tt:CellMotionDetector', parameters: {} }
-    const calls = [
-      ['GetSupportedAnalyticsModules', () => configuration.getSupportedAnalyticsModules()],
-      ['GetAnalyticsModules', () => configuration.getAnalyticsModules()],
-      ['CreateAnalyticsModules', () => configuration.createAnalyticsModules({ analyticsModule: [rule] })],
-      ['ModifyAnalyticsModules', () => configuration.modifyAnalyticsModules({ analyticsModule: [rule] })],
-      ['DeleteAnalyticsModules', () => configuration.deleteAnalyticsModules({ analyticsModuleName: ['Rule'] })],
-      ['GetAnalyticsModuleOptions', () => configuration.getAnalyticsModuleOptions()],
-      ['GetSupportedRules', () => configuration.getSupportedRules()],
-      ['GetRules', () => configuration.getRules()],
-      ['CreateRules', () => configuration.createRules({ rule: [rule] })],
-      ['ModifyRules', () => configuration.modifyRules({ rule: [rule] })],
-      ['DeleteRules', () => configuration.deleteRules({ ruleName: ['Rule'] })],
-      ['GetRuleOptions', () => configuration.getRuleOptions()]
-    ] as const
-    for (const [action, call] of calls) {
-      await call()
-      expect(requestOf(mock, action)[action]).toMatchObject({ ConfigurationToken: configurationToken })
-    }
   })
 
   it('sends the same request through forConfiguration() as with the configuration token', async () => {
@@ -210,6 +131,7 @@ describe('analytics', () => {
       )
       const [byToken, byScope] = mock.requests.filter((entry) => entry.action === action)
       expect(parseEnvelope(byScope?.body ?? '').body).toEqual(parseEnvelope(byToken?.body ?? '').body)
+      expect(requestOf(mock, action)[action]).toMatchObject({ ConfigurationToken: configurationToken })
     }
   })
 

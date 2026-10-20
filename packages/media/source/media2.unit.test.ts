@@ -1,76 +1,32 @@
-import { Device, SoapFaultError } from '@2bad/onvif'
-import { decode, type Operation, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
+import { SoapFaultError } from '@2bad/onvif'
+import { parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { capturesOf, decodeCapture, operationsOf } from '../../../tools/fixtures/corpus.ts'
 import {
-  type ActionOverride,
-  type MockCamera,
-  type MockCameraOptions,
-  startMockCamera
-} from '../../../tools/mock-camera/server.ts'
-import { Media2, media } from '#index.ts'
-
-const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const hik = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
-const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
+  answer,
+  cam,
+  connectMock,
+  dahua,
+  hik,
+  rawRequestOf,
+  rejection,
+  requestOf
+} from '../../../tools/mock-camera/harness.ts'
+import { type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
+import { media, Media2 } from '#index.ts'
 
 const connect = async (options?: MockCameraOptions) => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options)
   return { mock, v2: device.use(media).media.v2 }
 }
 
-const answer = (body: string, status = 200): ActionOverride => ({ kind: 'status', status, body })
-
-const requestOf = (mock: MockCamera, action: string): XmlObject =>
-  parseEnvelope(mock.requests.findLast((request) => request.action === action)?.body ?? '').body
-
-const rawRequestOf = (mock: MockCamera, action: string): string =>
-  mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
-const operations = Object.values(Media2).filter(
-  (value): value is Operation<never, never> => typeof value === 'object' && 'response' in value
-)
+const operations = operationsOf(Media2)
 
 const topics = 'http://www.onvif.org/ver10/topics'
 const concreteSet = 'http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet'
 
 describe('generated media2 operations', () => {
-  // captures of one operation in another state are named after it, such as media2.GetProfilesAfterAdd
-  const operationOf = (action: string) =>
-    operations
-      .filter(({ name }) => action.startsWith(name))
-      .reduce<(typeof operations)[number] | undefined>(
-        (longest, operation) => (operation.name.length > (longest?.name.length ?? 0) ? operation : longest),
-        undefined
-      )
-  const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live|simulator)\/.+\/media2\.(\w+)\.xml$/.exec(entry.name)?.[1]
-    const operation = action === undefined ? undefined : operationOf(action)
-    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
-  })
+  const fixtures = capturesOf('media2', operations)
 
   it('cover a camera capture for every operation', () => {
     const captured = new Set(
@@ -85,11 +41,8 @@ describe('generated media2 operations', () => {
     ])
   })
 
-  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml, {}, undefined, { namespaces: operation.namespaces === true })
-    const response = body[operation.response.name]
-    expect(response).toBeDefined()
-    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
+    expect(() => decodeCapture(capture)).not.toThrow()
   })
 })
 
