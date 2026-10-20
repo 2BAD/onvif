@@ -1,6 +1,6 @@
 # @2bad/onvif-management
 
-ONVIF users, time, network settings, scopes, logs, storage, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
+ONVIF users, roles, password policies, time, network settings, scopes, logs, storage, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 ## Install
 
@@ -30,6 +30,23 @@ camera.management.getUsers()
 camera.management.createUsers(request)
 camera.management.setUser(request)
 camera.management.deleteUsers(request)
+camera.management.getUserRoles(request)
+camera.management.setUserRole(request)
+camera.management.deleteUserRole(request)
+camera.management.getRemoteUser()
+camera.management.setRemoteUser(request)
+
+camera.management.getPasswordComplexityOptions()
+camera.management.getPasswordComplexityConfiguration()
+camera.management.setPasswordComplexityConfiguration(request)
+camera.management.getPasswordHistoryConfiguration()
+camera.management.setPasswordHistoryConfiguration(request)
+camera.management.getAuthFailureWarningOptions()
+camera.management.getAuthFailureWarningConfiguration()
+camera.management.setAuthFailureWarningConfiguration(request)
+camera.management.getAccessPolicy()
+camera.management.setAccessPolicy(request)
+camera.management.setHashingAlgorithm(request)
 
 camera.management.getNTP()
 camera.management.setNTP(request)

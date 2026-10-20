@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added DNS, hostname, network protocol, discovery mode and Wi-Fi methods to `device.management`
 - Added scope, date and time, system log, factory default, geo location and storage methods to `device.management`
 - Calls after `setSystemDateAndTime()` are now signed with the new device time
+- Added user role, remote user, password policy, access policy and hashing algorithm methods to `device.management`
 
 ### Fixed
 

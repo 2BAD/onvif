@@ -78,6 +78,12 @@ export type AttachmentData = {
   contentType?: string
 }
 
+export type BinaryData = {
+  /** base64 encoded binary data. */
+  data: Uint8Array
+  contentType?: string
+}
+
 export type CreateStorageConfigurationRequest = {
   storageConfiguration: StorageConfigurationData
 }
@@ -123,6 +129,12 @@ export type DeleteStorageConfigurationRequest = {
 }
 
 export type DeleteStorageConfigurationResponse = Record<string, never>
+
+export type DeleteUserRoleRequest = {
+  userRole: string
+}
+
+export type DeleteUserRoleResponse = Record<string, never>
 
 export type DeleteUsersRequest = {
   /**
@@ -265,6 +277,27 @@ export type GeoOrientation = {
   $any?: Record<string, unknown>
 }
 
+export type GetAccessPolicyRequest = Record<string, never>
+
+export type GetAccessPolicyResponse = {
+  policyFile: BinaryData
+}
+
+export type GetAuthFailureWarningConfigurationRequest = Record<string, never>
+
+export type GetAuthFailureWarningConfigurationResponse = {
+  enabled: boolean
+  monitorPeriod: number
+  maxAuthFailures: number
+}
+
+export type GetAuthFailureWarningOptionsRequest = Record<string, never>
+
+export type GetAuthFailureWarningOptionsResponse = {
+  monitorPeriodRange: IntRange
+  authFailureRange: IntRange
+}
+
 export type GetDiscoveryModeRequest = Record<string, never>
 
 export type GetDiscoveryModeResponse = {
@@ -352,6 +385,35 @@ export type GetNTPResponse = {
   ntpInformation: NTPInformation
 }
 
+export type GetPasswordComplexityConfigurationRequest = Record<string, never>
+
+export type GetPasswordComplexityConfigurationResponse = {
+  minLen?: number
+  uppercase?: number
+  number?: number
+  specialChars?: number
+  blockUsernameOccurrence?: boolean
+  policyConfigurationLocked?: boolean
+}
+
+export type GetPasswordComplexityOptionsRequest = Record<string, never>
+
+export type GetPasswordComplexityOptionsResponse = {
+  minLenRange?: IntRange
+  uppercaseRange?: IntRange
+  numberRange?: IntRange
+  specialCharsRange?: IntRange
+  blockUsernameOccurrenceSupported?: boolean
+  policyConfigurationLockSupported?: boolean
+}
+
+export type GetPasswordHistoryConfigurationRequest = Record<string, never>
+
+export type GetPasswordHistoryConfigurationResponse = {
+  enabled: boolean
+  length: number
+}
+
 export type GetRelayOutputsRequest = Record<string, never>
 
 export type GetRelayOutputsResponse = {
@@ -363,6 +425,12 @@ export type GetRemoteDiscoveryModeRequest = Record<string, never>
 export type GetRemoteDiscoveryModeResponse = {
   /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
   remoteDiscoveryMode: DiscoveryMode
+}
+
+export type GetRemoteUserRequest = Record<string, never>
+
+export type GetRemoteUserResponse = {
+  remoteUser?: RemoteUser
 }
 
 export type GetStorageConfigurationRequest = {
@@ -396,6 +464,14 @@ export type GetSystemSupportInformationResponse = {
   supportInformation: SupportInformation
 }
 
+export type GetUserRolesRequest = {
+  userRole?: string
+}
+
+export type GetUserRolesResponse = {
+  userRole?: UserRole[]
+}
+
 export type GetUsersRequest = Record<string, never>
 
 export type GetUsersResponse = {
@@ -422,6 +498,12 @@ export type GetZeroConfigurationResponse = {
 export type Include = {
   href: string
   $any?: Record<string, unknown>
+}
+
+/** Range of values greater equal Min value and less equal Max value. */
+export type IntRange = {
+  min: number
+  max: number
 }
 
 export type IPAddress = {
@@ -652,6 +734,13 @@ export type RelayOutputSettings = {
   idleState: RelayIdleState
 }
 
+export type RemoteUser = {
+  username: string
+  password?: string
+  useDerivedPassword: boolean
+  $any?: Record<string, unknown>
+}
+
 export type RemoveIPAddressFilterRequest = {
   ipAddressFilter: IPAddressFilter
 }
@@ -687,6 +776,20 @@ export type SendAuxiliaryCommandRequest = {
 export type SendAuxiliaryCommandResponse = {
   auxiliaryCommandResponse?: string
 }
+
+export type SetAccessPolicyRequest = {
+  policyFile: BinaryData
+}
+
+export type SetAccessPolicyResponse = Record<string, never>
+
+export type SetAuthFailureWarningConfigurationRequest = {
+  enabled: boolean
+  monitorPeriod: number
+  maxAuthFailures: number
+}
+
+export type SetAuthFailureWarningConfigurationResponse = Record<string, never>
 
 export type SetDiscoveryModeRequest = {
   /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
@@ -728,6 +831,13 @@ export type SetGeoLocationRequest = {
 }
 
 export type SetGeoLocationResponse = Record<string, never>
+
+export type SetHashingAlgorithmRequest = {
+  /** Hashing algorithm(s) used in HTTP and RTSP Digest Authentication. */
+  algorithm: string[]
+}
+
+export type SetHashingAlgorithmResponse = Record<string, never>
 
 export type SetHostnameFromDHCPRequest = {
   /** True if the hostname shall be obtained via DHCP. */
@@ -800,6 +910,24 @@ export type SetNTPRequest = {
 
 export type SetNTPResponse = Record<string, never>
 
+export type SetPasswordComplexityConfigurationRequest = {
+  minLen?: number
+  uppercase?: number
+  number?: number
+  specialChars?: number
+  blockUsernameOccurrence?: boolean
+  policyConfigurationLocked?: boolean
+}
+
+export type SetPasswordComplexityConfigurationResponse = Record<string, never>
+
+export type SetPasswordHistoryConfigurationRequest = {
+  enabled: boolean
+  length: number
+}
+
+export type SetPasswordHistoryConfigurationResponse = Record<string, never>
+
 export type SetRelayOutputSettingsRequest = {
   relayOutputToken: string
   properties: RelayOutputSettings
@@ -820,6 +948,12 @@ export type SetRemoteDiscoveryModeRequest = {
 }
 
 export type SetRemoteDiscoveryModeResponse = Record<string, never>
+
+export type SetRemoteUserRequest = {
+  remoteUser?: RemoteUser
+}
+
+export type SetRemoteUserResponse = Record<string, never>
 
 export type SetScopesRequest = {
   /** Contains a list of scope parameters that will replace all existing configurable scope parameters. */
@@ -864,6 +998,12 @@ export type SetUserRequest = {
 }
 
 export type SetUserResponse = Record<string, never>
+
+export type SetUserRoleRequest = {
+  userRole: UserRole
+}
+
+export type SetUserRoleResponse = Record<string, never>
 
 export type SetZeroConfigurationRequest = {
   /** Unique identifier referencing the physical interface. */
@@ -992,6 +1132,16 @@ export type UserExtension = {
   $any?: Record<string, unknown>
 }
 
+export type UserRole = {
+  /** Name of the editable user level. */
+  name: string
+  /**
+   * Names of the permitted function for the editable user level. The names must be prepended by the
+   * namespace prefix and colon.
+   */
+  functions: string[]
+}
+
 const tds = 'http://www.onvif.org/ver10/device/wsdl'
 const xop = 'http://www.w3.org/2004/08/xop/include'
 const xmime = 'http://www.w3.org/2005/05/xmlmime'
@@ -1009,6 +1159,12 @@ export const schema: Schema = {
   AttachmentData: {
     fields: [
       { name: 'Include', property: 'include', type: 'Include', namespace: xop },
+      { name: 'contentType', type: 'string', namespace: xmime, attribute: true, optional: true }
+    ]
+  },
+  BinaryData: {
+    fields: [
+      { name: 'Data', property: 'data', type: 'base64', namespace: tt },
       { name: 'contentType', type: 'string', namespace: xmime, attribute: true, optional: true }
     ]
   },
@@ -1046,6 +1202,8 @@ export const schema: Schema = {
   DeleteGeoLocationResponse: { fields: [] },
   DeleteStorageConfigurationRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tds }] },
   DeleteStorageConfigurationResponse: { fields: [] },
+  DeleteUserRoleRequest: { fields: [{ name: 'UserRole', property: 'userRole', type: 'string', namespace: tds }] },
+  DeleteUserRoleResponse: { fields: [] },
   DeleteUsersRequest: {
     fields: [{ name: 'Username', property: 'username', type: 'string', namespace: tds, array: true }]
   },
@@ -1172,6 +1330,25 @@ export const schema: Schema = {
     ],
     any: true
   },
+  GetAccessPolicyRequest: { fields: [] },
+  GetAccessPolicyResponse: {
+    fields: [{ name: 'PolicyFile', property: 'policyFile', type: 'BinaryData', namespace: tds }]
+  },
+  GetAuthFailureWarningConfigurationRequest: { fields: [] },
+  GetAuthFailureWarningConfigurationResponse: {
+    fields: [
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds },
+      { name: 'MonitorPeriod', property: 'monitorPeriod', type: 'integer', namespace: tds },
+      { name: 'MaxAuthFailures', property: 'maxAuthFailures', type: 'integer', namespace: tds }
+    ]
+  },
+  GetAuthFailureWarningOptionsRequest: { fields: [] },
+  GetAuthFailureWarningOptionsResponse: {
+    fields: [
+      { name: 'MonitorPeriodRange', property: 'monitorPeriodRange', type: 'IntRange', namespace: tds },
+      { name: 'AuthFailureRange', property: 'authFailureRange', type: 'IntRange', namespace: tds }
+    ]
+  },
   GetDiscoveryModeRequest: { fields: [] },
   GetDiscoveryModeResponse: {
     fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
@@ -1238,6 +1415,59 @@ export const schema: Schema = {
   GetNTPResponse: {
     fields: [{ name: 'NTPInformation', property: 'ntpInformation', type: 'NTPInformation', namespace: tds }]
   },
+  GetPasswordComplexityConfigurationRequest: { fields: [] },
+  GetPasswordComplexityConfigurationResponse: {
+    fields: [
+      { name: 'MinLen', property: 'minLen', type: 'integer', namespace: tds, optional: true },
+      { name: 'Uppercase', property: 'uppercase', type: 'integer', namespace: tds, optional: true },
+      { name: 'Number', property: 'number', type: 'integer', namespace: tds, optional: true },
+      { name: 'SpecialChars', property: 'specialChars', type: 'integer', namespace: tds, optional: true },
+      {
+        name: 'BlockUsernameOccurrence',
+        property: 'blockUsernameOccurrence',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      },
+      {
+        name: 'PolicyConfigurationLocked',
+        property: 'policyConfigurationLocked',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      }
+    ]
+  },
+  GetPasswordComplexityOptionsRequest: { fields: [] },
+  GetPasswordComplexityOptionsResponse: {
+    fields: [
+      { name: 'MinLenRange', property: 'minLenRange', type: 'IntRange', namespace: tds, optional: true },
+      { name: 'UppercaseRange', property: 'uppercaseRange', type: 'IntRange', namespace: tds, optional: true },
+      { name: 'NumberRange', property: 'numberRange', type: 'IntRange', namespace: tds, optional: true },
+      { name: 'SpecialCharsRange', property: 'specialCharsRange', type: 'IntRange', namespace: tds, optional: true },
+      {
+        name: 'BlockUsernameOccurrenceSupported',
+        property: 'blockUsernameOccurrenceSupported',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      },
+      {
+        name: 'PolicyConfigurationLockSupported',
+        property: 'policyConfigurationLockSupported',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      }
+    ]
+  },
+  GetPasswordHistoryConfigurationRequest: { fields: [] },
+  GetPasswordHistoryConfigurationResponse: {
+    fields: [
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds },
+      { name: 'Length', property: 'length', type: 'integer', namespace: tds }
+    ]
+  },
   GetRelayOutputsRequest: { fields: [] },
   GetRelayOutputsResponse: {
     fields: [
@@ -1254,6 +1484,10 @@ export const schema: Schema = {
   GetRemoteDiscoveryModeRequest: { fields: [] },
   GetRemoteDiscoveryModeResponse: {
     fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
+  },
+  GetRemoteUserRequest: { fields: [] },
+  GetRemoteUserResponse: {
+    fields: [{ name: 'RemoteUser', property: 'remoteUser', type: 'RemoteUser', namespace: tds, optional: true }]
   },
   GetStorageConfigurationRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tds }] },
   GetStorageConfigurationResponse: {
@@ -1280,6 +1514,12 @@ export const schema: Schema = {
   GetSystemSupportInformationResponse: {
     fields: [{ name: 'SupportInformation', property: 'supportInformation', type: 'SupportInformation', namespace: tds }]
   },
+  GetUserRolesRequest: {
+    fields: [{ name: 'UserRole', property: 'userRole', type: 'string', namespace: tds, optional: true }]
+  },
+  GetUserRolesResponse: {
+    fields: [{ name: 'UserRole', property: 'userRole', type: 'UserRole', namespace: tds, optional: true, array: true }]
+  },
   GetUsersRequest: { fields: [] },
   GetUsersResponse: {
     fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, optional: true, array: true }]
@@ -1293,6 +1533,12 @@ export const schema: Schema = {
     ]
   },
   Include: { fields: [{ name: 'href', type: 'string', attribute: true }], any: true },
+  IntRange: {
+    fields: [
+      { name: 'Min', property: 'min', type: 'integer', namespace: tt },
+      { name: 'Max', property: 'max', type: 'integer', namespace: tt }
+    ]
+  },
   IPAddress: {
     fields: [
       { name: 'Type', property: 'type', type: 'string', namespace: tt },
@@ -1506,6 +1752,14 @@ export const schema: Schema = {
       { name: 'IdleState', property: 'idleState', type: 'string', namespace: tt }
     ]
   },
+  RemoteUser: {
+    fields: [
+      { name: 'Username', property: 'username', type: 'string', namespace: tt },
+      { name: 'Password', property: 'password', type: 'string', namespace: tt, optional: true },
+      { name: 'UseDerivedPassword', property: 'useDerivedPassword', type: 'boolean', namespace: tt }
+    ],
+    any: true
+  },
   RemoveIPAddressFilterRequest: {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
   },
@@ -1545,6 +1799,18 @@ export const schema: Schema = {
       }
     ]
   },
+  SetAccessPolicyRequest: {
+    fields: [{ name: 'PolicyFile', property: 'policyFile', type: 'BinaryData', namespace: tds }]
+  },
+  SetAccessPolicyResponse: { fields: [] },
+  SetAuthFailureWarningConfigurationRequest: {
+    fields: [
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds },
+      { name: 'MonitorPeriod', property: 'monitorPeriod', type: 'integer', namespace: tds },
+      { name: 'MaxAuthFailures', property: 'maxAuthFailures', type: 'integer', namespace: tds }
+    ]
+  },
+  SetAuthFailureWarningConfigurationResponse: { fields: [] },
   SetDiscoveryModeRequest: {
     fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
   },
@@ -1575,6 +1841,10 @@ export const schema: Schema = {
     fields: [{ name: 'Location', property: 'location', type: 'LocationEntity', namespace: tds, array: true }]
   },
   SetGeoLocationResponse: { fields: [] },
+  SetHashingAlgorithmRequest: {
+    fields: [{ name: 'Algorithm', property: 'algorithm', type: 'string[]', namespace: tds }]
+  },
+  SetHashingAlgorithmResponse: { fields: [] },
   SetHostnameFromDHCPRequest: { fields: [{ name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tds }] },
   SetHostnameFromDHCPResponse: {
     fields: [{ name: 'RebootNeeded', property: 'rebootNeeded', type: 'boolean', namespace: tds }]
@@ -1619,6 +1889,36 @@ export const schema: Schema = {
     ]
   },
   SetNTPResponse: { fields: [] },
+  SetPasswordComplexityConfigurationRequest: {
+    fields: [
+      { name: 'MinLen', property: 'minLen', type: 'integer', namespace: tds, optional: true },
+      { name: 'Uppercase', property: 'uppercase', type: 'integer', namespace: tds, optional: true },
+      { name: 'Number', property: 'number', type: 'integer', namespace: tds, optional: true },
+      { name: 'SpecialChars', property: 'specialChars', type: 'integer', namespace: tds, optional: true },
+      {
+        name: 'BlockUsernameOccurrence',
+        property: 'blockUsernameOccurrence',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      },
+      {
+        name: 'PolicyConfigurationLocked',
+        property: 'policyConfigurationLocked',
+        type: 'boolean',
+        namespace: tds,
+        optional: true
+      }
+    ]
+  },
+  SetPasswordComplexityConfigurationResponse: { fields: [] },
+  SetPasswordHistoryConfigurationRequest: {
+    fields: [
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds },
+      { name: 'Length', property: 'length', type: 'integer', namespace: tds }
+    ]
+  },
+  SetPasswordHistoryConfigurationResponse: { fields: [] },
   SetRelayOutputSettingsRequest: {
     fields: [
       { name: 'RelayOutputToken', property: 'relayOutputToken', type: 'string', namespace: tds },
@@ -1637,6 +1937,10 @@ export const schema: Schema = {
     fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
   },
   SetRemoteDiscoveryModeResponse: { fields: [] },
+  SetRemoteUserRequest: {
+    fields: [{ name: 'RemoteUser', property: 'remoteUser', type: 'RemoteUser', namespace: tds, optional: true }]
+  },
+  SetRemoteUserResponse: { fields: [] },
   SetScopesRequest: { fields: [{ name: 'Scopes', property: 'scopes', type: 'string', namespace: tds, array: true }] },
   SetScopesResponse: { fields: [] },
   SetStorageConfigurationRequest: {
@@ -1660,6 +1964,8 @@ export const schema: Schema = {
   SetSystemFactoryDefaultResponse: { fields: [] },
   SetUserRequest: { fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, array: true }] },
   SetUserResponse: { fields: [] },
+  SetUserRoleRequest: { fields: [{ name: 'UserRole', property: 'userRole', type: 'UserRole', namespace: tds }] },
+  SetUserRoleResponse: { fields: [] },
   SetZeroConfigurationRequest: {
     fields: [
       { name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tds },
@@ -1757,7 +2063,13 @@ export const schema: Schema = {
     any: true
   },
   UserCredentialExtension: { fields: [], any: true },
-  UserExtension: { fields: [{ name: 'Roles', property: 'roles', type: 'string[]', namespace: tt }], any: true }
+  UserExtension: { fields: [{ name: 'Roles', property: 'roles', type: 'string[]', namespace: tt }], any: true },
+  UserRole: {
+    fields: [
+      { name: 'Name', property: 'name', type: 'string', namespace: tt },
+      { name: 'Functions', property: 'functions', type: 'string[]', namespace: tt }
+    ]
+  }
 }
 
 export const SetNetworkInterfaces: Operation<SetNetworkInterfacesRequest, SetNetworkInterfacesResponse> = {
@@ -2193,6 +2505,174 @@ export const DeleteStorageConfiguration: Operation<
   action: 'http://www.onvif.org/ver10/device/wsdl/DeleteStorageConfiguration',
   request: { name: 'DeleteStorageConfiguration', namespace: tds, type: 'DeleteStorageConfigurationRequest' },
   response: { name: 'DeleteStorageConfigurationResponse', type: 'DeleteStorageConfigurationResponse' },
+  schema
+}
+
+export const GetUserRoles: Operation<GetUserRolesRequest, GetUserRolesResponse> = {
+  name: 'GetUserRoles',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetUserRoles',
+  request: { name: 'GetUserRoles', namespace: tds, type: 'GetUserRolesRequest' },
+  response: { name: 'GetUserRolesResponse', type: 'GetUserRolesResponse' },
+  schema
+}
+
+export const SetUserRole: Operation<SetUserRoleRequest, SetUserRoleResponse> = {
+  name: 'SetUserRole',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetUserRole',
+  request: { name: 'SetUserRole', namespace: tds, type: 'SetUserRoleRequest' },
+  response: { name: 'SetUserRoleResponse', type: 'SetUserRoleResponse' },
+  schema
+}
+
+export const DeleteUserRole: Operation<DeleteUserRoleRequest, DeleteUserRoleResponse> = {
+  name: 'DeleteUserRole',
+  action: 'http://www.onvif.org/ver10/device/wsdl/DeleteUserRole',
+  request: { name: 'DeleteUserRole', namespace: tds, type: 'DeleteUserRoleRequest' },
+  response: { name: 'DeleteUserRoleResponse', type: 'DeleteUserRoleResponse' },
+  schema
+}
+
+export const GetRemoteUser: Operation<GetRemoteUserRequest, GetRemoteUserResponse> = {
+  name: 'GetRemoteUser',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetRemoteUser',
+  request: { name: 'GetRemoteUser', namespace: tds, type: 'GetRemoteUserRequest' },
+  response: { name: 'GetRemoteUserResponse', type: 'GetRemoteUserResponse' },
+  schema
+}
+
+export const SetRemoteUser: Operation<SetRemoteUserRequest, SetRemoteUserResponse> = {
+  name: 'SetRemoteUser',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetRemoteUser',
+  request: { name: 'SetRemoteUser', namespace: tds, type: 'SetRemoteUserRequest' },
+  response: { name: 'SetRemoteUserResponse', type: 'SetRemoteUserResponse' },
+  schema
+}
+
+export const GetPasswordComplexityOptions: Operation<
+  GetPasswordComplexityOptionsRequest,
+  GetPasswordComplexityOptionsResponse
+> = {
+  name: 'GetPasswordComplexityOptions',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetPasswordComplexityOptions',
+  request: { name: 'GetPasswordComplexityOptions', namespace: tds, type: 'GetPasswordComplexityOptionsRequest' },
+  response: { name: 'GetPasswordComplexityOptionsResponse', type: 'GetPasswordComplexityOptionsResponse' },
+  schema
+}
+
+export const GetPasswordComplexityConfiguration: Operation<
+  GetPasswordComplexityConfigurationRequest,
+  GetPasswordComplexityConfigurationResponse
+> = {
+  name: 'GetPasswordComplexityConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetPasswordComplexityConfiguration',
+  request: {
+    name: 'GetPasswordComplexityConfiguration',
+    namespace: tds,
+    type: 'GetPasswordComplexityConfigurationRequest'
+  },
+  response: { name: 'GetPasswordComplexityConfigurationResponse', type: 'GetPasswordComplexityConfigurationResponse' },
+  schema
+}
+
+export const SetPasswordComplexityConfiguration: Operation<
+  SetPasswordComplexityConfigurationRequest,
+  SetPasswordComplexityConfigurationResponse
+> = {
+  name: 'SetPasswordComplexityConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetPasswordComplexityConfiguration',
+  request: {
+    name: 'SetPasswordComplexityConfiguration',
+    namespace: tds,
+    type: 'SetPasswordComplexityConfigurationRequest'
+  },
+  response: { name: 'SetPasswordComplexityConfigurationResponse', type: 'SetPasswordComplexityConfigurationResponse' },
+  schema
+}
+
+export const GetPasswordHistoryConfiguration: Operation<
+  GetPasswordHistoryConfigurationRequest,
+  GetPasswordHistoryConfigurationResponse
+> = {
+  name: 'GetPasswordHistoryConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetPasswordHistoryConfiguration',
+  request: { name: 'GetPasswordHistoryConfiguration', namespace: tds, type: 'GetPasswordHistoryConfigurationRequest' },
+  response: { name: 'GetPasswordHistoryConfigurationResponse', type: 'GetPasswordHistoryConfigurationResponse' },
+  schema
+}
+
+export const SetPasswordHistoryConfiguration: Operation<
+  SetPasswordHistoryConfigurationRequest,
+  SetPasswordHistoryConfigurationResponse
+> = {
+  name: 'SetPasswordHistoryConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetPasswordHistoryConfiguration',
+  request: { name: 'SetPasswordHistoryConfiguration', namespace: tds, type: 'SetPasswordHistoryConfigurationRequest' },
+  response: { name: 'SetPasswordHistoryConfigurationResponse', type: 'SetPasswordHistoryConfigurationResponse' },
+  schema
+}
+
+export const GetAuthFailureWarningOptions: Operation<
+  GetAuthFailureWarningOptionsRequest,
+  GetAuthFailureWarningOptionsResponse
+> = {
+  name: 'GetAuthFailureWarningOptions',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetAuthFailureWarningOptions',
+  request: { name: 'GetAuthFailureWarningOptions', namespace: tds, type: 'GetAuthFailureWarningOptionsRequest' },
+  response: { name: 'GetAuthFailureWarningOptionsResponse', type: 'GetAuthFailureWarningOptionsResponse' },
+  schema
+}
+
+export const GetAuthFailureWarningConfiguration: Operation<
+  GetAuthFailureWarningConfigurationRequest,
+  GetAuthFailureWarningConfigurationResponse
+> = {
+  name: 'GetAuthFailureWarningConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetAuthFailureWarningConfiguration',
+  request: {
+    name: 'GetAuthFailureWarningConfiguration',
+    namespace: tds,
+    type: 'GetAuthFailureWarningConfigurationRequest'
+  },
+  response: { name: 'GetAuthFailureWarningConfigurationResponse', type: 'GetAuthFailureWarningConfigurationResponse' },
+  schema
+}
+
+export const SetAuthFailureWarningConfiguration: Operation<
+  SetAuthFailureWarningConfigurationRequest,
+  SetAuthFailureWarningConfigurationResponse
+> = {
+  name: 'SetAuthFailureWarningConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetAuthFailureWarningConfiguration',
+  request: {
+    name: 'SetAuthFailureWarningConfiguration',
+    namespace: tds,
+    type: 'SetAuthFailureWarningConfigurationRequest'
+  },
+  response: { name: 'SetAuthFailureWarningConfigurationResponse', type: 'SetAuthFailureWarningConfigurationResponse' },
+  schema
+}
+
+export const GetAccessPolicy: Operation<GetAccessPolicyRequest, GetAccessPolicyResponse> = {
+  name: 'GetAccessPolicy',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetAccessPolicy',
+  request: { name: 'GetAccessPolicy', namespace: tds, type: 'GetAccessPolicyRequest' },
+  response: { name: 'GetAccessPolicyResponse', type: 'GetAccessPolicyResponse' },
+  schema
+}
+
+export const SetAccessPolicy: Operation<SetAccessPolicyRequest, SetAccessPolicyResponse> = {
+  name: 'SetAccessPolicy',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetAccessPolicy',
+  request: { name: 'SetAccessPolicy', namespace: tds, type: 'SetAccessPolicyRequest' },
+  response: { name: 'SetAccessPolicyResponse', type: 'SetAccessPolicyResponse' },
+  schema
+}
+
+export const SetHashingAlgorithm: Operation<SetHashingAlgorithmRequest, SetHashingAlgorithmResponse> = {
+  name: 'SetHashingAlgorithm',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetHashingAlgorithm',
+  request: { name: 'SetHashingAlgorithm', namespace: tds, type: 'SetHashingAlgorithmRequest' },
+  response: { name: 'SetHashingAlgorithmResponse', type: 'SetHashingAlgorithmResponse' },
   schema
 }
 
@@ -2955,5 +3435,229 @@ export class ManagementClient {
     options?: CallOptions
   ): Promise<DeleteStorageConfigurationResponse> {
     return this.#device.call(DeleteStorageConfiguration, request, options)
+  }
+
+  /**
+   * This operation returns the editable user levels configured in the device. Whenever an editable user
+   * level is passed in the request, information only about that level is returned.
+   *
+   * @param request - The `GetUserRoles` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetUserRolesResponse`
+   */
+  getUserRoles(request?: GetUserRolesRequest, options?: CallOptions): Promise<GetUserRolesResponse> {
+    return this.#device.call(GetUserRoles, request, options)
+  }
+
+  /**
+   * This operation configures an editable user level in the device. If the level passed in UserRole
+   * already exists in the device, its configuration is overwritten. Otherwise, a new editable user level
+   * is created.
+   *
+   * @param request - The `SetUserRole` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetUserRoleResponse`
+   */
+  setUserRole(request: SetUserRoleRequest, options?: CallOptions): Promise<SetUserRoleResponse> {
+    return this.#device.call(SetUserRole, request, options)
+  }
+
+  /**
+   * This operation deletes an editable user level in the device.
+   *
+   * @param request - The `DeleteUserRole` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteUserRoleResponse`
+   */
+  deleteUserRole(request: DeleteUserRoleRequest, options?: CallOptions): Promise<DeleteUserRoleResponse> {
+    return this.#device.call(DeleteUserRole, request, options)
+  }
+
+  /**
+   * This operation returns the configured remote user (if any). A device supporting remote user handling
+   * shall support this operation. The user is only valid for the WS-UserToken profile or as an HTTP /
+   * RTSP user. The algorithm to use for deriving the password is described in section 5.12.2.1 of the
+   * core specification.
+   *
+   * @param request - The `GetRemoteUser` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetRemoteUserResponse`
+   */
+  getRemoteUser(request?: GetRemoteUserRequest, options?: CallOptions): Promise<GetRemoteUserResponse> {
+    return this.#device.call(GetRemoteUser, request, options)
+  }
+
+  /**
+   * This operation sets the remote user. A device supporting remote user handling shall support this
+   * operation. The user is only valid for the WS-UserToken profile or as an HTTP / RTSP user. The
+   * password that is set shall always be the original (not derived) password. If UseDerivedPassword is
+   * set password derivation shall be done by the device when connecting to a remote device.The algorithm
+   * to use for deriving the password is described in section 5.12.2.1 of the core specification. To
+   * remove the remote user SetRemoteUser should be called without the RemoteUser parameter.
+   *
+   * @param request - The `SetRemoteUser` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetRemoteUserResponse`
+   */
+  setRemoteUser(request?: SetRemoteUserRequest, options?: CallOptions): Promise<SetRemoteUserResponse> {
+    return this.#device.call(SetRemoteUser, request, options)
+  }
+
+  /**
+   * This method allows retrieval of all the available parameters and their valid ranges for the password
+   * complexity configuration.
+   *
+   * @param request - The `GetPasswordComplexityOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPasswordComplexityOptionsResponse`
+   */
+  getPasswordComplexityOptions(
+    request?: GetPasswordComplexityOptionsRequest,
+    options?: CallOptions
+  ): Promise<GetPasswordComplexityOptionsResponse> {
+    return this.#device.call(GetPasswordComplexityOptions, request, options)
+  }
+
+  /**
+   * This method allows retrieval of the current password complexity configuration settings.
+   *
+   * @param request - The `GetPasswordComplexityConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPasswordComplexityConfigurationResponse`
+   */
+  getPasswordComplexityConfiguration(
+    request?: GetPasswordComplexityConfigurationRequest,
+    options?: CallOptions
+  ): Promise<GetPasswordComplexityConfigurationResponse> {
+    return this.#device.call(GetPasswordComplexityConfiguration, request, options)
+  }
+
+  /**
+   * This method allows setting of the password complexity configuration.
+   *
+   * @param request - The `SetPasswordComplexityConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetPasswordComplexityConfigurationResponse`
+   */
+  setPasswordComplexityConfiguration(
+    request?: SetPasswordComplexityConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetPasswordComplexityConfigurationResponse> {
+    return this.#device.call(SetPasswordComplexityConfiguration, request, options)
+  }
+
+  /**
+   * This method allows retrieval of the current password history configuration settings.
+   *
+   * @param request - The `GetPasswordHistoryConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPasswordHistoryConfigurationResponse`
+   */
+  getPasswordHistoryConfiguration(
+    request?: GetPasswordHistoryConfigurationRequest,
+    options?: CallOptions
+  ): Promise<GetPasswordHistoryConfigurationResponse> {
+    return this.#device.call(GetPasswordHistoryConfiguration, request, options)
+  }
+
+  /**
+   * This method allows setting of the password history configuration.
+   *
+   * @param request - The `SetPasswordHistoryConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetPasswordHistoryConfigurationResponse`
+   */
+  setPasswordHistoryConfiguration(
+    request: SetPasswordHistoryConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetPasswordHistoryConfigurationResponse> {
+    return this.#device.call(SetPasswordHistoryConfiguration, request, options)
+  }
+
+  /**
+   * This method allows retrieval of all the available parameters and their valid ranges for the
+   * authentication failure warning configuration.
+   *
+   * @param request - The `GetAuthFailureWarningOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAuthFailureWarningOptionsResponse`
+   */
+  getAuthFailureWarningOptions(
+    request?: GetAuthFailureWarningOptionsRequest,
+    options?: CallOptions
+  ): Promise<GetAuthFailureWarningOptionsResponse> {
+    return this.#device.call(GetAuthFailureWarningOptions, request, options)
+  }
+
+  /**
+   * This method allows retrieval of the current authentication failure warning configuration settings.
+   *
+   * @param request - The `GetAuthFailureWarningConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAuthFailureWarningConfigurationResponse`
+   */
+  getAuthFailureWarningConfiguration(
+    request?: GetAuthFailureWarningConfigurationRequest,
+    options?: CallOptions
+  ): Promise<GetAuthFailureWarningConfigurationResponse> {
+    return this.#device.call(GetAuthFailureWarningConfiguration, request, options)
+  }
+
+  /**
+   * This method allows setting of the authentication failure warning configuration.
+   *
+   * @param request - The `SetAuthFailureWarningConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAuthFailureWarningConfigurationResponse`
+   */
+  setAuthFailureWarningConfiguration(
+    request: SetAuthFailureWarningConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetAuthFailureWarningConfigurationResponse> {
+    return this.#device.call(SetAuthFailureWarningConfiguration, request, options)
+  }
+
+  /**
+   * Access to different services and sub-sets of services should be subject to access control. The
+   * WS-Security framework gives the prerequisite for end-point authentication. Authorization decisions
+   * can then be taken using an access security policy. This standard does not mandate any particular
+   * policy description format or security policy but this is up to the device manufacturer or system
+   * provider to choose policy and policy description format of choice. However, an access policy (in
+   * arbitrary format) can be requested using this command. If the device supports access policy settings
+   * based on WS-Security authentication, then the device shall support this command.
+   *
+   * @param request - The `GetAccessPolicy` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAccessPolicyResponse`
+   */
+  getAccessPolicy(request?: GetAccessPolicyRequest, options?: CallOptions): Promise<GetAccessPolicyResponse> {
+    return this.#device.call(GetAccessPolicy, request, options)
+  }
+
+  /**
+   * This command sets the device access security policy (for more details on the access security policy
+   * see the Get command). If the device supports access policy settings based on WS-Security
+   * authentication, then the device shall support this command.
+   *
+   * @param request - The `SetAccessPolicy` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAccessPolicyResponse`
+   */
+  setAccessPolicy(request: SetAccessPolicyRequest, options?: CallOptions): Promise<SetAccessPolicyResponse> {
+    return this.#device.call(SetAccessPolicy, request, options)
+  }
+
+  /**
+   * This operation sets the hashing algorithm(s) used in HTTP and RTSP Digest Authentication.
+   *
+   * @param request - The `SetHashingAlgorithm` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetHashingAlgorithmResponse`
+   */
+  setHashingAlgorithm(
+    request: SetHashingAlgorithmRequest,
+    options?: CallOptions
+  ): Promise<SetHashingAlgorithmResponse> {
+    return this.#device.call(SetHashingAlgorithm, request, options)
   }
 }

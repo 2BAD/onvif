@@ -118,7 +118,23 @@ const targets: Target[] = [
         'CreateStorageConfiguration',
         'GetStorageConfiguration',
         'SetStorageConfiguration',
-        'DeleteStorageConfiguration'
+        'DeleteStorageConfiguration',
+        'GetUserRoles',
+        'SetUserRole',
+        'DeleteUserRole',
+        'GetRemoteUser',
+        'SetRemoteUser',
+        'GetPasswordComplexityOptions',
+        'GetPasswordComplexityConfiguration',
+        'SetPasswordComplexityConfiguration',
+        'GetPasswordHistoryConfiguration',
+        'SetPasswordHistoryConfiguration',
+        'GetAuthFailureWarningOptions',
+        'GetAuthFailureWarningConfiguration',
+        'SetAuthFailureWarningConfiguration',
+        'GetAccessPolicy',
+        'SetAccessPolicy',
+        'SetHashingAlgorithm'
       ]
     }
   },

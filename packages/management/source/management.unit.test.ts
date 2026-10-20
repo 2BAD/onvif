@@ -114,13 +114,45 @@ const operations = [
   Management.CreateStorageConfiguration,
   Management.GetStorageConfiguration,
   Management.SetStorageConfiguration,
-  Management.DeleteStorageConfiguration
+  Management.DeleteStorageConfiguration,
+  Management.GetUserRoles,
+  Management.SetUserRole,
+  Management.DeleteUserRole,
+  Management.GetRemoteUser,
+  Management.SetRemoteUser,
+  Management.GetPasswordComplexityOptions,
+  Management.GetPasswordComplexityConfiguration,
+  Management.SetPasswordComplexityConfiguration,
+  Management.GetPasswordHistoryConfiguration,
+  Management.SetPasswordHistoryConfiguration,
+  Management.GetAuthFailureWarningOptions,
+  Management.GetAuthFailureWarningConfiguration,
+  Management.SetAuthFailureWarningConfiguration,
+  Management.GetAccessPolicy,
+  Management.SetAccessPolicy,
+  Management.SetHashingAlgorithm
 ]
 
 // no lab camera accepts these, so the simulator capture covers them
-const simulatorOnly = new Set(['SetSystemFactoryDefault', 'SetStorageConfiguration'])
-// no capture target supports any auxiliary command
-const faultOnly = new Set(['SendAuxiliaryCommand'])
+const simulatorOnly = new Set(['SetSystemFactoryDefault', 'SetStorageConfiguration', 'SetHashingAlgorithm'])
+// no capture target implements these
+const faultOnly = new Set([
+  'SendAuxiliaryCommand',
+  'GetUserRoles',
+  'SetUserRole',
+  'DeleteUserRole',
+  'GetPasswordComplexityOptions',
+  'GetPasswordComplexityConfiguration',
+  'GetPasswordHistoryConfiguration',
+  'GetAuthFailureWarningOptions',
+  'GetAuthFailureWarningConfiguration'
+])
+// the capture sends these back as read, and no capture target reads them
+const uncaptured = new Set([
+  'SetPasswordComplexityConfiguration',
+  'SetPasswordHistoryConfiguration',
+  'SetAuthFailureWarningConfiguration'
+])
 
 describe('generated management operations', () => {
   const captures = corpus.flatMap((entry) => {
@@ -133,7 +165,7 @@ describe('generated management operations', () => {
   )
   const decodable = fixtures.filter(
     ({ name, xml }) =>
-      !/<tds:(?:DynamicDNSInformation|Capabilities|Status) xsi:nil="true"\/>/.test(xml) &&
+      !/<tds:(?:DynamicDNSInformation|Capabilities|Status|PolicyFile) xsi:nil="true"\/>/.test(xml) &&
       name !== 'live/ezviz/ds-2de2c400ig-w-w/device.GetStorageConfiguration.xml'
   )
 
@@ -145,6 +177,7 @@ describe('generated management operations', () => {
     const faulted = new Set(captures.filter(({ fault }) => fault).map(({ operation }) => operation.name))
     const missing = operations
       .map(({ name }) => name)
+      .filter((name) => !uncaptured.has(name))
       .filter((name) => !(faultOnly.has(name) ? faulted : simulatorOnly.has(name) ? simulator : live).has(name))
     expect(missing).toEqual([])
   })
@@ -1098,5 +1131,219 @@ describe('System settings on the camera', () => {
     )
     expect(error).toBeInstanceOf(SoapFaultError)
     expect(`${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`).not.toContain(password)
+  })
+})
+
+describe('Security settings on the camera', () => {
+  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
+  const rawRequest = (mock: MockCamera, action: string): string =>
+    mock.requests.findLast((request) => request.action === action)?.body ?? ''
+  const response = (body: string): ActionOverride =>
+    answer(
+      live('device.GetRemoteUser').replace(/<tds:GetRemoteUserResponse>[\s\S]*<\/tds:GetRemoteUserResponse>/, body)
+    )
+  const leaks = (error: unknown, secret: string): boolean =>
+    `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`.includes(secret)
+
+  it('reads user roles with their functions as a list', async () => {
+    const roles =
+      '<tds:GetUserRolesResponse><tds:UserRole><tt:Name>operator</tt:Name>' +
+      '<tt:Functions>tds:GetUsers tds:SetUser  trt:GetProfiles</tt:Functions></tds:UserRole></tds:GetUserRolesResponse>'
+    const { mock, device } = await connect({ overrides: { 'device.GetUserRoles': response(roles) } })
+    expect(await device.management.getUserRoles({ userRole: 'operator' })).toEqual({
+      userRole: [{ name: 'operator', functions: ['tds:GetUsers', 'tds:SetUser', 'trt:GetProfiles'] }]
+    })
+    expect(requestOf(mock, 'GetUserRoles')).toEqual({ GetUserRoles: { UserRole: 'operator' } })
+  })
+
+  it('sends a role with its functions in one space separated element', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.SetUserRole': response('<tds:SetUserRoleResponse/>'),
+        'device.DeleteUserRole': response('<tds:DeleteUserRoleResponse/>')
+      }
+    })
+    const userRole = { name: 'viewer', functions: ['trt:GetProfiles', 'trt:GetStreamUri'] }
+    expect(await device.management.setUserRole({ userRole })).toEqual({})
+    expect(await device.management.deleteUserRole({ userRole: 'viewer' })).toEqual({})
+    expect(rawRequest(mock, 'SetUserRole')).toContain(
+      '<tds:UserRole><tt:Name>viewer</tt:Name><tt:Functions>trt:GetProfiles trt:GetStreamUri</tt:Functions></tds:UserRole>'
+    )
+    expect(requestOf(mock, 'DeleteUserRole')).toEqual({ DeleteUserRole: { UserRole: 'viewer' } })
+  })
+
+  it('reports roles on the camera as a SOAP fault without subcodes', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetUserRoles': { kind: 'status', status: 400, body: live('device.GetUserRoles') } }
+    })
+    const error = await rejection(() => device.management.getUserRoles())
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: [], action: 'GetUserRoles' })
+  })
+
+  it('returns no remote user when none is configured and clears it with an empty request', async () => {
+    const { mock, device } = await connect()
+    expect(await device.management.getRemoteUser()).toEqual({})
+    expect(await device.management.setRemoteUser()).toEqual({})
+    expect(requestOf(mock, 'SetRemoteUser')).toEqual({ SetRemoteUser: '' })
+  })
+
+  it('reads the configured remote user', async () => {
+    const remote =
+      '<tds:GetRemoteUserResponse><tds:RemoteUser><tt:Username>relay</tt:Username>' +
+      '<tt:UseDerivedPassword>true</tt:UseDerivedPassword></tds:RemoteUser></tds:GetRemoteUserResponse>'
+    const { device } = await connect({ overrides: { 'device.GetRemoteUser': response(remote) } })
+    expect(await device.management.getRemoteUser()).toEqual({
+      remoteUser: { username: 'relay', useDerivedPassword: true }
+    })
+  })
+
+  it('sends the remote user password as text and keeps it out of the error', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.SetRemoteUser': { kind: 'status', status: 500, body: hikvision('device.GetRemoteUser') }
+      }
+    })
+    const password = `Remote<&>"'-Secret`
+    const error = await rejection(() =>
+      device.management.setRemoteUser({ remoteUser: { username: 'relay', password, useDerivedPassword: false } })
+    )
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['ActionNotSupported', 'InvalidOperation'], action: 'SetRemoteUser' })
+    expect(leaks(error, password)).toBe(false)
+    expect(requestOf(mock, 'SetRemoteUser')).toEqual({
+      SetRemoteUser: { RemoteUser: { Username: 'relay', Password: password, UseDerivedPassword: 'false' } }
+    })
+  })
+
+  it('reads the password complexity options and configuration', async () => {
+    const range = (name: string, min: number, max: number) =>
+      `<tds:${name}><tt:Min>${min}</tt:Min><tt:Max>${max}</tt:Max></tds:${name}>`
+    const { device } = await connect({
+      overrides: {
+        'device.GetPasswordComplexityOptions': response(
+          `<tds:GetPasswordComplexityOptionsResponse>${range('MinLenRange', 8, 64)}${range('UppercaseRange', 0, 4)}` +
+            '<tds:BlockUsernameOccurrenceSupported>true</tds:BlockUsernameOccurrenceSupported>' +
+            '</tds:GetPasswordComplexityOptionsResponse>'
+        ),
+        'device.GetPasswordComplexityConfiguration': response(
+          '<tds:GetPasswordComplexityConfigurationResponse><tds:MinLen>8</tds:MinLen><tds:Uppercase>0</tds:Uppercase>' +
+            '<tds:PolicyConfigurationLocked>false</tds:PolicyConfigurationLocked>' +
+            '</tds:GetPasswordComplexityConfigurationResponse>'
+        )
+      }
+    })
+    expect(await device.management.getPasswordComplexityOptions()).toEqual({
+      minLenRange: { min: 8, max: 64 },
+      uppercaseRange: { min: 0, max: 4 },
+      blockUsernameOccurrenceSupported: true
+    })
+    expect(await device.management.getPasswordComplexityConfiguration()).toEqual({
+      minLen: 8,
+      uppercase: 0,
+      policyConfigurationLocked: false
+    })
+  })
+
+  it('sends zero counts and false flags of the password policies', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.SetPasswordComplexityConfiguration': response('<tds:SetPasswordComplexityConfigurationResponse/>'),
+        'device.SetPasswordHistoryConfiguration': response('<tds:SetPasswordHistoryConfigurationResponse/>'),
+        'device.SetAuthFailureWarningConfiguration': response('<tds:SetAuthFailureWarningConfigurationResponse/>')
+      }
+    })
+    await device.management.setPasswordComplexityConfiguration({
+      minLen: 0,
+      number: 0,
+      blockUsernameOccurrence: false
+    })
+    await device.management.setPasswordHistoryConfiguration({ enabled: false, length: 0 })
+    await device.management.setAuthFailureWarningConfiguration({ enabled: true, monitorPeriod: 60, maxAuthFailures: 0 })
+    expect(requestOf(mock, 'SetPasswordComplexityConfiguration')).toEqual({
+      SetPasswordComplexityConfiguration: { MinLen: '0', Number: '0', BlockUsernameOccurrence: 'false' }
+    })
+    expect(requestOf(mock, 'SetPasswordHistoryConfiguration')).toEqual({
+      SetPasswordHistoryConfiguration: { Enabled: 'false', Length: '0' }
+    })
+    expect(requestOf(mock, 'SetAuthFailureWarningConfiguration')).toEqual({
+      SetAuthFailureWarningConfiguration: { Enabled: 'true', MonitorPeriod: '60', MaxAuthFailures: '0' }
+    })
+  })
+
+  it('reads the password history and the authentication failure warning settings', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetPasswordHistoryConfiguration': response(
+          '<tds:GetPasswordHistoryConfigurationResponse><tds:Enabled>true</tds:Enabled><tds:Length>5</tds:Length>' +
+            '</tds:GetPasswordHistoryConfigurationResponse>'
+        ),
+        'device.GetAuthFailureWarningOptions': response(
+          '<tds:GetAuthFailureWarningOptionsResponse><tds:MonitorPeriodRange><tt:Min>1</tt:Min><tt:Max>3600</tt:Max>' +
+            '</tds:MonitorPeriodRange><tds:AuthFailureRange><tt:Min>1</tt:Min><tt:Max>100</tt:Max></tds:AuthFailureRange>' +
+            '</tds:GetAuthFailureWarningOptionsResponse>'
+        ),
+        'device.GetAuthFailureWarningConfiguration': response(
+          '<tds:GetAuthFailureWarningConfigurationResponse><tds:Enabled>true</tds:Enabled>' +
+            '<tds:MonitorPeriod>60</tds:MonitorPeriod><tds:MaxAuthFailures>5</tds:MaxAuthFailures>' +
+            '</tds:GetAuthFailureWarningConfigurationResponse>'
+        )
+      }
+    })
+    expect(await device.management.getPasswordHistoryConfiguration()).toEqual({ enabled: true, length: 5 })
+    expect(await device.management.getAuthFailureWarningOptions()).toEqual({
+      monitorPeriodRange: { min: 1, max: 3600 },
+      authFailureRange: { min: 1, max: 100 }
+    })
+    expect(await device.management.getAuthFailureWarningConfiguration()).toEqual({
+      enabled: true,
+      monitorPeriod: 60,
+      maxAuthFailures: 5
+    })
+  })
+
+  it('reads the access policy of the DS-2DE2C400IG-W-W as bytes and sends it back as base64', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.GetAccessPolicy': answer(hikvision('device.GetAccessPolicy')),
+        'device.SetAccessPolicy': answer(hikvision('device.SetAccessPolicy'))
+      }
+    })
+    const { policyFile } = await device.management.getAccessPolicy()
+    expect(policyFile).toEqual({ data: new Uint8Array(Buffer.from('eFY0EgHvzas=', 'base64')) })
+    expect(await device.management.setAccessPolicy({ policyFile })).toEqual({})
+    expect(rawRequest(mock, 'SetAccessPolicy')).toContain(
+      '<tds:PolicyFile><tt:Data>eFY0EgHvzas=</tt:Data></tds:PolicyFile>'
+    )
+  })
+
+  it('sends the content type of the access policy as an xmime attribute', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.SetAccessPolicy': answer(hikvision('device.SetAccessPolicy')) }
+    })
+    await device.management.setAccessPolicy({
+      policyFile: { data: new TextEncoder().encode('<policy/>'), contentType: 'application/xml' }
+    })
+    const body = rawRequest(mock, 'SetAccessPolicy')
+    expect(body).toContain('xmlns:xmime="http://www.w3.org/2005/05/xmlmime"')
+    expect(body).toMatch(
+      /<tds:PolicyFile [^>]*xmime:contentType="application\/xml"[^>]*><tt:Data>PHBvbGljeS8\+<\/tt:Data>/
+    )
+  })
+
+  it('rejects the nil access policy of the camera with the path', async () => {
+    const { device } = await connect()
+    await expect(device.management.getAccessPolicy()).rejects.toMatchObject({
+      name: 'DecodeError',
+      path: expect.stringContaining('GetAccessPolicyResponse.PolicyFile')
+    })
+  })
+
+  it('sends the hashing algorithms as one space separated element', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.SetHashingAlgorithm': response('<tds:SetHashingAlgorithmResponse/>') }
+    })
+    expect(await device.management.setHashingAlgorithm({ algorithm: ['SHA-256', 'MD5'] })).toEqual({})
+    expect(rawRequest(mock, 'SetHashingAlgorithm')).toContain('<tds:Algorithm>SHA-256 MD5</tds:Algorithm>')
   })
 })

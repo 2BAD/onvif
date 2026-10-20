@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { AuthError, Device, SoapFaultError, TransportError } from '@2bad/onvif'
+import { AuthError, DecodeError, Device, SoapFaultError, TransportError } from '@2bad/onvif'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type ManagementClient, management } from '#index.ts'
 
@@ -207,6 +207,41 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
     await device.management.deleteGeoLocation({ location: [location] })
     const { location: after = [] } = await device.management.getGeoLocation()
     expect(after.map(({ token }) => token)).not.toContain('onviftest')
+  })
+
+  it('sends the access policy back unchanged', async (context) => {
+    const policy = await unlessAnswered(async () => {
+      try {
+        return await device.management.getAccessPolicy()
+      } catch (error) {
+        if (error instanceof DecodeError) return undefined
+        throw error
+      }
+    })
+    if (!policy) return context.skip('The device does not return an access policy')
+    await device.management.setAccessPolicy(policy)
+    expect(await device.management.getAccessPolicy()).toEqual(policy)
+  })
+
+  it('clears the remote user when none is configured', async (context) => {
+    const remote = await unlessAnswered(() => device.management.getRemoteUser())
+    if (!remote) return context.skip('The device does not implement remote users')
+    if (remote.remoteUser) return context.skip('The device has a remote user')
+    await device.management.setRemoteUser()
+    expect(await device.management.getRemoteUser()).toEqual({})
+  })
+
+  it('creates and deletes a user role', async (context) => {
+    const roles = await unlessAnswered(() => device.management.getUserRoles())
+    if (!roles) return context.skip('The device does not implement user roles')
+    const functions = roles.userRole?.[0]?.functions ?? []
+    await device.management.setUserRole({ userRole: { name: 'onviftest', functions } })
+    try {
+      const { userRole = [] } = await device.management.getUserRoles({ userRole: 'onviftest' })
+      expect(userRole.map(({ name }) => name)).toContain('onviftest')
+    } finally {
+      await device.management.deleteUserRole({ userRole: 'onviftest' })
+    }
   })
 
   it('sends the IP filter back unchanged', async (context) => {
