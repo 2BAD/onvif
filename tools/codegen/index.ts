@@ -8,7 +8,8 @@ import { Registry, specsDirectory } from '#tools/codegen/registry.ts'
 
 type Target = {
   output: string
-  codecImport: string
+  /** `@2bad/onvif/soap` by default. */
+  codecImport?: string
   wsdl?: string
   /** Operations to generate, by port type. */
   operations?: Record<string, string[]>
@@ -27,7 +28,8 @@ type Target = {
   prefixed?: string[]
   /** Required elements that devices omit or leave empty, as `Response.Element` or `Type.Element`, decoded as optional. */
   optional?: string[]
-  client?: EmitOptions['client']
+  /** `typesImport` is `@2bad/onvif` by default. */
+  client?: Omit<NonNullable<EmitOptions['client']>, 'typesImport'> & { typesImport?: string }
 }
 
 const root = join(import.meta.dirname, '../..')
@@ -62,8 +64,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/management/source/generated/management.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'ManagementClient', typesImport: '@2bad/onvif' },
+    client: { name: 'ManagementClient' },
     wsdl: 'ver10/device/wsdl/devicemgmt.wsdl',
     operations: {
       Device: [
@@ -163,10 +164,8 @@ const targets: Target[] = [
   },
   {
     output: 'packages/events/source/generated/events.ts',
-    codecImport: '@2bad/onvif/soap',
     client: {
       name: 'EventsClient',
-      typesImport: '@2bad/onvif',
       operations: ['GetServiceCapabilities', 'GetEventProperties']
     },
     wsdl: 'ver10/events/wsdl/event.wsdl',
@@ -182,7 +181,6 @@ const targets: Target[] = [
   },
   {
     output: 'packages/discovery/source/generated/discovery.ts',
-    codecImport: '@2bad/onvif/soap',
     elements: [
       {
         schema: 'external/schemas.xmlsoap.org/ws/2005/04/discovery/ws-discovery.xsd',
@@ -193,8 +191,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/media/source/generated/media.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'MediaClient', typesImport: '@2bad/onvif' },
+    client: { name: 'MediaClient' },
     wsdl: 'ver10/media/wsdl/media.wsdl',
     operations: {
       Media: [
@@ -254,8 +251,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/media/source/generated/media2.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'Media2Client', typesImport: '@2bad/onvif' },
+    client: { name: 'Media2Client' },
     wsdl: 'ver20/media/wsdl/media.wsdl',
     operations: {
       Media2: [
@@ -280,10 +276,8 @@ const targets: Target[] = [
   },
   {
     output: 'packages/ptz/source/generated/ptz.ts',
-    codecImport: '@2bad/onvif/soap',
     client: {
       name: 'PTZClient',
-      typesImport: '@2bad/onvif',
       scoped: { name: 'PTZProfileClient', method: 'forProfile', field: 'ProfileToken' }
     },
     wsdl: 'ver20/ptz/wsdl/ptz.wsdl',
@@ -313,10 +307,8 @@ const targets: Target[] = [
   },
   {
     output: 'packages/imaging/source/generated/imaging.ts',
-    codecImport: '@2bad/onvif/soap',
     client: {
       name: 'ImagingClient',
-      typesImport: '@2bad/onvif',
       scoped: { name: 'ImagingVideoSourceClient', method: 'forVideoSource', field: 'VideoSourceToken' }
     },
     wsdl: 'ver20/imaging/wsdl/imaging.wsdl',
@@ -339,10 +331,8 @@ const targets: Target[] = [
   },
   {
     output: 'packages/recording/source/generated/recording.ts',
-    codecImport: '@2bad/onvif/soap',
     client: {
       name: 'RecordingClient',
-      typesImport: '@2bad/onvif',
       scoped: { name: 'RecordingTokenClient', method: 'forRecording', field: 'RecordingToken' }
     },
     wsdl: 'ver10/recording.wsdl',
@@ -371,8 +361,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/recording/source/generated/search.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'SearchClient', typesImport: '@2bad/onvif' },
+    client: { name: 'SearchClient' },
     wsdl: 'ver10/search.wsdl',
     operations: {
       SearchPort: [
@@ -399,8 +388,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/recording/source/generated/replay.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'ReplayClient', typesImport: '@2bad/onvif' },
+    client: { name: 'ReplayClient' },
     wsdl: 'ver10/replay.wsdl',
     operations: {
       ReplayPort: ['GetServiceCapabilities', 'GetReplayUri', 'GetReplayConfiguration', 'SetReplayConfiguration']
@@ -408,10 +396,8 @@ const targets: Target[] = [
   },
   {
     output: 'packages/analytics/source/generated/analytics.ts',
-    codecImport: '@2bad/onvif/soap',
     client: {
       name: 'AnalyticsClient',
-      typesImport: '@2bad/onvif',
       scoped: { name: 'AnalyticsConfigurationClient', method: 'forConfiguration', field: 'ConfigurationToken' }
     },
     wsdl: 'ver20/analytics/wsdl/analytics.wsdl',
@@ -451,8 +437,7 @@ const targets: Target[] = [
   },
   {
     output: 'packages/deviceio/source/generated/deviceio.ts',
-    codecImport: '@2bad/onvif/soap',
-    client: { name: 'DeviceIOClient', typesImport: '@2bad/onvif' },
+    client: { name: 'DeviceIOClient' },
     wsdl: 'ver10/deviceio.wsdl',
     operations: {
       DeviceIOPort: [
@@ -536,7 +521,14 @@ const generate = (target: Target): string => {
     return builder.element(element)
   })
   const { codecImport, namespaces, client } = target
-  return emit({ commit, codecImport, operations, elements, namespaces: namespaces ?? [], client })
+  return emit({
+    commit,
+    codecImport: codecImport ?? '@2bad/onvif/soap',
+    operations,
+    elements,
+    namespaces: namespaces ?? [],
+    client: client && { typesImport: '@2bad/onvif', ...client }
+  })
 }
 
 const check = process.argv.includes('--check')
