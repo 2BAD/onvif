@@ -1,5 +1,5 @@
 import { setTimeout as pause } from 'node:timers/promises'
-import { type CallOptions, type Device, TimeoutError } from '@2bad/onvif'
+import { type CallOptions, type Device, type Operation, TimeoutError } from '@2bad/onvif'
 import {
   EndSearch,
   type EventFilter,
@@ -38,7 +38,7 @@ export type EventSearch = RecordingSearch & {
   includeStartState?: boolean | undefined
 }
 
-type Page<Item> = { searchState: SearchState; items: Item[] }
+type PageRequest = { searchToken: string; minResults?: number; maxResults?: number; waitTime?: string }
 
 type StepOptions = { signal: AbortSignal | undefined; timeoutMs: number }
 
@@ -56,14 +56,15 @@ const endAfterFailure = async (device: Device, searchToken: string): Promise<voi
 }
 
 // gets pages until the device reports the search completed, then ends the search whatever happened
-async function* results<Item>(
+async function* results<Request, List extends { searchState: SearchState }, Item>(
   device: Device,
-  actions: { find: string; page: string },
-  start: (options: CallOptions) => Promise<string>,
-  page: (searchToken: string, options: CallOptions) => Promise<Page<Item>>,
+  find: Operation<Request, { searchToken: string }>,
+  request: Request,
+  page: Operation<PageRequest, { resultList: List }>,
+  itemsOf: (resultList: List) => Item[] | undefined,
   options: SearchOptions
 ): AsyncGenerator<Item, void, undefined> {
-  const { signal, timeoutMs = 60_000 } = options
+  const { signal, timeoutMs = 60_000, pageSize = 100 } = options
   const deadline = performance.now() + timeoutMs
   // runs one step of the search in the time left, and reports the deadline as the search timing out
   const step = async <Result>(action: string, run: (callOptions: StepOptions) => Promise<Result>): Promise<Result> => {
@@ -81,12 +82,16 @@ async function* results<Item>(
       throw error instanceof TimeoutError ? timeout(error) : error
     }
   }
-  const searchToken = await step(actions.find, start)
-  let ended = false
+  const { searchToken } = await step(find.name, (callOptions) => device.call(find, request, callOptions))
+  const pageRequest = { searchToken, minResults: 1, maxResults: pageSize, waitTime: 'PT1S' }
+  const next = async () => {
+    const { resultList } = await step(page.name, (callOptions) => device.call(page, pageRequest, callOptions))
+    return { searchState: resultList.searchState, items: itemsOf(resultList) ?? [] }
+  }
   let failed = false
   try {
     for (;;) {
-      const { searchState, items } = await step(actions.page, (callOptions) => page(searchToken, callOptions))
+      const { searchState, items } = await next()
       yield* items
       if (searchState === 'Completed') break
       if (items.length === 0) {
@@ -95,21 +100,19 @@ async function* results<Item>(
           device.call(GetSearchState, { searchToken }, callOptions)
         )
         if (state === 'Completed') {
-          yield* (await step(actions.page, (callOptions) => page(searchToken, callOptions))).items
+          yield* (await next()).items
           break
         }
-        await step(actions.page, async ({ timeoutMs: leftMs }) =>
+        await step(page.name, async ({ timeoutMs: leftMs }) =>
           pause(Math.min(EMPTY_PAGE_PAUSE_MS, leftMs), undefined, { signal })
         )
       }
     }
-    ended = true
-    await device.call(EndSearch, { searchToken })
   } catch (error) {
     failed = true
     throw error
   } finally {
-    if (!ended) await (failed ? endAfterFailure(device, searchToken) : device.call(EndSearch, { searchToken }))
+    await (failed ? endAfterFailure(device, searchToken) : device.call(EndSearch, { searchToken }))
   }
 }
 
@@ -132,22 +135,9 @@ export function searchRecordings(
   options: SearchOptions = {}
 ): AsyncGenerator<RecordingInformation, void, undefined> {
   const { scope = {}, maxMatches } = request
-  const { pageSize = 100, keepAliveTime = keepAliveOf(options) } = options
+  const { keepAliveTime = keepAliveOf(options) } = options
   const find = { scope, ...(maxMatches === undefined ? {} : { maxMatches }), keepAliveTime }
-  return results(
-    device,
-    { find: 'FindRecordings', page: 'GetRecordingSearchResults' },
-    async (callOptions) => (await device.call(FindRecordings, find, callOptions)).searchToken,
-    async (searchToken, callOptions) => {
-      const { resultList } = await device.call(
-        GetRecordingSearchResults,
-        { searchToken, minResults: 1, maxResults: pageSize, waitTime: 'PT1S' },
-        callOptions
-      )
-      return { searchState: resultList.searchState, items: resultList.recordingInformation ?? [] }
-    },
-    options
-  )
+  return results(device, FindRecordings, find, GetRecordingSearchResults, (list) => list.recordingInformation, options)
 }
 
 /**
@@ -170,7 +160,7 @@ export function searchEvents(
   options: SearchOptions = {}
 ): AsyncGenerator<FindEventResult, void, undefined> {
   const { startPoint, endPoint, scope = {}, searchFilter = {}, includeStartState = false, maxMatches } = request
-  const { pageSize = 100, keepAliveTime = keepAliveOf(options) } = options
+  const { keepAliveTime = keepAliveOf(options) } = options
   const find = {
     startPoint,
     ...(endPoint === undefined ? {} : { endPoint }),
@@ -180,18 +170,5 @@ export function searchEvents(
     ...(maxMatches === undefined ? {} : { maxMatches }),
     keepAliveTime
   }
-  return results(
-    device,
-    { find: 'FindEvents', page: 'GetEventSearchResults' },
-    async (callOptions) => (await device.call(FindEvents, find, callOptions)).searchToken,
-    async (searchToken, callOptions) => {
-      const { resultList } = await device.call(
-        GetEventSearchResults,
-        { searchToken, minResults: 1, maxResults: pageSize, waitTime: 'PT1S' },
-        callOptions
-      )
-      return { searchState: resultList.searchState, items: resultList.result ?? [] }
-    },
-    options
-  )
+  return results(device, FindEvents, find, GetEventSearchResults, (list) => list.result, options)
 }
