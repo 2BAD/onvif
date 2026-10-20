@@ -38,6 +38,7 @@ const filters = [
   { namespace: wsnt, local: 'TopicExpression' },
   { namespace: wsnt, local: 'MessageContent' }
 ]
+const topicExpressions = ['TopicExpressionType', 'QueryExpressionType']
 
 const targets: Target[] = [
   {
@@ -249,7 +250,7 @@ const targets: Target[] = [
     },
     namespaces: ['GetMetadataConfigurations', 'GetMetadataConfiguration', 'GetCompatibleMetadataConfigurations'],
     substitutions: { FilterType: filters },
-    prefixed: ['TopicExpressionType', 'QueryExpressionType']
+    prefixed: topicExpressions
   },
   {
     output: 'packages/media/source/generated/media2.ts',
@@ -275,7 +276,7 @@ const targets: Target[] = [
     },
     namespaces: ['GetMetadataConfigurations'],
     substitutions: { FilterType: filters },
-    prefixed: ['TopicExpressionType', 'QueryExpressionType']
+    prefixed: topicExpressions
   },
   {
     output: 'packages/ptz/source/generated/ptz.ts',
@@ -394,7 +395,7 @@ const targets: Target[] = [
       EventFilter: filters,
       NotificationMessageHolderTypeMessage: [{ namespace: tt, local: 'Message' }]
     },
-    prefixed: ['TopicExpressionType', 'QueryExpressionType']
+    prefixed: topicExpressions
   },
   {
     output: 'packages/recording/source/generated/replay.ts',
@@ -496,7 +497,7 @@ const commit = readFileSync(join(specsDirectory, 'onvif', 'COMMIT'), 'utf8')
 const generate = (target: Target): string => {
   const registry = new Registry()
   if (target.wsdl) registry.load(join(specsDirectory, 'onvif', target.wsdl))
-  const builder = new ModelBuilder(registry, { qnames: target.qnames === true })
+  const builder = new ModelBuilder(registry, target.qnames === true)
   const operations = Object.entries(target.operations ?? {}).flatMap(([portType, names]) => {
     const available = new Map(registry.operations(portType).map((operation) => [operation.name, operation]))
     return names.map((name) => {

@@ -85,11 +85,6 @@ const occurs = (node: SchemaNode) => ({
 
 const pascal = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1)
 
-export type ModelOptions = {
-  /** Decode `xs:QName` values with the `qname` primitive instead of as strings. */
-  qnames?: boolean
-}
-
 export class ModelBuilder {
   readonly #registry: Registry
   readonly #qnames: boolean
@@ -97,9 +92,13 @@ export class ModelBuilder {
   readonly #simple = new Map<string, SimpleModel>()
   readonly complexTypes: ComplexModel[] = []
 
-  constructor(registry: Registry, options: ModelOptions = {}) {
+  /**
+   * @param registry - Loaded WSDL and XSD components
+   * @param qnames - Decode `xs:QName` values with the `qname` primitive instead of as strings
+   */
+  constructor(registry: Registry, qnames = false) {
     this.#registry = registry
-    this.#qnames = options.qnames ?? false
+    this.#qnames = qnames
   }
 
   operation(operation: WsdlOperation): OperationModel {

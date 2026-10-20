@@ -412,10 +412,10 @@ describe('resolveQName', () => {
 
 describe('qnames and substitutions', () => {
   const items = 'urn:test:items'
-  const builderFor = (options?: { qnames?: boolean }) => {
+  const builderFor = (qnames?: boolean) => {
     const registry = new Registry()
     registry.load(join(testDirectory, 'items.xsd'))
-    return new ModelBuilder(registry, options)
+    return new ModelBuilder(registry, qnames)
   }
   const operationOf = (builder: ModelBuilder, local: string): OperationModel => {
     const type = builder.element({ namespace: items, local })
@@ -435,11 +435,11 @@ describe('qnames and substitutions', () => {
     const type = (builder: ModelBuilder) =>
       builder.element({ namespace: items, local: 'Item' }).fields.find((field) => field.name === 'Type')?.type
     expect(type(builderFor())).toMatchObject({ kind: 'simple', primitive: 'string' })
-    expect(type(builderFor({ qnames: true }))).toMatchObject({ kind: 'simple', primitive: 'qname' })
+    expect(type(builderFor(true))).toMatchObject({ kind: 'simple', primitive: 'qname' })
   })
 
   it('parses the responses that hold a QName with namespaces and types QNames as strings', () => {
-    const builder = builderFor({ qnames: true })
+    const builder = builderFor(true)
     const source = emit({
       commit: 'test',
       codecImport: '#soap/codec.ts',
