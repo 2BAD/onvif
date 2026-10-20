@@ -40,7 +40,14 @@ describe.skipIf(!hostname)('analytics on a live camera', () => {
   it('sends the rules back and reads the same', async (context) => {
     const { rule = [] } = await configuration.getRules()
     if (rule.length === 0) return context.skip('No rules')
-    await configuration.modifyRules({ rule })
+    try {
+      await configuration.modifyRules({ rule })
+    } catch (error) {
+      if (error instanceof SoapFaultError && error.subcodes.includes('RuleNotExistent')) {
+        return context.skip('The camera rejects the rules it reported')
+      }
+      throw error
+    }
     expect((await configuration.getRules()).rule).toEqual(rule)
   })
 

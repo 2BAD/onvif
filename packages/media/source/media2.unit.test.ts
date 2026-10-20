@@ -242,6 +242,17 @@ describe('media.v2 metadata event filters', () => {
   })
 })
 
+describe('media.v2 on the Dahua DHI-ITC413-PW4D-Z1', () => {
+  it('reports a configuration that does not exist, sent with HTTP 200, as a SOAP fault', async () => {
+    const { v2 } = await connect({
+      overrides: { 'media2.GetMetadataConfigurations': answer(dahua('media2.GetMetadataConfigurationsMissingFault')) }
+    })
+    const error = await rejection(() => v2.getMetadataConfigurations({ configurationToken: 'missing' }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'NoConfig'], action: 'GetMetadataConfigurations' })
+  })
+})
+
 describe('media.v2 on the Hikvision DS-2DE2C400IG-W-W', () => {
   it('reads a metadata configuration without events and with an empty analytics engine', async () => {
     const { v2 } = await connect({

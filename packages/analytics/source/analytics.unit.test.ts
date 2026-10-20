@@ -568,6 +568,26 @@ describe('analytics on the HappyTime server', () => {
 })
 
 describe('analytics on the Dahua DHI-ITC413-PW4D-Z1', () => {
+  it.each([
+    ['GetRuleOptions', 'analytics.GetRuleOptions', ['ActionNotSupported', 'NotImplemented']],
+    ['GetRules', 'analytics.GetRulesMissingFault', ['InvalidArgVal', 'NoConfig']],
+    ['ModifyRules', 'analytics.ModifyRulesRuleNotExistentFault', ['InvalidArgVal', 'RuleNotExistent']]
+  ] as const)('reports a %s fault sent with HTTP 200 as a SOAP fault', async (action, name, subcodes) => {
+    const { device } = await connect({ overrides: { [`analytics.${action}`]: answer(dahua(name)) } })
+    const configuration = device.analytics.forConfiguration('missing')
+    const calls = {
+      GetRuleOptions: () => configuration.getRuleOptions(),
+      GetRules: () => configuration.getRules(),
+      // the rule the camera reports from GetRules
+      ModifyRules: () =>
+        configuration.modifyRules({ rule: [{ name: 'Region', type: 'tt:CellMotionDetector', parameters: {} }] })
+    }
+    const call = calls[action]
+    const error = await rejection(call)
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes, service: 'tan', action })
+  })
+
   it('reads the sample frames of the supported metadata with times without a zone as UTC', async () => {
     const { device } = await connect({
       overrides: { 'analytics.GetSupportedMetadata': answer(dahua('analytics.GetSupportedMetadata')) }
