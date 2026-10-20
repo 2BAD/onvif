@@ -7,15 +7,12 @@ const username = process.env['ONVIF_TEST_USER']
 const password = process.env['ONVIF_TEST_PASS']
 
 describe.skipIf(!hostname)('recording, search and replay on a live camera', () => {
-  let device: Awaited<ReturnType<typeof connect>>
-
-  const connect = async () =>
-    (await Device.connect({ hostname: hostname ?? '', username: username ?? '', password: password ?? '' })).use(
-      recording
-    )
+  let device: Device & ReturnType<typeof recording>
 
   beforeAll(async () => {
-    device = await connect()
+    device = (
+      await Device.connect({ hostname: hostname ?? '', username: username ?? '', password: password ?? '' })
+    ).use(recording)
   })
 
   afterAll(() => device.close())
