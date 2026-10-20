@@ -1,6 +1,6 @@
 {
   "extends": "@2bad/tsconfig",
-  "include": ["packages/*/source/**/*", "packages/*/tsdown.config.ts", "tools/**/*", "vitest.config.ts"],
+  "include": ["packages/*/source/**/*", "packages/*/tsdown.config.ts", "tsdown.package.ts", "tools/**/*", "vitest.config.ts"],
   "compilerOptions": {
     "target": "es2025",
     "lib": ["es2025", "esnext.array", "esnext.error", "esnext.typedarrays"],
