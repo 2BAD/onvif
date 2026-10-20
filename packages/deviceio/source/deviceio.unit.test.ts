@@ -13,7 +13,7 @@ import {
   requestOf,
   simulator
 } from '../../../tools/mock-camera/harness.ts'
-import { type ActionOverride, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
+import type { ActionOverride, MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { DeviceIO, io } from '#index.ts'
 
 const connect = async (options?: MockCameraOptions) => {

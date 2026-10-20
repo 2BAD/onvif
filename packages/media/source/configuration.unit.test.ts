@@ -1,63 +1,20 @@
-import { DecodeError, Device, SoapFaultError } from '@2bad/onvif'
-import { decode, type Operation, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
-import { afterEach, describe, expect, it } from 'vitest'
-import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
-import {
-  type ActionOverride,
-  type MockCamera,
-  type MockCameraOptions,
-  startMockCamera
-} from '../../../tools/mock-camera/server.ts'
+import { DecodeError, SoapFaultError } from '@2bad/onvif'
+import { parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
+import { describe, expect, it } from 'vitest'
+import { capturesOf, decodeCapture, fixture, operationsOf } from '../../../tools/fixtures/corpus.ts'
+import { answer, cam, connectMock, rawRequestOf, rejection, requestOf } from '../../../tools/mock-camera/harness.ts'
+import type { MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { Media, media } from '#index.ts'
 
-const cam = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
-
 const connect = async (options?: MockCameraOptions) => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
+  const { mock, device } = await connectMock(options)
   return { mock, v1: device.use(media).media.v1 }
 }
 
-const answer = (body: string, status = 200): ActionOverride => ({ kind: 'status', status, body })
-
-const requestOf = (mock: MockCamera, action: string): XmlObject =>
-  parseEnvelope(mock.requests.findLast((request) => request.action === action)?.body ?? '').body
-
-const rawRequestOf = (mock: MockCamera, action: string): string =>
-  mock.requests.findLast((request) => request.action === action)?.body ?? ''
-
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
-const operations = Object.values(Media).filter(
-  (value): value is Operation<never, never> => typeof value === 'object' && 'response' in value
-)
+const operations = operationsOf(Media)
 
 describe('generated media operations', () => {
-  const fixtures = corpus.flatMap((entry) => {
-    const action = /^(?:live|simulator)\/.+\/media\.(\w+)\.xml$/.exec(entry.name)?.[1]
-    const operation = operations.find(({ name }) => name === action)
-    return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
-  })
+  const fixtures = capturesOf('media', operations)
 
   it('cover a camera capture for every operation', () => {
     const captured = new Set(
@@ -66,11 +23,8 @@ describe('generated media operations', () => {
     expect(operations.map(({ name }) => name).filter((name) => !captured.has(name))).toEqual([])
   })
 
-  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml, {}, undefined, { namespaces: operation.namespaces === true })
-    const response = body[operation.response.name]
-    expect(response).toBeDefined()
-    expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
+  it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
+    expect(() => decodeCapture(capture)).not.toThrow()
   })
 })
 

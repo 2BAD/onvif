@@ -12,7 +12,7 @@ import {
   rejection,
   requestOf
 } from '../../../tools/mock-camera/harness.ts'
-import { type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
+import type { MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { media, Media2 } from '#index.ts'
 
 const connect = async (options?: MockCameraOptions) => {

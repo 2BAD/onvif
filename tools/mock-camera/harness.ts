@@ -21,29 +21,35 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
 })
 
-/**
- * Start a mock camera and connect to it. Both are closed after the test.
- *
- * @param options - Mock camera options
- * @param serviceAddresses - Service address policy of the connection
- * @returns The mock camera and the connected device
- */
-export const connectMock = async (
-  options?: MockCameraOptions,
-  serviceAddresses?: ServiceAddressPolicy
-): Promise<{ mock: MockCamera; device: Device }> => {
+export const startMock = async (options?: MockCameraOptions): Promise<MockCamera> => {
   const mock = await startMockCamera(options)
   cleanups.push(() => mock.close())
+  return mock
+}
+
+export const connectTo = async (
+  mock: MockCamera,
+  { serviceAddresses, timeoutMs }: { serviceAddresses?: ServiceAddressPolicy | undefined; timeoutMs?: number } = {}
+): Promise<Device> => {
   const url = new URL(mock.url)
   const device = await Device.connect({
     hostname: url.hostname,
     port: Number(url.port),
     username: 'admin',
     password: 'password',
-    ...(serviceAddresses ? { serviceAddresses } : {})
+    ...(serviceAddresses ? { serviceAddresses } : {}),
+    ...(timeoutMs === undefined ? {} : { timeoutMs })
   })
   cleanups.push(() => device.close())
-  return { mock, device }
+  return device
+}
+
+export const connectMock = async (
+  options?: MockCameraOptions,
+  serviceAddresses?: ServiceAddressPolicy
+): Promise<{ mock: MockCamera; device: Device }> => {
+  const mock = await startMock(options)
+  return { mock, device: await connectTo(mock, { serviceAddresses }) }
 }
 
 export const answer = (body: string, status = 200, times?: number): ActionOverride => ({

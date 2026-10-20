@@ -1,12 +1,7 @@
 import { Device, OnvifError, SoapFaultError } from '@2bad/onvif'
-import { afterEach, describe, expect, it } from 'vitest'
-import { fixture } from '../../../tools/fixtures/corpus.ts'
-import {
-  type ActionOverride,
-  type MockCamera,
-  type MockCameraOptions,
-  startMockCamera
-} from '../../../tools/mock-camera/server.ts'
+import { describe, expect, it } from 'vitest'
+import { answer, cam, connectTo, rejection, startMock } from '../../../tools/mock-camera/harness.ts'
+import type { ActionOverride, MockCamera, MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import {
   getProfiles,
   getVideoEncoderConfigurationOptions,
@@ -15,37 +10,10 @@ import {
   type VideoEncoder
 } from '#index.ts'
 
-const live = (name: string): string => fixture(`live/dvc/dcn-bm2220lpr/${name}.xml`).xml
-const cleanups: (() => Promise<void> | void)[] = []
-
-afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup()
-})
-
-const camera = async (options?: MockCameraOptions): Promise<MockCamera> => {
-  const mock = await startMockCamera(options)
-  cleanups.push(() => mock.close())
-  return mock
-}
-
-const connect = async (mock: MockCamera): Promise<Device> => {
-  const url = new URL(mock.url)
-  const device = await Device.connect({
-    hostname: url.hostname,
-    port: Number(url.port),
-    username: 'admin',
-    password: 'password'
-  })
-  cleanups.push(() => device.close())
-  return device
-}
-
-const answer = (body: string): ActionOverride => ({ kind: 'status', status: 200, body })
-
 const mediaOnly = (overrides: Record<string, ActionOverride> = {}): MockCameraOptions => ({
   overrides: {
     'device.GetServices': answer(
-      live('device.GetServices').replace(
+      cam('device.GetServices').replace(
         /<tds:Service><tds:Namespace>http:\/\/www\.onvif\.org\/ver20\/media\/wsdl<\/tds:Namespace>[\s\S]*?<\/tds:Service>/,
         ''
       )
@@ -74,20 +42,11 @@ const configModify: ActionOverride = {
     '</s:Body></s:Envelope>'
 }
 
-const rejection = async (action: () => Promise<unknown>): Promise<unknown> => {
-  try {
-    await action()
-  } catch (error) {
-    return error
-  }
-  throw new Error('Expected a rejection')
-}
-
 const requestBody = (mock: MockCamera, service: string, action: string): string =>
   mock.requests.find((request) => request.service === service && request.action === action)?.body ?? ''
 
 const firstEncoder = async (mock: MockCamera): Promise<[Device, VideoEncoder]> => {
-  const device = await connect(mock)
+  const device = await connectTo(mock)
   const [encoder] = await getVideoEncoderConfigurations(device)
   if (!encoder) throw new Error('The mock camera reported no encoders')
   return [device, encoder]
@@ -95,8 +54,8 @@ const firstEncoder = async (mock: MockCamera): Promise<[Device, VideoEncoder]> =
 
 describe('getVideoEncoderConfigurations', () => {
   it('summarizes them from Media2, or from Media v1 without it', async () => {
-    const mock = await camera()
-    const encoders = await getVideoEncoderConfigurations(await connect(mock))
+    const mock = await startMock()
+    const encoders = await getVideoEncoderConfigurations(await connectTo(mock))
     expect(encoders.map(({ token, resolution, service }) => ({ token, ...resolution, service }))).toEqual([
       { token: 'VideoEncode_token_1', width: 1920, height: 1080, service: 'media2' },
       { token: 'VideoEncode_token_2', width: 1280, height: 720, service: 'media2' },
@@ -104,8 +63,8 @@ describe('getVideoEncoderConfigurations', () => {
     ])
     expect(encoders[0]).toMatchObject({ govLength: 100, profile: 'High' })
 
-    const v1 = await camera(mediaOnly())
-    const fromV1 = await getVideoEncoderConfigurations(await connect(v1))
+    const v1 = await startMock(mediaOnly())
+    const fromV1 = await getVideoEncoderConfigurations(await connectTo(v1))
     expect(fromV1[0]).toMatchObject({
       token: 'VideoEncode_token_1',
       encoding: 'H264',
@@ -117,34 +76,34 @@ describe('getVideoEncoderConfigurations', () => {
   })
 
   it('names Media v1 MPEG-4 profiles as Media2 does', async () => {
-    const mpeg4 = live('media.GetVideoEncoderConfigurations').replace(
+    const mpeg4 = cam('media.GetVideoEncoderConfigurations').replace(
       /<tt:Encoding>H264<\/tt:Encoding>([\s\S]*?)<tt:H264>[\s\S]*?<\/tt:H264>/,
       '<tt:Encoding>MPEG4</tt:Encoding>$1<tt:MPEG4><tt:GovLength>30</tt:GovLength><tt:Mpeg4Profile>ASP</tt:Mpeg4Profile></tt:MPEG4>'
     )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
-    const [encoder] = await getVideoEncoderConfigurations(await connect(mock))
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
+    const [encoder] = await getVideoEncoderConfigurations(await connectTo(mock))
     expect(encoder).toMatchObject({ encoding: 'MPV4-ES', govLength: 30, profile: 'AdvancedSimple' })
   })
 
   it('falls back to Media v1 after a fault from Media2', async () => {
-    const mock = await camera({ overrides: { 'media2.GetVideoEncoderConfigurations': mustUnderstand } })
-    const encoders = await getVideoEncoderConfigurations(await connect(mock))
+    const mock = await startMock({ overrides: { 'media2.GetVideoEncoderConfigurations': mustUnderstand } })
+    const encoders = await getVideoEncoderConfigurations(await connectTo(mock))
     expect(encoders.map(({ service }) => service)).toContain('media')
   })
 
   it('returns an empty list when the device reports none', async () => {
-    const empty = live('media.GetVideoEncoderConfigurations').replace(
+    const empty = cam('media.GetVideoEncoderConfigurations').replace(
       /<trt:Configurations [\s\S]*<\/trt:Configurations>/,
       ''
     )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(empty) }))
-    expect(await getVideoEncoderConfigurations(await connect(mock))).toEqual([])
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(empty) }))
+    expect(await getVideoEncoderConfigurations(await connectTo(mock))).toEqual([])
   })
 })
 
 describe('getVideoEncoderConfigurationOptions', () => {
   it('lists the options of each Media2 codec', async () => {
-    const mock = await camera()
+    const mock = await startMock()
     const [device, encoder] = await firstEncoder(mock)
     const [h264, h265] = await getVideoEncoderConfigurationOptions(device, encoder)
     expect(h264).toEqual({
@@ -168,18 +127,18 @@ describe('getVideoEncoderConfigurationOptions', () => {
   })
 
   it('leaves out the Media2 options the device does not list', async () => {
-    const bare = live('media2.GetVideoEncoderConfigurationOptions').replaceAll(
+    const bare = cam('media2.GetVideoEncoderConfigurationOptions').replaceAll(
       / (?:ProfilesSupported|FrameRatesSupported|GovLengthRange)="[^"]*"/g,
       ''
     )
-    const mock = await camera({ overrides: { 'media2.GetVideoEncoderConfigurationOptions': answer(bare) } })
+    const mock = await startMock({ overrides: { 'media2.GetVideoEncoderConfigurationOptions': answer(bare) } })
     const [device, encoder] = await firstEncoder(mock)
     const [h264] = await getVideoEncoderConfigurationOptions(device, encoder)
     expect(Object.keys(h264 ?? {})).toEqual(['encoding', 'resolutions', 'qualityRange', 'bitrateRange'])
   })
 
   it('lists the options of the Media v1 codecs with the bitrate from the extension', async () => {
-    const mock = await camera(mediaOnly())
+    const mock = await startMock(mediaOnly())
     const [device, encoder] = await firstEncoder(mock)
     const options = await getVideoEncoderConfigurationOptions(device, encoder)
     expect(options).toEqual([
@@ -212,8 +171,8 @@ describe('getVideoEncoderConfigurationOptions', () => {
       `${range('EncodingIntervalRange', 1, 1)}<tt:Mpeg4ProfilesSupported>SP</tt:Mpeg4ProfilesSupported>` +
       '<tt:Mpeg4ProfilesSupported>ASP</tt:Mpeg4ProfilesSupported>' +
       '<tt:Mpeg4ProfilesSupported>Core</tt:Mpeg4ProfilesSupported></tt:MPEG4>'
-    const xml = live('media.GetVideoEncoderConfigurationOptions').replace(/<tt:H264>[\s\S]*<\/tt:Extension>/, codecs)
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurationOptions': answer(xml) }))
+    const xml = cam('media.GetVideoEncoderConfigurationOptions').replace(/<tt:H264>[\s\S]*<\/tt:Extension>/, codecs)
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurationOptions': answer(xml) }))
     const [device, encoder] = await firstEncoder(mock)
     expect(await getVideoEncoderConfigurationOptions(device, encoder)).toEqual([
       {
@@ -236,7 +195,7 @@ describe('getVideoEncoderConfigurationOptions', () => {
 
 describe('setVideoEncoderConfiguration', () => {
   it('sends the Media2 configuration with the changes and keeps the rest', async () => {
-    const mock = await camera()
+    const mock = await startMock()
     const [device, encoder] = await firstEncoder(mock)
     const changed = await setVideoEncoderConfiguration(device, encoder, {
       resolution: { width: 1280, height: 720 },
@@ -267,7 +226,7 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('drops the Media2 codec profile when the codec changes, unless one is given', async () => {
-    const mock = await camera()
+    const mock = await startMock()
     const [device, encoder] = await firstEncoder(mock)
     const h265 = await setVideoEncoderConfiguration(device, encoder, { encoding: 'H265' })
     expect(h265).not.toHaveProperty('profile')
@@ -279,8 +238,8 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('sends the Media v1 configuration with the changes and asks to persist it', async () => {
-    const mock = await camera(mediaOnly())
-    const device = await connect(mock)
+    const mock = await startMock(mediaOnly())
+    const device = await connectTo(mock)
     const [profile] = await getProfiles(device)
     if (!profile?.videoEncoder) throw new Error('The mock camera reported no encoder')
     const changed = await setVideoEncoderConfiguration(device, profile.videoEncoder, { quality: 5, profile: 'Main' })
@@ -292,7 +251,7 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('switches Media v1 to MPEG-4 only with a GOP length and a profile', async () => {
-    const mock = await camera(mediaOnly())
+    const mock = await startMock(mediaOnly())
     const [device, encoder] = await firstEncoder(mock)
     const error = await rejection(async () => setVideoEncoderConfiguration(device, encoder, { encoding: 'MPV4-ES' }))
     expect(error).toBeInstanceOf(OnvifError)
@@ -316,11 +275,11 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('keeps the Media v1 MPEG-4 settings and needs them for H264', async () => {
-    const mpeg4 = live('media.GetVideoEncoderConfigurations').replace(
+    const mpeg4 = cam('media.GetVideoEncoderConfigurations').replace(
       /<tt:Encoding>H264<\/tt:Encoding>([\s\S]*?)<tt:H264>[\s\S]*?<\/tt:H264>/,
       '<tt:Encoding>MPEG4</tt:Encoding>$1<tt:MPEG4><tt:GovLength>30</tt:GovLength><tt:Mpeg4Profile>ASP</tt:Mpeg4Profile></tt:MPEG4>'
     )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
     const [device, encoder] = await firstEncoder(mock)
     expect(await setVideoEncoderConfiguration(device, encoder, { govLength: 60 })).toMatchObject({
       govLength: 60,
@@ -332,7 +291,7 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('switches Media v1 to JPEG and refuses a GOP length for it', async () => {
-    const mock = await camera(mediaOnly())
+    const mock = await startMock(mediaOnly())
     const [device, encoder] = await firstEncoder(mock)
     expect(await setVideoEncoderConfiguration(device, encoder, { encoding: 'JPEG' })).toMatchObject({
       encoding: 'JPEG'
@@ -343,11 +302,11 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('refuses a rate change for an encoder without rate control', async () => {
-    const noRateControl = live('media2.GetVideoEncoderConfigurations').replace(
+    const noRateControl = cam('media2.GetVideoEncoderConfigurations').replace(
       /<tt:RateControl [\s\S]*?<\/tt:RateControl>/,
       ''
     )
-    const mock = await camera({ overrides: { 'media2.GetVideoEncoderConfigurations': answer(noRateControl) } })
+    const mock = await startMock({ overrides: { 'media2.GetVideoEncoderConfigurations': answer(noRateControl) } })
     const [device, encoder] = await firstEncoder(mock)
     const error = await rejection(async () => setVideoEncoderConfiguration(device, encoder, { frameRateLimit: 10 }))
     expect(error).toBeInstanceOf(OnvifError)
@@ -356,7 +315,7 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('changes the Media v1 resolution and one rate limit and keeps the codec settings', async () => {
-    const mock = await camera(mediaOnly())
+    const mock = await startMock(mediaOnly())
     const [device, encoder] = await firstEncoder(mock)
     const resolution = { width: 1280, height: 720 }
     expect(await setVideoEncoderConfiguration(device, encoder, { resolution, bitrateLimit: 2048 })).toMatchObject({
@@ -372,11 +331,11 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('reads and sends a Media v1 encoder without rate control', async () => {
-    const noRateControl = live('media.GetVideoEncoderConfigurations').replace(
+    const noRateControl = cam('media.GetVideoEncoderConfigurations').replace(
       /<tt:RateControl[\s\S]*?<\/tt:RateControl>/,
       ''
     )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(noRateControl) }))
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(noRateControl) }))
     const [device, encoder] = await firstEncoder(mock)
     expect(encoder).not.toHaveProperty('frameRateLimit')
     expect(await setVideoEncoderConfiguration(device, encoder, { quality: 2 })).not.toHaveProperty('bitrateLimit')
@@ -384,11 +343,11 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('keeps an MPEG-4 profile Media v1 does not name', async () => {
-    const mpeg4 = live('media.GetVideoEncoderConfigurations').replace(
+    const mpeg4 = cam('media.GetVideoEncoderConfigurations').replace(
       /<tt:Encoding>H264<\/tt:Encoding>([\s\S]*?)<tt:H264>[\s\S]*?<\/tt:H264>/,
       '<tt:Encoding>MPEG4</tt:Encoding>$1<tt:MPEG4><tt:GovLength>30</tt:GovLength><tt:Mpeg4Profile>Core</tt:Mpeg4Profile></tt:MPEG4>'
     )
-    const mock = await camera(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
+    const mock = await startMock(mediaOnly({ 'media.GetVideoEncoderConfigurations': answer(mpeg4) }))
     const [device, encoder] = await firstEncoder(mock)
     expect(encoder).toMatchObject({ encoding: 'MPV4-ES', profile: 'Core' })
     await setVideoEncoderConfiguration(device, encoder, { profile: 'Core' })
@@ -398,7 +357,7 @@ describe('setVideoEncoderConfiguration', () => {
   })
 
   it('passes a refused configuration on as a SoapFaultError', async () => {
-    const mock = await camera({ overrides: { 'media2.SetVideoEncoderConfiguration': configModify } })
+    const mock = await startMock({ overrides: { 'media2.SetVideoEncoderConfiguration': configModify } })
     const [device, encoder] = await firstEncoder(mock)
     const error = await rejection(async () => setVideoEncoderConfiguration(device, encoder, { quality: 9 }))
     expect(error).toBeInstanceOf(SoapFaultError)

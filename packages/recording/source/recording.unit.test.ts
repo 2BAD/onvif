@@ -11,7 +11,7 @@ import {
   rejection,
   simulator
 } from '../../../tools/mock-camera/harness.ts'
-import { type MockCamera, type MockCameraOptions } from '../../../tools/mock-camera/server.ts'
+import type { MockCamera, MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { Recording, recording, Replay, Search } from '#index.ts'
 
 const connect = async (options?: MockCameraOptions, serviceAddresses?: 'rewrite' | 'reject') => {
