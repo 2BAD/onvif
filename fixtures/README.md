@@ -23,11 +23,11 @@ pnpm fixtures:capture --stdout > out.jsonl   # print instead of writing
 pnpm fixtures:import <dir> < out.jsonl       # write printed captures into <dir>
 ```
 
-Suites are `device`, `management`, `media`, `ptz`, `imaging`, `events`, `discovery`, `motion` and `reset`.
+Suites are `device`, `management`, `media`, `ptz`, `imaging`, `analytics`, `events`, `discovery`, `motion` and `reset`.
 
 - `motion` waits up to five minutes for motion to start and stop. Walk through the camera's view while it runs.
 - `reset` resets the device to factory defaults and reboots it. Simulator only.
-- `--write` sends settings back as read and creates and deletes a test user, preset and profile named `onviftest`. Test cameras and simulators only.
+- `--write` sends settings back as read and creates and deletes a test user, preset, profile and analytics rule named `onviftest`. Test cameras and simulators only.
 
 `motion` and `reset` run only when named.
 

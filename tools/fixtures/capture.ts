@@ -14,7 +14,18 @@ const username = process.env['ONVIF_TEST_USER'] ?? ''
 const password = process.env['ONVIF_TEST_PASS'] ?? ''
 if (!host) throw new Error('ONVIF_TEST_HOST is not set')
 
-const suites = ['device', 'management', 'media', 'ptz', 'imaging', 'events', 'discovery', 'motion', 'reset']
+const suites = [
+  'device',
+  'management',
+  'media',
+  'ptz',
+  'imaging',
+  'analytics',
+  'events',
+  'discovery',
+  'motion',
+  'reset'
+]
 const args = process.argv.slice(2)
 const only = args.filter((_, index) => args[index - 1] === '--only')
 const named = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--only')
@@ -32,6 +43,7 @@ const ns = {
   tev: 'http://www.onvif.org/ver10/events/wsdl',
   tptz: 'http://www.onvif.org/ver20/ptz/wsdl',
   timg: 'http://www.onvif.org/ver20/imaging/wsdl',
+  tan: 'http://www.onvif.org/ver20/analytics/wsdl',
   wsnt: 'http://docs.oasis-open.org/wsn/b-2'
 }
 const tt = `xmlns="${ns.tt}"`
@@ -625,6 +637,68 @@ const captureImaging = async (): Promise<void> => {
   }
 }
 
+// whole elements with their attributes, for sending back what a device reported
+const outerElements = (xml: string, name: string): string[] =>
+  [...xml.matchAll(new RegExp(`<([\\w-]+:)?${name}\\b[^>]*?(?:/>|>[\\s\\S]*?</\\1${name}>)`, 'g'))].map(
+    (match) => match[0]
+  )
+
+const attribute = (element: string, name: string): string | undefined =>
+  firstMatch(element, new RegExp(`^<[^>]*\\s${name}="([^"]*)"`))
+
+const analyticsToken = async (): Promise<string | undefined> => {
+  const media1Url = serviceUrl(ns.trt)
+  if (media1Url) {
+    const media = client('analytics', 'media', media1Url, ns.trt)
+    const token = tokenized(await media.call('GetVideoAnalyticsConfigurations'), 'Configurations')[0]?.token
+    if (token !== undefined) return token
+  }
+  const media2Url = serviceUrl(ns.tr2)
+  const configurations =
+    media2Url && (await client('analytics', 'media2', media2Url, ns.tr2).call('GetAnalyticsConfigurations'))
+  return configurations ? tokenized(configurations, 'Configurations')[0]?.token : undefined
+}
+
+const captureAnalytics = async (): Promise<void> => {
+  const url = serviceUrl(ns.tan)
+  const token = await analyticsToken()
+  if (!url || !token) return
+  const analytics = client('analytics', 'analytics', url, ns.tan)
+  const configuration = `<ConfigurationToken>${token}</ConfigurationToken>`
+  await analytics.call('GetServiceCapabilities')
+  const supportedRulesXml = await analytics.call('GetSupportedRules', configuration)
+  const rulesXml = await analytics.call('GetRules', configuration)
+  await analytics.call('GetRuleOptions', configuration)
+  const supportedModulesXml = await analytics.call('GetSupportedAnalyticsModules', configuration)
+  await analytics.call('GetAnalyticsModules', configuration)
+  const moduleType = attribute(outerElements(supportedModulesXml, 'AnalyticsModuleDescription')[0] ?? '', 'Name')
+  if (moduleType !== undefined) {
+    await analytics.call('GetAnalyticsModuleOptions', `<Type>${moduleType}</Type>${configuration}`, {
+      from: supportedModulesXml
+    })
+  }
+  await analytics.call('GetSupportedMetadata')
+  await analytics.call('GetRules', '<ConfigurationToken>missing</ConfigurationToken>', { as: 'GetRulesMissingFault' })
+  if (!write) return
+
+  // every write sends back a rule as the camera reported it
+  const [rule] = outerElements(rulesXml, 'Rule')
+  if (rule !== undefined) await analytics.call('ModifyRules', `${configuration}${rule}`, { from: rulesXml })
+  const copyable = outerElements(rulesXml, 'Rule').find((candidate) => {
+    const description = outerElements(supportedRulesXml, 'RuleDescription').find(
+      (entry) => attribute(entry, 'Name')?.split(':').pop() === attribute(candidate, 'Type')?.split(':').pop()
+    )
+    return description !== undefined && attribute(description, 'fixed') !== 'true'
+  })
+  if (copyable !== undefined) {
+    const copy = copyable.replace(/\sName="[^"]*"/, ' Name="onviftest"')
+    await analytics.call('CreateRules', `${configuration}${copy}`, { from: rulesXml })
+    await analytics.call('GetRules', configuration, { as: 'GetRulesAfterCreate' })
+    await analytics.call('DeleteRules', `${configuration}<RuleName>onviftest</RuleName>`)
+  }
+  await analytics.call('DeleteRules', `${configuration}<RuleName>missing</RuleName>`, { as: 'DeleteRulesMissingFault' })
+}
+
 const subscription = (suite: string, subscriptionXml: string) => {
   const address = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
   if (!address) return undefined
@@ -734,6 +808,7 @@ const runs: Record<string, () => Promise<void>> = {
   media: captureMedia,
   ptz: capturePtz,
   imaging: captureImaging,
+  analytics: captureAnalytics,
   events: captureEvents,
   discovery: captureDiscovery,
   motion: captureMotion,
