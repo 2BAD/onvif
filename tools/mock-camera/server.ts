@@ -25,7 +25,7 @@ export type MockCameraOptions = {
   username?: string
   password?: string
   auth?: 'ws-security' | 'digest' | 'none'
-  digestAlgorithm?: 'MD5' | 'SHA-256'
+  digestAlgorithm?: keyof typeof digestHashNames
   clockSkewMs?: number
   replayWindowMs?: number
   requireAddressing?: boolean
@@ -149,10 +149,10 @@ const safeEqual = (left: string, right: string): boolean => {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
 }
 
-const hash = (algorithm: 'MD5' | 'SHA-256', value: string): string =>
-  createHash(algorithm === 'MD5' ? 'md5' : 'sha256')
-    .update(value)
-    .digest('hex')
+const digestHashNames = { MD5: 'md5', 'SHA-256': 'sha256', 'SHA-512-256': 'sha512-256' } as const
+
+const hash = (algorithm: keyof typeof digestHashNames, value: string): string =>
+  createHash(digestHashNames[algorithm]).update(value).digest('hex')
 
 const parseDigestHeader = (header: string): Record<string, string> => {
   const fields: Record<string, string> = {}

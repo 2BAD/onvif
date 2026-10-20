@@ -321,16 +321,19 @@ describe('HttpTransport digest authentication', () => {
     '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>' +
     '<GetDeviceInformation xmlns="http://www.onvif.org/ver10/device/wsdl"/></s:Body></s:Envelope>'
 
-  it.each(['MD5', 'SHA-256'] as const)('answers a %s challenge and reuses it', async (digestAlgorithm) => {
-    const camera = await startMockCamera({ auth: 'digest', digestAlgorithm })
-    cleanups.push(() => camera.close())
-    const client = transport({ credentials: { username: 'admin', password: 'password' } })
-    const url = new URL(`${camera.url}/onvif/device_service`)
+  it.each(['MD5', 'SHA-256', 'SHA-512-256'] as const)(
+    'answers a %s challenge and reuses it',
+    async (digestAlgorithm) => {
+      const camera = await startMockCamera({ auth: 'digest', digestAlgorithm })
+      cleanups.push(() => camera.close())
+      const client = transport({ credentials: { username: 'admin', password: 'password' } })
+      const url = new URL(`${camera.url}/onvif/device_service`)
 
-    expect((await client.post(url, envelope)).status).toBe(200)
-    expect((await client.post(url, envelope)).status).toBe(200)
-    expect(camera.requests).toHaveLength(3)
-  })
+      expect((await client.post(url, envelope)).status).toBe(200)
+      expect((await client.post(url, envelope)).status).toBe(200)
+      expect(camera.requests).toHaveLength(3)
+    }
+  )
 
   it('answers a challenge on a GET with the GET method in the digest', async () => {
     const camera = await startMockCamera()

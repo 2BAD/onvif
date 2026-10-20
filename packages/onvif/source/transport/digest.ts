@@ -4,13 +4,18 @@ import type { Credentials } from '#soap/security.ts'
 export type DigestChallenge = {
   realm: string
   nonce: string
-  algorithm: 'MD5' | 'SHA-256'
+  algorithm: Algorithm
   qop: 'auth' | undefined
   opaque: string | undefined
   stale: boolean
 }
 
-const hashNames = { MD5: 'md5', 'SHA-256': 'sha256' } as const
+// Strongest first
+const hashNames = { 'SHA-512-256': 'sha512-256', 'SHA-256': 'sha256', MD5: 'md5' } as const
+
+type Algorithm = keyof typeof hashNames
+
+const isAlgorithm = (name: string): name is Algorithm => Object.hasOwn(hashNames, name)
 
 const parseParameters = (challenge: string): Record<string, string> => {
   const parameters: Record<string, string> = {}
@@ -35,7 +40,7 @@ export function parseChallenge(headers: string[]): DigestChallenge | undefined {
       const algorithm = (parameters['algorithm'] ?? 'MD5').toUpperCase()
       const qops = parameters['qop']?.split(',').map((value) => value.trim().toLowerCase())
       const { realm, nonce } = parameters
-      if ((algorithm !== 'MD5' && algorithm !== 'SHA-256') || realm === undefined || !nonce) return []
+      if (!isAlgorithm(algorithm) || realm === undefined || !nonce) return []
       if (qops !== undefined && !qops.includes('auth')) return []
       return [
         {
@@ -48,7 +53,8 @@ export function parseChallenge(headers: string[]): DigestChallenge | undefined {
         }
       ]
     })
-  return challenges.find((challenge) => challenge.algorithm === 'SHA-256') ?? challenges[0]
+  const strongest = Object.keys(hashNames).find((name) => challenges.some(({ algorithm }) => algorithm === name))
+  return challenges.find(({ algorithm }) => algorithm === strongest)
 }
 
 const quote = (value: string): string => `"${value.replace(/["\\]/g, '\\$&')}"`

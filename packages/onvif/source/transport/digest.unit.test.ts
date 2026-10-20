@@ -28,9 +28,20 @@ describe('parseChallenge', () => {
     expect(parseChallenge([`${md5}, ${sha}`])?.nonce).toBe('n2')
   })
 
+  it('prefers SHA-512-256 over SHA-256 and MD5 in any order', () => {
+    const md5 = 'Digest realm="r", nonce="n1", qop="auth", algorithm=MD5'
+    const sha256 = 'Digest realm="r", nonce="n2", qop="auth", algorithm=SHA-256'
+    const sha512 = 'Digest realm="r", nonce="n3", qop="auth", algorithm=sha-512-256'
+    expect(parseChallenge([sha512, sha256, md5])).toMatchObject({ nonce: 'n3', algorithm: 'SHA-512-256' })
+    expect(parseChallenge([`${md5}, ${sha256}, ${sha512}`])?.nonce).toBe('n3')
+  })
+
   it('skips Basic, unsupported algorithms and qop without auth', () => {
     expect(parseChallenge(['Basic realm="r"'])).toBeUndefined()
     expect(parseChallenge(['Digest realm="r", nonce="n", algorithm=MD5-sess'])).toBeUndefined()
+    expect(parseChallenge(['Digest realm="r", nonce="n", algorithm=SHA-512-256-sess'])).toBeUndefined()
+    expect(parseChallenge(['Digest realm="r", nonce="n", algorithm=SHA-1'])).toBeUndefined()
+    expect(parseChallenge(['Digest realm="r", nonce="n", algorithm=constructor'])).toBeUndefined()
     expect(parseChallenge(['Digest realm="r", nonce="n", qop="auth-int"'])).toBeUndefined()
     expect(parseChallenge(['Digest realm="r"'])).toBeUndefined()
     expect(parseChallenge([])).toBeUndefined()
@@ -50,7 +61,8 @@ describe('digestAuthorization', () => {
 
   it.each([
     ['MD5', 'md5'],
-    ['SHA-256', 'sha256']
+    ['SHA-256', 'sha256'],
+    ['SHA-512-256', 'sha512-256']
   ] as const)('answers a %s challenge with qop=auth (RFC 7616)', (algorithm, hashName) => {
     const challenge = {
       realm: 'http-auth@example.org',
