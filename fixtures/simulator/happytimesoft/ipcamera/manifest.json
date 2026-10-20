@@ -562,6 +562,70 @@
     "device.SystemReboot": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "media.GetVideoAnalyticsConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetSupportedRules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetRules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetRuleOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetSupportedAnalyticsModules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetAnalyticsModules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetAnalyticsModuleOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetSupportedMetadata": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetRulesMissingFault": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.ModifyRules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.ModifyAnalyticsModules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.CreateRules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.GetRulesAfterCreate": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.DeleteRules": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "analytics.DeleteRulesMissingFault": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
