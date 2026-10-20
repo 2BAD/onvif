@@ -21,6 +21,7 @@ const suites = [
   'ptz',
   'imaging',
   'analytics',
+  'recording',
   'events',
   'discovery',
   'motion',
@@ -44,6 +45,9 @@ const ns = {
   tptz: 'http://www.onvif.org/ver20/ptz/wsdl',
   timg: 'http://www.onvif.org/ver20/imaging/wsdl',
   tan: 'http://www.onvif.org/ver20/analytics/wsdl',
+  trc: 'http://www.onvif.org/ver10/recording/wsdl',
+  tse: 'http://www.onvif.org/ver10/search/wsdl',
+  trp: 'http://www.onvif.org/ver10/replay/wsdl',
   wsnt: 'http://docs.oasis-open.org/wsn/b-2'
 }
 const tt = `xmlns="${ns.tt}"`
@@ -176,8 +180,10 @@ const client = (suite: string, service: string, url: string, namespace: string, 
       try {
         return record(suite, `${service}.${as}`, await send(url, body(action, content, from), options))
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ECONNRESET') throw error
-        log(JSON.stringify({ name: `${service}.${as}`, error: 'connection closed without a response' }))
+        const { code } = error as NodeJS.ErrnoException
+        if (code !== 'ECONNRESET' && code !== 'ABORT_ERR') throw error
+        const reason = code === 'ECONNRESET' ? 'connection closed without a response' : 'no response within 15 s'
+        log(JSON.stringify({ name: `${service}.${as}`, error: reason }))
         return ''
       }
     }
@@ -752,6 +758,213 @@ const captureAnalytics = async (): Promise<void> => {
   await analytics.call('DeleteRules', `${configuration}<RuleName>missing</RuleName>`, { as: 'DeleteRulesMissingFault' })
 }
 
+// pages through the results of a search and always ends it
+const searchResults = async (
+  search: ReturnType<typeof client>,
+  name: 'Recording' | 'Event',
+  findXml: string
+): Promise<void> => {
+  const token = text(findXml, 'SearchToken')
+  if (token === undefined) return
+  const searchToken = `<SearchToken>${token}</SearchToken>`
+  try {
+    for (let page = 0; page < 10; page += 1) {
+      const xml = await search.call(
+        `Get${name}SearchResults`,
+        `${searchToken}<MinResults>1</MinResults><MaxResults>10</MaxResults><WaitTime>PT5S</WaitTime>`,
+        { as: page === 0 ? `Get${name}SearchResults` : `Get${name}SearchResultsPage${page + 1}` }
+      )
+      const state = text(xml, 'SearchState')
+      if (state !== 'Searching' && state !== 'Queued') break
+    }
+    await search.call('GetSearchState', searchToken, {
+      as: name === 'Recording' ? 'GetSearchState' : 'GetSearchStateAfterEvents'
+    })
+  } finally {
+    await search.call('EndSearch', searchToken, { as: name === 'Recording' ? 'EndSearch' : 'EndSearchAfterEvents' })
+  }
+}
+
+const captureRecording = async (): Promise<void> => {
+  const recordingUrl = serviceUrl(ns.trc)
+  const searchUrl = serviceUrl(ns.tse)
+  const replayUrl = serviceUrl(ns.trp)
+  const recording = recordingUrl && client('recording', 'recording', recordingUrl, ns.trc)
+  const search = searchUrl && client('recording', 'search', searchUrl, ns.tse)
+  const replay = replayUrl && client('recording', 'replay', replayUrl, ns.trp)
+  let recordingCapabilities = ''
+  let recordingToken: string | undefined
+  if (recording) {
+    recordingCapabilities = await recording.call('GetServiceCapabilities')
+    const recordingsXml = await recording.call('GetRecordings')
+    recordingToken = text(recordingsXml, 'RecordingToken')
+    const trackToken = text(recordingsXml, 'TrackToken')
+    if (recordingToken !== undefined) {
+      const token = `<RecordingToken>${recordingToken}</RecordingToken>`
+      await recording.call('GetRecordingConfiguration', token)
+      await recording.call('GetRecordingOptions', token)
+      if (trackToken !== undefined) {
+        await recording.call('GetTrackConfiguration', `${token}<TrackToken>${trackToken}</TrackToken>`)
+      }
+    }
+    const jobToken = text(await recording.call('GetRecordingJobs'), 'JobToken')
+    if (jobToken !== undefined) {
+      await recording.call('GetRecordingJobConfiguration', `<JobToken>${jobToken}</JobToken>`)
+      await recording.call('GetRecordingJobState', `<JobToken>${jobToken}</JobToken>`)
+    }
+    await recording.call('GetRecordingConfiguration', '<RecordingToken>missing</RecordingToken>', {
+      as: 'GetRecordingConfigurationMissingFault'
+    })
+  }
+  if (search) {
+    await search.call('GetServiceCapabilities')
+    const summaryXml = await search.call('GetRecordingSummary')
+    const informationXml =
+      recordingToken === undefined
+        ? ''
+        : await search.call('GetRecordingInformation', `<RecordingToken>${recordingToken}</RecordingToken>`)
+    const until = text(informationXml, 'LatestRecording') || text(summaryXml, 'DataUntil')
+    if (recordingToken !== undefined && until !== undefined) {
+      await search.call(
+        'GetMediaAttributes',
+        `<RecordingTokens>${recordingToken}</RecordingTokens><Time>${until}</Time>`
+      )
+    }
+    await searchResults(
+      search,
+      'Recording',
+      await search.call('FindRecordings', '<Scope/><MaxMatches>20</MaxMatches><KeepAliveTime>PT10S</KeepAliveTime>')
+    )
+    {
+      // the last day of device time, since some devices refuse the 1970 and 2038 bounds of an empty summary
+      const deviceTime = (offsetMs: number) =>
+        `${new Date(Date.now() + clockSkewMs + offsetMs).toISOString().slice(0, 19)}Z`
+      const scope =
+        recordingToken === undefined
+          ? '<Scope/>'
+          : `<Scope><IncludedRecordings ${tt}>${recordingToken}</IncludedRecordings></Scope>`
+      await searchResults(
+        search,
+        'Event',
+        await search.call(
+          'FindEvents',
+          `<StartPoint>${deviceTime(-86_400_000)}</StartPoint><EndPoint>${deviceTime(0)}</EndPoint>${scope}<SearchFilter/>` +
+            '<IncludeStartState>false</IncludeStartState><MaxMatches>20</MaxMatches><KeepAliveTime>PT10S</KeepAliveTime>'
+        )
+      )
+    }
+    await search.call(
+      'GetRecordingSearchResults',
+      '<SearchToken>missing</SearchToken><MaxResults>1</MaxResults><WaitTime>PT1S</WaitTime>',
+      { as: 'GetRecordingSearchResultsMissingFault' }
+    )
+  }
+  let replayConfiguration = ''
+  if (replay) {
+    await replay.call('GetServiceCapabilities')
+    replayConfiguration = await replay.call('GetReplayConfiguration')
+    if (recordingToken !== undefined) {
+      await replay.call(
+        'GetReplayUri',
+        `<StreamSetup><Stream ${tt}>RTP-Unicast</Stream><Transport ${tt}><Protocol>RTSP</Protocol></Transport></StreamSetup>` +
+          `<RecordingToken>${recordingToken}</RecordingToken>`
+      )
+    }
+  }
+  if (!write) return
+
+  const configuration = elements(replayConfiguration, 'Configuration')[0]
+  if (replay && configuration !== undefined) {
+    await replay.call('SetReplayConfiguration', `<Configuration>${configuration}</Configuration>`, {
+      from: replayConfiguration
+    })
+  }
+  if (!recording || !/DynamicRecordings="(?:true|1)"/.test(recordingCapabilities)) return
+  const created = text(
+    await recording.call(
+      'CreateRecording',
+      `<RecordingConfiguration><Source ${tt}><SourceId>onviftest</SourceId><Name>onviftest</Name>` +
+        '<Location>onviftest</Location><Description>onviftest</Description><Address>onviftest</Address></Source>' +
+        `<Content ${tt}>onviftest</Content><MaximumRetentionTime ${tt}>PT0S</MaximumRetentionTime>` +
+        '</RecordingConfiguration>'
+    ),
+    'RecordingToken'
+  )
+  if (created === undefined) return
+  const token = `<RecordingToken>${created}</RecordingToken>`
+  try {
+    const configurationXml = await recording.call('GetRecordingConfiguration', token, {
+      as: 'GetRecordingConfigurationCreated'
+    })
+    const recordingConfiguration = elements(configurationXml, 'RecordingConfiguration')[0]
+    if (recordingConfiguration !== undefined) {
+      await recording.call(
+        'SetRecordingConfiguration',
+        `${token}<RecordingConfiguration>${recordingConfiguration}</RecordingConfiguration>`,
+        { from: configurationXml }
+      )
+    }
+    if (/DynamicTracks="(?:true|1)"/.test(recordingCapabilities)) {
+      const track = text(
+        await recording.call(
+          'CreateTrack',
+          `${token}<TrackConfiguration><TrackType ${tt}>Video</TrackType><Description ${tt}>onviftest</Description>` +
+            '</TrackConfiguration>'
+        ),
+        'TrackToken'
+      )
+      if (track !== undefined) {
+        const trackToken = `${token}<TrackToken>${track}</TrackToken>`
+        try {
+          const trackXml = await recording.call('GetTrackConfiguration', trackToken, {
+            as: 'GetTrackConfigurationCreated'
+          })
+          const trackConfiguration = elements(trackXml, 'TrackConfiguration')[0]
+          if (trackConfiguration !== undefined) {
+            await recording.call(
+              'SetTrackConfiguration',
+              `${trackToken}<TrackConfiguration>${trackConfiguration}</TrackConfiguration>`,
+              { from: trackXml }
+            )
+          }
+        } finally {
+          await recording.call('DeleteTrack', trackToken)
+        }
+      }
+    }
+    const job = text(
+      await recording.call(
+        'CreateRecordingJob',
+        `<JobConfiguration><RecordingToken ${tt}>${created}</RecordingToken><Mode ${tt}>Idle</Mode>` +
+          `<Priority ${tt}>0</Priority></JobConfiguration>`
+      ),
+      'JobToken'
+    )
+    if (job !== undefined) {
+      const jobToken = `<JobToken>${job}</JobToken>`
+      try {
+        await recording.call('GetRecordingJobState', jobToken, { as: 'GetRecordingJobStateCreated' })
+        const jobXml = await recording.call('GetRecordingJobConfiguration', jobToken, {
+          as: 'GetRecordingJobConfigurationCreated'
+        })
+        const jobConfiguration = elements(jobXml, 'JobConfiguration')[0]
+        if (jobConfiguration !== undefined) {
+          await recording.call(
+            'SetRecordingJobConfiguration',
+            `${jobToken}<JobConfiguration>${jobConfiguration}</JobConfiguration>`,
+            { from: jobXml }
+          )
+        }
+        await recording.call('SetRecordingJobMode', `${jobToken}<Mode>Idle</Mode>`)
+      } finally {
+        await recording.call('DeleteRecordingJob', jobToken)
+      }
+    }
+  } finally {
+    await recording.call('DeleteRecording', token)
+  }
+}
+
 const subscription = (suite: string, subscriptionXml: string) => {
   const address = firstMatch(subscriptionXml, /<[\w-]+:Address>([^<]+)</)
   if (!address) return undefined
@@ -862,6 +1075,7 @@ const runs: Record<string, () => Promise<void>> = {
   ptz: capturePtz,
   imaging: captureImaging,
   analytics: captureAnalytics,
+  recording: captureRecording,
   events: captureEvents,
   discovery: captureDiscovery,
   motion: captureMotion,
