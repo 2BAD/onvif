@@ -52,6 +52,11 @@ class Device {
   call(operation: Operation, request?: Request, options?: CallOptions): Promise<Response>
   use(extension: (device: Device) => Extension): Device & Extension
   download(address: string | URL, options?: { signal; timeoutMs }): Promise<{ contentType; body: Uint8Array }>
+  upload(
+    address: string | URL,
+    body: Uint8Array,
+    options?: { contentType; signal; timeoutMs }
+  ): Promise<{ contentType; body: Uint8Array }>
   synchronizeClock(options?: { signal; timeoutMs }): Promise<void>
   resolveAddress(address: string): URL // the URL a reported address is sent to
   close(): void // closes idle connections, the device still works after it

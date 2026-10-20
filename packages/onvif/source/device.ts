@@ -211,6 +211,24 @@ const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
 
+const accepted = (response: HttpResponse<Buffer>, context: ErrorContext): Download => {
+  const { status, headers, body } = response
+  if (status === 401) {
+    const challenges = headers['www-authenticate'] ?? []
+    const basicOnly = challenges.length > 0 && challenges.every((challenge) => /^\s*Basic\b/i.test(challenge))
+    throw new AuthError(
+      basicOnly
+        ? 'Not authorized (HTTP 401): the device asks for HTTP Basic, which sends the password as plain text; the basicAuth option allows it'
+        : 'Not authorized (HTTP 401)',
+      context
+    )
+  }
+  if (status < 200 || status >= 300) {
+    throw new TransportError(`Unexpected HTTP ${status} response`, context, { status })
+  }
+  return { contentType: headers['content-type']?.[0], body }
+}
+
 export class Device extends DeviceOperations {
   /** Address of the device service. */
   readonly address: URL
@@ -435,21 +453,34 @@ export class Device extends DeviceOperations {
     const url = this.resolveAddress(typeof address === 'string' ? address : address.href)
     const context = { host: this.address.host, action: 'GET' }
     const { signal, timeoutMs } = options
-    const { status, headers, body } = await this.#transport.get(url, { context, signal, timeoutMs })
-    if (status === 401) {
-      const challenges = headers['www-authenticate'] ?? []
-      const basicOnly = challenges.length > 0 && challenges.every((challenge) => /^\s*Basic\b/i.test(challenge))
-      throw new AuthError(
-        basicOnly
-          ? 'Not authorized (HTTP 401): the device asks for HTTP Basic, which sends the password as plain text; the basicAuth option allows it'
-          : 'Not authorized (HTTP 401)',
-        context
-      )
-    }
-    if (status < 200 || status >= 300) {
-      throw new TransportError(`Unexpected HTTP ${status} response`, context, { status })
-    }
-    return { contentType: headers['content-type']?.[0], body }
+    return accepted(await this.#transport.get(url, { context, signal, timeoutMs }), context)
+  }
+
+  /**
+   * Upload bytes to an address the device reported, such as the firmware upload address, with HTTP Digest
+   * authentication. The service address policy applies to the address, and redirects are not followed. The body is
+   * sent again when the device answers the first request with a Digest challenge.
+   *
+   * @param address - Absolute URL from a device response
+   * @param body - Bytes to send
+   * @param options - Content type (`application/octet-stream` by default), abort signal and a timeout overriding the
+   *   connection timeout
+   * @returns The body of a 2xx response and its content type
+   * @throws {AuthError} If the credentials are rejected, or the device asks for HTTP Basic and `basicAuth` does not allow it
+   * @throws {TransportError} On connection problems, a response over the size limit or a status other than 2xx, such
+   *   as 415 for a file the device does not accept
+   * @throws {TimeoutError} If the device does not answer in time
+   * @throws {OnvifError} If the address is invalid or refused by the service address policy
+   */
+  async upload(
+    address: string | URL,
+    body: Uint8Array,
+    options: Pick<CallOptions, 'signal' | 'timeoutMs'> & { contentType?: string | undefined } = {}
+  ): Promise<Download> {
+    const url = this.resolveAddress(typeof address === 'string' ? address : address.href)
+    const context = { host: this.address.host, action: 'POST' }
+    const { signal, timeoutMs, contentType = 'application/octet-stream' } = options
+    return accepted(await this.#transport.upload(url, body, contentType, { context, signal, timeoutMs }), context)
   }
 
   /**

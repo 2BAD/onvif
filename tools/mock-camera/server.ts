@@ -40,6 +40,8 @@ export type MockCameraOptions = {
   advertisedHost?: string
   /** What `GET /snapshot.JPG` answers; HTTP Digest and a small JPEG by default, as the DVC camera. */
   snapshot?: MockSnapshotOptions
+  /** What a POST of `application/octet-stream` answers; HTTP Digest and an empty 200 by default. */
+  upload?: MockUploadOptions
   /** Pull point behavior; subscriptions are simulated whatever these options are. */
   events?: MockEventsOptions
   overrides?: Record<string, ActionOverride>
@@ -55,6 +57,18 @@ export type MockSnapshotOptions = {
   delayMs?: number
 }
 
+export type MockUploadOptions = {
+  status?: number
+  /** Wait this long before answering an authorized upload. */
+  delayMs?: number
+}
+
+export type RecordedUpload = {
+  path: string
+  contentType: string | undefined
+  body: Buffer
+}
+
 export type RecordedRequest = {
   path: string
   service: string
@@ -66,6 +80,8 @@ export type RecordedRequest = {
 export type MockCamera = {
   url: string
   requests: RecordedRequest[]
+  /** Authorized `application/octet-stream` POST bodies. */
+  uploads: RecordedUpload[]
   /** Change the device clock, relative to the real time. */
   setClockSkew: (skewMs: number) => void
   /** Queue a `wsnt:NotificationMessage` on every pull point. */
@@ -192,6 +208,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   let clockSkewMs = options.clockSkewMs ?? 0
   const manifest = JSON.parse(readFileSync(join(fixtureDirectory, 'manifest.json'), 'utf8')) as Manifest
   const requests: RecordedRequest[] = []
+  const uploads: RecordedUpload[] = []
   const overridden = new Map<string, number>()
   const usedNonces = new Set<string>()
   // highest nonce count accepted per issued nonce; a count that does not increase is a replay
@@ -281,12 +298,41 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     response.end(body)
   }
 
-  const handle = async (request: IncomingMessage, response: ServerResponse, body: string) => {
+  const challengeDigest = (response: ServerResponse) => {
+    const nonce = randomBytes(16).toString('hex')
+    digestNonceCounts.set(nonce, 0)
+    response.writeHead(401, {
+      'Content-Type': 'text/html',
+      'WWW-Authenticate': `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
+    })
+    response.end('<html><body>401 Unauthorized</body></html>')
+  }
+
+  const serveUpload = async (request: IncomingMessage, response: ServerResponse, path: string, bytes: Buffer) => {
+    requests.push({ path, service: 'upload', action: 'POST', headers: request.headers, body: '' })
+    if (!checkDigest(request)) {
+      challengeDigest(response)
+      return
+    }
+    uploads.push({ path, contentType: request.headers['content-type'], body: bytes })
+    const { status = 200, delayMs = 0 } = options.upload ?? {}
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs))
+    if (response.destroyed) return
+    response.writeHead(status, { 'Content-Type': 'text/plain', 'Content-Length': 0 })
+    response.end()
+  }
+
+  const handle = async (request: IncomingMessage, response: ServerResponse, bytes: Buffer) => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname
     if (request.method === 'GET') {
       await serveSnapshot(request, response, path)
       return
     }
+    if (request.headers['content-type']?.startsWith('application/octet') === true) {
+      await serveUpload(request, response, path, bytes)
+      return
+    }
+    const body = bytes.toString('utf8')
     const service =
       servicesByPath[path] ?? (path.startsWith('/onvif/event/') || path === '/onvif/services' ? 'events' : 'unknown')
 
@@ -384,7 +430,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   const server = createServer(async (request, response) => {
     try {
       const chunks = await Array.fromAsync<Buffer>(request)
-      await handle(request, response, Buffer.concat(chunks).toString('utf8'))
+      await handle(request, response, Buffer.concat(chunks))
     } catch (error) {
       response.destroy(error instanceof Error ? error : new Error(String(error)))
     }
@@ -401,6 +447,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
   return {
     url: `http://${host}`,
     requests,
+    uploads,
     setClockSkew: (skewMs) => {
       clockSkewMs = skewMs
     },

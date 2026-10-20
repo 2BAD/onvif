@@ -173,6 +173,42 @@ describe('HttpTransport', () => {
     expect(requests).toBe(3)
   })
 
+  it('uploads bytes with their content type and length', async () => {
+    const received: { type: string | undefined; length: string | undefined; body: Buffer }[] = []
+    const url = await listen(
+      createServer(async (request, response) => {
+        const body = Buffer.concat(await Array.fromAsync<Buffer>(request))
+        received.push({ type: request.headers['content-type'], length: request.headers['content-length'], body })
+        response.writeHead(415)
+        response.end('rejected')
+      })
+    )
+    const bytes = new Uint8Array([0, 0xff, 0x80, 0x3c, 0x26])
+    const response = await transport().upload(url, bytes, 'application/octet-stream')
+    expect(response).toMatchObject({ status: 415, body: Buffer.from('rejected') })
+    expect(received).toEqual([{ type: 'application/octet-stream', length: '5', body: Buffer.from(bytes) }])
+  })
+
+  it('sends the same bytes again for the retry after a reset', async () => {
+    const seen = new WeakSet<object>()
+    const bodies: Buffer[] = []
+    const url = await listen(
+      createServer(async (request, response) => {
+        bodies.push(Buffer.concat(await Array.fromAsync<Buffer>(request)))
+        if (seen.has(request.socket)) {
+          request.socket.destroy()
+          return
+        }
+        seen.add(request.socket)
+        response.end('ok')
+      })
+    )
+    const client = transport()
+    await client.post(url, 'first')
+    await client.upload(url, new Uint8Array([1, 2, 3]), 'application/octet-stream')
+    expect(bodies.map((body) => [...body])).toEqual([[...Buffer.from('first')], [1, 2, 3], [1, 2, 3]])
+  })
+
   it('serializes the body again for the retry after a reset', async () => {
     const seen = new WeakSet<object>()
     const bodies: string[] = []

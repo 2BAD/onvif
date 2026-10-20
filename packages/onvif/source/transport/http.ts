@@ -49,7 +49,9 @@ export type PostOptions = {
   deadline?: number | undefined
 }
 
-type Body = string | (() => string)
+type Envelope = string | (() => string)
+
+type Body = Envelope | { bytes: Uint8Array; contentType: string }
 
 type AttemptOptions = PostOptions & { timeoutMs: number; deadline: number }
 
@@ -167,7 +169,7 @@ export class HttpTransport {
    * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
    * @throws {TransportError} On connection errors or a response over the size limit
    */
-  async post(url: URL, body: Body, options: PostOptions = {}): Promise<HttpResponse> {
+  async post(url: URL, body: Envelope, options: PostOptions = {}): Promise<HttpResponse> {
     const response = await this.#request('POST', url, body, options)
     return { ...response, body: response.body.toString('utf8') }
   }
@@ -185,6 +187,28 @@ export class HttpTransport {
    */
   get(url: URL, options: Omit<PostOptions, 'action'> = {}): Promise<HttpResponse<Buffer>> {
     return this.#request('GET', url, undefined, options)
+  }
+
+  /**
+   * POST bytes, such as a firmware image. Resolves with any HTTP status.
+   *
+   * @param url - Upload address
+   * @param bytes - Request body
+   * @param contentType - `Content-Type` of the body
+   * @param options - Abort signal, error context, timeout and deadline
+   * @returns Status, headers and the body as bytes
+   * @throws {AuthError} If a Digest challenge has to be answered for a username that is not printable ASCII, or a
+   *   Basic one for a username with a colon or control characters
+   * @throws {TimeoutError} If no complete response arrived before the timeout or deadline
+   * @throws {TransportError} On connection errors or a response over the size limit
+   */
+  upload(
+    url: URL,
+    bytes: Uint8Array,
+    contentType: string,
+    options: Omit<PostOptions, 'action'> = {}
+  ): Promise<HttpResponse<Buffer>> {
+    return this.#request('POST', url, { bytes, contentType }, options)
   }
 
   close(): void {
@@ -275,13 +299,17 @@ export class HttpTransport {
     if (remainingMs <= 0) throw new TimeoutError(`No response within ${timeoutMs} ms`, context)
     const secure = url.protocol === 'https:'
     if (!secure && url.protocol !== 'http:') throw new TransportError(`Unsupported protocol ${url.protocol}`, context)
-    const payload = body === undefined ? undefined : Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
     const headers: Record<string, string | number> = {}
-    if (payload) {
+    let payload: Uint8Array | undefined
+    if (typeof body === 'object') {
+      payload = body.bytes
+      headers['Content-Type'] = body.contentType
+    } else if (body !== undefined) {
+      payload = Buffer.from(typeof body === 'function' ? body() : body, 'utf8')
       headers['Content-Type'] =
         `application/soap+xml; charset=utf-8${action ? `; action="${action.replaceAll('"', '%22')}"` : ''}`
-      headers['Content-Length'] = payload.length
     }
+    if (payload) headers['Content-Length'] = payload.byteLength
     const authorization = this.#authorization(method, url, context)
     if (authorization) headers['Authorization'] = authorization
 

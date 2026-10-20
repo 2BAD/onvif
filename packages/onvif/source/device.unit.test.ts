@@ -1138,6 +1138,75 @@ describe('Device.download', () => {
   })
 })
 
+describe('Device.upload', () => {
+  const firmware = new Uint8Array([0x7f, 0x45, 0x4c, 0x46, 0x00, 0xff])
+
+  it('uploads with HTTP Digest as application/octet-stream and sends the body again after the challenge', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    expect(await device.upload(`${mock.url}/upload`, firmware)).toEqual({
+      contentType: 'text/plain',
+      body: Buffer.alloc(0)
+    })
+    expect(mock.uploads).toEqual([
+      { path: '/upload', contentType: 'application/octet-stream', body: Buffer.from(firmware) }
+    ])
+    const uploads = mock.requests.filter(({ service }) => service === 'upload')
+    expect(uploads.map(({ headers }) => headers.authorization?.split(' ')[0])).toEqual([undefined, 'Digest'])
+  })
+
+  it('sends the content type it is given', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    await device.upload(`${mock.url}/upload`, firmware, { contentType: 'application/octetstream' })
+    expect(mock.uploads.map(({ contentType }) => contentType)).toEqual(['application/octetstream'])
+  })
+
+  it('applies the service address policy before sending credentials or bytes', async () => {
+    const mock = await camera()
+    const rewriting = await connect(mock)
+    await rewriting.upload(new URL('http://10.0.0.5:8080/upload'), firmware)
+    expect(mock.uploads).toHaveLength(1)
+
+    const rejecting = await connect(mock, { serviceAddresses: 'reject' })
+    const before = mock.requests.length
+    await expect(rejecting.upload('http://10.0.0.5/upload', firmware)).rejects.toThrow('is not the configured origin')
+    await expect(rejecting.upload('ftp://10.0.0.5/upload', firmware)).rejects.toThrow('Unsupported service address')
+    expect(mock.requests).toHaveLength(before)
+  })
+
+  it('reports a file the device does not accept as a TransportError with the status', async () => {
+    const mock = await camera({ upload: { status: 415 } })
+    const device = await connect(mock)
+    await expect(device.upload(`${mock.url}/upload`, firmware)).rejects.toMatchObject({
+      name: 'TransportError',
+      status: 415,
+      action: 'POST'
+    })
+  })
+
+  it('rejects wrong credentials as an AuthError after one digest retry', async () => {
+    const mock = await camera({
+      password: 'other',
+      unauthenticated: ['device.GetSystemDateAndTime', 'device.GetServices']
+    })
+    const device = await connect(mock, { verifyCredentials: false })
+    await expect(device.upload(`${mock.url}/upload`, firmware)).rejects.toMatchObject({
+      name: 'AuthError',
+      message: 'Not authorized (HTTP 401)',
+      action: 'POST'
+    })
+    expect(mock.uploads).toEqual([])
+    expect(mock.requests.filter(({ service }) => service === 'upload')).toHaveLength(2)
+  })
+
+  it('stops at the timeout of the upload', async () => {
+    const device = await connect(await camera({ upload: { delayMs: 1_000 } }))
+    const error = await rejection(() => device.upload(`${device.address.origin}/upload`, firmware, { timeoutMs: 100 }))
+    expect(error).toMatchObject({ name: 'TimeoutError', message: 'No response within 100 ms', action: 'POST' })
+  })
+})
+
 describe('Device.use', () => {
   it('adds the properties of an extension to the device and returns the device', async () => {
     const device = await connect(await camera())
