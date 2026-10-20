@@ -27,7 +27,9 @@ Suites are `device`, `management`, `media`, `ptz`, `imaging`, `analytics`, `reco
 
 - `motion` waits up to five minutes for motion to start and stop. Walk through the camera's view while it runs.
 - `reset` resets the device to factory defaults and reboots it. Simulator only.
-- `--write` sends settings back as read and creates and deletes a test user, preset, profile, analytics rule, recording, track and recording job named `onviftest`. Test cameras and simulators only.
+- `--write` sends settings back as read and creates and deletes a test user, role, scope, geo location, storage configuration, certificate, 802.1X configuration, preset, profile, analytics rule, recording, track and recording job named `onviftest`. Test cameras and simulators only.
+- `--write` also sends an invalid hostname, time zone and date, and restores them. Some cameras rewrite their time zone when it is sent back.
+- `management --write` needs `openssl` for the test certificates.
 
 `motion` and `reset` run only when named.
 
@@ -35,6 +37,9 @@ Suites are `device`, `management`, `media`, `ptz`, `imaging`, `analytics`, `reco
 
 - serial number, hardware id, user names, password, hostname, `name` and `location` scopes: `REDACTEDn`
 - NTP and dynamic DNS hosts: `hostn.example`
+- Wi-Fi SSIDs, certificate DNs and serial numbers: `REDACTEDn`
+- certificate data: base64 of `REDACTEDn`
+- geo location coordinates: `0`
 - echoed WS-Security `Password` and `Nonce`: `REDACTED`
 - unicast IPv4: `192.0.2.0/24`
 - IPv6: `fe80::n` or `2001:db8::n`

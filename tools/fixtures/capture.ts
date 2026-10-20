@@ -1,8 +1,10 @@
+import { execFileSync } from 'node:child_process'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { createSocket } from 'node:dgram'
 import { once } from 'node:events'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { request } from 'node:http'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type DigestChallenge, digestAuthorization, parseChallenge } from '#onvif/transport/digest.ts'
 
@@ -236,6 +238,150 @@ const serviceUrl = (namespace: string): string | undefined => {
 const profileToken = async (): Promise<string | undefined> => {
   const url = serviceUrl(ns.trt)
   return url && tokenized((await client('', 'media', url, ns.trt).send('GetProfiles')).xml, 'Profiles')[0]?.token
+}
+
+type Client = ReturnType<typeof client>
+
+const binaryData = (data: Buffer) => `<Data ${tt}>${data.toString('base64')}</Data>`
+
+const captureCertificates = async (management: Client): Promise<void> => {
+  const statusXml = await management.call('GetCertificatesStatus')
+  await management.call('GetCertificates')
+  const modeXml = await management.call('GetClientCertificateMode')
+  await management.call('GetCACertificates')
+  await management.call('GetDot1XConfigurations')
+  if (!write) return
+
+  const statuses = elements(statusXml, 'CertificateStatus')
+  if (statuses.length > 0) {
+    const content = statuses.map((status) => `<CertificateStatus>${status}</CertificateStatus>`).join('')
+    await management.call('SetCertificatesStatus', content, { as: 'SetCertificatesStatusUnchanged', from: statusXml })
+  }
+  const mode = text(modeXml, 'Enabled')
+  if (mode !== undefined) await management.call('SetClientCertificateMode', `<Enabled>${mode}</Enabled>`)
+
+  const directory = await mkdtemp(join(tmpdir(), 'onviftest-'))
+  const openssl = (...args: string[]) => execFileSync('openssl', args, { cwd: directory, stdio: 'pipe' })
+  try {
+    openssl(
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-nodes',
+      '-keyout',
+      'ca.key',
+      '-out',
+      'ca.pem',
+      '-days',
+      '2',
+      '-subj',
+      '/CN=onviftest-ca'
+    )
+    openssl(
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-nodes',
+      '-keyout',
+      'own.key',
+      '-out',
+      'own.pem',
+      '-days',
+      '2',
+      '-subj',
+      '/CN=onviftest'
+    )
+    const der = (file: string) => openssl('x509', '-in', file, '-outform', 'DER')
+    const now = new Date(Date.now() + clockSkewMs)
+    const validity = (days: number) => new Date(now.getTime() + days * 86_400_000).toISOString().replace(/\.\d+Z$/, 'Z')
+
+    const created = await management.call(
+      'CreateCertificate',
+      '<CertificateID>onviftest</CertificateID><Subject>CN=onviftest</Subject>' +
+        `<ValidNotBefore>${validity(0)}</ValidNotBefore><ValidNotAfter>${validity(2)}</ValidNotAfter>`
+    )
+    // devices that create nothing still answer the calls on the requested ID
+    const createdId = text(created, 'CertificateID') || 'onviftest'
+    const id = `<CertificateID>${createdId}</CertificateID>`
+    try {
+      await management.call('GetCertificateInformation', id)
+      const csrXml = await management.call('GetPkcs10Request', `${id}<Subject>CN=onviftest</Subject>`)
+      const csr = text(elements(csrXml, 'Pkcs10Request')[0] ?? '', 'Data')
+      if (csr) await writeFile(join(directory, 'own.csr'), Buffer.from(csr, 'base64'))
+      const certificate = csr
+        ? openssl(
+            'x509',
+            '-req',
+            '-inform',
+            'DER',
+            '-in',
+            'own.csr',
+            '-CA',
+            'ca.pem',
+            '-CAkey',
+            'ca.key',
+            '-days',
+            '2',
+            '-outform',
+            'DER'
+          )
+        : der('own.pem')
+      await management.call(
+        'LoadCertificates',
+        `<NVTCertificate><CertificateID ${tt}>${createdId}</CertificateID>` +
+          `<Certificate ${tt}>${binaryData(certificate)}</Certificate></NVTCertificate>`
+      )
+      await management.call('GetCertificates', '', { as: 'GetCertificatesWithAdded' })
+      await management.call(
+        'SetCertificatesStatus',
+        `<CertificateStatus><CertificateID ${tt}>${createdId}</CertificateID><Status ${tt}>false</Status></CertificateStatus>`
+      )
+    } finally {
+      await management.call('DeleteCertificates', id)
+    }
+    await management.call('DeleteCertificates', id, { as: 'DeleteCertificatesMissingFault' })
+
+    const caId = '<CertificateID>onviftestca</CertificateID>'
+    await management.call(
+      'LoadCACertificates',
+      `<CACertificate><CertificateID ${tt}>onviftestca</CertificateID>` +
+        `<Certificate ${tt}>${binaryData(der('ca.pem'))}</Certificate></CACertificate>`
+    )
+    try {
+      await management.call('GetCACertificates', '', { as: 'GetCACertificatesWithAdded' })
+    } finally {
+      await management.call('DeleteCertificates', caId, { as: 'DeleteCertificatesCA' })
+    }
+
+    const key = openssl('pkey', '-in', 'own.key', '-outform', 'DER')
+    await management.call(
+      'LoadCertificateWithPrivateKey',
+      `<CertificateWithPrivateKey><CertificateID ${tt}>onviftestkey</CertificateID>` +
+        `<Certificate ${tt}>${binaryData(der('own.pem'))}</Certificate>` +
+        `<PrivateKey ${tt}>${binaryData(key)}</PrivateKey></CertificateWithPrivateKey>`
+    )
+    await management.call('DeleteCertificates', '<CertificateID>onviftestkey</CertificateID>', {
+      as: 'DeleteCertificatesWithPrivateKey'
+    })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+
+  const dot1x =
+    '<Dot1XConfigurationToken>onviftest</Dot1XConfigurationToken><Identity>onviftest</Identity><EAPMethod>25</EAPMethod>' +
+    `<EAPMethodConfiguration><Password>${randomBytes(12).toString('base64url')}</Password></EAPMethodConfiguration>`
+  const token = '<Dot1XConfigurationToken>onviftest</Dot1XConfigurationToken>'
+  await management.call('CreateDot1XConfiguration', `<Dot1XConfiguration>${dot1x}</Dot1XConfiguration>`)
+  try {
+    await management.call('GetDot1XConfiguration', token)
+    await management.call('SetDot1XConfiguration', `<Dot1XConfiguration>${dot1x}</Dot1XConfiguration>`)
+    await management.call('GetDot1XConfigurations', '', { as: 'GetDot1XConfigurationsWithAdded' })
+  } finally {
+    await management.call('DeleteDot1XConfiguration', token)
+  }
+  await management.call('GetDot1XConfiguration', token, { as: 'GetDot1XConfigurationMissingFault' })
 }
 
 const captureManagement = async (): Promise<void> => {
@@ -543,6 +689,7 @@ const captureManagement = async (): Promise<void> => {
     await management.call('DeleteUsers', deleteTestUser)
   }
   await management.call('DeleteUsers', deleteTestUser, { as: 'DeleteUsersMissingFault' })
+  await captureCertificates(management)
 }
 
 // Media2 encodings that a Media v1 configuration can carry.
@@ -1289,7 +1436,12 @@ const scrub = (xml: string): string =>
     .replace(/(<[\w-]+:Username>)([^<]+)/g, (match: string, start: string, name: string) =>
       name.startsWith('REDACTED') ? match : `${start}${pseudonym('text')(name)}`
     )
-    .replace(/(<[\w-]+:(?:SSID|ActiveConfigAlias)>)([^<]+)/g, replaceGroup('text'))
+    .replace(/(<[\w-]+:(?:SSID|ActiveConfigAlias|IssuerDN|SubjectDN|SerialNum)>)([^<]+)/g, replaceGroup('text'))
+    .replace(
+      /(<[\w-]+:Data\b[^>]*>)([A-Za-z0-9+/=\s]{100,})</g,
+      (_, start: string, data: string) =>
+        `${start}${Buffer.from(pseudonym('text')(data.replace(/\s/g, ''))).toString('base64')}<`
+    )
     .replace(/(<[\w-]+:GeoLocation\b[^>]*)/g, (element: string) =>
       element.replace(/\b(lon|lat|elevation)="[^"]*"/g, '$1="0"')
     )
