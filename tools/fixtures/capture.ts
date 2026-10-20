@@ -670,7 +670,7 @@ const captureManagement = async (): Promise<void> => {
   const [relay] = tokenized(relaysXml, 'RelayOutputs')
   const properties = relay && elements(relay.content, 'Properties')[0]
   if (relay && properties !== undefined) {
-    const token = `<RelayOutputToken>${relay}</RelayOutputToken>`
+    const token = `<RelayOutputToken>${relay.token}</RelayOutputToken>`
     await management.call('SetRelayOutputSettings', `${token}<Properties>${properties}</Properties>`, {
       from: relaysXml
     })
