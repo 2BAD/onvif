@@ -466,6 +466,14 @@ describe('qnames and substitutions', () => {
     ).not.toContain('choice')
   })
 
+  it('adds a repeatable element for a repeatable xs:any', () => {
+    const builder = builderFor()
+    const bag = builder.element({ namespace: items, local: 'Bag' })
+    builder.substitute(bag, { namespace: items, local: 'Shape' })
+    expect(bag.fields).toMatchObject([{ name: 'Shape', optional: true, array: true }])
+    expect(bag).toMatchObject({ anyRequired: false, anyArray: true, choice: [] })
+  })
+
   it('rejects a substitution for a type without xs:any', () => {
     const builder = builderFor()
     const plain = builder.element({ namespace: items, local: 'Plain' })

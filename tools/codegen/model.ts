@@ -1,7 +1,16 @@
 import { keyOf, type Registry, type SchemaContext, type WsdlOperation, XS } from '#tools/codegen/registry.ts'
 import { type QName, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
 
-export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'qname' | 'any'
+export type Primitive =
+  | 'string'
+  | 'integer'
+  | 'decimal'
+  | 'boolean'
+  | 'dateTime'
+  | 'base64'
+  | 'qname'
+  | 'prefixed'
+  | 'any'
 
 export type SimpleModel = {
   kind: 'simple'
@@ -31,6 +40,8 @@ export type ComplexModel = {
   any: boolean
   /** Whether the `xs:any` has to occur. */
   anyRequired: boolean
+  /** Whether the `xs:any` repeats. */
+  anyArray: boolean
   /** Names of the elements that stand in for a required `xs:any`. */
   choice: string[]
   documentation: string | undefined
@@ -44,7 +55,7 @@ export type OperationModel = {
   documentation: string | undefined
 }
 
-const builtinNames: Record<Exclude<Primitive, 'qname'>, string> = {
+const builtinNames: Record<Exclude<Primitive, 'qname' | 'prefixed'>, string> = {
   string:
     'string normalizedString token anyURI QName NCName Name ID IDREF IDREFS NMTOKEN NMTOKENS language hexBinary ' +
     'duration date time anySimpleType',
@@ -131,7 +142,7 @@ export class ModelBuilder {
       namespace: name.namespace,
       attribute: false,
       optional: true,
-      array: false,
+      array: model.anyArray,
       type,
       documentation: type.documentation
     })
@@ -231,6 +242,7 @@ export class ModelBuilder {
       text: node.attributes['mixed'] === 'true' ? this.#builtin('string') : undefined,
       any: false,
       anyRequired: false,
+      anyArray: false,
       choice: [],
       documentation: documentationOf(node)
     }
@@ -316,6 +328,7 @@ export class ModelBuilder {
         case 'any':
           model.any = true
           model.anyRequired = !childOptional && !occurs(child).optional
+          model.anyArray = childArray || occurs(child).array
           break
         case 'annotation':
           break

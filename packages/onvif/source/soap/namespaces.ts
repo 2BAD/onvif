@@ -15,6 +15,7 @@ export const prefixes: Readonly<Record<string, string>> = Object.assign(Object.c
   'http://www.onvif.org/ver10/search/wsdl': 'tse',
   'http://www.onvif.org/ver10/replay/wsdl': 'trp',
   'http://www.onvif.org/ver10/receiver/wsdl': 'trv',
+  'http://www.onvif.org/ver10/topics': 'tns1',
   'http://docs.oasis-open.org/wsn/b-2': 'wsnt',
   'http://docs.oasis-open.org/wsn/t-1': 'wstop',
   'http://docs.oasis-open.org/wsrf/bf-2': 'wsrfbf',

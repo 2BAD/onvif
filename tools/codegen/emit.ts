@@ -40,6 +40,7 @@ const tsPrimitives: Record<SimpleModel['primitive'], string> = {
   dateTime: 'Date',
   base64: 'Uint8Array',
   qname: 'string',
+  prefixed: 'string',
   any: 'unknown'
 }
 

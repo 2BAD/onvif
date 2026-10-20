@@ -555,3 +555,60 @@ describe('qname namespaces named like Object.prototype members', () => {
     }
   )
 })
+
+describe('prefixed', () => {
+  const topics = 'http://www.onvif.org/ver10/topics'
+  const schema: Schema = {
+    Filter: { fields: [{ name: 'Dialect', type: 'string', attribute: true }], text: 'prefixed' },
+    Request: { fields: [{ name: 'Filter', type: 'Filter', namespace: tt }] }
+  }
+  const setFilter: Operation<Record<string, unknown>, unknown> = {
+    name: 'SetFilter',
+    action: `${tds}/SetFilter`,
+    request: { name: 'SetFilter', namespace: tds, type: 'Request' },
+    response: { name: 'SetFilterResponse', type: 'Request' },
+    schema
+  }
+  const filter = (xml: string, namespaces = true) => {
+    const element = parseXml(xml, undefined, { namespaces })['Filter'] as XmlObject
+    return (decode(schema, 'Filter', element) as { value: string }).value
+  }
+
+  it('reads every declared prefix as the standard prefix or {namespace}', () => {
+    expect(
+      filter(
+        `<Filter xmlns:t="${topics}" xmlns:v="urn:example:vendor" Dialect="d">` +
+          't:RuleEngine/CellMotionDetector/Motion|v:Zone//.|t:Device/*</Filter>'
+      )
+    ).toBe('tns1:RuleEngine/CellMotionDetector/Motion|{urn:example:vendor}Zone//.|tns1:Device/*')
+    expect(
+      filter(`<Filter xmlns:p="${tt}" Dialect="d">boolean(//p:SimpleItem[@Name="Token" and @Value="a:b"])</Filter>`)
+    ).toBe('boolean(//tt:SimpleItem[@Name="Token" and @Value="a:b"])')
+  })
+
+  it('keeps undeclared prefixes and the text of a response parsed without namespaces', () => {
+    expect(filter('<Filter Dialect="d">tns1:RuleEngine/x:Motion</Filter>')).toBe('tns1:RuleEngine/x:Motion')
+    expect(filter(`<Filter xmlns:t="${topics}" Dialect="d">t:RuleEngine</Filter>`, false)).toBe('t:RuleEngine')
+  })
+
+  it('declares the namespace of every prefix it writes', () => {
+    const value = 'tns1:RuleEngine/CellMotionDetector/Motion|{urn:example:vendor}Zone|{}Plain|tt:Device'
+    expect(serialize(encodeRequest(setFilter, { Filter: { Dialect: 'd', value } }))).toBe(
+      `<tds:SetFilter xmlns:tds="${tds}" xmlns:tt="${tt}" xmlns:tns1="${topics}" xmlns:ns4="urn:example:vendor">` +
+        '<tt:Filter Dialect="d">tns1:RuleEngine/CellMotionDetector/Motion|ns4:Zone|Plain|tt:Device</tt:Filter>' +
+        '</tds:SetFilter>'
+    )
+  })
+
+  it('reads back what it writes', () => {
+    const request = { Filter: { Dialect: 'd', value: 'tns1:RuleEngine//.|{urn:example:vendor}Zone' } }
+    const element = parseXml(serialize(encodeRequest(setFilter, request)), undefined, { namespaces: true })
+    expect(decode(schema, 'Request', element['SetFilter'] as XmlValue)).toEqual(request)
+  })
+
+  it('rejects an unknown prefix on encode', () => {
+    expect(() => encodeRequest(setFilter, { Filter: { Dialect: 'd', value: 'v:Zone' } })).toThrow(
+      'Unknown prefix v at SetFilter.Filter.value'
+    )
+  })
+})

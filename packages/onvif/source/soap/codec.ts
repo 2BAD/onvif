@@ -3,7 +3,16 @@ import { XML_NAMESPACE, prefixes } from '#soap/namespaces.ts'
 import { namespaceInfo, setNamespaceInfo, type XmlNamespaces, type XmlObject, type XmlValue } from '#soap/parse.ts'
 import type { XmlElement, XmlNode } from '#soap/serialize.ts'
 
-export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'qname' | 'any'
+export type Primitive =
+  | 'string'
+  | 'integer'
+  | 'decimal'
+  | 'boolean'
+  | 'dateTime'
+  | 'base64'
+  | 'qname'
+  | 'prefixed'
+  | 'any'
 
 export type FieldSchema = {
   name: string
@@ -39,12 +48,24 @@ export type Operation<Request, Response> = {
   types?: { request: Request; response: Response }
 }
 
-const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime', 'base64', 'qname', 'any'])
+const primitives = new Set([
+  'string',
+  'integer',
+  'decimal',
+  'boolean',
+  'dateTime',
+  'base64',
+  'qname',
+  'prefixed',
+  'any'
+])
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
 const dateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
 const qnamePattern = /^(?:([^\s:{}]+):)?([^\s:{}]+)$/
 const clarkPattern = /^\{([^{}]*)\}([^\s:{}]+)$/
+// a prefix or a {namespace} at the start of a name in a topic or XPath expression
+const prefixedPattern = /(^|[\s/|([])(?:\{([^{}]*)\}|([A-Za-z_][\w.-]*):)(?=[A-Za-z_*])/g
 const namespacesByPrefix = new Map(Object.entries(prefixes).map(([namespace, prefix]) => [prefix, namespace]))
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
@@ -74,6 +95,17 @@ const decodeQName = (text: string, path: string, context: ErrorContext, scope: X
   const known = prefixes[namespace]
   return known === undefined ? `{${namespace}}${local}` : `${known}:${local}`
 }
+
+// prefixes that are not declared stay as they are, as does all text of a response parsed without namespaces
+const decodePrefixed = (text: string, scope: XmlNamespaces | undefined): string =>
+  scope === undefined
+    ? text
+    : text.replace(prefixedPattern, (match: string, lead: string, clark?: string, prefix?: string) => {
+        const namespace = prefix !== undefined && Object.hasOwn(scope, prefix) ? scope[prefix] : undefined
+        if (clark !== undefined || !namespace) return match
+        const known = prefixes[namespace]
+        return known === undefined ? `${lead}{${namespace}}` : `${lead}${known}:`
+      })
 
 const decodePrimitive = (
   primitive: string,
@@ -114,6 +146,8 @@ const decodePrimitive = (
     }
     case 'qname':
       return decodeQName(trimmed, path, context, scope)
+    case 'prefixed':
+      return decodePrefixed(trimmed, scope)
     case 'base64':
       try {
         return Uint8Array.fromBase64(trimmed, { lastChunkHandling: 'strict' })
@@ -295,6 +329,9 @@ class Encoder {
       case 'qname':
         if (typeof value === 'string') return this.qname(value, path)
         break
+      case 'prefixed':
+        if (typeof value === 'string') return this.prefixed(value, path)
+        break
       case 'any':
         if (typeof value === 'string') return value
         break
@@ -316,6 +353,14 @@ class Encoder {
     const namespace = namespacesByPrefix.get(prefix)
     if (namespace === undefined) throw new OnvifError(`Unknown prefix ${prefix} in the QName at ${path}`)
     return this.qualify(local, namespace)
+  }
+
+  prefixed(value: string, path: string): string {
+    return value.replace(prefixedPattern, (_match: string, lead: string, clark?: string, prefix?: string) => {
+      const namespace = clark ?? namespacesByPrefix.get(prefix ?? '')
+      if (namespace === undefined) throw new OnvifError(`Unknown prefix ${prefix} at ${path}`)
+      return namespace === '' ? lead : `${lead}${this.qualify('', namespace)}`
+    })
   }
 
   element(name: string, type: string, value: unknown, path: string): XmlElement {
