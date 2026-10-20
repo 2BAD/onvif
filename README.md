@@ -41,7 +41,7 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | ------- | -------- | ---------------------------- |
 | S       | 7 of 7   |                              |
 | T       | 21 of 21 |                              |
-| M       | 6 of 7   | metadata                     |
+| M       | 7 of 7   |                              |
 | C       | 7 of 15  | access control, door control |
 | D       | 10 of 19 | access, doors                |
 | G       | 2 of 8   | recording search, replay     |

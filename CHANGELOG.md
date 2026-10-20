@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `@2bad/onvif-analytics`: analytics module, rule and supported metadata operations as methods on `device.analytics`, and on `device.analytics.forConfiguration()` without the configuration token
+- Added Media2 metadata configuration, analytics configuration, `addConfiguration()` and `removeConfiguration()` methods to `device.media.v2`
+
+### Fixed
+
+- Fixed `setMetadataConfiguration()` dropping the topic filter of the metadata event stream
 
 ## [2.3.0] - 2026-10-12
 

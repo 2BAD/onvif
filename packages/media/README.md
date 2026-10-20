@@ -53,7 +53,7 @@ camera.media.setVideoEncoderConfiguration(
 ): Promise<VideoEncoder>
 
 camera.media.v1 // a method per Media operation, including profile, audio, metadata and multicast configuration
-camera.media.v2 // a method per Media2 operation, such as camera.media.v2.getProfiles({ type: ['All'] })
+camera.media.v2 // a method per Media2 operation, including metadata and analytics configuration
 
 function defaultProfile(profiles: Profile[]): Profile | undefined // first profile with a video source and an encoder
 
@@ -113,6 +113,31 @@ await v1.deleteProfile({ profileToken })
 ```
 
 Audio, metadata and PTZ configurations are added the same way. Profiles with `fixed: true` can't be deleted.
+
+With Media2, `addConfiguration()` adds several configurations in one call.
+
+```ts
+await camera.media.v2.addConfiguration({
+  profileToken,
+  configuration: [
+    { type: 'Metadata', token: metadata.token },
+    { type: 'Analytics', token: analytics.token }
+  ]
+})
+```
+
+List the types in the order of `VideoSource`, `VideoEncoder`, `AudioSource`, `AudioEncoder`, `AudioOutput`, `AudioDecoder`, `Metadata`, `Analytics`, `PTZ`.
+
+## Metadata
+
+```ts
+const { configurations: [metadata] = [] } = await camera.media.v2.getMetadataConfigurations()
+console.log(metadata?.events?.filter?.topicExpression?.[0]?.value) // tns1:RuleEngine/CellMotionDetector/Motion
+
+if (metadata) await camera.media.v2.setMetadataConfiguration({ configuration: { ...metadata, analytics: true } })
+```
+
+`getMetadataConfigurations()` returns topics with the prefix `tns1`, whatever prefix the camera sent. A topic in another namespace reads as `{namespace}Name`. Both forms can be sent back.
 
 ## Limits
 

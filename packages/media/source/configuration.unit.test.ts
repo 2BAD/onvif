@@ -67,7 +67,7 @@ describe('generated media operations', () => {
   })
 
   it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, { xml, operation }) => {
-    const { body } = parseEnvelope(xml)
+    const { body } = parseEnvelope(xml, {}, undefined, { namespaces: operation.namespaces === true })
     const response = body[operation.response.name]
     expect(response).toBeDefined()
     expect(() => decode(operation.schema, operation.response.type, response ?? '')).not.toThrow()
@@ -215,6 +215,21 @@ describe('media.v1 requests', () => {
     const raw = rawRequestOf(mock, 'SetVideoSourceConfiguration')
     expect(raw).toContain('<tt:LensDescription FocalLength="4">')
     expect(raw).toContain('<tt:SceneOrientation><tt:Mode>MANUAL</tt:Mode><tt:Orientation>Right</tt:Orientation>')
+  })
+})
+
+describe('media.v1 metadata event filters', () => {
+  it('sends the topic expression of the event filter back as the camera reported it', async () => {
+    const dahua = fixture('live/dahua/dhi-itc413-pw4d-z1/media.GetMetadataConfiguration.xml').xml
+    const { mock, v1 } = await connect({ overrides: { 'media.GetMetadataConfiguration': answer(dahua) } })
+    const { configuration } = await v1.getMetadataConfiguration({ configurationToken: 'any' })
+    expect(configuration.events?.filter?.topicExpression?.map(({ value }) => value)).toEqual([
+      'tns1:RuleEngine/CellMotionDetector/Motion'
+    ])
+    await v1.setMetadataConfiguration({ configuration, forcePersistence: false })
+    const raw = rawRequestOf(mock, 'SetMetadataConfiguration')
+    expect(raw).toContain('>tns1:RuleEngine/CellMotionDetector/Motion</wsnt:TopicExpression></tt:Filter>')
+    expect(raw).toContain('xmlns:tns1="http://www.onvif.org/ver10/topics"')
   })
 })
 

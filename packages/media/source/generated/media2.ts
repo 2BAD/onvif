@@ -24,6 +24,21 @@ export type StreamType = 'RTP-Unicast' | 'RTP-Multicast' | (string & Record<neve
 
 export type TransportProtocol = 'UDP' | 'TCP' | 'RTSP' | 'HTTP' | (string & Record<never, never>)
 
+export type AddConfigurationRequest = {
+  /** Reference to the profile where the configuration should be added */
+  profileToken: string
+  /** Optional item. If present updates the Name property of the profile. */
+  name?: string
+  /**
+   * List of configurations to be added. The types shall be provided in the order defined by
+   * tr2:ConfigurationEnumeration. List entries with tr2:ConfigurationEnumeration value "All" shall be
+   * ignored.
+   */
+  configuration?: ConfigurationRef[]
+}
+
+export type AddConfigurationResponse = Record<string, never>
+
 export type AnalyticsEngineConfiguration = {
   analyticsModule?: Config[]
   extension?: AnalyticsEngineConfigurationExtension
@@ -138,6 +153,19 @@ export type Config = {
   type: string
 }
 
+export type ConfigurationRef = {
+  /** Type of the configuration as defined by tr2:ConfigurationEnumeration. */
+  type: string
+  /**
+   * Reference token of an existing configuration. Token shall be included in the AddConfiguration
+   * request along with the type. Token shall be included in the CreateProfile request when Configuration
+   * elements are included and type is selected. Token is optional for RemoveConfiguration request. If no
+   * token is provided in RemoveConfiguration request, device shall remove the configuration of the type
+   * included in the profile.
+   */
+  token?: string
+}
+
 /** A set of media configurations. */
 export type ConfigurationSet = {
   /** Optional configuration of the Video input. */
@@ -181,6 +209,8 @@ export type EventSubscriptionSubscriptionPolicy = {
 }
 
 export type FilterType = {
+  topicExpression?: TopicExpressionType[]
+  messageContent?: QueryExpressionType[]
   $any?: Record<string, unknown>
 }
 
@@ -190,11 +220,31 @@ export type FloatRange = {
   max: number
 }
 
+export type GetAnalyticsConfigurationsResponse = {
+  /** This element contains a list of Analytics configurations. */
+  configurations?: VideoAnalyticsConfiguration[]
+}
+
 export type GetConfiguration = {
   /** Token of the requested configuration. */
   configurationToken?: string
   /** Contains the token of an existing media profile the configurations shall be compatible with. */
   profileToken?: string
+}
+
+export type GetMetadataConfigurationOptionsResponse = {
+  /**
+   * This message contains the metadata configuration options. If a metadata configuration is specified,
+   * the options shall concern that particular configuration. If a media profile is specified, the
+   * options shall be compatible with that media profile. If no tokens are specified, the options shall
+   * be considered generic for the device.
+   */
+  options: MetadataConfigurationOptions
+}
+
+export type GetMetadataConfigurationsResponse = {
+  /** This element contains a list of metadata configurations */
+  configurations?: MetadataConfiguration[]
 }
 
 export type GetProfilesRequest = {
@@ -417,6 +467,39 @@ export type MetadataConfigurationExtension = {
   $any?: Record<string, unknown>
 }
 
+export type MetadataConfigurationOptions = {
+  ptzStatusFilterOptions: PTZStatusFilterOptions
+  /** Optional element indicating the sensor data filtering capabilities of the device. */
+  sensorDataFilterOptions?: SensorDataFilterOptions
+  extension?: MetadataConfigurationOptionsExtension
+  /** True if the device is able to stream the Geo Located positions of each target. */
+  geoLocation?: boolean
+  /**
+   * A device signalling support for content filtering shall support expressions with the provided
+   * expression size.
+   */
+  maxContentFilterSize?: number
+  /**
+   * If secure RTSP streaming is supported, this shall return the list of supported cryptographic
+   * algorithms as defined by tt:SrtpSecurityAlgorithms.
+   */
+  secureStreamingProtocolAlgorithms?: string[]
+  $any?: Record<string, unknown>
+}
+
+export type MetadataConfigurationOptionsExtension = {
+  /**
+   * List of supported metadata compression type. Its options shall be chosen from
+   * tt:MetadataCompressionType.
+   */
+  compressionType?: string[]
+  extension?: MetadataConfigurationOptionsExtension2
+}
+
+export type MetadataConfigurationOptionsExtension2 = {
+  $any?: Record<string, unknown>
+}
+
 export type MulticastConfiguration = {
   /** The multicast address (if this address is set to 0 no multicast streaming is enabled) */
   address: IPAddress
@@ -562,6 +645,31 @@ export type PTZSpeed = {
   zoom?: Vector1D
 }
 
+export type PTZStatusFilterOptions = {
+  /** True if the device is able to stream pan or tilt status information. */
+  panTiltStatusSupported: boolean
+  /** True if the device is able to stream zoom status information. */
+  zoomStatusSupported: boolean
+  /** True if the device is able to stream the pan or tilt position. */
+  panTiltPositionSupported?: boolean
+  /** True if the device is able to stream zoom position information. */
+  zoomPositionSupported?: boolean
+  extension?: PTZStatusFilterOptionsExtension
+  /** True if the device is able to stream the field-of-view information. */
+  fieldOfViewSupported?: boolean
+  $any?: Record<string, unknown>
+}
+
+export type PTZStatusFilterOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type QueryExpressionType = {
+  dialect: string
+  value: string
+  $any?: Record<string, unknown>
+}
+
 export type ReceiverConfiguration = {
   /** The following connection modes are defined: */
   mode: ReceiverMode
@@ -572,6 +680,22 @@ export type ReceiverConfiguration = {
   token?: string
   $any?: Record<string, unknown>
 }
+
+export type RemoveConfigurationRequest = {
+  /**
+   * This element contains a reference to the media profile from which the configuration shall be
+   * removed.
+   */
+  profileToken: string
+  /**
+   * List of configurations to be removed. The types shall be provided in the order defined by
+   * tr2:ConfigurationEnumeration. Tokens appearing in the configuration list shall be ignored. Presence
+   * of the "All" type shall result in an empty profile.
+   */
+  configuration: ConfigurationRef[]
+}
+
+export type RemoveConfigurationResponse = Record<string, never>
 
 export type Reverse = {
   /** Parameter to enable/disable Reverse feature. */
@@ -642,7 +766,20 @@ export type SensorDataFilter = {
   $any?: Record<string, unknown>
 }
 
+export type SensorDataFilterOptions = {
+  /** True if the device supports filtering sensor data by SensorID. */
+  sensorIDFilterSupported: boolean
+  /** True if the device supports filtering sensor data by Type. */
+  typeFilterSupported: boolean
+  $any?: Record<string, unknown>
+}
+
 export type SetConfigurationResponse = Record<string, never>
+
+export type SetMetadataConfigurationRequest = {
+  /** Contains the modified metadata configuration. The configuration shall exist in the device. */
+  configuration: MetadataConfiguration
+}
 
 export type SetVideoEncoderConfigurationRequest = {
   /** Contains the modified video encoder configuration. The configuration shall exist in the device. */
@@ -669,6 +806,12 @@ export type StreamSetup = {
   /** Defines if a multicast or unicast stream is requested. */
   stream: StreamType
   transport: Transport
+  $any?: Record<string, unknown>
+}
+
+export type TopicExpressionType = {
+  dialect: string
+  value: string
   $any?: Record<string, unknown>
 }
 
@@ -911,10 +1054,26 @@ export type ZoomLimits = {
   range: Space1DDescription
 }
 
-const tt = 'http://www.onvif.org/ver10/schema'
 const tr2 = 'http://www.onvif.org/ver20/media/wsdl'
+const tt = 'http://www.onvif.org/ver10/schema'
+const wsnt = 'http://docs.oasis-open.org/wsn/b-2'
 
 export const schema: Schema = {
+  AddConfigurationRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 },
+      { name: 'Name', property: 'name', type: 'string', namespace: tr2, optional: true },
+      {
+        name: 'Configuration',
+        property: 'configuration',
+        type: 'ConfigurationRef',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  AddConfigurationResponse: { fields: [] },
   AnalyticsEngineConfiguration: {
     fields: [
       {
@@ -989,6 +1148,12 @@ export const schema: Schema = {
       { name: 'Type', property: 'type', type: 'string', attribute: true }
     ]
   },
+  ConfigurationRef: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tr2 },
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
   ConfigurationSet: {
     fields: [
       {
@@ -1055,17 +1220,64 @@ export const schema: Schema = {
     any: true
   },
   EventSubscriptionSubscriptionPolicy: { fields: [], any: true },
-  FilterType: { fields: [], any: true },
+  FilterType: {
+    fields: [
+      {
+        name: 'TopicExpression',
+        property: 'topicExpression',
+        type: 'TopicExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'MessageContent',
+        property: 'messageContent',
+        type: 'QueryExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      }
+    ],
+    any: true
+  },
   FloatRange: {
     fields: [
       { name: 'Min', property: 'min', type: 'decimal', namespace: tt },
       { name: 'Max', property: 'max', type: 'decimal', namespace: tt }
     ]
   },
+  GetAnalyticsConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'VideoAnalyticsConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
   GetConfiguration: {
     fields: [
       { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true },
       { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
+  GetMetadataConfigurationOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'MetadataConfigurationOptions', namespace: tr2 }]
+  },
+  GetMetadataConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'MetadataConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
     ]
   },
   GetProfilesRequest: {
@@ -1239,6 +1451,66 @@ export const schema: Schema = {
     any: true
   },
   MetadataConfigurationExtension: { fields: [], any: true },
+  MetadataConfigurationOptions: {
+    fields: [
+      {
+        name: 'PTZStatusFilterOptions',
+        property: 'ptzStatusFilterOptions',
+        type: 'PTZStatusFilterOptions',
+        namespace: tt
+      },
+      {
+        name: 'SensorDataFilterOptions',
+        property: 'sensorDataFilterOptions',
+        type: 'SensorDataFilterOptions',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'MetadataConfigurationOptionsExtension',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'GeoLocation', property: 'geoLocation', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'MaxContentFilterSize',
+        property: 'maxContentFilterSize',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'SecureStreamingProtocolAlgorithms',
+        property: 'secureStreamingProtocolAlgorithms',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  MetadataConfigurationOptionsExtension: {
+    fields: [
+      {
+        name: 'CompressionType',
+        property: 'compressionType',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'MetadataConfigurationOptionsExtension2',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  MetadataConfigurationOptionsExtension2: { fields: [], any: true },
   MulticastConfiguration: {
     fields: [
       { name: 'Address', property: 'address', type: 'IPAddress', namespace: tt },
@@ -1342,6 +1614,41 @@ export const schema: Schema = {
       { name: 'Zoom', property: 'zoom', type: 'Vector1D', namespace: tt, optional: true }
     ]
   },
+  PTZStatusFilterOptions: {
+    fields: [
+      { name: 'PanTiltStatusSupported', property: 'panTiltStatusSupported', type: 'boolean', namespace: tt },
+      { name: 'ZoomStatusSupported', property: 'zoomStatusSupported', type: 'boolean', namespace: tt },
+      {
+        name: 'PanTiltPositionSupported',
+        property: 'panTiltPositionSupported',
+        type: 'boolean',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'ZoomPositionSupported',
+        property: 'zoomPositionSupported',
+        type: 'boolean',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'PTZStatusFilterOptionsExtension',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'FieldOfViewSupported', property: 'fieldOfViewSupported', type: 'boolean', namespace: tt, optional: true }
+    ],
+    any: true
+  },
+  PTZStatusFilterOptionsExtension: { fields: [], any: true },
+  QueryExpressionType: {
+    fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
+    text: 'prefixed',
+    any: true
+  },
   ReceiverConfiguration: {
     fields: [
       { name: 'Mode', property: 'mode', type: 'string', namespace: tt },
@@ -1351,6 +1658,13 @@ export const schema: Schema = {
     ],
     any: true
   },
+  RemoveConfigurationRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 },
+      { name: 'Configuration', property: 'configuration', type: 'ConfigurationRef', namespace: tr2, array: true }
+    ]
+  },
+  RemoveConfigurationResponse: { fields: [] },
   Reverse: { fields: [{ name: 'Mode', property: 'mode', type: 'string', namespace: tt }], any: true },
   Rotate: {
     fields: [
@@ -1387,7 +1701,17 @@ export const schema: Schema = {
     ],
     any: true
   },
+  SensorDataFilterOptions: {
+    fields: [
+      { name: 'SensorIDFilterSupported', property: 'sensorIDFilterSupported', type: 'boolean', namespace: tt },
+      { name: 'TypeFilterSupported', property: 'typeFilterSupported', type: 'boolean', namespace: tt }
+    ],
+    any: true
+  },
   SetConfigurationResponse: { fields: [] },
+  SetMetadataConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'MetadataConfiguration', namespace: tr2 }]
+  },
   SetVideoEncoderConfigurationRequest: {
     fields: [{ name: 'Configuration', property: 'configuration', type: 'VideoEncoder2Configuration', namespace: tr2 }]
   },
@@ -1409,6 +1733,11 @@ export const schema: Schema = {
       { name: 'Stream', property: 'stream', type: 'string', namespace: tt },
       { name: 'Transport', property: 'transport', type: 'Transport', namespace: tt }
     ],
+    any: true
+  },
+  TopicExpressionType: {
+    fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
+    text: 'prefixed',
     any: true
   },
   Transport: {
@@ -1679,6 +2008,55 @@ export const SetVideoEncoderConfiguration: Operation<SetVideoEncoderConfiguratio
   schema
 }
 
+export const GetMetadataConfigurations: Operation<GetConfiguration, GetMetadataConfigurationsResponse> = {
+  name: 'GetMetadataConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMetadataConfigurations',
+  request: { name: 'GetMetadataConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetMetadataConfigurationsResponse', type: 'GetMetadataConfigurationsResponse' },
+  namespaces: true,
+  schema
+}
+
+export const GetMetadataConfigurationOptions: Operation<GetConfiguration, GetMetadataConfigurationOptionsResponse> = {
+  name: 'GetMetadataConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMetadataConfigurationOptions',
+  request: { name: 'GetMetadataConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetMetadataConfigurationOptionsResponse', type: 'GetMetadataConfigurationOptionsResponse' },
+  schema
+}
+
+export const SetMetadataConfiguration: Operation<SetMetadataConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetMetadataConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetMetadataConfiguration',
+  request: { name: 'SetMetadataConfiguration', namespace: tr2, type: 'SetMetadataConfigurationRequest' },
+  response: { name: 'SetMetadataConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAnalyticsConfigurations: Operation<GetConfiguration, GetAnalyticsConfigurationsResponse> = {
+  name: 'GetAnalyticsConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAnalyticsConfigurations',
+  request: { name: 'GetAnalyticsConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAnalyticsConfigurationsResponse', type: 'GetAnalyticsConfigurationsResponse' },
+  schema
+}
+
+export const AddConfiguration: Operation<AddConfigurationRequest, AddConfigurationResponse> = {
+  name: 'AddConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/AddConfiguration',
+  request: { name: 'AddConfiguration', namespace: tr2, type: 'AddConfigurationRequest' },
+  response: { name: 'AddConfigurationResponse', type: 'AddConfigurationResponse' },
+  schema
+}
+
+export const RemoveConfiguration: Operation<RemoveConfigurationRequest, RemoveConfigurationResponse> = {
+  name: 'RemoveConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/RemoveConfiguration',
+  request: { name: 'RemoveConfiguration', namespace: tr2, type: 'RemoveConfigurationRequest' },
+  response: { name: 'RemoveConfigurationResponse', type: 'RemoveConfigurationResponse' },
+  schema
+}
+
 export class Media2Client {
   readonly #device: Device
 
@@ -1804,5 +2182,98 @@ export class Media2Client {
     options?: CallOptions
   ): Promise<SetConfigurationResponse> {
     return this.#device.call(SetVideoEncoderConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing metadata configurations for a device. Provide a profile
+   * token to list only configurations that are compatible with the profile. If a configuration token is
+   * provided only a single configuration will be returned.
+   *
+   * @param request - The `GetMetadataConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMetadataConfigurationsResponse`
+   */
+  getMetadataConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetMetadataConfigurationsResponse> {
+    return this.#device.call(GetMetadataConfigurations, request, options)
+  }
+
+  /**
+   * This operation returns the available options (supported values and ranges for metadata configuration
+   * parameters) for changing the metadata configuration.
+   *
+   * @param request - The `GetMetadataConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMetadataConfigurationOptionsResponse`
+   */
+  getMetadataConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetMetadataConfigurationOptionsResponse> {
+    return this.#device.call(GetMetadataConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies a metadata configuration. Running streams using this configuration may be
+   * updated immediately according to the new settings. The changes are not guaranteed to take effect
+   * unless the client requests a new stream URI and restarts any affected streams. NVC methods for
+   * changing a running stream are out of scope for this specification.
+   *
+   * @param request - The `SetMetadataConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetMetadataConfigurationResponse`
+   */
+  setMetadataConfiguration(
+    request: SetMetadataConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetMetadataConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing video analytics configurations for a device. Provide a
+   * profile token to list only configurations that are compatible with the profile. If a configuration
+   * token is provided only a single configuration will be returned.
+   *
+   * @param request - The `GetAnalyticsConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAnalyticsConfigurationsResponse`
+   */
+  getAnalyticsConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAnalyticsConfigurationsResponse> {
+    return this.#device.call(GetAnalyticsConfigurations, request, options)
+  }
+
+  /**
+   * This operation adds one or more Configurations to an existing media profile. If a configuration
+   * exists in the media profile, it will be replaced. A device shall support adding a compatible
+   * Configuration to a Profile containing a VideoSourceConfiguration and shall support streaming video
+   * data of such a profile. Note that OSD elements must be added via the CreateOSD command.
+   *
+   * @param request - The `AddConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AddConfigurationResponse`
+   */
+  addConfiguration(request: AddConfigurationRequest, options?: CallOptions): Promise<AddConfigurationResponse> {
+    return this.#device.call(AddConfiguration, request, options)
+  }
+
+  /**
+   * This operation removes the listed configurations from an existing media profile. If the media
+   * profile does not contain one of the listed configurations that item shall be ignored.
+   *
+   * @param request - The `RemoveConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemoveConfigurationResponse`
+   */
+  removeConfiguration(
+    request: RemoveConfigurationRequest,
+    options?: CallOptions
+  ): Promise<RemoveConfigurationResponse> {
+    return this.#device.call(RemoveConfiguration, request, options)
   }
 }

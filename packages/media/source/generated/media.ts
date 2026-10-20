@@ -400,6 +400,8 @@ export type Exposure20 = {
 }
 
 export type FilterType = {
+  topicExpression?: TopicExpressionType[]
+  messageContent?: QueryExpressionType[]
   $any?: Record<string, unknown>
 }
 
@@ -1437,6 +1439,12 @@ export type PTZStatusFilterOptionsExtension = {
   $any?: Record<string, unknown>
 }
 
+export type QueryExpressionType = {
+  dialect: string
+  value: string
+  $any?: Record<string, unknown>
+}
+
 export type Rectangle = {
   bottom: number
   top: number
@@ -1690,6 +1698,12 @@ export type ToneCompensation = {
 }
 
 export type ToneCompensationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type TopicExpressionType = {
+  dialect: string
+  value: string
   $any?: Record<string, unknown>
 }
 
@@ -1992,6 +2006,7 @@ export type ZoomLimits = {
 
 const trt = 'http://www.onvif.org/ver10/media/wsdl'
 const tt = 'http://www.onvif.org/ver10/schema'
+const wsnt = 'http://docs.oasis-open.org/wsn/b-2'
 
 export const schema: Schema = {
   AddAudioEncoderConfigurationRequest: {
@@ -2234,7 +2249,27 @@ export const schema: Schema = {
       { name: 'Iris', property: 'iris', type: 'decimal', namespace: tt, optional: true }
     ]
   },
-  FilterType: { fields: [], any: true },
+  FilterType: {
+    fields: [
+      {
+        name: 'TopicExpression',
+        property: 'topicExpression',
+        type: 'TopicExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'MessageContent',
+        property: 'messageContent',
+        type: 'QueryExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      }
+    ],
+    any: true
+  },
   FloatRange: {
     fields: [
       { name: 'Min', property: 'min', type: 'decimal', namespace: tt },
@@ -3174,6 +3209,11 @@ export const schema: Schema = {
     any: true
   },
   PTZStatusFilterOptionsExtension: { fields: [], any: true },
+  QueryExpressionType: {
+    fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
+    text: 'prefixed',
+    any: true
+  },
   Rectangle: {
     fields: [
       { name: 'bottom', type: 'decimal', attribute: true },
@@ -3346,6 +3386,11 @@ export const schema: Schema = {
     ]
   },
   ToneCompensationExtension: { fields: [], any: true },
+  TopicExpressionType: {
+    fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
+    text: 'prefixed',
+    any: true
+  },
   Transport: {
     fields: [
       { name: 'Protocol', property: 'protocol', type: 'string', namespace: tt },
@@ -4045,6 +4090,7 @@ export const GetMetadataConfigurations: Operation<GetMetadataConfigurationsReque
     action: 'http://www.onvif.org/ver10/media/wsdl/GetMetadataConfigurations',
     request: { name: 'GetMetadataConfigurations', namespace: trt, type: 'GetMetadataConfigurationsRequest' },
     response: { name: 'GetMetadataConfigurationsResponse', type: 'GetMetadataConfigurationsResponse' },
+    namespaces: true,
     schema
   }
 
@@ -4053,6 +4099,7 @@ export const GetMetadataConfiguration: Operation<GetMetadataConfigurationRequest
   action: 'http://www.onvif.org/ver10/media/wsdl/GetMetadataConfiguration',
   request: { name: 'GetMetadataConfiguration', namespace: trt, type: 'GetMetadataConfigurationRequest' },
   response: { name: 'GetMetadataConfigurationResponse', type: 'GetMetadataConfigurationResponse' },
+  namespaces: true,
   schema
 }
 
@@ -4071,6 +4118,7 @@ export const GetCompatibleMetadataConfigurations: Operation<
     name: 'GetCompatibleMetadataConfigurationsResponse',
     type: 'GetCompatibleMetadataConfigurationsResponse'
   },
+  namespaces: true,
   schema
 }
 

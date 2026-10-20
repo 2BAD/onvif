@@ -141,4 +141,57 @@ describe.skipIf(!hostname)('Media on a live camera', () => {
       connected.close()
     }
   })
+
+  it('reads the Media2 metadata configuration and its options and sends it back unchanged', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    try {
+      const { v2 } = connected.use(media).media
+      const { configurations = [] } = await v2.getMetadataConfigurations()
+      const [configuration] = configurations
+      if (!configuration) throw new Error('The camera reported no metadata configuration')
+      await v2.getMetadataConfigurationOptions({ configurationToken: configuration.token })
+      const { profiles: [profile] = [] } = await v2.getProfiles()
+      if (profile) await v2.getMetadataConfigurationOptions({ profileToken: profile.token })
+      await v2.getAnalyticsConfigurations()
+      await v2.setMetadataConfiguration({ configuration })
+      expect((await v2.getMetadataConfigurations()).configurations).toEqual(configurations)
+    } finally {
+      connected.close()
+    }
+  })
+
+  it('adds metadata and analytics configurations to a profile through Media2 and removes them', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    const { v1, v2 } = connected.use(media).media
+    const { profile } = await v1.createProfile({ name: 'onviftest' })
+    const profileToken = profile.token
+    try {
+      const [source] = (await v2.getVideoSourceConfigurations()).configurations ?? []
+      const [metadata] = (await v2.getMetadataConfigurations()).configurations ?? []
+      const [analytics] = (await v2.getAnalyticsConfigurations()).configurations ?? []
+      const configuration = [
+        source && { type: 'VideoSource', token: source.token },
+        metadata && { type: 'Metadata', token: metadata.token },
+        analytics && { type: 'Analytics', token: analytics.token }
+      ].filter((entry) => entry !== undefined)
+      await v2.addConfiguration({ profileToken, configuration })
+      const [built] = (await v2.getProfiles({ token: profileToken, type: ['All'] })).profiles ?? []
+      expect(built?.configurations?.metadata?.token).toBe(metadata?.token)
+      expect(built?.configurations?.analytics?.token).toBe(analytics?.token)
+      await v2.removeConfiguration({ profileToken, configuration: configuration.map(({ type }) => ({ type })) })
+      const [emptied] = (await v2.getProfiles({ token: profileToken, type: ['All'] })).profiles ?? []
+      expect(emptied?.configurations?.metadata).toBeUndefined()
+    } finally {
+      await v1.deleteProfile({ profileToken })
+      connected.close()
+    }
+  })
 })

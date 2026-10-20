@@ -23,6 +23,8 @@ type Target = {
    * its name, or else by the complex type of its name.
    */
   substitutions?: Record<string, { schema?: string; namespace: string; local: string }[]>
+  /** Types whose text holds names with namespace prefixes, such as topic expressions. */
+  prefixed?: string[]
   /** Required response elements that devices omit, as `Response.Element`, decoded as optional. */
   optional?: string[]
   client?: EmitOptions['client']
@@ -31,6 +33,11 @@ type Target = {
 const root = join(import.meta.dirname, '../..')
 const tt = 'http://www.onvif.org/ver10/schema'
 const axt = 'http://www.onvif.org/ver20/analytics'
+const wsnt = 'http://docs.oasis-open.org/wsn/b-2'
+const filters = [
+  { namespace: wsnt, local: 'TopicExpression' },
+  { namespace: wsnt, local: 'MessageContent' }
+]
 
 const targets: Target[] = [
   {
@@ -168,7 +175,10 @@ const targets: Target[] = [
         'AddPTZConfiguration',
         'RemovePTZConfiguration'
       ]
-    }
+    },
+    namespaces: ['GetMetadataConfigurations', 'GetMetadataConfiguration', 'GetCompatibleMetadataConfigurations'],
+    substitutions: { FilterType: filters },
+    prefixed: ['TopicExpressionType', 'QueryExpressionType']
   },
   {
     output: 'packages/media/source/generated/media2.ts',
@@ -183,9 +193,18 @@ const targets: Target[] = [
         'GetVideoSourceConfigurations',
         'GetVideoEncoderConfigurations',
         'GetVideoEncoderConfigurationOptions',
-        'SetVideoEncoderConfiguration'
+        'SetVideoEncoderConfiguration',
+        'GetMetadataConfigurations',
+        'GetMetadataConfigurationOptions',
+        'SetMetadataConfiguration',
+        'GetAnalyticsConfigurations',
+        'AddConfiguration',
+        'RemoveConfiguration'
       ]
-    }
+    },
+    namespaces: ['GetMetadataConfigurations'],
+    substitutions: { FilterType: filters },
+    prefixed: ['TopicExpressionType', 'QueryExpressionType']
   },
   {
     output: 'packages/ptz/source/generated/ptz.ts',
@@ -322,6 +341,13 @@ const generate = (target: Target): string => {
       if (schema) registry.load(join(specsDirectory, schema))
       builder.substitute(model, name)
     }
+  }
+  for (const typeName of target.prefixed ?? []) {
+    const models = builder.complexTypes.filter((model) => model.suggestedName === typeName)
+    if (models.length === 0 || models.some((model) => !model.text)) {
+      throw new Error(`Expected types ${typeName} with text in ${target.output}`)
+    }
+    for (const model of models) if (model.text) model.text = { ...model.text, primitive: 'prefixed' }
   }
   const elements = (target.elements ?? []).map(({ schema, ...element }) => {
     registry.load(join(specsDirectory, schema))
