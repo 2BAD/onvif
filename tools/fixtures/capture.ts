@@ -23,6 +23,7 @@ const suites = [
   'ptz',
   'imaging',
   'analytics',
+  'deviceio',
   'recording',
   'events',
   'discovery',
@@ -47,6 +48,7 @@ const ns = {
   tptz: 'http://www.onvif.org/ver20/ptz/wsdl',
   timg: 'http://www.onvif.org/ver20/imaging/wsdl',
   tan: 'http://www.onvif.org/ver20/analytics/wsdl',
+  tmd: 'http://www.onvif.org/ver10/deviceIO/wsdl',
   trc: 'http://www.onvif.org/ver10/recording/wsdl',
   tse: 'http://www.onvif.org/ver10/search/wsdl',
   trp: 'http://www.onvif.org/ver10/replay/wsdl',
@@ -668,7 +670,7 @@ const captureManagement = async (): Promise<void> => {
   const [relay] = tokenized(relaysXml, 'RelayOutputs')
   const properties = relay && elements(relay.content, 'Properties')[0]
   if (relay && properties !== undefined) {
-    const token = `<RelayOutputToken>${relay.token}</RelayOutputToken>`
+    const token = `<RelayOutputToken>${relay}</RelayOutputToken>`
     await management.call('SetRelayOutputSettings', `${token}<Properties>${properties}</Properties>`, {
       from: relaysXml
     })
@@ -1103,6 +1105,110 @@ const searchResults = async (
   }
 }
 
+// an element of a response under another name in the request body, with its attributes and content
+const renamed = (element: string, name: string): string =>
+  element
+    .replace(/^<[\w-]+:?[\w-]*/, `<${name}`)
+    .replace(/<\/[\w-]+:?[\w-]*>$/, `</${name}>`)
+    .replace(/\/>$/, `></${name}>`)
+
+const captureDeviceIO = async (): Promise<void> => {
+  const url = serviceUrl(ns.tmd)
+  if (!url) return
+  const io = client('deviceio', 'deviceio', url, ns.tmd)
+  // the device IO service takes the relay list and state requests of the device service
+  const relays = client('deviceio', 'deviceio', url, ns.tds)
+  await io.call('GetServiceCapabilities')
+  const relaysXml = await relays.call('GetRelayOutputs')
+  await io.call('GetRelayOutputOptions')
+  const inputsXml = await io.call('GetDigitalInputs')
+  await io.call('GetDigitalInputConfigurationOptions')
+  const serialPortsXml = await io.call('GetSerialPorts')
+  const relayElement = outerElements(relaysXml, 'RelayOutputs')[0]
+  const relay = relayElement && attribute(relayElement, 'token')
+  if (relay !== undefined) {
+    await io.call('GetRelayOutputOptions', `<RelayOutputToken>${relay}</RelayOutputToken>`, {
+      as: 'GetRelayOutputOptionsForRelayOutput'
+    })
+  }
+  const inputElements = outerElements(inputsXml, 'DigitalInputs')
+  const input = inputElements[0] && attribute(inputElements[0], 'token')
+  if (input !== undefined) {
+    await io.call('GetDigitalInputConfigurationOptions', `<Token>${input}</Token>`, {
+      as: 'GetDigitalInputConfigurationOptionsForDigitalInput'
+    })
+  }
+
+  const configurations: { kind: string; token: string; xml: string }[] = []
+  for (const kind of ['VideoSource', 'VideoOutput', 'AudioSource', 'AudioOutput']) {
+    const listXml = await io.call(`Get${kind}s`)
+    const token = text(listXml, 'Token') ?? tokenized(listXml, `${kind}s`)[0]?.token
+    if (token === undefined) continue
+    const request = `<${kind}Token>${token}</${kind}Token>`
+    configurations.push({ kind, token, xml: await io.call(`Get${kind}Configuration`, request) })
+    await io.call(`Get${kind}ConfigurationOptions`, request)
+  }
+  const serialPort = attribute(outerElements(serialPortsXml, 'SerialPort')[0] ?? '', 'token')
+  const serialRequest = serialPort === undefined ? '' : `<SerialPortToken>${serialPort}</SerialPortToken>`
+  const serialXml = serialPort === undefined ? '' : await io.call('GetSerialPortConfiguration', serialRequest)
+  if (serialPort !== undefined) await io.call('GetSerialPortConfigurationOptions', serialRequest)
+  await io.call('GetVideoSourceConfiguration', '<VideoSourceToken>missing</VideoSourceToken>', {
+    as: 'GetVideoSourceConfigurationMissingFault'
+  })
+  await relays.call(
+    'SetRelayOutputState',
+    '<RelayOutputToken>missing</RelayOutputToken><LogicalState>inactive</LogicalState>',
+    {
+      as: 'SetRelayOutputStateMissingFault'
+    }
+  )
+  if (!write) return
+
+  // every write sends back what the camera reported, so nothing changes
+  if (relayElement !== undefined && relay !== undefined) {
+    await io.call('SetRelayOutputSettings', renamed(relayElement, 'RelayOutput'), { from: relaysXml })
+    const token = `<RelayOutputToken>${relay}</RelayOutputToken>`
+    try {
+      await relays.call('SetRelayOutputState', `${token}<LogicalState>active</LogicalState>`)
+    } finally {
+      await relays.send('SetRelayOutputState', `${token}<LogicalState>inactive</LogicalState>`)
+    }
+  }
+  if (inputElements.length > 0) {
+    await io.call(
+      'SetDigitalInputConfigurations',
+      inputElements.map((entry) => renamed(entry, 'DigitalInputs')).join(''),
+      {
+        from: inputsXml
+      }
+    )
+  }
+  for (const { kind, xml } of configurations) {
+    const configuration = outerElements(xml, `${kind}Configuration`)[0]
+    if (configuration === undefined) continue
+    await io.call(
+      `Set${kind}Configuration`,
+      `${renamed(configuration, 'Configuration')}<ForcePersistence>true</ForcePersistence>`,
+      { from: xml }
+    )
+  }
+  const serialConfiguration = outerElements(serialXml, 'SerialPortConfiguration')[0]
+  if (serialConfiguration !== undefined) {
+    await io.call(
+      'SetSerialPortConfiguration',
+      `${renamed(serialConfiguration, 'SerialPortConfiguration')}<ForcePersistance>true</ForcePersistance>`,
+      { from: serialXml }
+    )
+  }
+  // no bytes go out, so nothing on the port sees a command
+  if (serialPort !== undefined) {
+    await io.call(
+      'SendReceiveSerialCommand',
+      `<Token>${serialPort}</Token><SerialData><Binary></Binary></SerialData><TimeOut>PT1S</TimeOut>`
+    )
+  }
+}
+
 const captureRecording = async (): Promise<void> => {
   const recordingUrl = serviceUrl(ns.trc)
   const searchUrl = serviceUrl(ns.tse)
@@ -1393,6 +1499,7 @@ const runs: Record<string, () => Promise<void>> = {
   ptz: capturePtz,
   imaging: captureImaging,
   analytics: captureAnalytics,
+  deviceio: captureDeviceIO,
   recording: captureRecording,
   events: captureEvents,
   discovery: captureDiscovery,
