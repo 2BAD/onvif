@@ -9,6 +9,20 @@ const tt = 'http://www.onvif.org/ver10/schema'
 const tds = 'http://www.onvif.org/ver10/device/wsdl'
 const custom = 'urn:example:custom'
 
+const operationOf = (
+  name: string,
+  namespace: string,
+  type: string,
+  schema: Schema,
+  responseType = type
+): Operation<Record<string, unknown>, unknown> => ({
+  name,
+  action: `${namespace}/${name}`,
+  request: { name, namespace, type },
+  response: { name: `${name}Response`, type: responseType },
+  schema
+})
+
 const schema: Schema = {
   Sample: {
     fields: [
@@ -46,13 +60,7 @@ const schema: Schema = {
   }
 }
 
-const operation: Operation<Record<string, unknown>, unknown> = {
-  name: 'SetSample',
-  action: `${tds}/SetSample`,
-  request: { name: 'SetSample', namespace: tds, type: 'Request' },
-  response: { name: 'SetSampleResponse', type: 'Item' },
-  schema
-}
+const operation = operationOf('SetSample', tds, 'Request', schema, 'Item')
 
 const parsed = (xml: string): XmlObject => parseXml(xml)['Sample'] as XmlObject
 
@@ -402,13 +410,7 @@ describe('qname', () => {
     },
     Request: { fields: [{ name: 'Rule', type: 'Rule', namespace: tan, array: true }] }
   }
-  const createRules: Operation<Record<string, unknown>, unknown> = {
-    name: 'CreateRules',
-    action: `${tan}/CreateRules`,
-    request: { name: 'CreateRules', namespace: tan, type: 'Request' },
-    response: { name: 'CreateRulesResponse', type: 'Request' },
-    schema: qnames
-  }
+  const createRules = operationOf('CreateRules', tan, 'Request', qnames)
   const rule = (xml: string): XmlObject => parseXml(xml, undefined, { namespaces: true })['Rule'] as XmlObject
 
   it.each([
@@ -501,13 +503,7 @@ describe('choice', () => {
     Layout: { fields: [{ name: 'Columns', type: 'integer', attribute: true }] },
     Request: { fields: [{ name: 'Item', property: 'item', type: 'Item', namespace: tt, array: true }] }
   }
-  const setItems: Operation<Record<string, unknown>, unknown> = {
-    name: 'SetItems',
-    action: `${tds}/SetItems`,
-    request: { name: 'SetItems', namespace: tds, type: 'Request' },
-    response: { name: 'SetItemsResponse', type: 'Request' },
-    schema: choices
-  }
+  const setItems = operationOf('SetItems', tds, 'Request', choices)
 
   it('writes the one element of the choice', () => {
     expect(serialize(encodeRequest(setItems, { item: [{ name: 'Layout', cellLayout: { Columns: 22 } }] }))).toBe(
@@ -536,13 +532,7 @@ describe('choice', () => {
 
 describe('qname namespaces named like Object.prototype members', () => {
   const schema: Schema = { Rule: { fields: [{ name: 'Type', type: 'qname', attribute: true }] } }
-  const createRule: Operation<Record<string, unknown>, unknown> = {
-    name: 'CreateRule',
-    action: `${tds}/CreateRule`,
-    request: { name: 'CreateRule', namespace: tds, type: 'Rule' },
-    response: { name: 'CreateRuleResponse', type: 'Rule' },
-    schema
-  }
+  const createRule = operationOf('CreateRule', tds, 'Rule', schema)
 
   it.each(['constructor', 'valueOf', '__proto__', 'toString'])(
     'reads and writes a QName in the namespace %s',
@@ -562,13 +552,7 @@ describe('prefixed', () => {
     Filter: { fields: [{ name: 'Dialect', type: 'string', attribute: true }], text: 'prefixed' },
     Request: { fields: [{ name: 'Filter', type: 'Filter', namespace: tt }] }
   }
-  const setFilter: Operation<Record<string, unknown>, unknown> = {
-    name: 'SetFilter',
-    action: `${tds}/SetFilter`,
-    request: { name: 'SetFilter', namespace: tds, type: 'Request' },
-    response: { name: 'SetFilterResponse', type: 'Request' },
-    schema
-  }
+  const setFilter = operationOf('SetFilter', tds, 'Request', schema)
   const filter = (xml: string, namespaces = true) => {
     const element = parseXml(xml, undefined, { namespaces })['Filter'] as XmlObject
     return (decode(schema, 'Filter', element) as { value: string }).value
