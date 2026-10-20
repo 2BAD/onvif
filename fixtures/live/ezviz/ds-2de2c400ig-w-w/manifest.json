@@ -802,6 +802,78 @@
     "device.SetSystemDateAndTime": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemLog": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemLogAccess": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemSupportInformation": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetWsdlUrl": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetGeoLocation": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetStorageConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.AddScopes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetScopesWithAdded": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.RemoveScopes": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.RemoveScopesMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetSystemDateAndTimeInvalidTimeZoneFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetSystemDateAndTimeInvalidDateFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SendAuxiliaryCommand": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.CreateStorageConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetStorageConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetStorageConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetStorageConfigurationsWithAdded": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteStorageConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
