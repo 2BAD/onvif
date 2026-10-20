@@ -264,6 +264,12 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     return true
   }
 
+  const digestChallenge = (): string => {
+    const nonce = randomBytes(16).toString('hex')
+    digestNonceCounts.set(nonce, 0)
+    return `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
+  }
+
   const serveSnapshot = async (request: IncomingMessage, response: ServerResponse, path: string) => {
     requests.push({ path, service: 'snapshot', action: 'GET', headers: request.headers, body: '' })
     const {
@@ -283,12 +289,7 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       snapshotAuth === 'none' ||
       (snapshotAuth === 'basic' ? safeEqual(request.headers.authorization ?? '', basic) : checkDigest(request))
     if (!authorized) {
-      const nonce = randomBytes(16).toString('hex')
-      digestNonceCounts.set(nonce, 0)
-      const challenge =
-        snapshotAuth === 'basic'
-          ? 'Basic realm="camera"'
-          : `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
+      const challenge = snapshotAuth === 'basic' ? 'Basic realm="camera"' : digestChallenge()
       response.writeHead(401, { 'Content-Type': 'text/html', 'WWW-Authenticate': challenge })
       response.end('<html><body>401 Unauthorized</body></html>')
       return
@@ -299,20 +300,11 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
     response.end(body)
   }
 
-  const challengeDigest = (response: ServerResponse) => {
-    const nonce = randomBytes(16).toString('hex')
-    digestNonceCounts.set(nonce, 0)
-    response.writeHead(401, {
-      'Content-Type': 'text/html',
-      'WWW-Authenticate': `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
-    })
-    response.end('<html><body>401 Unauthorized</body></html>')
-  }
-
   const serveUpload = async (request: IncomingMessage, response: ServerResponse, path: string, bytes: Buffer) => {
     requests.push({ path, service: 'upload', action: 'POST', headers: request.headers, body: '' })
     if (!checkDigest(request)) {
-      challengeDigest(response)
+      response.writeHead(401, { 'Content-Type': 'text/html', 'WWW-Authenticate': digestChallenge() })
+      response.end('<html><body>401 Unauthorized</body></html>')
       return
     }
     uploads.push({ path, contentType: request.headers['content-type'], body: bytes })
@@ -391,10 +383,8 @@ export async function startMockCamera(options: MockCameraOptions = {}): Promise<
       }
     }
     if (auth === 'digest' && !preAuth && !checkDigest(request)) {
-      const nonce = randomBytes(16).toString('hex')
-      digestNonceCounts.set(nonce, 0)
       send(response, 401, soapFault('ter:NotAuthorized', 'HTTP Error: 401 Unauthorized'), {
-        'WWW-Authenticate': `Digest realm="Digest", qop="auth", algorithm=${digestAlgorithm}, nonce="${nonce}"`
+        'WWW-Authenticate': digestChallenge()
       })
       return
     }
