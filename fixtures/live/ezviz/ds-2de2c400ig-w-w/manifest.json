@@ -930,6 +930,102 @@
     "device.SetHashingAlgorithm": {
       "status": 500,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCertificatesStatus": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCertificates": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetClientCertificateMode": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCACertificates": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDot1XConfigurations": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.CreateCertificate": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.LoadCACertificates": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCACertificatesWithAdded": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteCertificatesCA": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.LoadCertificateWithPrivateKey": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteCertificatesWithPrivateKey": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.CreateDot1XConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDot1XConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetDot1XConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDot1XConfigurationsWithAdded": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteDot1XConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetDot1XConfigurationMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCertificateInformation": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetPkcs10Request": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.LoadCertificates": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetCertificatesWithAdded": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetCertificatesStatus": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteCertificates": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteCertificatesMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
