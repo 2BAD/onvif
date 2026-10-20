@@ -221,7 +221,7 @@ await device.call('GetCapabilities', '<Category>All</Category>')
 const infoXml = await device.call('GetDeviceInformation')
 await device.call('GetServiceCapabilities')
 const scopesXml = await device.call('GetScopes')
-await device.call('GetHostname')
+const hostnameXml = await device.call('GetHostname')
 const networkXml = await device.call('GetNetworkInterfaces')
 
 const serviceUrl = (namespace: string): string | undefined => {
@@ -248,7 +248,49 @@ const captureManagement = async (): Promise<void> => {
   const filterXml = await management.call('GetIPAddressFilter')
   const relaysXml = await management.call('GetRelayOutputs')
   const dnsXml = await management.call('GetDNS')
+  const protocolsXml = await management.call('GetNetworkProtocols')
+  const discoveryXml = await management.call('GetDiscoveryMode')
+  const remoteDiscoveryXml = await management.call('GetRemoteDiscoveryMode')
+  const dpXml = await management.call('GetDPAddresses')
+  await management.call('GetEndpointReference')
+  await management.call('GetDot11Capabilities')
+  const interfaces = tokenized(networkXml, 'NetworkInterfaces')
+  const wireless = interfaces.find(({ token, content }) => /wlan|wifi/i.test(token) || content.includes('Dot11'))
+  const dot11Token = `<InterfaceToken>${(wireless ?? interfaces[0])?.token ?? ''}</InterfaceToken>`
+  await management.call('GetDot11Status', dot11Token)
+  await management.call('ScanAvailableDot11Networks', dot11Token)
   if (!write) return
+
+  const hostname = elements(hostnameXml, 'HostnameInformation')[0]
+  const hostnameName = hostname && text(hostname, 'Name')
+  if (hostname !== undefined && hostnameName !== undefined) {
+    try {
+      await management.call('SetHostname', '<Name>-invalid_name-</Name>', { as: 'SetHostnameInvalidFault' })
+    } finally {
+      await management.call('SetHostname', `<Name>${hostnameName}</Name>`)
+      await management.call('SetHostnameFromDHCP', `<FromDHCP>${text(hostname, 'FromDHCP')}</FromDHCP>`)
+    }
+  }
+
+  const protocols = elements(protocolsXml, 'NetworkProtocols')
+  if (protocols.length > 0) {
+    const content = protocols.map((protocol) => `<NetworkProtocols>${protocol}</NetworkProtocols>`).join('')
+    await management.call('SetNetworkProtocols', content, { from: protocolsXml })
+  }
+  const discoveryMode = text(discoveryXml, 'DiscoveryMode')
+  if (discoveryMode !== undefined) {
+    await management.call('SetDiscoveryMode', `<DiscoveryMode>${discoveryMode}</DiscoveryMode>`)
+  }
+  const remoteDiscoveryMode = text(remoteDiscoveryXml, 'RemoteDiscoveryMode')
+  if (remoteDiscoveryMode !== undefined) {
+    await management.call('SetRemoteDiscoveryMode', `<RemoteDiscoveryMode>${remoteDiscoveryMode}</RemoteDiscoveryMode>`)
+  }
+  if (dpXml.includes('GetDPAddressesResponse')) {
+    const content = elements(dpXml, 'DPAddress')
+      .map((address) => `<DPAddress>${address}</DPAddress>`)
+      .join('')
+    await management.call('SetDPAddresses', content, { from: dpXml })
+  }
 
   const dns = elements(dnsXml, 'DNSInformation')[0]
   if (dns !== undefined) {
@@ -1124,6 +1166,7 @@ const scrub = (xml: string): string =>
     .replace(/(<[\w-]+:Username>)([^<]+)/g, (match: string, start: string, name: string) =>
       name.startsWith('REDACTED') ? match : `${start}${pseudonym('text')(name)}`
     )
+    .replace(/(<[\w-]+:(?:SSID|ActiveConfigAlias)>)([^<]+)/g, replaceGroup('text'))
     .replace(/(<[\w-]+:DNSname>)([^<]+)/g, replaceGroup('host'))
     .replace(
       /(<[\w-]+:DynamicDNSInformation\b[^>]*>(?:(?!DynamicDNSInformation>)[\s\S])*?<[\w-]+:Name>)([^<]+)/g,
