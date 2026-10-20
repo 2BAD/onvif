@@ -67,6 +67,8 @@ const clarkPattern = /^\{([^{}]*)\}([^\s:{}]+)$/
 // a prefix or a {namespace} at the start of a name in a topic or XPath expression
 const prefixedPattern = /(^|[\s/|([])(?:\{([^{}]*)\}|([A-Za-z_][\w.-]*):)(?=[A-Za-z_*])/g
 const namespacesByPrefix = new Map(Object.entries(prefixes).map(([namespace, prefix]) => [prefix, namespace]))
+// types without an empty value, whose empty optional elements read as absent
+const emptyAsAbsent = new Set(['integer', 'decimal', 'boolean', 'dateTime', 'qname'])
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
 const typeOf = (schema: Schema, name: string): TypeSchema => {
@@ -244,7 +246,9 @@ const decodeComplex = (
         decodeValue(schema, field.type, firstOf(item), `${fieldPath}[${index}]`, context, scope)
       )
     } else {
-      result[key] = decodeValue(schema, field.type, firstOf(raw), fieldPath, context, scope)
+      const item = firstOf(raw)
+      if (field.optional && !field.attribute && emptyAsAbsent.has(field.type) && textOf(item).trim() === '') continue
+      result[key] = decodeValue(schema, field.type, item, fieldPath, context, scope)
     }
   }
 
@@ -268,8 +272,9 @@ const decodeComplex = (
 /**
  * Turn a parsed element into the typed shape from the schema. Numbers, booleans and dates get converted, repeatable
  * elements are always arrays, elements and attributes go under their property names and simple content becomes
- * `value`. If an element that should occur once is repeated, the first one wins. Unknown elements go under `$any` on
- * types that allow extensions and are dropped otherwise.
+ * `value`. If an element that should occur once is repeated, the first one wins. An empty optional element of a number,
+ * boolean, date or QName reads as absent. Unknown elements go under `$any` on types that allow extensions and are
+ * dropped otherwise.
  *
  * @param schema - Generated schema table
  * @param type - Type key in the table

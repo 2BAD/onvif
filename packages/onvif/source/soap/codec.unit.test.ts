@@ -612,3 +612,45 @@ describe('prefixed', () => {
     )
   })
 })
+
+describe('empty optional elements', () => {
+  const schema: Schema = {
+    Information: {
+      fields: [
+        { name: 'Token', type: 'string', namespace: tt },
+        { name: 'Earliest', type: 'dateTime', namespace: tt, optional: true },
+        { name: 'Count', type: 'integer', namespace: tt, optional: true },
+        { name: 'Rate', type: 'decimal', namespace: tt, optional: true },
+        { name: 'Enabled', type: 'boolean', namespace: tt, optional: true },
+        { name: 'Kind', type: 'qname', namespace: tt, optional: true },
+        { name: 'Note', type: 'string', namespace: tt, optional: true },
+        { name: 'Blob', type: 'base64', namespace: tt, optional: true },
+        { name: 'Levels', type: 'integer[]', namespace: tt, optional: true },
+        { name: 'Latest', type: 'dateTime', namespace: tt }
+      ]
+    }
+  }
+  const information = (inner: string, namespaces = false) =>
+    decode(
+      schema,
+      'Information',
+      parseXml(`<Information>${inner}</Information>`, undefined, { namespaces })['Information'] as XmlObject
+    )
+
+  it.each([false, true])('reads an empty number, boolean, date or QName as absent (namespaces: %s)', (namespaces) => {
+    const inner =
+      '<Token>t</Token><Earliest></Earliest><Count/><Rate> </Rate><Enabled></Enabled><Kind/>' +
+      '<Note></Note><Blob></Blob><Levels></Levels><Latest>2026-10-20T12:00:00Z</Latest>'
+    expect(information(inner, namespaces)).toEqual({
+      Token: 't',
+      Note: '',
+      Blob: new Uint8Array(),
+      Levels: [],
+      Latest: new Date('2026-10-20T12:00:00Z')
+    })
+  })
+
+  it('rejects an empty required date', () => {
+    expect(() => information('<Token>t</Token><Latest></Latest>')).toThrow("Invalid dateTime '' at Information.Latest")
+  })
+})

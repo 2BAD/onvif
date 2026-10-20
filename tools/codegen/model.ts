@@ -291,7 +291,11 @@ export class ModelBuilder {
       if (isXs(node, 'simpleContent')) model.text = base.text
       if (extension || isXs(node, 'simpleContent')) {
         model.fields.push(...base.fields.filter((field) => extension || field.attribute))
-        model.any ||= extension && base.any
+        if (extension && base.any) {
+          model.any = true
+          model.anyRequired ||= base.anyRequired
+          model.anyArray ||= base.anyArray
+        }
       }
     }
     this.#content(model, derivation, context)
