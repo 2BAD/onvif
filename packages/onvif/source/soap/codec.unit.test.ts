@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DecodeError, OnvifError } from '#errors.ts'
 import { type Operation, type Schema, decode, encodeRequest } from '#soap/codec.ts'
 import { XML_NAMESPACE } from '#soap/namespaces.ts'
-import { namespaceInfo, parseXml, type XmlObject } from '#soap/parse.ts'
+import { namespaceInfo, parseXml, type XmlObject, type XmlValue } from '#soap/parse.ts'
 import { serialize } from '#soap/serialize.ts'
 
 const tt = 'http://www.onvif.org/ver10/schema'
@@ -388,4 +388,170 @@ describe('encodeRequest', () => {
       SetSample: { Sample: { Name: '</tt:Name><tt:Count>9</tt:Count><tt:Name>' } }
     })
   })
+})
+
+describe('qname', () => {
+  const tan = 'http://www.onvif.org/ver20/analytics/wsdl'
+  const qnames: Schema = {
+    Rule: {
+      fields: [
+        { name: 'Type', type: 'qname', attribute: true },
+        { name: 'Kinds', type: 'qname[]', attribute: true, optional: true },
+        { name: 'Topic', type: 'qname', namespace: tt, optional: true }
+      ]
+    },
+    Request: { fields: [{ name: 'Rule', type: 'Rule', namespace: tan, array: true }] }
+  }
+  const createRules: Operation<Record<string, unknown>, unknown> = {
+    name: 'CreateRules',
+    action: `${tan}/CreateRules`,
+    request: { name: 'CreateRules', namespace: tan, type: 'Request' },
+    response: { name: 'CreateRulesResponse', type: 'Request' },
+    schema: qnames
+  }
+  const rule = (xml: string): XmlObject => parseXml(xml, undefined, { namespaces: true })['Rule'] as XmlObject
+
+  it.each([
+    ['the standard prefix', '<a:Rule xmlns:a="urn:a" xmlns:tt="http://www.onvif.org/ver10/schema" Type="tt:Cell"/>'],
+    [
+      'a device prefix for a known namespace',
+      '<a:Rule xmlns:a="urn:a" xmlns:ns2="http://www.onvif.org/ver10/schema" Type="ns2:Cell"/>'
+    ],
+    ['the default namespace', '<Rule xmlns="http://www.onvif.org/ver10/schema" Type="Cell"/>']
+  ])('reads a QName with %s as the standard prefix', (_name, xml) => {
+    expect(decode(qnames, 'Rule', rule(xml))).toEqual({ Type: 'tt:Cell' })
+  })
+
+  it('reads a QName in an unknown namespace in {namespace}local form', () => {
+    expect(decode(qnames, 'Rule', rule('<Rule xmlns:v="urn:vendor" Type=" v:Line "/>'))).toEqual({
+      Type: '{urn:vendor}Line'
+    })
+  })
+
+  it('reads an unprefixed QName without a default namespace as its local name', () => {
+    expect(decode(qnames, 'Rule', rule('<Rule Type="Cell"/>'))).toEqual({ Type: 'Cell' })
+    expect(decode(qnames, 'Rule', rule('<a:Rule xmlns:a="urn:a" xmlns="" Type="Cell"/>'))).toEqual({ Type: 'Cell' })
+  })
+
+  it('resolves QName lists and element text with the declarations in scope at the element', () => {
+    const xml =
+      '<Rule xmlns:p="http://www.onvif.org/ver10/schema" Type="p:A" Kinds="p:B xs:C">' +
+      '<p:Topic xmlns:p="http://www.onvif.org/ver20/analytics">p:D</p:Topic></Rule>'
+    const withXs = xml.replace('<Rule ', '<Rule xmlns:xs="http://www.w3.org/2001/XMLSchema" ')
+    expect(decode(qnames, 'Rule', rule(withXs))).toEqual({ Type: 'tt:A', Kinds: ['tt:B', 'xs:C'], Topic: 'axt:D' })
+  })
+
+  it.each([
+    ['an undeclared prefix', '<Rule Type="v:Line"/>', "Undeclared prefix in QName 'v:Line' at Rule.Type"],
+    ['an empty QName', '<Rule Type=" "/>', "Invalid QName '' at Rule.Type"],
+    ['a QName with two colons', '<Rule xmlns:a="urn:a" Type="a:b:c"/>', "Invalid QName 'a:b:c' at Rule.Type"]
+  ])('rejects %s', (_name, xml, message) => {
+    const error = thrown(() => decode(qnames, 'Rule', rule(xml), { host: 'camera' }))
+    expect(error).toBeInstanceOf(DecodeError)
+    expect(error).toMatchObject({ message, host: 'camera' })
+  })
+
+  it('needs a response parsed with namespaces', () => {
+    const element = parseXml('<Rule Type="tt:Cell"/>')['Rule'] as XmlObject
+    const error = thrown(() => decode(qnames, 'Rule', element))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).not.toBeInstanceOf(DecodeError)
+    expect(error).toMatchObject({ message: 'The QName at Rule.Type needs a response parsed with namespaces' })
+  })
+
+  it('declares the namespace of every prefix it writes', () => {
+    const xml = serialize(
+      encodeRequest(createRules, {
+        Rule: [{ Type: 'tt:Cell', Kinds: ['axt:Region', '{urn:vendor}Line', 'Plain'], Topic: '{}Local' }]
+      })
+    )
+    expect(xml).toBe(
+      `<tan:CreateRules xmlns:tan="${tan}" xmlns:tt="${tt}" xmlns:axt="http://www.onvif.org/ver20/analytics" ` +
+        'xmlns:ns4="urn:vendor"><tan:Rule Type="tt:Cell" Kinds="axt:Region ns4:Line Plain">' +
+        '<tt:Topic>Local</tt:Topic></tan:Rule></tan:CreateRules>'
+    )
+  })
+
+  it('round trips a QName in an unknown namespace', () => {
+    const request = { Rule: [{ Type: '{urn:vendor}Line' }] }
+    const element = parseXml(serialize(encodeRequest(createRules, request)), undefined, { namespaces: true })
+    expect(decode(qnames, 'Request', element['CreateRules'] as XmlValue)).toEqual(request)
+  })
+
+  it.each([
+    ['an unknown prefix', 'v:Line', 'Unknown prefix v in the QName at CreateRules.Rule[0].Type'],
+    ['a QName with spaces', 'tt:A B', 'Invalid QName at CreateRules.Rule[0].Type'],
+    ['a number', 1, 'Invalid qname value at CreateRules.Rule[0].Type']
+  ])('rejects %s on encode', (_name, type, message) => {
+    expect(() => encodeRequest(createRules, { Rule: [{ Type: type }] })).toThrow(message)
+  })
+})
+
+describe('choice', () => {
+  const choices: Schema = {
+    Item: {
+      fields: [
+        { name: 'Name', property: 'name', type: 'string', attribute: true },
+        { name: 'CellLayout', property: 'cellLayout', type: 'Layout', namespace: tt, optional: true },
+        { name: 'Polygon', property: 'polygon', type: 'Layout', namespace: tt, optional: true }
+      ],
+      any: true,
+      choice: ['cellLayout', 'polygon']
+    },
+    Layout: { fields: [{ name: 'Columns', type: 'integer', attribute: true }] },
+    Request: { fields: [{ name: 'Item', property: 'item', type: 'Item', namespace: tt, array: true }] }
+  }
+  const setItems: Operation<Record<string, unknown>, unknown> = {
+    name: 'SetItems',
+    action: `${tds}/SetItems`,
+    request: { name: 'SetItems', namespace: tds, type: 'Request' },
+    response: { name: 'SetItemsResponse', type: 'Request' },
+    schema: choices
+  }
+
+  it('writes the one element of the choice', () => {
+    expect(serialize(encodeRequest(setItems, { item: [{ name: 'Layout', cellLayout: { Columns: 22 } }] }))).toBe(
+      `<tds:SetItems xmlns:tds="${tds}" xmlns:tt="${tt}"><tt:Item Name="Layout">` +
+        '<tt:CellLayout Columns="22"/></tt:Item></tds:SetItems>'
+    )
+  })
+
+  it.each([
+    ['none of the choice', { name: 'Layout' }],
+    ['only content it read and cannot write', { name: 'Layout', $any: { VendorShape: { _: '1' } } }],
+    ['two elements of the choice', { name: 'Layout', cellLayout: { Columns: 1 }, polygon: { Columns: 2 } }]
+  ])('rejects an item with %s', (_name, item) => {
+    expect(() => encodeRequest(setItems, { item: [item] })).toThrow(
+      'Expected one of cellLayout, polygon at SetItems.item[0]'
+    )
+  })
+
+  it('reads an item without an element of the choice', () => {
+    const element = parseXml('<Request><Item Name="Layout"><VendorShape>1</VendorShape></Item></Request>')
+    expect(decode(choices, 'Request', element['Request'] as XmlValue)).toEqual({
+      item: [{ name: 'Layout', $any: { VendorShape: '1' } }]
+    })
+  })
+})
+
+describe('qname namespaces named like Object.prototype members', () => {
+  const schema: Schema = { Rule: { fields: [{ name: 'Type', type: 'qname', attribute: true }] } }
+  const createRule: Operation<Record<string, unknown>, unknown> = {
+    name: 'CreateRule',
+    action: `${tds}/CreateRule`,
+    request: { name: 'CreateRule', namespace: tds, type: 'Rule' },
+    response: { name: 'CreateRuleResponse', type: 'Rule' },
+    schema
+  }
+
+  it.each(['constructor', 'valueOf', '__proto__', 'toString'])(
+    'reads and writes a QName in the namespace %s',
+    (uri) => {
+      const rule = parseXml(`<Rule xmlns:v="${uri}" Type="v:Line"/>`, undefined, { namespaces: true })['Rule']
+      expect(decode(schema, 'Rule', rule as XmlObject)).toEqual({ Type: `{${uri}}Line` })
+      expect(serialize(encodeRequest(createRule, { Type: `{${uri}}Line` }))).toBe(
+        `<tds:CreateRule xmlns:tds="${tds}" xmlns:ns2="${uri}" Type="ns2:Line"/>`
+      )
+    }
+  )
 })

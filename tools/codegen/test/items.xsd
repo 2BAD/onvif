@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:it="urn:test:items" targetNamespace="urn:test:items" elementFormDefault="qualified">
+  <xs:complexType name="Grid">
+    <xs:attribute name="Columns" type="xs:int" use="required"/>
+  </xs:complexType>
+  <xs:element name="Shape">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Corner" type="xs:int" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="Numbers">
+    <xs:list itemType="xs:int"/>
+  </xs:simpleType>
+  <xs:element name="Numbers" type="it:Numbers"/>
+  <xs:element name="Item">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:any namespace="##any" processContents="lax"/>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required"/>
+      <xs:attribute name="Type" type="xs:QName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Extensible">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Kinds" minOccurs="0">
+          <xs:simpleType>
+            <xs:list itemType="xs:QName"/>
+          </xs:simpleType>
+        </xs:element>
+        <xs:any namespace="##any" processContents="lax" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Plain">
+    <xs:complexType>
+      <xs:attribute name="Name" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -8,7 +8,7 @@ export type EmitOptions = {
   operations: OperationModel[]
   /** Types of global elements that no operation references, such as the content of an `xs:any`. */
   elements?: ComplexModel[]
-  /** Operations whose responses are parsed with namespaces. */
+  /** Operations whose responses are parsed with namespaces, in addition to those whose responses hold QNames. */
   namespaces?: string[]
   client?: ClientOptions | undefined
 }
@@ -39,6 +39,7 @@ const tsPrimitives: Record<SimpleModel['primitive'], string> = {
   boolean: 'boolean',
   dateTime: 'Date',
   base64: 'Uint8Array',
+  qname: 'string',
   any: 'unknown'
 }
 
@@ -70,6 +71,13 @@ const properties = (model: ComplexModel): string[] => {
   if (new Set(all).size !== all.length) throw new Error(`Colliding property names in ${model.suggestedName}`)
   return keys
 }
+
+const choiceKeys = (model: ComplexModel, keys: string[]): string[] =>
+  model.choice.map((name) => {
+    const key = keys[model.fields.findIndex((field) => field.name === name && !field.attribute)]
+    if (key === undefined) throw new Error(`Choice ${name} is not an element of ${model.suggestedName}`)
+    return `'${key}'`
+  })
 
 const propertyName = (name: string): string => (/^[A-Za-z_$][\w$]*$/.test(name) ? name : `'${name}'`)
 
@@ -204,6 +212,19 @@ const reachable = (operations: OperationModel[], elements: ComplexModel[]): Comp
   return [...found]
 }
 
+const holdsQNames = (model: ComplexModel): boolean => {
+  const seen = new Set<ComplexModel>()
+  const visit = (type: ComplexModel): boolean => {
+    if (seen.has(type)) return false
+    seen.add(type)
+    if (type.text?.primitive === 'qname') return true
+    return type.fields.some((field) =>
+      field.type.kind === 'simple' ? field.type.primitive === 'qname' : visit(field.type)
+    )
+  }
+  return visit(model)
+}
+
 type Scope = { key: string; index: number }
 
 const method = (operation: OperationModel, names: Names, target: string, scope?: Scope): string => {
@@ -326,7 +347,8 @@ export function emit(options: EmitOptions): string {
     })
     const extras = [
       model.text ? `text: '${model.text.primitive}${model.text.list ? '[]' : ''}'` : '',
-      model.any ? 'any: true' : ''
+      model.any ? 'any: true' : '',
+      model.choice.length > 0 ? `choice: [${choiceKeys(model, keys).join(', ')}]` : ''
     ].filter(Boolean)
     schema += `  ${names.complex(model)}: { fields: [${fields.join(', ')}]${extras.map((extra) => `, ${extra}`).join('')} },\n`
   }
@@ -342,7 +364,7 @@ export function emit(options: EmitOptions): string {
       `  action: '${operation.action}',\n` +
       `  request: { name: '${operation.request.element.local}', namespace: ${names.namespace(operation.request.element.namespace)}, type: '${request}' },\n` +
       `  response: { name: '${operation.response.element.local}', type: '${response}' },\n` +
-      (namespaces.includes(operation.name) ? '  namespaces: true,\n' : '') +
+      (namespaces.includes(operation.name) || holdsQNames(operation.response.type) ? '  namespaces: true,\n' : '') +
       '  schema\n' +
       '}\n\n'
   }

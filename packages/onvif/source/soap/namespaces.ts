@@ -1,6 +1,6 @@
 export const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
 
-export const prefixes: Readonly<Record<string, string>> = {
+export const prefixes: Readonly<Record<string, string>> = Object.assign(Object.create(null) as Record<string, string>, {
   'http://www.onvif.org/ver10/schema': 'tt',
   'http://www.onvif.org/ver10/device/wsdl': 'tds',
   'http://www.onvif.org/ver10/media/wsdl': 'trt',
@@ -9,6 +9,7 @@ export const prefixes: Readonly<Record<string, string>> = {
   'http://www.onvif.org/ver20/ptz/wsdl': 'tptz',
   'http://www.onvif.org/ver20/imaging/wsdl': 'timg',
   'http://www.onvif.org/ver20/analytics/wsdl': 'tan',
+  'http://www.onvif.org/ver20/analytics': 'axt',
   'http://www.onvif.org/ver10/deviceIO/wsdl': 'tmd',
   'http://www.onvif.org/ver10/recording/wsdl': 'trc',
   'http://www.onvif.org/ver10/search/wsdl': 'tse',
@@ -21,5 +22,6 @@ export const prefixes: Readonly<Record<string, string>> = {
   'http://www.w3.org/2005/05/xmlmime': 'xmime',
   'http://www.w3.org/2004/08/xop/include': 'xop',
   'http://www.w3.org/2003/05/soap-envelope': 's',
+  'http://www.w3.org/2001/XMLSchema': 'xs',
   [XML_NAMESPACE]: 'xml'
-}
+})

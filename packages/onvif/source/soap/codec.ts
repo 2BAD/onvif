@@ -1,9 +1,9 @@
 import { DecodeError, type ErrorContext, OnvifError } from '#errors.ts'
 import { XML_NAMESPACE, prefixes } from '#soap/namespaces.ts'
-import { namespaceInfo, setNamespaceInfo, type XmlObject, type XmlValue } from '#soap/parse.ts'
+import { namespaceInfo, setNamespaceInfo, type XmlNamespaces, type XmlObject, type XmlValue } from '#soap/parse.ts'
 import type { XmlElement, XmlNode } from '#soap/serialize.ts'
 
-export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
+export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'qname' | 'any'
 
 export type FieldSchema = {
   name: string
@@ -21,6 +21,8 @@ export type TypeSchema = {
   fields: readonly FieldSchema[]
   text?: string
   any?: true
+  /** Properties of the elements that stand in for a required `xs:any`. A request has exactly one of them. */
+  choice?: readonly string[]
 }
 
 export type Schema = Readonly<Record<string, TypeSchema>>
@@ -37,10 +39,13 @@ export type Operation<Request, Response> = {
   types?: { request: Request; response: Response }
 }
 
-const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime', 'base64', 'any'])
+const primitives = new Set(['string', 'integer', 'decimal', 'boolean', 'dateTime', 'base64', 'qname', 'any'])
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
 const dateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
+const qnamePattern = /^(?:([^\s:{}]+):)?([^\s:{}]+)$/
+const clarkPattern = /^\{([^{}]*)\}([^\s:{}]+)$/
+const namespacesByPrefix = new Map(Object.entries(prefixes).map(([namespace, prefix]) => [prefix, namespace]))
 const knownNames = new WeakMap<TypeSchema, Set<string>>()
 
 const typeOf = (schema: Schema, name: string): TypeSchema => {
@@ -57,7 +62,26 @@ const textOf = (value: string | XmlObject): string => {
   return typeof text === 'string' ? text : ''
 }
 
-const decodePrimitive = (primitive: string, text: string, path: string, context: ErrorContext): unknown => {
+const decodeQName = (text: string, path: string, context: ErrorContext, scope: XmlNamespaces | undefined): string => {
+  const [, prefix, local = ''] = qnamePattern.exec(text) ?? []
+  if (!local) throw new DecodeError(`Invalid QName '${text.slice(0, 32)}'`, path, context)
+  if (!scope) throw new OnvifError(`The QName at ${path} needs a response parsed with namespaces`, context)
+  const namespace = Object.hasOwn(scope, prefix ?? '') ? scope[prefix ?? ''] : undefined
+  if (!namespace) {
+    if (prefix !== undefined) throw new DecodeError(`Undeclared prefix in QName '${text.slice(0, 32)}'`, path, context)
+    return local
+  }
+  const known = prefixes[namespace]
+  return known === undefined ? `{${namespace}}${local}` : `${known}:${local}`
+}
+
+const decodePrimitive = (
+  primitive: string,
+  text: string,
+  path: string,
+  context: ErrorContext,
+  scope: XmlNamespaces | undefined
+): unknown => {
   if (primitive === 'string') return text
   const trimmed = text.trim()
   switch (primitive) {
@@ -88,6 +112,8 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
       }
       return date
     }
+    case 'qname':
+      return decodeQName(trimmed, path, context, scope)
     case 'base64':
       try {
         return Uint8Array.fromBase64(trimmed, { lastChunkHandling: 'strict' })
@@ -99,7 +125,13 @@ const decodePrimitive = (primitive: string, text: string, path: string, context:
   }
 }
 
-const decodeSimple = (type: string, value: string | XmlObject, path: string, context: ErrorContext): unknown => {
+const decodeSimple = (
+  type: string,
+  value: string | XmlObject,
+  path: string,
+  context: ErrorContext,
+  scope: XmlNamespaces | undefined
+): unknown => {
   if (type === 'any') return value
   const text = textOf(value)
   if (type.endsWith('[]')) {
@@ -107,10 +139,13 @@ const decodeSimple = (type: string, value: string | XmlObject, path: string, con
     return text
       .split(/\s+/)
       .filter((part) => part.length > 0)
-      .map((part, index) => decodePrimitive(item, part, `${path}[${index}]`, context))
+      .map((part, index) => decodePrimitive(item, part, `${path}[${index}]`, context, scope))
   }
-  return decodePrimitive(type, text, path, context)
+  return decodePrimitive(type, text, path, context, scope)
 }
+
+const scopeOf = (value: string | XmlObject, parent: XmlNamespaces | undefined): XmlNamespaces | undefined =>
+  typeof value === 'string' ? parent : (namespaceInfo(value)?.namespaces ?? parent)
 
 const isSimple = (type: string): boolean => primitives.has(type) || type.endsWith('[]')
 
@@ -130,9 +165,12 @@ const decodeValue = (
   type: string,
   value: string | XmlObject,
   path: string,
-  context: ErrorContext
+  context: ErrorContext,
+  scope: XmlNamespaces | undefined
 ): unknown =>
-  isSimple(type) ? decodeSimple(type, value, path, context) : decodeComplex(schema, type, value, path, context)
+  isSimple(type)
+    ? decodeSimple(type, value, path, context, scopeOf(value, scope))
+    : decodeComplex(schema, type, value, path, context)
 
 const decodeComplex = (
   schema: Schema,
@@ -144,6 +182,8 @@ const decodeComplex = (
   const type = typeOf(schema, typeName)
   const node: XmlObject = typeof value === 'string' ? {} : value
   const attributes = node['$']
+  const info = namespaceInfo(node)
+  const scope = info?.namespaces
   const result: Record<string, unknown> = {}
 
   for (const field of type.fields) {
@@ -167,18 +207,17 @@ const decodeComplex = (
     if (field.array) {
       const items = Array.isArray(raw) ? raw : [raw]
       result[key] = items.map((item, index) =>
-        decodeValue(schema, field.type, firstOf(item), `${fieldPath}[${index}]`, context)
+        decodeValue(schema, field.type, firstOf(item), `${fieldPath}[${index}]`, context, scope)
       )
     } else {
-      result[key] = decodeValue(schema, field.type, firstOf(raw), fieldPath, context)
+      result[key] = decodeValue(schema, field.type, firstOf(raw), fieldPath, context, scope)
     }
   }
 
   if (type.text !== undefined) {
-    result['value'] = decodeSimple(type.text, value, `${path}#text`, context)
+    result['value'] = decodeSimple(type.text, value, `${path}#text`, context, scope)
   }
 
-  const info = namespaceInfo(node)
   if (info) setNamespaceInfo(result, info)
 
   if (type.any) {
@@ -206,7 +245,7 @@ const decodeComplex = (
  * @throws {DecodeError} If a required element is missing or a value does not match its type
  */
 export function decode(schema: Schema, type: string, value: XmlValue, context: ErrorContext = {}): unknown {
-  return decodeValue(schema, type, firstOf(value), type, context)
+  return decodeValue(schema, type, firstOf(value), type, context, undefined)
 }
 
 class Encoder {
@@ -253,6 +292,9 @@ class Encoder {
       case 'base64':
         if (value instanceof Uint8Array) return value.toBase64()
         break
+      case 'qname':
+        if (typeof value === 'string') return this.qname(value, path)
+        break
       case 'any':
         if (typeof value === 'string') return value
         break
@@ -260,6 +302,20 @@ class Encoder {
         throw new OnvifError(`Unknown primitive ${type}`)
     }
     throw new OnvifError(`Invalid ${type} value at ${path}`)
+  }
+
+  qname(value: string, path: string): string {
+    const clark = clarkPattern.exec(value)
+    if (clark) {
+      const [, namespace = '', local = ''] = clark
+      return this.qualify(local, namespace)
+    }
+    const [, prefix, local] = qnamePattern.exec(value) ?? []
+    if (local === undefined) throw new OnvifError(`Invalid QName at ${path}`)
+    if (prefix === undefined) return local
+    const namespace = namespacesByPrefix.get(prefix)
+    if (namespace === undefined) throw new OnvifError(`Unknown prefix ${prefix} in the QName at ${path}`)
+    return this.qualify(local, namespace)
   }
 
   element(name: string, type: string, value: unknown, path: string): XmlElement {
@@ -297,6 +353,9 @@ class Encoder {
           )
         )
       })
+    }
+    if (schema.choice && schema.choice.filter((key) => data[key] !== undefined).length !== 1) {
+      throw new OnvifError(`Expected one of ${schema.choice.join(', ')} at ${path}`)
     }
     if (schema.text !== undefined && data['value'] !== undefined) {
       children.push(this.primitive(schema.text, data['value'], `${path}.value`))

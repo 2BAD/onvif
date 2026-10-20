@@ -1,7 +1,7 @@
 import { keyOf, type Registry, type SchemaContext, type WsdlOperation, XS } from '#tools/codegen/registry.ts'
 import { type QName, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
 
-export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'any'
+export type Primitive = 'string' | 'integer' | 'decimal' | 'boolean' | 'dateTime' | 'base64' | 'qname' | 'any'
 
 export type SimpleModel = {
   kind: 'simple'
@@ -29,6 +29,10 @@ export type ComplexModel = {
   fields: FieldModel[]
   text: SimpleModel | undefined
   any: boolean
+  /** Whether the `xs:any` has to occur. */
+  anyRequired: boolean
+  /** Names of the elements that stand in for a required `xs:any`. */
+  choice: string[]
   documentation: string | undefined
 }
 
@@ -40,7 +44,7 @@ export type OperationModel = {
   documentation: string | undefined
 }
 
-const builtinNames: Record<Primitive, string> = {
+const builtinNames: Record<Exclude<Primitive, 'qname'>, string> = {
   string:
     'string normalizedString token anyURI QName NCName Name ID IDREF IDREFS NMTOKEN NMTOKENS language hexBinary ' +
     'duration date time anySimpleType',
@@ -78,14 +82,21 @@ const occurs = (node: SchemaNode) => ({
 
 const pascal = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1)
 
+export type ModelOptions = {
+  /** Decode `xs:QName` values with the `qname` primitive instead of as strings. */
+  qnames?: boolean
+}
+
 export class ModelBuilder {
   readonly #registry: Registry
+  readonly #qnames: boolean
   readonly #complex = new Map<string, ComplexModel>()
   readonly #simple = new Map<string, SimpleModel>()
   readonly complexTypes: ComplexModel[] = []
 
-  constructor(registry: Registry) {
+  constructor(registry: Registry, options: ModelOptions = {}) {
     this.#registry = registry
+    this.#qnames = options.qnames ?? false
   }
 
   operation(operation: WsdlOperation): OperationModel {
@@ -102,6 +113,29 @@ export class ModelBuilder {
 
   element(name: QName): ComplexModel {
     return this.#globalElementType(name, name.local)
+  }
+
+  /**
+   * Add an optional element to a type with an `xs:any`, typed by the global element of that name or else by the
+   * type of that name.
+   *
+   * @param model - The type that takes the element in place of its `xs:any`
+   * @param name - Name of the element
+   */
+  substitute(model: ComplexModel, name: QName): void {
+    if (!model.any) throw new Error(`${model.suggestedName} has no xs:any for ${keyOf(name)}`)
+    const element = this.#registry.find('element', name)
+    const type = element ? this.#elementType(element.node, element.context, name.local) : this.#namedType(name)
+    this.#addField(model, {
+      name: name.local,
+      namespace: name.namespace,
+      attribute: false,
+      optional: true,
+      array: false,
+      type,
+      documentation: type.documentation
+    })
+    if (model.anyRequired) model.choice.push(name.local)
   }
 
   #globalElementType(element: QName, suggestedName: string): ComplexModel {
@@ -122,7 +156,7 @@ export class ModelBuilder {
   }
 
   #builtin(local: string): SimpleModel {
-    const primitive = builtins.get(local)
+    const primitive = this.#qnames && local === 'QName' ? 'qname' : builtins.get(local)
     if (!primitive) throw new Error(`Unsupported built-in type xs:${local}`)
     return {
       kind: 'simple',
@@ -196,6 +230,8 @@ export class ModelBuilder {
       fields: [],
       text: node.attributes['mixed'] === 'true' ? this.#builtin('string') : undefined,
       any: false,
+      anyRequired: false,
+      choice: [],
       documentation: documentationOf(node)
     }
     if (qname) this.#complex.set(keyOf(qname), model)
@@ -279,6 +315,7 @@ export class ModelBuilder {
           break
         case 'any':
           model.any = true
+          model.anyRequired = !childOptional && !occurs(child).optional
           break
         case 'annotation':
           break

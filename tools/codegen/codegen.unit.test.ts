@@ -7,7 +7,7 @@ import { type Operation, type Schema, decode, encodeRequest } from '#onvif/soap/
 import { parseXml, type XmlObject } from '#onvif/soap/parse.ts'
 import { serialize } from '#onvif/soap/serialize.ts'
 import { emit } from '#tools/codegen/emit.ts'
-import { ModelBuilder } from '#tools/codegen/model.ts'
+import { ModelBuilder, type OperationModel } from '#tools/codegen/model.ts'
 import { Registry } from '#tools/codegen/registry.ts'
 import { resolveQName } from '#tools/codegen/xml.ts'
 
@@ -390,5 +390,87 @@ describe('resolveQName', () => {
 
   it('resolves the xml prefix without a declaration', () => {
     expect(resolveQName('xml:lang', {})).toEqual({ namespace: 'http://www.w3.org/XML/1998/namespace', local: 'lang' })
+  })
+})
+
+describe('qnames and substitutions', () => {
+  const items = 'urn:test:items'
+  const builderFor = (options?: { qnames?: boolean }) => {
+    const registry = new Registry()
+    registry.load(join(testDirectory, 'items.xsd'))
+    return new ModelBuilder(registry, options)
+  }
+  const operationOf = (builder: ModelBuilder, local: string): OperationModel => {
+    const type = builder.element({ namespace: items, local })
+    return {
+      name: `Get${local}`,
+      action: `${items}/Get${local}`,
+      request: {
+        element: { namespace: items, local: 'Plain' },
+        type: builder.element({ namespace: items, local: 'Plain' })
+      },
+      response: { element: { namespace: items, local }, type },
+      documentation: undefined
+    }
+  }
+
+  it('reads xs:QName as a string unless the qname primitive is asked for', () => {
+    const type = (builder: ModelBuilder) =>
+      builder.element({ namespace: items, local: 'Item' }).fields.find((field) => field.name === 'Type')?.type
+    expect(type(builderFor())).toMatchObject({ kind: 'simple', primitive: 'string' })
+    expect(type(builderFor({ qnames: true }))).toMatchObject({ kind: 'simple', primitive: 'qname' })
+  })
+
+  it('parses the responses that hold a QName with namespaces and types QNames as strings', () => {
+    const builder = builderFor({ qnames: true })
+    const source = emit({
+      commit: 'test',
+      codecImport: '#soap/codec.ts',
+      operations: [operationOf(builder, 'Item'), operationOf(builder, 'Extensible'), operationOf(builder, 'Plain')]
+    })
+    const marked = [...source.matchAll(/name: '(Get\w+)',[^}]*\}[^}]*\},\n {2}namespaces: true/g)].map(
+      (match) => match[1]
+    )
+    expect(marked).toEqual(['GetItem', 'GetExtensible'])
+    expect(source).toContain("{ name: 'Type', property: 'type', type: 'qname', attribute: true, optional: true }")
+    expect(source).toContain("{ name: 'Kinds', property: 'kinds', type: 'qname[]', namespace: ns1, optional: true }")
+    expect(source).toMatch(/export type Item = \{\n {2}name: string\n {2}type\?: string\n/)
+  })
+
+  it('adds a typed element for an xs:any, from the global element or else the complex type of its name', () => {
+    const builder = builderFor()
+    const item = builder.element({ namespace: items, local: 'Item' })
+    for (const local of ['Shape', 'Grid', 'Numbers']) builder.substitute(item, { namespace: items, local })
+    expect(
+      item.fields.slice(2).map(({ name, optional, array, type }) => ({ name, optional, array, kind: type.kind }))
+    ).toEqual([
+      { name: 'Shape', optional: true, array: false, kind: 'complex' },
+      { name: 'Grid', optional: true, array: false, kind: 'complex' },
+      { name: 'Numbers', optional: true, array: false, kind: 'simple' }
+    ])
+    expect(item).toMatchObject({ any: true, anyRequired: true, choice: ['Shape', 'Grid', 'Numbers'] })
+    const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [], elements: [item] })
+    expect(source).toMatch(
+      /export type Item = \{\n[^}]*shape\?: Shape\n {2}grid\?: Grid\n {2}numbers\?: number\[\]\n {2}\$any/
+    )
+    expect(source).toContain("any: true, choice: ['shape', 'grid', 'numbers'] }")
+  })
+
+  it('adds no choice for an optional xs:any', () => {
+    const builder = builderFor()
+    const extensible = builder.element({ namespace: items, local: 'Extensible' })
+    builder.substitute(extensible, { namespace: items, local: 'Shape' })
+    expect(extensible).toMatchObject({ anyRequired: false, choice: [] })
+    expect(
+      emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [], elements: [extensible] })
+    ).not.toContain('choice')
+  })
+
+  it('rejects a substitution for a type without xs:any', () => {
+    const builder = builderFor()
+    const plain = builder.element({ namespace: items, local: 'Plain' })
+    expect(() => builder.substitute(plain, { namespace: items, local: 'Shape' })).toThrow(
+      'Plain has no xs:any for {urn:test:items}Shape'
+    )
   })
 })
