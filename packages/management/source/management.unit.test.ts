@@ -130,7 +130,25 @@ const operations = [
   Management.SetAuthFailureWarningConfiguration,
   Management.GetAccessPolicy,
   Management.SetAccessPolicy,
-  Management.SetHashingAlgorithm
+  Management.SetHashingAlgorithm,
+  Management.CreateCertificate,
+  Management.GetCertificates,
+  Management.GetCertificatesStatus,
+  Management.SetCertificatesStatus,
+  Management.DeleteCertificates,
+  Management.GetPkcs10Request,
+  Management.LoadCertificates,
+  Management.GetClientCertificateMode,
+  Management.SetClientCertificateMode,
+  Management.GetCACertificates,
+  Management.LoadCertificateWithPrivateKey,
+  Management.GetCertificateInformation,
+  Management.LoadCACertificates,
+  Management.CreateDot1XConfiguration,
+  Management.SetDot1XConfiguration,
+  Management.GetDot1XConfiguration,
+  Management.GetDot1XConfigurations,
+  Management.DeleteDot1XConfiguration
 ]
 
 // no lab camera accepts these, so the simulator capture covers them
@@ -165,8 +183,9 @@ describe('generated management operations', () => {
   )
   const decodable = fixtures.filter(
     ({ name, xml }) =>
-      !/<tds:(?:DynamicDNSInformation|Capabilities|Status|PolicyFile) xsi:nil="true"\/>/.test(xml) &&
-      name !== 'live/ezviz/ds-2de2c400ig-w-w/device.GetStorageConfiguration.xml'
+      !/<tds:(?:DynamicDNSInformation|Capabilities|Status|PolicyFile|NvtCertificate|CertificateInformation|Pkcs10Request|Dot1XConfiguration) xsi:nil="true"\/>/.test(
+        xml
+      ) && name !== 'live/ezviz/ds-2de2c400ig-w-w/device.GetStorageConfiguration.xml'
   )
 
   it('cover a camera capture for every operation', () => {
@@ -1345,5 +1364,277 @@ describe('Security settings on the camera', () => {
     })
     expect(await device.management.setHashingAlgorithm({ algorithm: ['SHA-256', 'MD5'] })).toEqual({})
     expect(rawRequest(mock, 'SetHashingAlgorithm')).toContain('<tds:Algorithm>SHA-256 MD5</tds:Algorithm>')
+  })
+})
+
+describe('Certificates and 802.1X on the camera', () => {
+  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
+  const rawRequest = (mock: MockCamera, action: string): string =>
+    mock.requests.findLast((request) => request.action === action)?.body ?? ''
+  const response = (body: string): ActionOverride =>
+    answer(
+      live('device.GetCertificates').replace(
+        /<tds:GetCertificatesResponse>[\s\S]*<\/tds:GetCertificatesResponse>/,
+        body
+      )
+    )
+  const notSupported = (): ActionOverride => ({
+    kind: 'status',
+    status: 500,
+    body: hikvision('device.GetCertificates')
+  })
+  const leaks = (error: unknown, secret: string): boolean =>
+    `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack ?? ''}`.includes(secret)
+  const der = new Uint8Array([0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01, 0x00, 0xff])
+  const base64 = Buffer.from(der).toString('base64')
+  const certificate = (id: string) =>
+    `<tt:CertificateID>${id}</tt:CertificateID><tt:Certificate><tt:Data>${base64}</tt:Data></tt:Certificate>`
+
+  it('reads every certificate with its bytes and keeps an ID of digits as text', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetCertificates': response(
+          `<tds:GetCertificatesResponse><tds:NvtCertificate>${certificate('0123')}</tds:NvtCertificate>` +
+            `<tds:NvtCertificate>${certificate('https')}</tds:NvtCertificate></tds:GetCertificatesResponse>`
+        )
+      }
+    })
+    expect(await device.management.getCertificates()).toEqual({
+      nvtCertificate: [
+        { certificateID: '0123', certificate: { data: der } },
+        { certificateID: 'https', certificate: { data: der } }
+      ]
+    })
+  })
+
+  it('returns no certificates when the device lists none', async () => {
+    const { device } = await connect()
+    expect(await device.management.getCertificates()).toEqual({})
+    expect(await device.management.getCACertificates()).toEqual({})
+    expect(await device.management.getCertificatesStatus()).toEqual({})
+  })
+
+  it('creates a certificate with its validity as dates', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.CreateCertificate': response(
+          `<tds:CreateCertificateResponse><tds:NvtCertificate>${certificate('onviftest')}</tds:NvtCertificate>` +
+            '</tds:CreateCertificateResponse>'
+        )
+      }
+    })
+    const created = await device.management.createCertificate({
+      certificateID: 'onviftest',
+      subject: 'CN=camera.example, O=A&B',
+      validNotBefore: new Date('2026-10-20T00:00:00Z'),
+      validNotAfter: new Date('2027-10-20T00:00:00Z')
+    })
+    expect(created).toEqual({ nvtCertificate: { certificateID: 'onviftest', certificate: { data: der } } })
+    expect(requestOf(mock, 'CreateCertificate')).toEqual({
+      CreateCertificate: {
+        CertificateID: 'onviftest',
+        Subject: 'CN=camera.example, O=A&B',
+        ValidNotBefore: '2026-10-20T00:00:00.000Z',
+        ValidNotAfter: '2027-10-20T00:00:00.000Z'
+      }
+    })
+  })
+
+  it('rejects the nil certificate the camera creates with the path', async () => {
+    const { device } = await connect()
+    await expect(device.management.createCertificate({ certificateID: 'onviftest' })).rejects.toMatchObject({
+      name: 'DecodeError',
+      path: expect.stringContaining('CreateCertificateResponse.NvtCertificate')
+    })
+  })
+
+  it('reads the certificate information with its usage, length and validity', async () => {
+    const information =
+      '<tds:GetCertificateInformationResponse><tds:CertificateInformation><tt:CertificateID>https</tt:CertificateID>' +
+      '<tt:IssuerDN>CN=camera.example</tt:IssuerDN><tt:SubjectDN>CN=camera.example</tt:SubjectDN>' +
+      '<tt:KeyUsage Critical="true">digitalSignature keyEncipherment</tt:KeyUsage><tt:KeyLength>2048</tt:KeyLength>' +
+      '<tt:Version>3</tt:Version><tt:SerialNum>00A1</tt:SerialNum><tt:SignatureAlgorithm>1.2.840.113549.1.1.11</tt:SignatureAlgorithm>' +
+      '<tt:Validity><tt:From>2026-10-20T00:00:00Z</tt:From><tt:Until>2027-10-20T00:00:00Z</tt:Until></tt:Validity>' +
+      '</tds:CertificateInformation></tds:GetCertificateInformationResponse>'
+    const { mock, device } = await connect({ overrides: { 'device.GetCertificateInformation': response(information) } })
+    expect(await device.management.getCertificateInformation({ certificateID: 'https' })).toEqual({
+      certificateInformation: {
+        certificateID: 'https',
+        issuerDN: 'CN=camera.example',
+        subjectDN: 'CN=camera.example',
+        keyUsage: { critical: true, value: 'digitalSignature keyEncipherment' },
+        keyLength: 2048,
+        version: '3',
+        serialNum: '00A1',
+        signatureAlgorithm: '1.2.840.113549.1.1.11',
+        validity: { from: new Date('2026-10-20T00:00:00Z'), until: new Date('2027-10-20T00:00:00Z') }
+      }
+    })
+    expect(requestOf(mock, 'GetCertificateInformation')).toEqual({
+      GetCertificateInformation: { CertificateID: 'https' }
+    })
+  })
+
+  it('requests a PKCS#10 request with attributes and reads it as bytes', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.GetPkcs10Request': response(
+          `<tds:GetPkcs10RequestResponse><tds:Pkcs10Request><tt:Data>${base64}</tt:Data></tds:Pkcs10Request>` +
+            '</tds:GetPkcs10RequestResponse>'
+        )
+      }
+    })
+    const attributes = { data: new Uint8Array([1, 2, 3]), contentType: 'application/octet-stream' }
+    expect(
+      await device.management.getPkcs10Request({ certificateID: 'onviftest', subject: 'CN=onviftest', attributes })
+    ).toEqual({ pkcs10Request: { data: der } })
+    expect(rawRequest(mock, 'GetPkcs10Request')).toMatch(
+      /<tds:Attributes [^>]*xmime:contentType="application\/octet-stream"[^>]*><tt:Data>AQID<\/tt:Data><\/tds:Attributes>/
+    )
+  })
+
+  it('loads device and CA certificates with the spec element names', async () => {
+    const { mock, device } = await connect()
+    const loaded = { certificateID: 'onviftest', certificate: { data: der } }
+    expect(await device.management.loadCertificates({ nvtCertificate: [loaded] })).toEqual({})
+    expect(await device.management.loadCACertificates({ caCertificate: [loaded] })).toEqual({})
+    expect(rawRequest(mock, 'LoadCertificates')).toContain(
+      `<tds:NVTCertificate>${certificate('onviftest')}</tds:NVTCertificate>`
+    )
+    expect(rawRequest(mock, 'LoadCACertificates')).toContain(
+      `<tds:CACertificate>${certificate('onviftest')}</tds:CACertificate>`
+    )
+  })
+
+  it('keeps the private key out of the error when the device rejects it', async () => {
+    const { mock, device } = await connect({ overrides: { 'device.LoadCertificateWithPrivateKey': notSupported() } })
+    const privateKey = new Uint8Array(Buffer.from('Private-Key-Material-0123456789'))
+    const error = await rejection(() =>
+      device.management.loadCertificateWithPrivateKey({
+        certificateWithPrivateKey: [
+          { certificateID: 'onviftestkey', certificate: { data: der }, privateKey: { data: privateKey } }
+        ]
+      })
+    )
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({
+      subcodes: ['ActionNotSupported', 'InvalidOperation'],
+      action: 'LoadCertificateWithPrivateKey'
+    })
+    expect(leaks(error, Buffer.from(privateKey).toString('base64'))).toBe(false)
+    expect(leaks(error, 'Private-Key-Material')).toBe(false)
+    expect(rawRequest(mock, 'LoadCertificateWithPrivateKey')).toContain(
+      `<tt:PrivateKey><tt:Data>${Buffer.from(privateKey).toString('base64')}</tt:Data></tt:PrivateKey>`
+    )
+  })
+
+  it('sets the certificate status and deletes certificates', async () => {
+    const { mock, device } = await connect()
+    expect(
+      await device.management.setCertificatesStatus({
+        certificateStatus: [
+          { certificateID: 'https', status: true },
+          { certificateID: 'onviftest', status: false }
+        ]
+      })
+    ).toEqual({})
+    expect(await device.management.deleteCertificates({ certificateID: ['onviftest', 'onviftestca'] })).toEqual({})
+    expect(requestOf(mock, 'SetCertificatesStatus')).toEqual({
+      SetCertificatesStatus: {
+        CertificateStatus: [
+          { CertificateID: 'https', Status: 'true' },
+          { CertificateID: 'onviftest', Status: 'false' }
+        ]
+      }
+    })
+    expect(requestOf(mock, 'DeleteCertificates')).toEqual({
+      DeleteCertificates: { CertificateID: ['onviftest', 'onviftestca'] }
+    })
+  })
+
+  it('reads and sets the client certificate mode', async () => {
+    const { mock, device } = await connect()
+    expect(await device.management.getClientCertificateMode()).toEqual({ enabled: false })
+    expect(await device.management.setClientCertificateMode({ enabled: false })).toEqual({})
+    expect(requestOf(mock, 'SetClientCertificateMode')).toEqual({ SetClientCertificateMode: { Enabled: 'false' } })
+  })
+
+  it('reports certificates on the DS-2DE2C400IG-W-W as not supported', async () => {
+    const { device } = await connect({ overrides: { 'device.GetCertificates': notSupported() } })
+    await expect(device.management.getCertificates()).rejects.toMatchObject({
+      name: 'SoapFaultError',
+      subcodes: ['ActionNotSupported', 'InvalidOperation'],
+      action: 'GetCertificates'
+    })
+  })
+
+  it('creates, reads, changes and deletes an 802.1X configuration', async () => {
+    const configuration =
+      '<tt:Dot1XConfigurationToken>onviftest</tt:Dot1XConfigurationToken><tt:Identity>camera</tt:Identity>' +
+      '<tt:EAPMethod>13</tt:EAPMethod><tt:CACertificateID>ca1</tt:CACertificateID><tt:CACertificateID>ca2</tt:CACertificateID>' +
+      '<tt:EAPMethodConfiguration><tt:TLSConfiguration><tt:CertificateID>client</tt:CertificateID></tt:TLSConfiguration>' +
+      '</tt:EAPMethodConfiguration>'
+    const { mock, device } = await connect({
+      overrides: {
+        'device.GetDot1XConfiguration': response(
+          `<tds:GetDot1XConfigurationResponse><tds:Dot1XConfiguration>${configuration}</tds:Dot1XConfiguration>` +
+            '</tds:GetDot1XConfigurationResponse>'
+        ),
+        'device.GetDot1XConfigurations': response(
+          `<tds:GetDot1XConfigurationsResponse><tds:Dot1XConfiguration>${configuration}</tds:Dot1XConfiguration>` +
+            '</tds:GetDot1XConfigurationsResponse>'
+        )
+      }
+    })
+    const expected = {
+      dot1XConfigurationToken: 'onviftest',
+      identity: 'camera',
+      eapMethod: 13,
+      caCertificateID: ['ca1', 'ca2'],
+      eapMethodConfiguration: { tlsConfiguration: { certificateID: 'client' } }
+    }
+    expect(await device.management.createDot1XConfiguration({ dot1XConfiguration: expected })).toEqual({})
+    expect(await device.management.getDot1XConfiguration({ dot1XConfigurationToken: 'onviftest' })).toEqual({
+      dot1XConfiguration: expected
+    })
+    expect(await device.management.getDot1XConfigurations()).toEqual({ dot1XConfiguration: [expected] })
+    expect(await device.management.setDot1XConfiguration({ dot1XConfiguration: expected })).toEqual({})
+    expect(await device.management.deleteDot1XConfiguration({ dot1XConfigurationToken: ['onviftest'] })).toEqual({})
+    expect(rawRequest(mock, 'CreateDot1XConfiguration')).toContain(
+      '<tds:Dot1XConfiguration><tt:Dot1XConfigurationToken>onviftest</tt:Dot1XConfigurationToken>'
+    )
+    expect(requestOf(mock, 'DeleteDot1XConfiguration')).toEqual({
+      DeleteDot1XConfiguration: { Dot1XConfigurationToken: 'onviftest' }
+    })
+  })
+
+  it('rejects the nil 802.1X configuration of the camera with the path', async () => {
+    const { device } = await connect()
+    await expect(
+      device.management.getDot1XConfiguration({ dot1XConfigurationToken: 'onviftest' })
+    ).rejects.toMatchObject({
+      name: 'DecodeError',
+      path: expect.stringContaining('GetDot1XConfigurationResponse.Dot1XConfiguration')
+    })
+  })
+
+  it('sends the 802.1X password as text and keeps it out of the error', async () => {
+    const { mock, device } = await connect({ overrides: { 'device.CreateDot1XConfiguration': notSupported() } })
+    const password = `Dot1X<&>"'-Secret`
+    const error = await rejection(() =>
+      device.management.createDot1XConfiguration({
+        dot1XConfiguration: {
+          dot1XConfigurationToken: 'onviftest',
+          identity: 'camera',
+          eapMethod: 25,
+          eapMethodConfiguration: { password }
+        }
+      })
+    )
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(leaks(error, password)).toBe(false)
+    expect(leaks(error, 'Dot1X&lt;')).toBe(false)
+    const sent = requestOf(mock, 'CreateDot1XConfiguration')['CreateDot1XConfiguration'] as XmlObject
+    expect((sent['Dot1XConfiguration'] as XmlObject)['EAPMethodConfiguration']).toEqual({ Password: password })
   })
 })

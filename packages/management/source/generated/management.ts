@@ -84,6 +84,77 @@ export type BinaryData = {
   contentType?: string
 }
 
+export type Certificate = {
+  /** Certificate id. */
+  certificateID: string
+  /** base64 encoded DER representation of certificate. */
+  certificate: BinaryData
+}
+
+export type CertificateInformation = {
+  certificateID: string
+  issuerDN?: string
+  subjectDN?: string
+  keyUsage?: CertificateUsage
+  extendedKeyUsage?: CertificateUsage
+  keyLength?: number
+  version?: string
+  serialNum?: string
+  /**
+   * Validity Range is from "NotBefore" to "NotAfter"; the corresponding DateTimeRange is from "From" to
+   * "Until"
+   */
+  signatureAlgorithm?: string
+  validity?: DateTimeRange
+  extension?: CertificateInformationExtension
+}
+
+export type CertificateInformationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type CertificateStatus = {
+  /** Certificate id. */
+  certificateID: string
+  /** Indicates whether or not a certificate is used in an HTTPS configuration. */
+  status: boolean
+  $any?: Record<string, unknown>
+}
+
+export type CertificateUsage = {
+  critical: boolean
+  value: string
+}
+
+export type CertificateWithPrivateKey = {
+  certificateID?: string
+  certificate: BinaryData
+  privateKey: BinaryData
+  $any?: Record<string, unknown>
+}
+
+export type CreateCertificateRequest = {
+  /** Certificate id. */
+  certificateID?: string
+  /** Identification of the entity associated with the public-key. */
+  subject?: string
+  /** Certificate validity start date. */
+  validNotBefore?: Date
+  /** Certificate expiry start date. */
+  validNotAfter?: Date
+}
+
+export type CreateCertificateResponse = {
+  /** base64 encoded DER representation of certificate. */
+  nvtCertificate: Certificate
+}
+
+export type CreateDot1XConfigurationRequest = {
+  dot1XConfiguration: Dot1XConfiguration
+}
+
+export type CreateDot1XConfigurationResponse = Record<string, never>
+
 export type CreateStorageConfigurationRequest = {
   storageConfiguration: StorageConfigurationData
 }
@@ -110,6 +181,12 @@ export type DateTime = {
   date: DateType
 }
 
+export type DateTimeRange = {
+  from: Date
+  until: Date
+  $any?: Record<string, unknown>
+}
+
 export type DateType = {
   year: number
   /** Range is 1 to 12. */
@@ -117,6 +194,19 @@ export type DateType = {
   /** Range is 1 to 31. */
   day: number
 }
+
+export type DeleteCertificatesRequest = {
+  /** List of ids of certificates to delete. */
+  certificateID: string[]
+}
+
+export type DeleteCertificatesResponse = Record<string, never>
+
+export type DeleteDot1XConfigurationRequest = {
+  dot1XConfigurationToken?: string[]
+}
+
+export type DeleteDot1XConfigurationResponse = Record<string, never>
 
 export type DeleteGeoLocationRequest = {
   location: LocationEntity[]
@@ -239,6 +329,21 @@ export type Dot11Status = {
   $any?: Record<string, unknown>
 }
 
+export type Dot1XConfiguration = {
+  dot1XConfigurationToken: string
+  identity: string
+  anonymousID?: string
+  /** EAP Method type as defined in IANA EAP Registry. */
+  eapMethod: number
+  caCertificateID?: string[]
+  eapMethodConfiguration?: EAPMethodConfiguration
+  extension?: Dot1XConfigurationExtension
+}
+
+export type Dot1XConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type Dot3Configuration = {
   $any?: Record<string, unknown>
 }
@@ -254,6 +359,21 @@ export type DynamicDNSInformation = {
 }
 
 export type DynamicDNSInformationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type EAPMethodConfiguration = {
+  /** Configuration information for TLS Method. */
+  tlsConfiguration?: TLSConfiguration
+  /**
+   * Password for those EAP Methods that require a password. The password shall never be returned on a
+   * get method.
+   */
+  password?: string
+  extension?: EapMethodExtension
+}
+
+export type EapMethodExtension = {
   $any?: Record<string, unknown>
 }
 
@@ -298,6 +418,41 @@ export type GetAuthFailureWarningOptionsResponse = {
   authFailureRange: IntRange
 }
 
+export type GetCACertificatesRequest = Record<string, never>
+
+export type GetCACertificatesResponse = {
+  caCertificate?: Certificate[]
+}
+
+export type GetCertificateInformationRequest = {
+  certificateID: string
+}
+
+export type GetCertificateInformationResponse = {
+  certificateInformation: CertificateInformation
+}
+
+export type GetCertificatesRequest = Record<string, never>
+
+export type GetCertificatesResponse = {
+  /** Id and base64 encoded DER representation of all available certificates. */
+  nvtCertificate?: Certificate[]
+}
+
+export type GetCertificatesStatusRequest = Record<string, never>
+
+export type GetCertificatesStatusResponse = {
+  /** Indicates if a certificate is used in an optional HTTPS configuration of the device. */
+  certificateStatus?: CertificateStatus[]
+}
+
+export type GetClientCertificateModeRequest = Record<string, never>
+
+export type GetClientCertificateModeResponse = {
+  /** Indicates whether or not client certificates are required by device. */
+  enabled: boolean
+}
+
 export type GetDiscoveryModeRequest = Record<string, never>
 
 export type GetDiscoveryModeResponse = {
@@ -326,6 +481,20 @@ export type GetDot11StatusRequest = {
 
 export type GetDot11StatusResponse = {
   status: Dot11Status
+}
+
+export type GetDot1XConfigurationRequest = {
+  dot1XConfigurationToken: string
+}
+
+export type GetDot1XConfigurationResponse = {
+  dot1XConfiguration: Dot1XConfiguration
+}
+
+export type GetDot1XConfigurationsRequest = Record<string, never>
+
+export type GetDot1XConfigurationsResponse = {
+  dot1XConfiguration?: Dot1XConfiguration[]
 }
 
 export type GetDPAddressesRequest = Record<string, never>
@@ -412,6 +581,20 @@ export type GetPasswordHistoryConfigurationRequest = Record<string, never>
 export type GetPasswordHistoryConfigurationResponse = {
   enabled: boolean
   length: number
+}
+
+export type GetPkcs10RequestRequest = {
+  /** List of ids of certificates to delete. */
+  certificateID: string
+  /** Relative Dinstinguished Name(RDN) CommonName(CN). */
+  subject?: string
+  /** Optional base64 encoded DER attributes. */
+  attributes?: BinaryData
+}
+
+export type GetPkcs10RequestResponse = {
+  /** base64 encoded DER representation of certificate. */
+  pkcs10Request: BinaryData
 }
 
 export type GetRelayOutputsRequest = Record<string, never>
@@ -545,6 +728,25 @@ export type IPv6NetworkInterfaceSetConfiguration = {
   /** DHCP configuration. */
   DHCP?: IPv6DHCPConfiguration
 }
+
+export type LoadCACertificatesRequest = {
+  caCertificate: Certificate[]
+}
+
+export type LoadCACertificatesResponse = Record<string, never>
+
+export type LoadCertificatesRequest = {
+  /** Optional id and base64 encoded DER representation of certificate. */
+  nvtCertificate: Certificate[]
+}
+
+export type LoadCertificatesResponse = Record<string, never>
+
+export type LoadCertificateWithPrivateKeyRequest = {
+  certificateWithPrivateKey: CertificateWithPrivateKey[]
+}
+
+export type LoadCertificateWithPrivateKeyResponse = Record<string, never>
 
 export type LocalLocation = {
   /** East west location as angle. */
@@ -791,6 +993,20 @@ export type SetAuthFailureWarningConfigurationRequest = {
 
 export type SetAuthFailureWarningConfigurationResponse = Record<string, never>
 
+export type SetCertificatesStatusRequest = {
+  /** Indicates if a certificate is to be used in an optional HTTPS configuration of the device. */
+  certificateStatus?: CertificateStatus[]
+}
+
+export type SetCertificatesStatusResponse = Record<string, never>
+
+export type SetClientCertificateModeRequest = {
+  /** Indicates whether or not client certificates are required by device. */
+  enabled: boolean
+}
+
+export type SetClientCertificateModeResponse = Record<string, never>
+
 export type SetDiscoveryModeRequest = {
   /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
   discoveryMode: DiscoveryMode
@@ -808,6 +1024,12 @@ export type SetDNSRequest = {
 }
 
 export type SetDNSResponse = Record<string, never>
+
+export type SetDot1XConfigurationRequest = {
+  dot1XConfiguration: Dot1XConfiguration
+}
+
+export type SetDot1XConfigurationResponse = Record<string, never>
 
 export type SetDPAddressesRequest = {
   dpAddress?: NetworkHost[]
@@ -1101,6 +1323,11 @@ export type TimeZone = {
   TZ: string
 }
 
+export type TLSConfiguration = {
+  certificateID: string
+  $any?: Record<string, unknown>
+}
+
 export type User = {
   /** Username string. */
   username: string
@@ -1168,6 +1395,74 @@ export const schema: Schema = {
       { name: 'contentType', type: 'string', namespace: xmime, attribute: true, optional: true }
     ]
   },
+  Certificate: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt },
+      { name: 'Certificate', property: 'certificate', type: 'BinaryData', namespace: tt }
+    ]
+  },
+  CertificateInformation: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt },
+      { name: 'IssuerDN', property: 'issuerDN', type: 'string', namespace: tt, optional: true },
+      { name: 'SubjectDN', property: 'subjectDN', type: 'string', namespace: tt, optional: true },
+      { name: 'KeyUsage', property: 'keyUsage', type: 'CertificateUsage', namespace: tt, optional: true },
+      {
+        name: 'ExtendedKeyUsage',
+        property: 'extendedKeyUsage',
+        type: 'CertificateUsage',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'KeyLength', property: 'keyLength', type: 'integer', namespace: tt, optional: true },
+      { name: 'Version', property: 'version', type: 'string', namespace: tt, optional: true },
+      { name: 'SerialNum', property: 'serialNum', type: 'string', namespace: tt, optional: true },
+      { name: 'SignatureAlgorithm', property: 'signatureAlgorithm', type: 'string', namespace: tt, optional: true },
+      { name: 'Validity', property: 'validity', type: 'DateTimeRange', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'CertificateInformationExtension',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  CertificateInformationExtension: { fields: [], any: true },
+  CertificateStatus: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt },
+      { name: 'Status', property: 'status', type: 'boolean', namespace: tt }
+    ],
+    any: true
+  },
+  CertificateUsage: {
+    fields: [{ name: 'Critical', property: 'critical', type: 'boolean', attribute: true }],
+    text: 'string'
+  },
+  CertificateWithPrivateKey: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt, optional: true },
+      { name: 'Certificate', property: 'certificate', type: 'BinaryData', namespace: tt },
+      { name: 'PrivateKey', property: 'privateKey', type: 'BinaryData', namespace: tt }
+    ],
+    any: true
+  },
+  CreateCertificateRequest: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tds, optional: true },
+      { name: 'Subject', property: 'subject', type: 'string', namespace: tds, optional: true },
+      { name: 'ValidNotBefore', property: 'validNotBefore', type: 'dateTime', namespace: tds, optional: true },
+      { name: 'ValidNotAfter', property: 'validNotAfter', type: 'dateTime', namespace: tds, optional: true }
+    ]
+  },
+  CreateCertificateResponse: {
+    fields: [{ name: 'NvtCertificate', property: 'nvtCertificate', type: 'Certificate', namespace: tds }]
+  },
+  CreateDot1XConfigurationRequest: {
+    fields: [{ name: 'Dot1XConfiguration', property: 'dot1XConfiguration', type: 'Dot1XConfiguration', namespace: tds }]
+  },
+  CreateDot1XConfigurationResponse: { fields: [] },
   CreateStorageConfigurationRequest: {
     fields: [
       {
@@ -1189,6 +1484,13 @@ export const schema: Schema = {
       { name: 'Date', property: 'date', type: 'DateType', namespace: tt }
     ]
   },
+  DateTimeRange: {
+    fields: [
+      { name: 'From', property: 'from', type: 'dateTime', namespace: tt },
+      { name: 'Until', property: 'until', type: 'dateTime', namespace: tt }
+    ],
+    any: true
+  },
   DateType: {
     fields: [
       { name: 'Year', property: 'year', type: 'integer', namespace: tt },
@@ -1196,6 +1498,23 @@ export const schema: Schema = {
       { name: 'Day', property: 'day', type: 'integer', namespace: tt }
     ]
   },
+  DeleteCertificatesRequest: {
+    fields: [{ name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tds, array: true }]
+  },
+  DeleteCertificatesResponse: { fields: [] },
+  DeleteDot1XConfigurationRequest: {
+    fields: [
+      {
+        name: 'Dot1XConfigurationToken',
+        property: 'dot1XConfigurationToken',
+        type: 'string',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  DeleteDot1XConfigurationResponse: { fields: [] },
   DeleteGeoLocationRequest: {
     fields: [{ name: 'Location', property: 'location', type: 'LocationEntity', namespace: tds, array: true }]
   },
@@ -1298,6 +1617,31 @@ export const schema: Schema = {
     ],
     any: true
   },
+  Dot1XConfiguration: {
+    fields: [
+      { name: 'Dot1XConfigurationToken', property: 'dot1XConfigurationToken', type: 'string', namespace: tt },
+      { name: 'Identity', property: 'identity', type: 'string', namespace: tt },
+      { name: 'AnonymousID', property: 'anonymousID', type: 'string', namespace: tt, optional: true },
+      { name: 'EAPMethod', property: 'eapMethod', type: 'integer', namespace: tt },
+      {
+        name: 'CACertificateID',
+        property: 'caCertificateID',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'EAPMethodConfiguration',
+        property: 'eapMethodConfiguration',
+        type: 'EAPMethodConfiguration',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Extension', property: 'extension', type: 'Dot1XConfigurationExtension', namespace: tt, optional: true }
+    ]
+  },
+  Dot1XConfigurationExtension: { fields: [], any: true },
   Dot3Configuration: { fields: [], any: true },
   DynamicDNSInformation: {
     fields: [
@@ -1314,6 +1658,20 @@ export const schema: Schema = {
     ]
   },
   DynamicDNSInformationExtension: { fields: [], any: true },
+  EAPMethodConfiguration: {
+    fields: [
+      {
+        name: 'TLSConfiguration',
+        property: 'tlsConfiguration',
+        type: 'TLSConfiguration',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Password', property: 'password', type: 'string', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'EapMethodExtension', namespace: tt, optional: true }
+    ]
+  },
+  EapMethodExtension: { fields: [], any: true },
   GeoLocation: {
     fields: [
       { name: 'lon', type: 'decimal', attribute: true, optional: true },
@@ -1349,6 +1707,62 @@ export const schema: Schema = {
       { name: 'AuthFailureRange', property: 'authFailureRange', type: 'IntRange', namespace: tds }
     ]
   },
+  GetCACertificatesRequest: { fields: [] },
+  GetCACertificatesResponse: {
+    fields: [
+      {
+        name: 'CACertificate',
+        property: 'caCertificate',
+        type: 'Certificate',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetCertificateInformationRequest: {
+    fields: [{ name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tds }]
+  },
+  GetCertificateInformationResponse: {
+    fields: [
+      {
+        name: 'CertificateInformation',
+        property: 'certificateInformation',
+        type: 'CertificateInformation',
+        namespace: tds
+      }
+    ]
+  },
+  GetCertificatesRequest: { fields: [] },
+  GetCertificatesResponse: {
+    fields: [
+      {
+        name: 'NvtCertificate',
+        property: 'nvtCertificate',
+        type: 'Certificate',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetCertificatesStatusRequest: { fields: [] },
+  GetCertificatesStatusResponse: {
+    fields: [
+      {
+        name: 'CertificateStatus',
+        property: 'certificateStatus',
+        type: 'CertificateStatus',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetClientCertificateModeRequest: { fields: [] },
+  GetClientCertificateModeResponse: {
+    fields: [{ name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds }]
+  },
   GetDiscoveryModeRequest: { fields: [] },
   GetDiscoveryModeResponse: {
     fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
@@ -1365,6 +1779,25 @@ export const schema: Schema = {
     fields: [{ name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tds }]
   },
   GetDot11StatusResponse: { fields: [{ name: 'Status', property: 'status', type: 'Dot11Status', namespace: tds }] },
+  GetDot1XConfigurationRequest: {
+    fields: [{ name: 'Dot1XConfigurationToken', property: 'dot1XConfigurationToken', type: 'string', namespace: tds }]
+  },
+  GetDot1XConfigurationResponse: {
+    fields: [{ name: 'Dot1XConfiguration', property: 'dot1XConfiguration', type: 'Dot1XConfiguration', namespace: tds }]
+  },
+  GetDot1XConfigurationsRequest: { fields: [] },
+  GetDot1XConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Dot1XConfiguration',
+        property: 'dot1XConfiguration',
+        type: 'Dot1XConfiguration',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
   GetDPAddressesRequest: { fields: [] },
   GetDPAddressesResponse: {
     fields: [
@@ -1467,6 +1900,16 @@ export const schema: Schema = {
       { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds },
       { name: 'Length', property: 'length', type: 'integer', namespace: tds }
     ]
+  },
+  GetPkcs10RequestRequest: {
+    fields: [
+      { name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tds },
+      { name: 'Subject', property: 'subject', type: 'string', namespace: tds, optional: true },
+      { name: 'Attributes', property: 'attributes', type: 'BinaryData', namespace: tds, optional: true }
+    ]
+  },
+  GetPkcs10RequestResponse: {
+    fields: [{ name: 'Pkcs10Request', property: 'pkcs10Request', type: 'BinaryData', namespace: tds }]
   },
   GetRelayOutputsRequest: { fields: [] },
   GetRelayOutputsResponse: {
@@ -1584,6 +2027,26 @@ export const schema: Schema = {
       { name: 'DHCP', type: 'string', namespace: tt, optional: true }
     ]
   },
+  LoadCACertificatesRequest: {
+    fields: [{ name: 'CACertificate', property: 'caCertificate', type: 'Certificate', namespace: tds, array: true }]
+  },
+  LoadCACertificatesResponse: { fields: [] },
+  LoadCertificatesRequest: {
+    fields: [{ name: 'NVTCertificate', property: 'nvtCertificate', type: 'Certificate', namespace: tds, array: true }]
+  },
+  LoadCertificatesResponse: { fields: [] },
+  LoadCertificateWithPrivateKeyRequest: {
+    fields: [
+      {
+        name: 'CertificateWithPrivateKey',
+        property: 'certificateWithPrivateKey',
+        type: 'CertificateWithPrivateKey',
+        namespace: tds,
+        array: true
+      }
+    ]
+  },
+  LoadCertificateWithPrivateKeyResponse: { fields: [] },
   LocalLocation: {
     fields: [
       { name: 'x', type: 'decimal', attribute: true, optional: true },
@@ -1811,6 +2274,23 @@ export const schema: Schema = {
     ]
   },
   SetAuthFailureWarningConfigurationResponse: { fields: [] },
+  SetCertificatesStatusRequest: {
+    fields: [
+      {
+        name: 'CertificateStatus',
+        property: 'certificateStatus',
+        type: 'CertificateStatus',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  SetCertificatesStatusResponse: { fields: [] },
+  SetClientCertificateModeRequest: {
+    fields: [{ name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tds }]
+  },
+  SetClientCertificateModeResponse: { fields: [] },
   SetDiscoveryModeRequest: {
     fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
   },
@@ -1823,6 +2303,10 @@ export const schema: Schema = {
     ]
   },
   SetDNSResponse: { fields: [] },
+  SetDot1XConfigurationRequest: {
+    fields: [{ name: 'Dot1XConfiguration', property: 'dot1XConfiguration', type: 'Dot1XConfiguration', namespace: tds }]
+  },
+  SetDot1XConfigurationResponse: { fields: [] },
   SetDPAddressesRequest: {
     fields: [
       { name: 'DPAddress', property: 'dpAddress', type: 'NetworkHost', namespace: tds, optional: true, array: true }
@@ -2045,6 +2529,10 @@ export const schema: Schema = {
     ]
   },
   TimeZone: { fields: [{ name: 'TZ', type: 'string', namespace: tt }] },
+  TLSConfiguration: {
+    fields: [{ name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt }],
+    any: true
+  },
   User: {
     fields: [
       { name: 'Username', property: 'username', type: 'string', namespace: tt },
@@ -2673,6 +3161,154 @@ export const SetHashingAlgorithm: Operation<SetHashingAlgorithmRequest, SetHashi
   action: 'http://www.onvif.org/ver10/device/wsdl/SetHashingAlgorithm',
   request: { name: 'SetHashingAlgorithm', namespace: tds, type: 'SetHashingAlgorithmRequest' },
   response: { name: 'SetHashingAlgorithmResponse', type: 'SetHashingAlgorithmResponse' },
+  schema
+}
+
+export const CreateCertificate: Operation<CreateCertificateRequest, CreateCertificateResponse> = {
+  name: 'CreateCertificate',
+  action: 'http://www.onvif.org/ver10/device/wsdl/CreateCertificate',
+  request: { name: 'CreateCertificate', namespace: tds, type: 'CreateCertificateRequest' },
+  response: { name: 'CreateCertificateResponse', type: 'CreateCertificateResponse' },
+  schema
+}
+
+export const GetCertificates: Operation<GetCertificatesRequest, GetCertificatesResponse> = {
+  name: 'GetCertificates',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetCertificates',
+  request: { name: 'GetCertificates', namespace: tds, type: 'GetCertificatesRequest' },
+  response: { name: 'GetCertificatesResponse', type: 'GetCertificatesResponse' },
+  schema
+}
+
+export const GetCertificatesStatus: Operation<GetCertificatesStatusRequest, GetCertificatesStatusResponse> = {
+  name: 'GetCertificatesStatus',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetCertificatesStatus',
+  request: { name: 'GetCertificatesStatus', namespace: tds, type: 'GetCertificatesStatusRequest' },
+  response: { name: 'GetCertificatesStatusResponse', type: 'GetCertificatesStatusResponse' },
+  schema
+}
+
+export const SetCertificatesStatus: Operation<SetCertificatesStatusRequest, SetCertificatesStatusResponse> = {
+  name: 'SetCertificatesStatus',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetCertificatesStatus',
+  request: { name: 'SetCertificatesStatus', namespace: tds, type: 'SetCertificatesStatusRequest' },
+  response: { name: 'SetCertificatesStatusResponse', type: 'SetCertificatesStatusResponse' },
+  schema
+}
+
+export const DeleteCertificates: Operation<DeleteCertificatesRequest, DeleteCertificatesResponse> = {
+  name: 'DeleteCertificates',
+  action: 'http://www.onvif.org/ver10/device/wsdl/DeleteCertificates',
+  request: { name: 'DeleteCertificates', namespace: tds, type: 'DeleteCertificatesRequest' },
+  response: { name: 'DeleteCertificatesResponse', type: 'DeleteCertificatesResponse' },
+  schema
+}
+
+export const GetPkcs10Request: Operation<GetPkcs10RequestRequest, GetPkcs10RequestResponse> = {
+  name: 'GetPkcs10Request',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetPkcs10Request',
+  request: { name: 'GetPkcs10Request', namespace: tds, type: 'GetPkcs10RequestRequest' },
+  response: { name: 'GetPkcs10RequestResponse', type: 'GetPkcs10RequestResponse' },
+  schema
+}
+
+export const LoadCertificates: Operation<LoadCertificatesRequest, LoadCertificatesResponse> = {
+  name: 'LoadCertificates',
+  action: 'http://www.onvif.org/ver10/device/wsdl/LoadCertificates',
+  request: { name: 'LoadCertificates', namespace: tds, type: 'LoadCertificatesRequest' },
+  response: { name: 'LoadCertificatesResponse', type: 'LoadCertificatesResponse' },
+  schema
+}
+
+export const GetClientCertificateMode: Operation<GetClientCertificateModeRequest, GetClientCertificateModeResponse> = {
+  name: 'GetClientCertificateMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetClientCertificateMode',
+  request: { name: 'GetClientCertificateMode', namespace: tds, type: 'GetClientCertificateModeRequest' },
+  response: { name: 'GetClientCertificateModeResponse', type: 'GetClientCertificateModeResponse' },
+  schema
+}
+
+export const SetClientCertificateMode: Operation<SetClientCertificateModeRequest, SetClientCertificateModeResponse> = {
+  name: 'SetClientCertificateMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetClientCertificateMode',
+  request: { name: 'SetClientCertificateMode', namespace: tds, type: 'SetClientCertificateModeRequest' },
+  response: { name: 'SetClientCertificateModeResponse', type: 'SetClientCertificateModeResponse' },
+  schema
+}
+
+export const GetCACertificates: Operation<GetCACertificatesRequest, GetCACertificatesResponse> = {
+  name: 'GetCACertificates',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetCACertificates',
+  request: { name: 'GetCACertificates', namespace: tds, type: 'GetCACertificatesRequest' },
+  response: { name: 'GetCACertificatesResponse', type: 'GetCACertificatesResponse' },
+  schema
+}
+
+export const LoadCertificateWithPrivateKey: Operation<
+  LoadCertificateWithPrivateKeyRequest,
+  LoadCertificateWithPrivateKeyResponse
+> = {
+  name: 'LoadCertificateWithPrivateKey',
+  action: 'http://www.onvif.org/ver10/device/wsdl/LoadCertificateWithPrivateKey',
+  request: { name: 'LoadCertificateWithPrivateKey', namespace: tds, type: 'LoadCertificateWithPrivateKeyRequest' },
+  response: { name: 'LoadCertificateWithPrivateKeyResponse', type: 'LoadCertificateWithPrivateKeyResponse' },
+  schema
+}
+
+export const GetCertificateInformation: Operation<GetCertificateInformationRequest, GetCertificateInformationResponse> =
+  {
+    name: 'GetCertificateInformation',
+    action: 'http://www.onvif.org/ver10/device/wsdl/GetCertificateInformation',
+    request: { name: 'GetCertificateInformation', namespace: tds, type: 'GetCertificateInformationRequest' },
+    response: { name: 'GetCertificateInformationResponse', type: 'GetCertificateInformationResponse' },
+    schema
+  }
+
+export const LoadCACertificates: Operation<LoadCACertificatesRequest, LoadCACertificatesResponse> = {
+  name: 'LoadCACertificates',
+  action: 'http://www.onvif.org/ver10/device/wsdl/LoadCACertificates',
+  request: { name: 'LoadCACertificates', namespace: tds, type: 'LoadCACertificatesRequest' },
+  response: { name: 'LoadCACertificatesResponse', type: 'LoadCACertificatesResponse' },
+  schema
+}
+
+export const CreateDot1XConfiguration: Operation<CreateDot1XConfigurationRequest, CreateDot1XConfigurationResponse> = {
+  name: 'CreateDot1XConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/CreateDot1XConfiguration',
+  request: { name: 'CreateDot1XConfiguration', namespace: tds, type: 'CreateDot1XConfigurationRequest' },
+  response: { name: 'CreateDot1XConfigurationResponse', type: 'CreateDot1XConfigurationResponse' },
+  schema
+}
+
+export const SetDot1XConfiguration: Operation<SetDot1XConfigurationRequest, SetDot1XConfigurationResponse> = {
+  name: 'SetDot1XConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetDot1XConfiguration',
+  request: { name: 'SetDot1XConfiguration', namespace: tds, type: 'SetDot1XConfigurationRequest' },
+  response: { name: 'SetDot1XConfigurationResponse', type: 'SetDot1XConfigurationResponse' },
+  schema
+}
+
+export const GetDot1XConfiguration: Operation<GetDot1XConfigurationRequest, GetDot1XConfigurationResponse> = {
+  name: 'GetDot1XConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDot1XConfiguration',
+  request: { name: 'GetDot1XConfiguration', namespace: tds, type: 'GetDot1XConfigurationRequest' },
+  response: { name: 'GetDot1XConfigurationResponse', type: 'GetDot1XConfigurationResponse' },
+  schema
+}
+
+export const GetDot1XConfigurations: Operation<GetDot1XConfigurationsRequest, GetDot1XConfigurationsResponse> = {
+  name: 'GetDot1XConfigurations',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDot1XConfigurations',
+  request: { name: 'GetDot1XConfigurations', namespace: tds, type: 'GetDot1XConfigurationsRequest' },
+  response: { name: 'GetDot1XConfigurationsResponse', type: 'GetDot1XConfigurationsResponse' },
+  schema
+}
+
+export const DeleteDot1XConfiguration: Operation<DeleteDot1XConfigurationRequest, DeleteDot1XConfigurationResponse> = {
+  name: 'DeleteDot1XConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/DeleteDot1XConfiguration',
+  request: { name: 'DeleteDot1XConfiguration', namespace: tds, type: 'DeleteDot1XConfigurationRequest' },
+  response: { name: 'DeleteDot1XConfigurationResponse', type: 'DeleteDot1XConfigurationResponse' },
   schema
 }
 
@@ -3659,5 +4295,200 @@ export class ManagementClient {
     options?: CallOptions
   ): Promise<SetHashingAlgorithmResponse> {
     return this.#device.call(SetHashingAlgorithm, request, options)
+  }
+
+  /**
+   * @param request - The `CreateCertificate` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateCertificateResponse`
+   */
+  createCertificate(request?: CreateCertificateRequest, options?: CallOptions): Promise<CreateCertificateResponse> {
+    return this.#device.call(CreateCertificate, request, options)
+  }
+
+  /**
+   * @param request - The `GetCertificates` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCertificatesResponse`
+   */
+  getCertificates(request?: GetCertificatesRequest, options?: CallOptions): Promise<GetCertificatesResponse> {
+    return this.#device.call(GetCertificates, request, options)
+  }
+
+  /**
+   * @param request - The `GetCertificatesStatus` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCertificatesStatusResponse`
+   */
+  getCertificatesStatus(
+    request?: GetCertificatesStatusRequest,
+    options?: CallOptions
+  ): Promise<GetCertificatesStatusResponse> {
+    return this.#device.call(GetCertificatesStatus, request, options)
+  }
+
+  /**
+   * @param request - The `SetCertificatesStatus` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetCertificatesStatusResponse`
+   */
+  setCertificatesStatus(
+    request?: SetCertificatesStatusRequest,
+    options?: CallOptions
+  ): Promise<SetCertificatesStatusResponse> {
+    return this.#device.call(SetCertificatesStatus, request, options)
+  }
+
+  /**
+   * @param request - The `DeleteCertificates` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteCertificatesResponse`
+   */
+  deleteCertificates(request: DeleteCertificatesRequest, options?: CallOptions): Promise<DeleteCertificatesResponse> {
+    return this.#device.call(DeleteCertificates, request, options)
+  }
+
+  /**
+   * @param request - The `GetPkcs10Request` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPkcs10RequestResponse`
+   */
+  getPkcs10Request(request: GetPkcs10RequestRequest, options?: CallOptions): Promise<GetPkcs10RequestResponse> {
+    return this.#device.call(GetPkcs10Request, request, options)
+  }
+
+  /**
+   * @param request - The `LoadCertificates` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `LoadCertificatesResponse`
+   */
+  loadCertificates(request: LoadCertificatesRequest, options?: CallOptions): Promise<LoadCertificatesResponse> {
+    return this.#device.call(LoadCertificates, request, options)
+  }
+
+  /**
+   * @param request - The `GetClientCertificateMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetClientCertificateModeResponse`
+   */
+  getClientCertificateMode(
+    request?: GetClientCertificateModeRequest,
+    options?: CallOptions
+  ): Promise<GetClientCertificateModeResponse> {
+    return this.#device.call(GetClientCertificateMode, request, options)
+  }
+
+  /**
+   * @param request - The `SetClientCertificateMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetClientCertificateModeResponse`
+   */
+  setClientCertificateMode(
+    request: SetClientCertificateModeRequest,
+    options?: CallOptions
+  ): Promise<SetClientCertificateModeResponse> {
+    return this.#device.call(SetClientCertificateMode, request, options)
+  }
+
+  /**
+   * @param request - The `GetCACertificates` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCACertificatesResponse`
+   */
+  getCACertificates(request?: GetCACertificatesRequest, options?: CallOptions): Promise<GetCACertificatesResponse> {
+    return this.#device.call(GetCACertificates, request, options)
+  }
+
+  /**
+   * @param request - The `LoadCertificateWithPrivateKey` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `LoadCertificateWithPrivateKeyResponse`
+   */
+  loadCertificateWithPrivateKey(
+    request: LoadCertificateWithPrivateKeyRequest,
+    options?: CallOptions
+  ): Promise<LoadCertificateWithPrivateKeyResponse> {
+    return this.#device.call(LoadCertificateWithPrivateKey, request, options)
+  }
+
+  /**
+   * @param request - The `GetCertificateInformation` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCertificateInformationResponse`
+   */
+  getCertificateInformation(
+    request: GetCertificateInformationRequest,
+    options?: CallOptions
+  ): Promise<GetCertificateInformationResponse> {
+    return this.#device.call(GetCertificateInformation, request, options)
+  }
+
+  /**
+   * @param request - The `LoadCACertificates` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `LoadCACertificatesResponse`
+   */
+  loadCACertificates(request: LoadCACertificatesRequest, options?: CallOptions): Promise<LoadCACertificatesResponse> {
+    return this.#device.call(LoadCACertificates, request, options)
+  }
+
+  /**
+   * @param request - The `CreateDot1XConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateDot1XConfigurationResponse`
+   */
+  createDot1XConfiguration(
+    request: CreateDot1XConfigurationRequest,
+    options?: CallOptions
+  ): Promise<CreateDot1XConfigurationResponse> {
+    return this.#device.call(CreateDot1XConfiguration, request, options)
+  }
+
+  /**
+   * @param request - The `SetDot1XConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetDot1XConfigurationResponse`
+   */
+  setDot1XConfiguration(
+    request: SetDot1XConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetDot1XConfigurationResponse> {
+    return this.#device.call(SetDot1XConfiguration, request, options)
+  }
+
+  /**
+   * @param request - The `GetDot1XConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDot1XConfigurationResponse`
+   */
+  getDot1XConfiguration(
+    request: GetDot1XConfigurationRequest,
+    options?: CallOptions
+  ): Promise<GetDot1XConfigurationResponse> {
+    return this.#device.call(GetDot1XConfiguration, request, options)
+  }
+
+  /**
+   * @param request - The `GetDot1XConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDot1XConfigurationsResponse`
+   */
+  getDot1XConfigurations(
+    request?: GetDot1XConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<GetDot1XConfigurationsResponse> {
+    return this.#device.call(GetDot1XConfigurations, request, options)
+  }
+
+  /**
+   * @param request - The `DeleteDot1XConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteDot1XConfigurationResponse`
+   */
+  deleteDot1XConfiguration(
+    request?: DeleteDot1XConfigurationRequest,
+    options?: CallOptions
+  ): Promise<DeleteDot1XConfigurationResponse> {
+    return this.#device.call(DeleteDot1XConfiguration, request, options)
   }
 }

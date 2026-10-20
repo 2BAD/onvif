@@ -134,7 +134,25 @@ const targets: Target[] = [
         'SetAuthFailureWarningConfiguration',
         'GetAccessPolicy',
         'SetAccessPolicy',
-        'SetHashingAlgorithm'
+        'SetHashingAlgorithm',
+        'CreateCertificate',
+        'GetCertificates',
+        'GetCertificatesStatus',
+        'SetCertificatesStatus',
+        'DeleteCertificates',
+        'GetPkcs10Request',
+        'LoadCertificates',
+        'GetClientCertificateMode',
+        'SetClientCertificateMode',
+        'GetCACertificates',
+        'LoadCertificateWithPrivateKey',
+        'GetCertificateInformation',
+        'LoadCACertificates',
+        'CreateDot1XConfiguration',
+        'SetDot1XConfiguration',
+        'GetDot1XConfiguration',
+        'GetDot1XConfigurations',
+        'DeleteDot1XConfiguration'
       ]
     }
   },

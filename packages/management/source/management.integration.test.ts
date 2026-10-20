@@ -244,6 +244,29 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
     }
   })
 
+  it('lists the certificates', async (context) => {
+    const certificates = await unlessAnswered(() => device.management.getCertificates())
+    if (!certificates) return context.skip('The device does not implement certificates')
+    const { certificateStatus = [] } = await device.management.getCertificatesStatus()
+    const ids = new Set((certificates.nvtCertificate ?? []).map(({ certificateID }) => certificateID))
+    for (const { certificateID } of certificateStatus) expect(ids.has(certificateID)).toBe(true)
+  })
+
+  it('sends the client certificate mode back unchanged', async (context) => {
+    const mode = await unlessAnswered(() => device.management.getClientCertificateMode())
+    if (!mode) return context.skip('The device does not implement the client certificate mode')
+    await device.management.setClientCertificateMode(mode)
+    expect(await device.management.getClientCertificateMode()).toEqual(mode)
+  })
+
+  it('lists the 802.1X configurations', async (context) => {
+    const configurations = await unlessAnswered(() => device.management.getDot1XConfigurations())
+    if (!configurations) return context.skip('The device does not implement 802.1X')
+    for (const { dot1XConfigurationToken } of configurations.dot1XConfiguration ?? []) {
+      expect(typeof dot1XConfigurationToken).toBe('string')
+    }
+  })
+
   it('sends the IP filter back unchanged', async (context) => {
     const filter = await unlessNotSupported(() => device.management.getIPAddressFilter())
     if (!filter) return context.skip('The device does not implement the IP address filter')

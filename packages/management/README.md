@@ -1,6 +1,6 @@
 # @2bad/onvif-management
 
-ONVIF users, roles, password policies, time, network settings, scopes, logs, storage, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
+ONVIF users, roles, password policies, certificates, 802.1X, time, network settings, scopes, logs, storage, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 ## Install
 
@@ -47,6 +47,26 @@ camera.management.setAuthFailureWarningConfiguration(request)
 camera.management.getAccessPolicy()
 camera.management.setAccessPolicy(request)
 camera.management.setHashingAlgorithm(request)
+
+camera.management.getCertificates()
+camera.management.getCertificatesStatus()
+camera.management.setCertificatesStatus(request)
+camera.management.getCertificateInformation(request)
+camera.management.createCertificate(request)
+camera.management.getPkcs10Request(request)
+camera.management.loadCertificates(request)
+camera.management.loadCertificateWithPrivateKey(request)
+camera.management.getCACertificates()
+camera.management.loadCACertificates(request)
+camera.management.deleteCertificates(request)
+camera.management.getClientCertificateMode()
+camera.management.setClientCertificateMode(request)
+
+camera.management.getDot1XConfigurations()
+camera.management.getDot1XConfiguration(request)
+camera.management.createDot1XConfiguration(request)
+camera.management.setDot1XConfiguration(request)
+camera.management.deleteDot1XConfiguration(request)
 
 camera.management.getNTP()
 camera.management.setNTP(request)
@@ -119,6 +139,15 @@ await camera.management.deleteUsers({ username: ['viewer'] })
 ```
 
 After changing the password of the user you are connected as, connect again with the new password.
+
+## Certificates
+
+```ts
+const { nvtCertificate = [] } = await camera.management.getCertificates()
+const der = nvtCertificate[0]?.certificate.data // Uint8Array
+```
+
+Certificate, key and policy data is a `Uint8Array` in both directions.
 
 ## Date and time
 
