@@ -11,6 +11,7 @@
     "#onvif-management/*": "./packages/management/source/*",
     "#onvif-media/*": "./packages/media/source/*",
     "#onvif-ptz/*": "./packages/ptz/source/*",
+    "#onvif-recording/*": "./packages/recording/source/*",
     "#tools/*": "./tools/*"
   },
   "scripts": {

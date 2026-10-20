@@ -103,7 +103,10 @@ const servicesByPath: Record<string, string> = {
   '/onvif/Events': 'events',
   '/onvif/PTZ': 'ptz',
   '/onvif/Imaging': 'imaging',
-  '/onvif/Analytics': 'analytics'
+  '/onvif/Analytics': 'analytics',
+  '/onvif/Recording': 'recording',
+  '/onvif/SearchRecording': 'search',
+  '/onvif/Replay': 'replay'
 }
 
 const soapFault = (subcode: string, reason: string): string =>

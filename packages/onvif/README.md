@@ -10,7 +10,7 @@ npm install @2bad/onvif
 
 Needs Node.js 26 or later. ESM only.
 
-Analytics, discovery, events, imaging, device management, media and PTZ are in [`@2bad/onvif-analytics`](https://www.npmjs.com/package/@2bad/onvif-analytics), [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events), [`@2bad/onvif-imaging`](https://www.npmjs.com/package/@2bad/onvif-imaging), [`@2bad/onvif-management`](https://www.npmjs.com/package/@2bad/onvif-management), [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media) and [`@2bad/onvif-ptz`](https://www.npmjs.com/package/@2bad/onvif-ptz).
+Analytics, discovery, events, imaging, device management, media, PTZ and recording are in [`@2bad/onvif-analytics`](https://www.npmjs.com/package/@2bad/onvif-analytics), [`@2bad/onvif-discovery`](https://www.npmjs.com/package/@2bad/onvif-discovery), [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events), [`@2bad/onvif-imaging`](https://www.npmjs.com/package/@2bad/onvif-imaging), [`@2bad/onvif-management`](https://www.npmjs.com/package/@2bad/onvif-management), [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media), [`@2bad/onvif-ptz`](https://www.npmjs.com/package/@2bad/onvif-ptz) and [`@2bad/onvif-recording`](https://www.npmjs.com/package/@2bad/onvif-recording).
 
 ## Quick start
 

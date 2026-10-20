@@ -25,7 +25,7 @@ type Target = {
   substitutions?: Record<string, { schema?: string; namespace: string; local: string }[]>
   /** Types whose text holds names with namespace prefixes, such as topic expressions. */
   prefixed?: string[]
-  /** Required response elements that devices omit, as `Response.Element`, decoded as optional. */
+  /** Required elements that devices omit or leave empty, as `Response.Element` or `Type.Element`, decoded as optional. */
   optional?: string[]
   client?: EmitOptions['client']
 }
@@ -266,6 +266,75 @@ const targets: Target[] = [
     }
   },
   {
+    output: 'packages/recording/source/generated/recording.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: {
+      name: 'RecordingClient',
+      typesImport: '@2bad/onvif',
+      scoped: { name: 'RecordingTokenClient', method: 'forRecording', field: 'RecordingToken' }
+    },
+    wsdl: 'ver10/recording.wsdl',
+    operations: {
+      RecordingPort: [
+        'GetServiceCapabilities',
+        'GetRecordings',
+        'CreateRecording',
+        'DeleteRecording',
+        'GetRecordingConfiguration',
+        'SetRecordingConfiguration',
+        'GetRecordingOptions',
+        'CreateTrack',
+        'DeleteTrack',
+        'GetTrackConfiguration',
+        'SetTrackConfiguration',
+        'GetRecordingJobs',
+        'CreateRecordingJob',
+        'DeleteRecordingJob',
+        'GetRecordingJobConfiguration',
+        'SetRecordingJobConfiguration',
+        'SetRecordingJobMode',
+        'GetRecordingJobState'
+      ]
+    }
+  },
+  {
+    output: 'packages/recording/source/generated/search.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: { name: 'SearchClient', typesImport: '@2bad/onvif' },
+    wsdl: 'ver10/search.wsdl',
+    operations: {
+      SearchPort: [
+        'GetServiceCapabilities',
+        'GetRecordingSummary',
+        'GetRecordingInformation',
+        'GetMediaAttributes',
+        'FindRecordings',
+        'GetRecordingSearchResults',
+        'FindEvents',
+        'GetEventSearchResults',
+        'GetSearchState',
+        'EndSearch'
+      ]
+    },
+    namespaces: ['GetEventSearchResults'],
+    optional: ['TrackInformation.DataFrom', 'TrackInformation.DataTo'],
+    substitutions: {
+      FilterType: filters,
+      EventFilter: filters,
+      NotificationMessageHolderTypeMessage: [{ namespace: tt, local: 'Message' }]
+    },
+    prefixed: ['TopicExpressionType', 'QueryExpressionType']
+  },
+  {
+    output: 'packages/recording/source/generated/replay.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: { name: 'ReplayClient', typesImport: '@2bad/onvif' },
+    wsdl: 'ver10/replay.wsdl',
+    operations: {
+      ReplayPort: ['GetServiceCapabilities', 'GetReplayUri', 'GetReplayConfiguration', 'SetReplayConfiguration']
+    }
+  },
+  {
     output: 'packages/analytics/source/generated/analytics.ts',
     codecImport: '@2bad/onvif/soap',
     client: {
@@ -327,10 +396,12 @@ const generate = (target: Target): string => {
     })
   })
   for (const path of target.optional ?? []) {
-    const [element, name] = path.split('.')
-    const response = operations.find((operation) => operation.response.element.local === element)?.response
-    const field = response?.type.fields.find((candidate) => candidate.name === name && !candidate.attribute)
-    if (!field) throw new Error(`Response element ${path} not found in ${target.wsdl}`)
+    const [owner, name] = path.split('.')
+    const type =
+      operations.find((operation) => operation.response.element.local === owner)?.response.type ??
+      builder.complexTypes.find((model) => model.suggestedName === owner)
+    const field = type?.fields.find((candidate) => candidate.name === name && !candidate.attribute)
+    if (!field) throw new Error(`Element ${path} not found in ${target.wsdl}`)
     field.optional = true
   }
   for (const [typeName, substitutes] of Object.entries(target.substitutions ?? {})) {

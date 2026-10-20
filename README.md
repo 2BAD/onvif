@@ -20,6 +20,7 @@ Compared with other ONVIF libraries:
 - [`@2bad/onvif-management`](packages/management): manage users, NTP, network settings, IP filter and relay outputs
 - [`@2bad/onvif-media`](packages/media): get RTSP stream URLs and JPEG snapshots, change resolution, frame rate and bitrate
 - [`@2bad/onvif-ptz`](packages/ptz): pan, tilt and zoom a camera, save and recall presets
+- [`@2bad/onvif-recording`](packages/recording): search recordings and recorded events, replay them and control recording
 
 ## Example
 
@@ -44,7 +45,7 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | M       | 7 of 7   |                              |
 | C       | 7 of 15  | access control, door control |
 | D       | 10 of 19 | access, doors                |
-| G       | 2 of 8   | recording search, replay     |
+| G       | 8 of 8   |                              |
 | A       | 9 of 17  | credentials, rules           |
 
 ## Performance
