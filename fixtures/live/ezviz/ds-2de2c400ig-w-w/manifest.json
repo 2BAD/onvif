@@ -1026,6 +1026,22 @@
     "device.DeleteCertificatesMissingFault": {
       "status": 500,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetSystemUris": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.StartFirmwareUpgrade": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.StartSystemRestore": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.UpgradeFirmware": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
