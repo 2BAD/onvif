@@ -30,7 +30,7 @@ export type TypeSchema = {
   fields: readonly FieldSchema[]
   text?: string
   any?: true
-  /** Properties of the elements that stand in for a required `xs:any`. A request has exactly one of them. */
+  /** Properties of a required choice, or of the elements that stand in for a required `xs:any`. A request has exactly one of them. */
   choice?: readonly string[]
 }
 
@@ -41,6 +41,8 @@ export type Operation<Request, Response> = {
   action: string
   request: { name: string; namespace: string; type: string }
   response: { name: string; type: string }
+  /** Namespace of the service the request goes to, when it is not the namespace of the request element. */
+  service?: string
   schema: Schema
   /** Parse the response with namespaces, for content that holds QNames or has to be echoed back. */
   namespaces?: true

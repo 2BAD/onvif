@@ -599,14 +599,15 @@ export class Device extends DeviceOperations {
   #contextOf<Request, Response>(operation: Operation<Request, Response>): ErrorContext {
     return {
       host: this.address.host,
-      service: prefixes[operation.request.namespace] ?? operation.request.namespace,
+      service:
+        prefixes[operation.service ?? operation.request.namespace] ?? operation.service ?? operation.request.namespace,
       action: operation.name
     }
   }
 
   #target<Request, Response>(operation: Operation<Request, Response>, to: string | undefined): URL {
     if (to !== undefined) return this.resolveAddress(to)
-    const { namespace } = operation.request
+    const namespace = operation.service ?? operation.request.namespace
     const url = this.#services.get(namespace)
     if (url) return url
     const context = this.#contextOf(operation)

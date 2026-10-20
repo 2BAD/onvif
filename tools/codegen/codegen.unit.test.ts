@@ -381,6 +381,23 @@ describe('reserved names', () => {
     expect(source).toMatch(/export type DateType = \{\n {2}year: number\n {2}when: Date\n\}/)
     expect(source).toContain('calendar: DateType')
   })
+
+  it('names the service of an operation that takes the request element of another ONVIF service', () => {
+    const registry = new Registry()
+    registry.load(join(testDirectory, 'borrowed.wsdl'))
+    const builder = new ModelBuilder(registry)
+    const models = registry.operations('Service').map((operation) => builder.operation(operation))
+    expect(models.map(({ name, service }) => ({ name, service }))).toEqual([
+      { name: 'GetPorts', service: undefined },
+      { name: 'GetRelays', service: 'http://www.onvif.org/test/io/wsdl' },
+      { name: 'Renew', service: undefined }
+    ])
+    const source = emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: models })
+    expect(source.match(/service: \w+/g)).toEqual(['service: ns1'])
+    expect(source).toMatch(
+      /request: \{ name: 'GetRelays', namespace: ns2, type: 'GetRelaysRequest' \},\n.*\n {2}service: ns1,/
+    )
+  })
 })
 
 describe('resolveQName', () => {
@@ -479,6 +496,28 @@ describe('qnames and substitutions', () => {
     const plain = builder.element({ namespace: items, local: 'Plain' })
     expect(() => builder.substitute(plain, { namespace: items, local: 'Shape' })).toThrow(
       'Plain has no xs:any for {urn:test:items}Shape'
+    )
+  })
+
+  it('adds a choice for a required choice of elements', () => {
+    const either = builderFor().element({ namespace: items, local: 'Either' })
+    expect(either.fields).toMatchObject([
+      { name: 'Text', optional: true },
+      { name: 'Numbers', optional: true }
+    ])
+    expect(either.choice).toEqual(['Text', 'Numbers'])
+    expect(emit({ commit: 'test', codecImport: '#soap/codec.ts', operations: [], elements: [either] })).toContain(
+      "choice: ['text', 'numbers']"
+    )
+  })
+
+  it('adds no choice for an optional or repeated choice, or one with an optional element', () => {
+    expect(builderFor().element({ namespace: items, local: 'Loose' }).choice).toEqual([])
+  })
+
+  it('rejects a type with two required choices', () => {
+    expect(() => builderFor().element({ namespace: items, local: 'Twice' })).toThrow(
+      'More than one required choice in Twice'
     )
   })
 })

@@ -120,6 +120,7 @@ const servicesByPath: Record<string, string> = {
   '/onvif/PTZ': 'ptz',
   '/onvif/Imaging': 'imaging',
   '/onvif/Analytics': 'analytics',
+  '/onvif/DeviceIO': 'deviceio',
   '/onvif/Recording': 'recording',
   '/onvif/SearchRecording': 'search',
   '/onvif/Replay': 'replay'

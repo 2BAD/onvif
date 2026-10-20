@@ -447,6 +447,45 @@ const targets: Target[] = [
         { schema: 'onvif/ver20/analytics/rules.xsd', namespace: axt, local: 'MotionRegionConfigOptions' }
       ]
     }
+  },
+  {
+    output: 'packages/deviceio/source/generated/deviceio.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: { name: 'DeviceIOClient', typesImport: '@2bad/onvif' },
+    wsdl: 'ver10/deviceio.wsdl',
+    operations: {
+      DeviceIOPort: [
+        'GetServiceCapabilities',
+        'GetRelayOutputOptions',
+        'GetAudioSources',
+        'GetAudioOutputs',
+        'GetVideoSources',
+        'GetVideoOutputs',
+        'GetVideoSourceConfiguration',
+        'GetVideoOutputConfiguration',
+        'GetAudioSourceConfiguration',
+        'GetAudioOutputConfiguration',
+        'SetVideoSourceConfiguration',
+        'SetVideoOutputConfiguration',
+        'SetAudioSourceConfiguration',
+        'SetAudioOutputConfiguration',
+        'GetVideoSourceConfigurationOptions',
+        'GetVideoOutputConfigurationOptions',
+        'GetAudioSourceConfigurationOptions',
+        'GetAudioOutputConfigurationOptions',
+        'GetRelayOutputs',
+        'SetRelayOutputSettings',
+        'SetRelayOutputState',
+        'GetDigitalInputs',
+        'GetDigitalInputConfigurationOptions',
+        'SetDigitalInputConfigurations',
+        'GetSerialPorts',
+        'GetSerialPortConfiguration',
+        'SetSerialPortConfiguration',
+        'GetSerialPortConfigurationOptions',
+        'SendReceiveSerialCommand'
+      ]
+    }
   }
 ]
 

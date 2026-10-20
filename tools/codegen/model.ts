@@ -42,7 +42,7 @@ export type ComplexModel = {
   anyRequired: boolean
   /** Whether the `xs:any` repeats. */
   anyArray: boolean
-  /** Names of the elements that stand in for a required `xs:any`. */
+  /** Names of the elements of a required choice, or of those that stand in for a required `xs:any`. */
   choice: string[]
   documentation: string | undefined
 }
@@ -52,6 +52,8 @@ export type OperationModel = {
   action: string
   request: { element: QName; type: ComplexModel }
   response: { element: QName; type: ComplexModel }
+  /** Namespace of the service that takes a request element of another ONVIF service. */
+  service?: string
   documentation: string | undefined
 }
 
@@ -111,13 +113,16 @@ export class ModelBuilder {
   }
 
   operation(operation: WsdlOperation): OperationModel {
-    const { name, action, input, output, documentation } = operation
+    const { name, namespace, action, input, output, documentation } = operation
     if (!output) throw new Error(`Operation ${name} has no output`)
+    const onvif = (uri: string) => uri.startsWith('http://www.onvif.org/')
+    const borrowed = input.namespace !== namespace && onvif(input.namespace) && onvif(namespace)
     return {
       name,
       action,
       request: { element: input, type: this.#globalElementType(input, `${name}Request`) },
       response: { element: output, type: this.#globalElementType(output, output.local) },
+      ...(borrowed && { service: namespace }),
       documentation
     }
   }
@@ -339,6 +344,18 @@ export class ModelBuilder {
         default:
           throw new Error(`Unsupported ${child.name.local} in ${model.suggestedName}`)
       }
+    }
+    if (choice && !optional && !own.optional && !array && !own.array) this.#requiredChoice(model, node)
+  }
+
+  #requiredChoice(model: ComplexModel, node: SchemaNode): void {
+    const particles = node.children.filter((child) => child.name.namespace === XS && !isXs(child, 'annotation'))
+    if (!particles.every((child) => isXs(child, 'element') && !occurs(child).optional)) return
+    if (model.choice.length > 0) throw new Error(`More than one required choice in ${model.suggestedName}`)
+    for (const child of particles) {
+      const ref = child.attributes['ref']
+      const name = ref ? resolveQName(ref, child.namespaces).local : child.attributes['name']
+      if (name) model.choice.push(name)
     }
   }
 

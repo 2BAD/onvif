@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `@2bad/onvif-analytics`: analytics module, rule and supported metadata operations as methods on `device.analytics`, and on `device.analytics.forConfiguration()` without the configuration token
+- `@2bad/onvif-deviceio`: relay output, digital input, serial port and audio and video input and output operations as methods on `device.io`
 - `@2bad/onvif-recording`: recording, search and replay operations as methods on `device.recording`, `device.search` and `device.replay`, with `search.recordings()`, `search.events()` and `replay.uri()`
 - Added Media2 metadata configuration, analytics configuration, `addConfiguration()` and `removeConfiguration()` methods to `device.media.v2`
 - Added DNS, hostname, network protocol, discovery mode and Wi-Fi methods to `device.management`
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added certificate, client certificate mode and 802.1X methods to `device.management`
 - Added `device.upload()` for HTTP uploads to addresses the device reported
 - Added `uploadFirmware()`, `uploadBackup()`, `getSystemUris()` and the cloud `upgradeFirmware()` to `device.management`
+- Added `service` to `Operation` for operations sent to another service than their request element
 
 ### Fixed
 

@@ -14,6 +14,7 @@ Compared with other ONVIF libraries:
 
 - [`@2bad/onvif`](packages/onvif): connect to a camera, read its settings and send it commands
 - [`@2bad/onvif-analytics`](packages/analytics): configure motion, line crossing and field detection rules
+- [`@2bad/onvif-deviceio`](packages/deviceio): switch relay outputs, read digital inputs and send serial port commands
 - [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
 - [`@2bad/onvif-events`](packages/events): receive motion and other camera events
 - [`@2bad/onvif-imaging`](packages/imaging): change brightness, exposure, focus, white balance and the IR cut filter

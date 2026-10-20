@@ -365,6 +365,7 @@ export function emit(options: EmitOptions): string {
       `  action: '${operation.action}',\n` +
       `  request: { name: '${operation.request.element.local}', namespace: ${names.namespace(operation.request.element.namespace)}, type: '${request}' },\n` +
       `  response: { name: '${operation.response.element.local}', type: '${response}' },\n` +
+      (operation.service ? `  service: ${names.namespace(operation.service)},\n` : '') +
       (namespaces.includes(operation.name) || holdsQNames(operation.response.type) ? '  namespaces: true,\n' : '') +
       '  schema\n' +
       '}\n\n'

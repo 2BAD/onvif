@@ -849,6 +849,21 @@ describe('Device.call', () => {
     })
   })
 
+  it('sends an operation to its service when its request element belongs to another service', async () => {
+    const mock = await camera()
+    const device = await connect(mock)
+    const routed = { ...GetScopes, service: MEDIA }
+    await expect(device.call(routed)).rejects.toMatchObject({ service: 'trt', action: 'GetScopes' })
+    expect(mock.requests.at(-1)).toMatchObject({ path: '/onvif/Media', action: 'GetScopes' })
+    expect(mock.requests.at(-1)?.body).toContain('<tds:GetScopes')
+    const missing = { ...GetScopes, service: 'urn:custom' }
+    await expect(device.call(missing)).rejects.toMatchObject({
+      message: 'The device does not offer the service urn:custom',
+      service: 'urn:custom',
+      action: 'GetScopes'
+    })
+  })
+
   it('explains why a service with a rejected address is unavailable', async () => {
     const mock = await camera({ advertisedHost: '10.0.0.5' })
     const device = await connect(mock, { serviceAddresses: 'reject' })

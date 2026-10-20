@@ -17,6 +17,8 @@ export type Component = { node: SchemaNode; context: SchemaContext }
 
 export type WsdlOperation = {
   name: string
+  /** Target namespace of the WSDL that defines the operation. */
+  namespace: string
   input: QName
   output: QName | undefined
   action: string
@@ -44,7 +46,7 @@ export class Registry {
   readonly #messages = new Map<string, QName>()
   readonly #portTypes = new Map<
     string,
-    { name: string; input: QName; output: QName | undefined; documentation: string | undefined }[]
+    { name: string; namespace: string; input: QName; output: QName | undefined; documentation: string | undefined }[]
   >()
   readonly #actions = new Map<string, string>()
 
@@ -133,6 +135,7 @@ export class Registry {
                 .trim()
               return {
                 name: operation.attributes['name'] ?? '',
+                namespace: targetNamespace,
                 input: resolveQName(input, operation.namespaces),
                 output: output ? resolveQName(output, operation.namespaces) : undefined,
                 documentation: documentation === '' ? undefined : documentation

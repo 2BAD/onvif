@@ -47,4 +47,44 @@
       <xs:attribute name="Name" type="xs:string"/>
     </xs:complexType>
   </xs:element>
+  <xs:element name="Either">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element name="Text" type="xs:string"/>
+        <xs:element ref="it:Numbers"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Loose">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice minOccurs="0">
+          <xs:element name="Text" type="xs:string"/>
+          <xs:element name="Count" type="xs:int"/>
+        </xs:choice>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="Left" type="xs:string"/>
+          <xs:element name="Right" type="xs:string"/>
+        </xs:choice>
+        <xs:choice>
+          <xs:element name="Up" type="xs:string"/>
+          <xs:element name="Down" type="xs:string" minOccurs="0"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Twice">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice>
+          <xs:element name="Text" type="xs:string"/>
+          <xs:element name="Count" type="xs:int"/>
+        </xs:choice>
+        <xs:choice>
+          <xs:element name="Left" type="xs:string"/>
+          <xs:element name="Right" type="xs:string"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 </xs:schema>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:io="http://www.onvif.org/test/io/wsdl" xmlns:dev="http://www.onvif.org/test/device/wsdl" xmlns:ext="urn:test:external" targetNamespace="http://www.onvif.org/test/io/wsdl">
+  <wsdl:types>
+    <xs:schema targetNamespace="http://www.onvif.org/test/io/wsdl" elementFormDefault="qualified">
+      <xs:element name="GetPorts"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+      <xs:element name="GetPortsResponse"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+    </xs:schema>
+    <xs:schema targetNamespace="http://www.onvif.org/test/device/wsdl" elementFormDefault="qualified">
+      <xs:element name="GetRelays"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+      <xs:element name="GetRelaysResponse"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+    </xs:schema>
+    <xs:schema targetNamespace="urn:test:external" elementFormDefault="qualified">
+      <xs:element name="Renew"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+      <xs:element name="RenewResponse"><xs:complexType><xs:sequence/></xs:complexType></xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="GetPortsRequest"><wsdl:part name="parameters" element="io:GetPorts"/></wsdl:message>
+  <wsdl:message name="GetPortsResponse"><wsdl:part name="parameters" element="io:GetPortsResponse"/></wsdl:message>
+  <wsdl:message name="GetRelaysRequest"><wsdl:part name="parameters" element="dev:GetRelays"/></wsdl:message>
+  <wsdl:message name="GetRelaysResponse"><wsdl:part name="parameters" element="dev:GetRelaysResponse"/></wsdl:message>
+  <wsdl:message name="RenewRequest"><wsdl:part name="parameters" element="ext:Renew"/></wsdl:message>
+  <wsdl:message name="RenewResponse"><wsdl:part name="parameters" element="ext:RenewResponse"/></wsdl:message>
+  <wsdl:portType name="Service">
+    <wsdl:operation name="GetPorts">
+      <wsdl:input message="io:GetPortsRequest"/>
+      <wsdl:output message="io:GetPortsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetRelays">
+      <wsdl:input message="io:GetRelaysRequest"/>
+      <wsdl:output message="io:GetRelaysResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="Renew">
+      <wsdl:input message="io:RenewRequest"/>
+      <wsdl:output message="io:RenewResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>
