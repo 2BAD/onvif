@@ -1042,6 +1042,86 @@
     "device.UpgradeFirmware": {
       "status": 500,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetRelayOutputs": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetRelayOutputOptions": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetDigitalInputs": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetDigitalInputConfigurationOptions": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetSerialPorts": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoOutputs": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioSources": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioOutputs": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioOutputConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioOutputConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfigurationMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetVideoSourceConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetAudioOutputConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

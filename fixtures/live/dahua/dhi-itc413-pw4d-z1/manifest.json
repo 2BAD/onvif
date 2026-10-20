@@ -1030,6 +1030,62 @@
     "device.StartSystemRestore": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetSerialPorts": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetDigitalInputConfigurationOptionsForDigitalInput": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoOutputs": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioSourceConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioSourceConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioOutputConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetAudioOutputConfigurationOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.GetVideoSourceConfigurationMissingFault": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetRelayOutputStateMissingFault": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetRelayOutputSettings": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetRelayOutputState": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "deviceio.SetDigitalInputConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
