@@ -1,16 +1,6 @@
+import type { Primitive } from '#onvif/soap/codec.ts'
 import { keyOf, type Registry, type SchemaContext, type WsdlOperation, XS } from '#tools/codegen/registry.ts'
 import { type QName, resolveQName, type SchemaNode } from '#tools/codegen/xml.ts'
-
-export type Primitive =
-  | 'string'
-  | 'integer'
-  | 'decimal'
-  | 'boolean'
-  | 'dateTime'
-  | 'base64'
-  | 'qname'
-  | 'prefixed'
-  | 'any'
 
 export type SimpleModel = {
   kind: 'simple'

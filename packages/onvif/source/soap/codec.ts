@@ -3,16 +3,19 @@ import { XML_NAMESPACE, prefixes } from '#soap/namespaces.ts'
 import { namespaceInfo, setNamespaceInfo, type XmlNamespaces, type XmlObject, type XmlValue } from '#soap/parse.ts'
 import type { XmlElement, XmlNode } from '#soap/serialize.ts'
 
-export type Primitive =
-  | 'string'
-  | 'integer'
-  | 'decimal'
-  | 'boolean'
-  | 'dateTime'
-  | 'base64'
-  | 'qname'
-  | 'prefixed'
-  | 'any'
+const primitiveNames = [
+  'string',
+  'integer',
+  'decimal',
+  'boolean',
+  'dateTime',
+  'base64',
+  'qname',
+  'prefixed',
+  'any'
+] as const
+
+export type Primitive = (typeof primitiveNames)[number]
 
 export type FieldSchema = {
   name: string
@@ -50,17 +53,7 @@ export type Operation<Request, Response> = {
   types?: { request: Request; response: Response }
 }
 
-const primitives = new Set([
-  'string',
-  'integer',
-  'decimal',
-  'boolean',
-  'dateTime',
-  'base64',
-  'qname',
-  'prefixed',
-  'any'
-])
+const primitives = new Set<string>(primitiveNames)
 const integerPattern = /^[+-]?\d+$/
 const decimalPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
 const dateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
