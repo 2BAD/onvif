@@ -35,7 +35,6 @@ export type Profile = {
 } & ({ service: 'media'; reported: Media.Profile } | { service: 'media2'; reported: Media2.MediaProfile })
 
 const JPEG_START = [0xff, 0xd8, 0xff]
-const streamProtocols = new Set(['rtsp:', 'rtsps:', 'http:', 'https:'])
 // Media2 addresses stay valid indefinitely, even if the profile changes
 const stableAddress = { invalidAfterConnect: false, invalidAfterReboot: false, timeout: 'PT0S' }
 
@@ -210,19 +209,7 @@ export async function getStreamUri(
     const streamSetup = { stream: multicast ? 'RTP-Multicast' : 'RTP-Unicast', transport: { protocol } }
     mediaUri = (await device.call(Media.GetStreamUri, { profileToken, streamSetup }, callOptions)).mediaUri
   }
-  const uri = URL.parse(mediaUri.uri)
-  if (!uri) throw new OnvifError(`Invalid stream address '${printable(mediaUri.uri)}'`, context)
-  if (!streamProtocols.has(uri.protocol)) {
-    throw new OnvifError(`Unsupported stream address protocol ${printable(uri.protocol)}`, context)
-  }
-  const configured = device.address.hostname
-  // an address without a host can only mean the device itself
-  const sameHost = uri.hostname === '' || uri.hostname.toLowerCase() === configured
-  if (!sameHost && device.serviceAddresses === 'reject') {
-    throw new OnvifError(`Stream address host ${printable(uri.hostname)} is not the configured host`, context)
-  }
-  uri.hostname = configured
-  return addressOf(mediaUri, uri)
+  return addressOf(mediaUri, device.resolveStreamAddress(mediaUri.uri, context))
 }
 
 /**

@@ -59,6 +59,7 @@ class Device {
   ): Promise<{ contentType; body: Uint8Array }>
   synchronizeClock(options?: { signal; timeoutMs }): Promise<void>
   resolveAddress(address: string): URL // the URL a reported address is sent to
+  resolveStreamAddress(address: string, context: { service; action }): URL // a reported RTSP or HTTP stream address on the configured host
   close(): void // closes idle connections, the device still works after it
 
   readonly address: URL // URL of the device service

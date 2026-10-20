@@ -523,13 +523,13 @@ describe('replay.uri()', () => {
       'reject'
     )
     await expect(device.replay.uri('tokenRecording1')).rejects.toThrow(
-      'Replay address host 10.0.0.9 is not the configured host'
+      'Stream address host 10.0.0.9 is not the configured host'
     )
   })
 
   it.each([
-    ['an address that is not a URL', 'not a url', "Invalid replay address 'not a url'"],
-    ['an address that is not RTSP or HTTP', 'file:///etc/passwd', 'Unsupported replay address protocol file:']
+    ['an address that is not a URL', 'not a url', "Invalid stream address 'not a url'"],
+    ['an address that is not RTSP or HTTP', 'file:///etc/passwd', 'Unsupported stream address protocol file:']
   ])('refuses %s', async (_name, address, message) => {
     const { device } = await connect({
       overrides: {

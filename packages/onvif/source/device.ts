@@ -207,6 +207,10 @@ const isTransient = (error: unknown): boolean => {
   return Error.isError(cause) && 'code' in cause && TRANSIENT_NETWORK_CODES.has(String(cause.code))
 }
 
+const streamProtocols = new Set(['rtsp:', 'rtsps:', 'http:', 'https:'])
+
+const printable = (text: string): string => text.slice(0, 100).replaceAll(/[^\x20-\x7e]/g, '?')
+
 const isActionRejection = (error: unknown): boolean =>
   error instanceof SoapFaultError &&
   (error.subcodes.includes('ActionNotSupported') || /cannot be processed at the receiver/i.test(error.reason))
@@ -435,6 +439,30 @@ export class Device extends DeviceOperations {
       })
     }
     return new URL(`${url.pathname}${url.search}`, this.address.origin)
+  }
+
+  /**
+   * Resolve a stream address reported by the device, such as an RTSP address. The address gets the configured host.
+   *
+   * @param address - URL from a device response
+   * @param context - Service and action that reported the address
+   * @returns The URL to stream from
+   * @throws {OnvifError} If the address is invalid, not RTSP or HTTP(S), or on another host under the `reject` policy
+   */
+  resolveStreamAddress(address: string, context: Pick<ErrorContext, 'service' | 'action'>): URL {
+    const errorContext = { host: this.address.host, ...context }
+    const url = URL.parse(address)
+    if (!url) throw new OnvifError(`Invalid stream address '${printable(address)}'`, errorContext)
+    if (!streamProtocols.has(url.protocol)) {
+      throw new OnvifError(`Unsupported stream address protocol ${printable(url.protocol)}`, errorContext)
+    }
+    // an address without a host can only mean the device itself
+    const sameHost = url.hostname === '' || url.hostname.toLowerCase() === this.address.hostname
+    if (!sameHost && this.#policy === 'reject') {
+      throw new OnvifError(`Stream address host ${printable(url.hostname)} is not the configured host`, errorContext)
+    }
+    url.hostname = this.address.hostname
+    return url
   }
 
   /**

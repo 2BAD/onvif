@@ -1,4 +1,4 @@
-import { type CallOptions, type Device, OnvifError } from '@2bad/onvif'
+import type { CallOptions, Device } from '@2bad/onvif'
 import { GetReplayUri } from '#generated/replay.ts'
 
 export type ReplayOptions = Pick<CallOptions, 'signal' | 'timeoutMs'> & {
@@ -12,10 +12,6 @@ export type ReplayAddress = {
   /** The address as the device reported it. */
   reported: string
 }
-
-const replayProtocols = new Set(['rtsp:', 'rtsps:', 'http:', 'https:'])
-
-const printable = (text: string): string => text.slice(0, 100).replaceAll(/[^\x20-\x7e]/g, '?')
 
 /**
  * Get the RTSP address that replays a recording. The address gets the configured host, as stream addresses do.
@@ -37,18 +33,5 @@ export async function getReplayUri(
   const { protocol = 'RTSP', ...callOptions } = options
   const streamSetup = { stream: 'RTP-Unicast', transport: { protocol } }
   const { uri: reported } = await device.call(GetReplayUri, { streamSetup, recordingToken }, callOptions)
-  const context = { host: device.address.host, service: 'trp', action: 'GetReplayUri' }
-  const uri = URL.parse(reported)
-  if (!uri) throw new OnvifError(`Invalid replay address '${printable(reported)}'`, context)
-  if (!replayProtocols.has(uri.protocol)) {
-    throw new OnvifError(`Unsupported replay address protocol ${printable(uri.protocol)}`, context)
-  }
-  const configured = device.address.hostname
-  // an address without a host can only mean the device itself
-  const sameHost = uri.hostname === '' || uri.hostname.toLowerCase() === configured
-  if (!sameHost && device.serviceAddresses === 'reject') {
-    throw new OnvifError(`Replay address host ${printable(uri.hostname)} is not the configured host`, context)
-  }
-  uri.hostname = configured
-  return { uri, reported }
+  return { uri: device.resolveStreamAddress(reported, { service: 'trp', action: 'GetReplayUri' }), reported }
 }

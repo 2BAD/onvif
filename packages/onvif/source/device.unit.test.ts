@@ -565,6 +565,42 @@ describe('service addresses', () => {
   })
 })
 
+describe('stream addresses', () => {
+  const context = { service: 'trt', action: 'GetStreamUri' }
+
+  it('puts a stream address on the configured host and keeps its port, path and protocol', async () => {
+    const device = await connect(await camera())
+    const { hostname } = device.address
+    expect(device.resolveStreamAddress('rtsp://10.0.0.5:554/stream?id=1', context).href).toBe(
+      `rtsp://${hostname}:554/stream?id=1`
+    )
+    expect(device.resolveStreamAddress('rtsps:///stream', context).hostname).toBe(hostname)
+  })
+
+  it('refuses another host under the reject policy and keeps the configured one', async () => {
+    const device = await connect(await camera(), { serviceAddresses: 'reject' })
+    const { hostname } = device.address
+    expect(device.resolveStreamAddress(`rtsp://${hostname.toUpperCase()}/stream`, context).hostname).toBe(hostname)
+    expect(() => device.resolveStreamAddress('rtsp://10.0.0.5/stream', context)).toThrow(
+      expect.objectContaining({
+        message: 'Stream address host 10.0.0.5 is not the configured host',
+        host: device.address.host,
+        service: 'trt',
+        action: 'GetStreamUri'
+      })
+    )
+  })
+
+  it.each([
+    ['not a url', "Invalid stream address 'not a url'"],
+    ['file:///etc/passwd', 'Unsupported stream address protocol file:'],
+    [`not a url \u0000${'x'.repeat(500)}`, /^Invalid stream address 'not a url \?x{89}'$/]
+  ])('refuses %s', async (address, message) => {
+    const device = await connect(await camera())
+    expect(() => device.resolveStreamAddress(address, context)).toThrow(message)
+  })
+})
+
 describe('Device.call', () => {
   it('returns typed responses and takes no request for operations without fields', async () => {
     const device = await connect(await camera())
