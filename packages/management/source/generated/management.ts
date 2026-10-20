@@ -2,9 +2,22 @@
 import type { CallOptions, Device } from '@2bad/onvif'
 import type { Operation, Schema } from '@2bad/onvif/soap'
 
+export type DiscoveryMode = 'Discoverable' | 'NonDiscoverable' | (string & Record<never, never>)
+
+export type Dot11AuthAndMangementSuite = 'None' | 'Dot1X' | 'PSK' | 'Extended' | (string & Record<never, never>)
+
 export type Dot11Cipher = 'CCMP' | 'TKIP' | 'Any' | 'Extended' | (string & Record<never, never>)
 
 export type Dot11SecurityMode = 'None' | 'WEP' | 'PSK' | 'Dot1X' | 'Extended' | (string & Record<never, never>)
+
+export type Dot11SignalStrength =
+  | 'None'
+  | 'Very Bad'
+  | 'Bad'
+  | 'Good'
+  | 'Very Good'
+  | 'Extended'
+  | (string & Record<never, never>)
 
 export type Dot11StationMode = 'Ad-hoc' | 'Infrastructure' | 'Extended' | (string & Record<never, never>)
 
@@ -14,9 +27,13 @@ export type DynamicDNSType = 'NoUpdate' | 'ClientUpdates' | 'ServerUpdates' | (s
 
 export type IPAddressFilterType = 'Allow' | 'Deny' | (string & Record<never, never>)
 
+export type IPType = 'IPv4' | 'IPv6' | (string & Record<never, never>)
+
 export type IPv6DHCPConfiguration = 'Auto' | 'Stateful' | 'Stateless' | 'Off' | (string & Record<never, never>)
 
 export type NetworkHostType = 'IPv4' | 'IPv6' | 'DNS' | (string & Record<never, never>)
+
+export type NetworkProtocolType = 'HTTP' | 'HTTPS' | 'RTSP' | (string & Record<never, never>)
 
 export type RelayIdleState = 'closed' | 'open' | (string & Record<never, never>)
 
@@ -62,6 +79,46 @@ export type DeleteUsersRequest = {
 
 export type DeleteUsersResponse = Record<string, never>
 
+export type DNSInformation = {
+  /** Indicates whether or not DNS information is retrieved from DHCP. */
+  fromDHCP: boolean
+  /** Search domain. */
+  searchDomain?: string[]
+  /** List of DNS addresses received from DHCP. */
+  dnsFromDHCP?: IPAddress[]
+  /** List of manually entered DNS addresses. */
+  dnsManual?: IPAddress[]
+  extension?: DNSInformationExtension
+}
+
+export type DNSInformationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type Dot11AvailableNetworks = {
+  SSID: string
+  BSSID?: string
+  /** See IEEE802.11 7.3.2.25.2 for details. */
+  authAndMangementSuite?: Dot11AuthAndMangementSuite[]
+  pairCipher?: Dot11Cipher[]
+  groupCipher?: Dot11Cipher[]
+  signalStrength?: Dot11SignalStrength
+  extension?: Dot11AvailableNetworksExtension
+}
+
+export type Dot11AvailableNetworksExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type Dot11Capabilities = {
+  TKIP: boolean
+  scanAvailableNetworks: boolean
+  multipleConfiguration: boolean
+  adHocStationMode: boolean
+  WEP: boolean
+  $any?: Record<string, unknown>
+}
+
 export type Dot11Configuration = {
   SSID: string
   mode: Dot11StationMode
@@ -104,6 +161,16 @@ export type Dot11SecurityConfigurationExtension = {
   $any?: Record<string, unknown>
 }
 
+export type Dot11Status = {
+  SSID: string
+  BSSID?: string
+  pairCipher?: Dot11Cipher
+  groupCipher?: Dot11Cipher
+  signalStrength?: Dot11SignalStrength
+  activeConfigAlias: string
+  $any?: Record<string, unknown>
+}
+
 export type Dot3Configuration = {
   $any?: Record<string, unknown>
 }
@@ -122,11 +189,54 @@ export type DynamicDNSInformationExtension = {
   $any?: Record<string, unknown>
 }
 
+export type GetDiscoveryModeRequest = Record<string, never>
+
+export type GetDiscoveryModeResponse = {
+  /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
+  discoveryMode: DiscoveryMode
+}
+
+export type GetDNSRequest = Record<string, never>
+
+export type GetDNSResponse = {
+  /** DNS information. */
+  dnsInformation: DNSInformation
+}
+
+export type GetDot11CapabilitiesRequest = {
+  $any?: Record<string, unknown>
+}
+
+export type GetDot11CapabilitiesResponse = {
+  capabilities: Dot11Capabilities
+}
+
+export type GetDot11StatusRequest = {
+  interfaceToken: string
+}
+
+export type GetDot11StatusResponse = {
+  status: Dot11Status
+}
+
+export type GetDPAddressesRequest = Record<string, never>
+
+export type GetDPAddressesResponse = {
+  dpAddress?: NetworkHost[]
+}
+
 export type GetDynamicDNSRequest = Record<string, never>
 
 export type GetDynamicDNSResponse = {
   /** Dynamic DNS information. */
   dynamicDNSInformation: DynamicDNSInformation
+}
+
+export type GetEndpointReferenceRequest = Record<string, never>
+
+export type GetEndpointReferenceResponse = {
+  GUID: string
+  $any?: Record<string, unknown>
 }
 
 export type GetIPAddressFilterRequest = Record<string, never>
@@ -142,6 +252,17 @@ export type GetNetworkDefaultGatewayResponse = {
   networkGateway: NetworkGateway
 }
 
+export type GetNetworkProtocolsRequest = Record<string, never>
+
+export type GetNetworkProtocolsResponse = {
+  /**
+   * Contains an array of defined protocols supported by the device. There are three protocols defined;
+   * HTTP, HTTPS and RTSP. The following parameters can be retrieved for each protocol: port and
+   * enable/disable.
+   */
+  networkProtocols?: NetworkProtocol[]
+}
+
 export type GetNTPRequest = Record<string, never>
 
 export type GetNTPResponse = {
@@ -153,6 +274,13 @@ export type GetRelayOutputsRequest = Record<string, never>
 
 export type GetRelayOutputsResponse = {
   relayOutputs?: RelayOutput[]
+}
+
+export type GetRemoteDiscoveryModeRequest = Record<string, never>
+
+export type GetRemoteDiscoveryModeResponse = {
+  /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
+  remoteDiscoveryMode: DiscoveryMode
 }
 
 export type GetUsersRequest = Record<string, never>
@@ -170,6 +298,15 @@ export type GetZeroConfigurationRequest = Record<string, never>
 export type GetZeroConfigurationResponse = {
   /** Contains the zero-configuration. */
   zeroConfiguration: NetworkZeroConfiguration
+}
+
+export type IPAddress = {
+  /** Indicates if the address is an IPv4 or IPv6 address. */
+  type: IPType
+  /** IPv4 address. */
+  ipv4Address?: string
+  /** IPv6 address */
+  ipv6Address?: string
 }
 
 export type IPAddressFilter = {
@@ -260,6 +397,20 @@ export type NetworkInterfaceSetConfigurationExtension2 = {
   $any?: Record<string, unknown>
 }
 
+export type NetworkProtocol = {
+  /** Network protocol type string. */
+  name: NetworkProtocolType
+  /** Indicates if the protocol is enabled or not. */
+  enabled: boolean
+  /** The port that is used by the protocol. */
+  port: number[]
+  extension?: NetworkProtocolExtension
+}
+
+export type NetworkProtocolExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type NetworkZeroConfiguration = {
   /** Unique identifier of network interface. */
   interfaceToken: string
@@ -342,6 +493,38 @@ export type RemoveIPAddressFilterRequest = {
 
 export type RemoveIPAddressFilterResponse = Record<string, never>
 
+export type ScanAvailableDot11NetworksRequest = {
+  interfaceToken: string
+}
+
+export type ScanAvailableDot11NetworksResponse = {
+  networks?: Dot11AvailableNetworks[]
+}
+
+export type SetDiscoveryModeRequest = {
+  /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
+  discoveryMode: DiscoveryMode
+}
+
+export type SetDiscoveryModeResponse = Record<string, never>
+
+export type SetDNSRequest = {
+  /** Indicate if the DNS address is to be retrieved using DHCP. */
+  fromDHCP: boolean
+  /** DNS search domain. */
+  searchDomain?: string[]
+  /** DNS address(es) set manually. */
+  dnsManual?: IPAddress[]
+}
+
+export type SetDNSResponse = Record<string, never>
+
+export type SetDPAddressesRequest = {
+  dpAddress?: NetworkHost[]
+}
+
+export type SetDPAddressesResponse = Record<string, never>
+
 export type SetDynamicDNSRequest = {
   /** Dynamic DNS type. */
   type: DynamicDNSType
@@ -352,6 +535,23 @@ export type SetDynamicDNSRequest = {
 }
 
 export type SetDynamicDNSResponse = Record<string, never>
+
+export type SetHostnameFromDHCPRequest = {
+  /** True if the hostname shall be obtained via DHCP. */
+  fromDHCP: boolean
+}
+
+export type SetHostnameFromDHCPResponse = {
+  /** Indicates whether or not a reboot is required after configuration updates. */
+  rebootNeeded: boolean
+}
+
+export type SetHostnameRequest = {
+  /** The hostname to set. */
+  name: string
+}
+
+export type SetHostnameResponse = Record<string, never>
 
 export type SetIPAddressFilterRequest = {
   ipAddressFilter: IPAddressFilter
@@ -387,6 +587,17 @@ export type SetNetworkInterfacesResponse = {
   rebootNeeded: boolean
 }
 
+export type SetNetworkProtocolsRequest = {
+  /**
+   * Configures one or more defined network protocols supported by the device. There are currently three
+   * protocols defined; HTTP, HTTPS and RTSP. The following parameters can be set for each protocol: port
+   * and enable/disable.
+   */
+  networkProtocols: NetworkProtocol[]
+}
+
+export type SetNetworkProtocolsResponse = Record<string, never>
+
 export type SetNTPRequest = {
   /** Indicate if NTP address information is to be retrieved using DHCP. */
   fromDHCP: boolean
@@ -409,6 +620,13 @@ export type SetRelayOutputStateRequest = {
 }
 
 export type SetRelayOutputStateResponse = Record<string, never>
+
+export type SetRemoteDiscoveryModeRequest = {
+  /** Indicator of discovery mode: Discoverable, NonDiscoverable. */
+  remoteDiscoveryMode: DiscoveryMode
+}
+
+export type SetRemoteDiscoveryModeResponse = Record<string, never>
 
 export type SetUserRequest = {
   /**
@@ -460,6 +678,51 @@ export const schema: Schema = {
     fields: [{ name: 'Username', property: 'username', type: 'string', namespace: tds, array: true }]
   },
   DeleteUsersResponse: { fields: [] },
+  DNSInformation: {
+    fields: [
+      { name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tt },
+      { name: 'SearchDomain', property: 'searchDomain', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'DNSFromDHCP', property: 'dnsFromDHCP', type: 'IPAddress', namespace: tt, optional: true, array: true },
+      { name: 'DNSManual', property: 'dnsManual', type: 'IPAddress', namespace: tt, optional: true, array: true },
+      { name: 'Extension', property: 'extension', type: 'DNSInformationExtension', namespace: tt, optional: true }
+    ]
+  },
+  DNSInformationExtension: { fields: [], any: true },
+  Dot11AvailableNetworks: {
+    fields: [
+      { name: 'SSID', type: 'string', namespace: tt },
+      { name: 'BSSID', type: 'string', namespace: tt, optional: true },
+      {
+        name: 'AuthAndMangementSuite',
+        property: 'authAndMangementSuite',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'PairCipher', property: 'pairCipher', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'GroupCipher', property: 'groupCipher', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'SignalStrength', property: 'signalStrength', type: 'string', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'Dot11AvailableNetworksExtension',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  Dot11AvailableNetworksExtension: { fields: [], any: true },
+  Dot11Capabilities: {
+    fields: [
+      { name: 'TKIP', type: 'boolean', namespace: tt },
+      { name: 'ScanAvailableNetworks', property: 'scanAvailableNetworks', type: 'boolean', namespace: tt },
+      { name: 'MultipleConfiguration', property: 'multipleConfiguration', type: 'boolean', namespace: tt },
+      { name: 'AdHocStationMode', property: 'adHocStationMode', type: 'boolean', namespace: tt },
+      { name: 'WEP', type: 'boolean', namespace: tt }
+    ],
+    any: true
+  },
   Dot11Configuration: {
     fields: [
       { name: 'SSID', type: 'string', namespace: tt },
@@ -494,6 +757,17 @@ export const schema: Schema = {
     ]
   },
   Dot11SecurityConfigurationExtension: { fields: [], any: true },
+  Dot11Status: {
+    fields: [
+      { name: 'SSID', type: 'string', namespace: tt },
+      { name: 'BSSID', type: 'string', namespace: tt, optional: true },
+      { name: 'PairCipher', property: 'pairCipher', type: 'string', namespace: tt, optional: true },
+      { name: 'GroupCipher', property: 'groupCipher', type: 'string', namespace: tt, optional: true },
+      { name: 'SignalStrength', property: 'signalStrength', type: 'string', namespace: tt, optional: true },
+      { name: 'ActiveConfigAlias', property: 'activeConfigAlias', type: 'string', namespace: tt }
+    ],
+    any: true
+  },
   Dot3Configuration: { fields: [], any: true },
   DynamicDNSInformation: {
     fields: [
@@ -510,6 +784,28 @@ export const schema: Schema = {
     ]
   },
   DynamicDNSInformationExtension: { fields: [], any: true },
+  GetDiscoveryModeRequest: { fields: [] },
+  GetDiscoveryModeResponse: {
+    fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
+  },
+  GetDNSRequest: { fields: [] },
+  GetDNSResponse: {
+    fields: [{ name: 'DNSInformation', property: 'dnsInformation', type: 'DNSInformation', namespace: tds }]
+  },
+  GetDot11CapabilitiesRequest: { fields: [], any: true },
+  GetDot11CapabilitiesResponse: {
+    fields: [{ name: 'Capabilities', property: 'capabilities', type: 'Dot11Capabilities', namespace: tds }]
+  },
+  GetDot11StatusRequest: {
+    fields: [{ name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tds }]
+  },
+  GetDot11StatusResponse: { fields: [{ name: 'Status', property: 'status', type: 'Dot11Status', namespace: tds }] },
+  GetDPAddressesRequest: { fields: [] },
+  GetDPAddressesResponse: {
+    fields: [
+      { name: 'DPAddress', property: 'dpAddress', type: 'NetworkHost', namespace: tds, optional: true, array: true }
+    ]
+  },
   GetDynamicDNSRequest: { fields: [] },
   GetDynamicDNSResponse: {
     fields: [
@@ -521,6 +817,8 @@ export const schema: Schema = {
       }
     ]
   },
+  GetEndpointReferenceRequest: { fields: [] },
+  GetEndpointReferenceResponse: { fields: [{ name: 'GUID', type: 'string', namespace: tds }], any: true },
   GetIPAddressFilterRequest: { fields: [] },
   GetIPAddressFilterResponse: {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
@@ -528,6 +826,19 @@ export const schema: Schema = {
   GetNetworkDefaultGatewayRequest: { fields: [] },
   GetNetworkDefaultGatewayResponse: {
     fields: [{ name: 'NetworkGateway', property: 'networkGateway', type: 'NetworkGateway', namespace: tds }]
+  },
+  GetNetworkProtocolsRequest: { fields: [] },
+  GetNetworkProtocolsResponse: {
+    fields: [
+      {
+        name: 'NetworkProtocols',
+        property: 'networkProtocols',
+        type: 'NetworkProtocol',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
   },
   GetNTPRequest: { fields: [] },
   GetNTPResponse: {
@@ -546,6 +857,10 @@ export const schema: Schema = {
       }
     ]
   },
+  GetRemoteDiscoveryModeRequest: { fields: [] },
+  GetRemoteDiscoveryModeResponse: {
+    fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
+  },
   GetUsersRequest: { fields: [] },
   GetUsersResponse: {
     fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, optional: true, array: true }]
@@ -554,6 +869,13 @@ export const schema: Schema = {
   GetZeroConfigurationResponse: {
     fields: [
       { name: 'ZeroConfiguration', property: 'zeroConfiguration', type: 'NetworkZeroConfiguration', namespace: tds }
+    ]
+  },
+  IPAddress: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tt },
+      { name: 'IPv4Address', property: 'ipv4Address', type: 'string', namespace: tt, optional: true },
+      { name: 'IPv6Address', property: 'ipv6Address', type: 'string', namespace: tt, optional: true }
     ]
   },
   IPAddressFilter: {
@@ -648,6 +970,15 @@ export const schema: Schema = {
     any: true
   },
   NetworkInterfaceSetConfigurationExtension2: { fields: [], any: true },
+  NetworkProtocol: {
+    fields: [
+      { name: 'Name', property: 'name', type: 'string', namespace: tt },
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tt },
+      { name: 'Port', property: 'port', type: 'integer', namespace: tt, array: true },
+      { name: 'Extension', property: 'extension', type: 'NetworkProtocolExtension', namespace: tt, optional: true }
+    ]
+  },
+  NetworkProtocolExtension: { fields: [], any: true },
   NetworkZeroConfiguration: {
     fields: [
       { name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tt },
@@ -722,6 +1053,39 @@ export const schema: Schema = {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
   },
   RemoveIPAddressFilterResponse: { fields: [] },
+  ScanAvailableDot11NetworksRequest: {
+    fields: [{ name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tds }]
+  },
+  ScanAvailableDot11NetworksResponse: {
+    fields: [
+      {
+        name: 'Networks',
+        property: 'networks',
+        type: 'Dot11AvailableNetworks',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  SetDiscoveryModeRequest: {
+    fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
+  },
+  SetDiscoveryModeResponse: { fields: [] },
+  SetDNSRequest: {
+    fields: [
+      { name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tds },
+      { name: 'SearchDomain', property: 'searchDomain', type: 'string', namespace: tds, optional: true, array: true },
+      { name: 'DNSManual', property: 'dnsManual', type: 'IPAddress', namespace: tds, optional: true, array: true }
+    ]
+  },
+  SetDNSResponse: { fields: [] },
+  SetDPAddressesRequest: {
+    fields: [
+      { name: 'DPAddress', property: 'dpAddress', type: 'NetworkHost', namespace: tds, optional: true, array: true }
+    ]
+  },
+  SetDPAddressesResponse: { fields: [] },
   SetDynamicDNSRequest: {
     fields: [
       { name: 'Type', property: 'type', type: 'string', namespace: tds },
@@ -730,6 +1094,12 @@ export const schema: Schema = {
     ]
   },
   SetDynamicDNSResponse: { fields: [] },
+  SetHostnameFromDHCPRequest: { fields: [{ name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tds }] },
+  SetHostnameFromDHCPResponse: {
+    fields: [{ name: 'RebootNeeded', property: 'rebootNeeded', type: 'boolean', namespace: tds }]
+  },
+  SetHostnameRequest: { fields: [{ name: 'Name', property: 'name', type: 'string', namespace: tds }] },
+  SetHostnameResponse: { fields: [] },
   SetIPAddressFilterRequest: {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
   },
@@ -755,6 +1125,12 @@ export const schema: Schema = {
   SetNetworkInterfacesResponse: {
     fields: [{ name: 'RebootNeeded', property: 'rebootNeeded', type: 'boolean', namespace: tds }]
   },
+  SetNetworkProtocolsRequest: {
+    fields: [
+      { name: 'NetworkProtocols', property: 'networkProtocols', type: 'NetworkProtocol', namespace: tds, array: true }
+    ]
+  },
+  SetNetworkProtocolsResponse: { fields: [] },
   SetNTPRequest: {
     fields: [
       { name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tds },
@@ -776,6 +1152,10 @@ export const schema: Schema = {
     ]
   },
   SetRelayOutputStateResponse: { fields: [] },
+  SetRemoteDiscoveryModeRequest: {
+    fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
+  },
+  SetRemoteDiscoveryModeResponse: { fields: [] },
   SetUserRequest: { fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, array: true }] },
   SetUserResponse: { fields: [] },
   SetZeroConfigurationRequest: {
@@ -953,6 +1333,137 @@ export const SetRelayOutputState: Operation<SetRelayOutputStateRequest, SetRelay
   action: 'http://www.onvif.org/ver10/device/wsdl/SetRelayOutputState',
   request: { name: 'SetRelayOutputState', namespace: tds, type: 'SetRelayOutputStateRequest' },
   response: { name: 'SetRelayOutputStateResponse', type: 'SetRelayOutputStateResponse' },
+  schema
+}
+
+export const GetDNS: Operation<GetDNSRequest, GetDNSResponse> = {
+  name: 'GetDNS',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDNS',
+  request: { name: 'GetDNS', namespace: tds, type: 'GetDNSRequest' },
+  response: { name: 'GetDNSResponse', type: 'GetDNSResponse' },
+  schema
+}
+
+export const SetDNS: Operation<SetDNSRequest, SetDNSResponse> = {
+  name: 'SetDNS',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetDNS',
+  request: { name: 'SetDNS', namespace: tds, type: 'SetDNSRequest' },
+  response: { name: 'SetDNSResponse', type: 'SetDNSResponse' },
+  schema
+}
+
+export const SetHostname: Operation<SetHostnameRequest, SetHostnameResponse> = {
+  name: 'SetHostname',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetHostname',
+  request: { name: 'SetHostname', namespace: tds, type: 'SetHostnameRequest' },
+  response: { name: 'SetHostnameResponse', type: 'SetHostnameResponse' },
+  schema
+}
+
+export const SetHostnameFromDHCP: Operation<SetHostnameFromDHCPRequest, SetHostnameFromDHCPResponse> = {
+  name: 'SetHostnameFromDHCP',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetHostnameFromDHCP',
+  request: { name: 'SetHostnameFromDHCP', namespace: tds, type: 'SetHostnameFromDHCPRequest' },
+  response: { name: 'SetHostnameFromDHCPResponse', type: 'SetHostnameFromDHCPResponse' },
+  schema
+}
+
+export const GetNetworkProtocols: Operation<GetNetworkProtocolsRequest, GetNetworkProtocolsResponse> = {
+  name: 'GetNetworkProtocols',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetNetworkProtocols',
+  request: { name: 'GetNetworkProtocols', namespace: tds, type: 'GetNetworkProtocolsRequest' },
+  response: { name: 'GetNetworkProtocolsResponse', type: 'GetNetworkProtocolsResponse' },
+  schema
+}
+
+export const SetNetworkProtocols: Operation<SetNetworkProtocolsRequest, SetNetworkProtocolsResponse> = {
+  name: 'SetNetworkProtocols',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetNetworkProtocols',
+  request: { name: 'SetNetworkProtocols', namespace: tds, type: 'SetNetworkProtocolsRequest' },
+  response: { name: 'SetNetworkProtocolsResponse', type: 'SetNetworkProtocolsResponse' },
+  schema
+}
+
+export const GetDiscoveryMode: Operation<GetDiscoveryModeRequest, GetDiscoveryModeResponse> = {
+  name: 'GetDiscoveryMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDiscoveryMode',
+  request: { name: 'GetDiscoveryMode', namespace: tds, type: 'GetDiscoveryModeRequest' },
+  response: { name: 'GetDiscoveryModeResponse', type: 'GetDiscoveryModeResponse' },
+  schema
+}
+
+export const SetDiscoveryMode: Operation<SetDiscoveryModeRequest, SetDiscoveryModeResponse> = {
+  name: 'SetDiscoveryMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetDiscoveryMode',
+  request: { name: 'SetDiscoveryMode', namespace: tds, type: 'SetDiscoveryModeRequest' },
+  response: { name: 'SetDiscoveryModeResponse', type: 'SetDiscoveryModeResponse' },
+  schema
+}
+
+export const GetRemoteDiscoveryMode: Operation<GetRemoteDiscoveryModeRequest, GetRemoteDiscoveryModeResponse> = {
+  name: 'GetRemoteDiscoveryMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetRemoteDiscoveryMode',
+  request: { name: 'GetRemoteDiscoveryMode', namespace: tds, type: 'GetRemoteDiscoveryModeRequest' },
+  response: { name: 'GetRemoteDiscoveryModeResponse', type: 'GetRemoteDiscoveryModeResponse' },
+  schema
+}
+
+export const SetRemoteDiscoveryMode: Operation<SetRemoteDiscoveryModeRequest, SetRemoteDiscoveryModeResponse> = {
+  name: 'SetRemoteDiscoveryMode',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetRemoteDiscoveryMode',
+  request: { name: 'SetRemoteDiscoveryMode', namespace: tds, type: 'SetRemoteDiscoveryModeRequest' },
+  response: { name: 'SetRemoteDiscoveryModeResponse', type: 'SetRemoteDiscoveryModeResponse' },
+  schema
+}
+
+export const GetDPAddresses: Operation<GetDPAddressesRequest, GetDPAddressesResponse> = {
+  name: 'GetDPAddresses',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDPAddresses',
+  request: { name: 'GetDPAddresses', namespace: tds, type: 'GetDPAddressesRequest' },
+  response: { name: 'GetDPAddressesResponse', type: 'GetDPAddressesResponse' },
+  schema
+}
+
+export const SetDPAddresses: Operation<SetDPAddressesRequest, SetDPAddressesResponse> = {
+  name: 'SetDPAddresses',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetDPAddresses',
+  request: { name: 'SetDPAddresses', namespace: tds, type: 'SetDPAddressesRequest' },
+  response: { name: 'SetDPAddressesResponse', type: 'SetDPAddressesResponse' },
+  schema
+}
+
+export const GetEndpointReference: Operation<GetEndpointReferenceRequest, GetEndpointReferenceResponse> = {
+  name: 'GetEndpointReference',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetEndpointReference',
+  request: { name: 'GetEndpointReference', namespace: tds, type: 'GetEndpointReferenceRequest' },
+  response: { name: 'GetEndpointReferenceResponse', type: 'GetEndpointReferenceResponse' },
+  schema
+}
+
+export const GetDot11Capabilities: Operation<GetDot11CapabilitiesRequest, GetDot11CapabilitiesResponse> = {
+  name: 'GetDot11Capabilities',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDot11Capabilities',
+  request: { name: 'GetDot11Capabilities', namespace: tds, type: 'GetDot11CapabilitiesRequest' },
+  response: { name: 'GetDot11CapabilitiesResponse', type: 'GetDot11CapabilitiesResponse' },
+  schema
+}
+
+export const GetDot11Status: Operation<GetDot11StatusRequest, GetDot11StatusResponse> = {
+  name: 'GetDot11Status',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetDot11Status',
+  request: { name: 'GetDot11Status', namespace: tds, type: 'GetDot11StatusRequest' },
+  response: { name: 'GetDot11StatusResponse', type: 'GetDot11StatusResponse' },
+  schema
+}
+
+export const ScanAvailableDot11Networks: Operation<
+  ScanAvailableDot11NetworksRequest,
+  ScanAvailableDot11NetworksResponse
+> = {
+  name: 'ScanAvailableDot11Networks',
+  action: 'http://www.onvif.org/ver10/device/wsdl/ScanAvailableDot11Networks',
+  request: { name: 'ScanAvailableDot11Networks', namespace: tds, type: 'ScanAvailableDot11NetworksRequest' },
+  response: { name: 'ScanAvailableDot11NetworksResponse', type: 'ScanAvailableDot11NetworksResponse' },
   schema
 }
 
@@ -1247,5 +1758,229 @@ export class ManagementClient {
     options?: CallOptions
   ): Promise<SetRelayOutputStateResponse> {
     return this.#device.call(SetRelayOutputState, request, options)
+  }
+
+  /**
+   * This operation gets the DNS settings from a device. The device shall return its DNS configurations
+   * through the GetDNS command.
+   *
+   * @param request - The `GetDNS` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDNSResponse`
+   */
+  getDNS(request?: GetDNSRequest, options?: CallOptions): Promise<GetDNSResponse> {
+    return this.#device.call(GetDNS, request, options)
+  }
+
+  /**
+   * This operation sets the DNS settings on a device. It shall be possible to set the device DNS
+   * configurations through the SetDNS command.
+   *
+   * @param request - The `SetDNS` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetDNSResponse`
+   */
+  setDNS(request: SetDNSRequest, options?: CallOptions): Promise<SetDNSResponse> {
+    return this.#device.call(SetDNS, request, options)
+  }
+
+  /**
+   * This operation sets the hostname on a device. It shall be possible to set the device hostname
+   * configurations through the SetHostname command. A device shall accept string formated according to
+   * RFC 1123 section 2.1 or alternatively to RFC 952, other string shall be considered as invalid
+   * strings.
+   *
+   * @param request - The `SetHostname` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetHostnameResponse`
+   */
+  setHostname(request: SetHostnameRequest, options?: CallOptions): Promise<SetHostnameResponse> {
+    return this.#device.call(SetHostname, request, options)
+  }
+
+  /**
+   * This operation controls whether the hostname is set manually or retrieved via DHCP.
+   *
+   * @param request - The `SetHostnameFromDHCP` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetHostnameFromDHCPResponse`
+   */
+  setHostnameFromDHCP(
+    request: SetHostnameFromDHCPRequest,
+    options?: CallOptions
+  ): Promise<SetHostnameFromDHCPResponse> {
+    return this.#device.call(SetHostnameFromDHCP, request, options)
+  }
+
+  /**
+   * This operation gets defined network protocols from a device. The device shall support the
+   * GetNetworkProtocols command returning configured network protocols.
+   *
+   * @param request - The `GetNetworkProtocols` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetNetworkProtocolsResponse`
+   */
+  getNetworkProtocols(
+    request?: GetNetworkProtocolsRequest,
+    options?: CallOptions
+  ): Promise<GetNetworkProtocolsResponse> {
+    return this.#device.call(GetNetworkProtocols, request, options)
+  }
+
+  /**
+   * This operation configures defined network protocols on a device. The device shall support
+   * configuration of defined network protocols through the SetNetworkProtocols command.
+   *
+   * @param request - The `SetNetworkProtocols` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetNetworkProtocolsResponse`
+   */
+  setNetworkProtocols(
+    request: SetNetworkProtocolsRequest,
+    options?: CallOptions
+  ): Promise<SetNetworkProtocolsResponse> {
+    return this.#device.call(SetNetworkProtocols, request, options)
+  }
+
+  /**
+   * This operation gets the discovery mode of a device. See Section 7.2 for the definition of the
+   * different device discovery modes. The device shall support retrieval of the discovery mode setting
+   * through the GetDiscoveryMode command.
+   *
+   * @param request - The `GetDiscoveryMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDiscoveryModeResponse`
+   */
+  getDiscoveryMode(request?: GetDiscoveryModeRequest, options?: CallOptions): Promise<GetDiscoveryModeResponse> {
+    return this.#device.call(GetDiscoveryMode, request, options)
+  }
+
+  /**
+   * This operation sets the discovery mode operation of a device. See Section 7.2 for the definition of
+   * the different device discovery modes. The device shall support configuration of the discovery mode
+   * setting through the SetDiscoveryMode command.
+   *
+   * @param request - The `SetDiscoveryMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetDiscoveryModeResponse`
+   */
+  setDiscoveryMode(request: SetDiscoveryModeRequest, options?: CallOptions): Promise<SetDiscoveryModeResponse> {
+    return this.#device.call(SetDiscoveryMode, request, options)
+  }
+
+  /**
+   * This operation gets the remote discovery mode of a device. See Section 7.4 for the definition of
+   * remote discovery extensions. A device that supports remote discovery shall support retrieval of the
+   * remote discovery mode setting through the GetRemoteDiscoveryMode command.
+   *
+   * @param request - The `GetRemoteDiscoveryMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetRemoteDiscoveryModeResponse`
+   */
+  getRemoteDiscoveryMode(
+    request?: GetRemoteDiscoveryModeRequest,
+    options?: CallOptions
+  ): Promise<GetRemoteDiscoveryModeResponse> {
+    return this.#device.call(GetRemoteDiscoveryMode, request, options)
+  }
+
+  /**
+   * This operation sets the remote discovery mode of operation of a device. See Section 7.4 for the
+   * definition of remote discovery remote extensions. A device that supports remote discovery shall
+   * support configuration of the discovery mode setting through the SetRemoteDiscoveryMode command.
+   *
+   * @param request - The `SetRemoteDiscoveryMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetRemoteDiscoveryModeResponse`
+   */
+  setRemoteDiscoveryMode(
+    request: SetRemoteDiscoveryModeRequest,
+    options?: CallOptions
+  ): Promise<SetRemoteDiscoveryModeResponse> {
+    return this.#device.call(SetRemoteDiscoveryMode, request, options)
+  }
+
+  /**
+   * This operation gets the remote DP address or addresses from a device. If the device supports remote
+   * discovery, as specified in Section 7.4, the device shall support retrieval of the remote DP
+   * address(es) through the GetDPAddresses command.
+   *
+   * @param request - The `GetDPAddresses` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDPAddressesResponse`
+   */
+  getDPAddresses(request?: GetDPAddressesRequest, options?: CallOptions): Promise<GetDPAddressesResponse> {
+    return this.#device.call(GetDPAddresses, request, options)
+  }
+
+  /**
+   * This operation sets the remote DP address or addresses on a device. If the device supports remote
+   * discovery, as specified in Section 7.4, the device shall support configuration of the remote DP
+   * address(es) through the SetDPAddresses command.
+   *
+   * @param request - The `SetDPAddresses` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetDPAddressesResponse`
+   */
+  setDPAddresses(request?: SetDPAddressesRequest, options?: CallOptions): Promise<SetDPAddressesResponse> {
+    return this.#device.call(SetDPAddresses, request, options)
+  }
+
+  /**
+   * A client can ask for the device service endpoint reference address property that can be used to
+   * derive the password equivalent for remote user operation. The device shall support the
+   * GetEndpointReference command returning the address property of the device service endpoint
+   * reference.
+   *
+   * @param request - The `GetEndpointReference` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetEndpointReferenceResponse`
+   */
+  getEndpointReference(
+    request?: GetEndpointReferenceRequest,
+    options?: CallOptions
+  ): Promise<GetEndpointReferenceResponse> {
+    return this.#device.call(GetEndpointReference, request, options)
+  }
+
+  /**
+   * This operation returns the IEEE802.11 capabilities. The device shall support this operation.
+   *
+   * @param request - The `GetDot11Capabilities` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDot11CapabilitiesResponse`
+   */
+  getDot11Capabilities(
+    request?: GetDot11CapabilitiesRequest,
+    options?: CallOptions
+  ): Promise<GetDot11CapabilitiesResponse> {
+    return this.#device.call(GetDot11Capabilities, request, options)
+  }
+
+  /**
+   * This operation returns the status of a wireless network interface. The device shall support this
+   * command.
+   *
+   * @param request - The `GetDot11Status` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetDot11StatusResponse`
+   */
+  getDot11Status(request: GetDot11StatusRequest, options?: CallOptions): Promise<GetDot11StatusResponse> {
+    return this.#device.call(GetDot11Status, request, options)
+  }
+
+  /**
+   * This operation returns a lists of the wireless networks in range of the device. A device should
+   * support this operation.
+   *
+   * @param request - The `ScanAvailableDot11Networks` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `ScanAvailableDot11NetworksResponse`
+   */
+  scanAvailableDot11Networks(
+    request: ScanAvailableDot11NetworksRequest,
+    options?: CallOptions
+  ): Promise<ScanAvailableDot11NetworksResponse> {
+    return this.#device.call(ScanAvailableDot11Networks, request, options)
   }
 }

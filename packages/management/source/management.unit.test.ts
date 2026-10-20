@@ -1,4 +1,4 @@
-import { DecodeError, Device, OnvifError, SoapFaultError } from '@2bad/onvif'
+import { DecodeError, Device, OnvifError, SoapFaultError, TransportError } from '@2bad/onvif'
 import { decode, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
 import { afterEach, describe, expect, it } from 'vitest'
 import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
@@ -81,7 +81,23 @@ const operations = [
   Management.RemoveIPAddressFilter,
   Management.GetRelayOutputs,
   Management.SetRelayOutputSettings,
-  Management.SetRelayOutputState
+  Management.SetRelayOutputState,
+  Management.GetDNS,
+  Management.SetDNS,
+  Management.SetHostname,
+  Management.SetHostnameFromDHCP,
+  Management.GetNetworkProtocols,
+  Management.SetNetworkProtocols,
+  Management.GetDiscoveryMode,
+  Management.SetDiscoveryMode,
+  Management.GetRemoteDiscoveryMode,
+  Management.SetRemoteDiscoveryMode,
+  Management.GetDPAddresses,
+  Management.SetDPAddresses,
+  Management.GetEndpointReference,
+  Management.GetDot11Capabilities,
+  Management.GetDot11Status,
+  Management.ScanAvailableDot11Networks
 ]
 
 describe('generated management operations', () => {
@@ -90,7 +106,9 @@ describe('generated management operations', () => {
     const operation = operations.find((candidate) => candidate.name === match?.[1])
     return operation && entry.status === 200 && !entry.fault ? [{ name: entry.name, xml: entry.xml, operation }] : []
   })
-  const decodable = fixtures.filter(({ xml }) => !xml.includes('<tds:DynamicDNSInformation xsi:nil="true"/>'))
+  const decodable = fixtures.filter(
+    ({ xml }) => !/<tds:(?:DynamicDNSInformation|Capabilities|Status) xsi:nil="true"\/>/.test(xml)
+  )
 
   it('cover a camera capture for every operation', () => {
     const captured = new Set(
@@ -399,5 +417,307 @@ describe('Management on the camera', () => {
         IPAddressFilter: { Type: 'Deny', IPv4Address: { Address: '198.51.100.7', PrefixLength: '32' } }
       }
     })
+  })
+})
+
+describe('Network settings on the camera', () => {
+  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
+  const happytime = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
+
+  it('reads the manual DNS servers and search domain', async () => {
+    const { device } = await connect()
+    expect(await device.management.getDNS()).toEqual({
+      dnsInformation: {
+        fromDHCP: false,
+        searchDomain: ['domain.name'],
+        dnsManual: [
+          { type: 'IPv4', ipv4Address: '192.0.2.21' },
+          { type: 'IPv4', ipv4Address: '192.0.2.22' }
+        ]
+      }
+    })
+  })
+
+  it('reads the DNS servers the DS-2DE2C400IG-W-W got from DHCP', async () => {
+    const { device } = await connect({ overrides: { 'device.GetDNS': answer(hikvision('device.GetDNS')) } })
+    expect(await device.management.getDNS()).toEqual({
+      dnsInformation: { fromDHCP: true, dnsFromDHCP: [{ type: 'IPv4', ipv4Address: '192.0.2.21' }] }
+    })
+  })
+
+  it('sends the DNS servers with the spec element names', async () => {
+    const { mock, device } = await connect()
+    await device.management.setDNS({
+      fromDHCP: false,
+      searchDomain: ['example.com'],
+      dnsManual: [
+        { type: 'IPv4', ipv4Address: '192.0.2.53' },
+        { type: 'IPv6', ipv6Address: '2001:db8::53' }
+      ]
+    })
+    expect(requestOf(mock, 'SetDNS')).toEqual({
+      SetDNS: {
+        FromDHCP: 'false',
+        SearchDomain: 'example.com',
+        DNSManual: [
+          { Type: 'IPv4', IPv4Address: '192.0.2.53' },
+          { Type: 'IPv6', IPv6Address: '2001:db8::53' }
+        ]
+      }
+    })
+  })
+
+  it('sends the DNS server fields in the schema namespace', async () => {
+    const { mock, device } = await connect()
+    await device.management.setDNS({
+      fromDHCP: false,
+      searchDomain: ['a.example', 'b.example'],
+      dnsManual: [{ type: 'IPv6', ipv6Address: '2001:db8::53' }]
+    })
+    const body = mock.requests.findLast(({ action }) => action === 'SetDNS')?.body ?? ''
+    expect(body).toContain('xmlns:tt="http://www.onvif.org/ver10/schema"')
+    expect(body).toContain(
+      '<tds:SearchDomain>a.example</tds:SearchDomain><tds:SearchDomain>b.example</tds:SearchDomain>' +
+        '<tds:DNSManual><tt:Type>IPv6</tt:Type><tt:IPv6Address>2001:db8::53</tt:IPv6Address></tds:DNSManual>'
+    )
+  })
+
+  it('sends a disabled protocol on port 0', async () => {
+    const { mock, device } = await connect()
+    await device.management.setNetworkProtocols({ networkProtocols: [{ name: 'HTTPS', enabled: false, port: [0] }] })
+    expect(requestOf(mock, 'SetNetworkProtocols')).toEqual({
+      SetNetworkProtocols: { NetworkProtocols: { Name: 'HTTPS', Enabled: 'false', Port: '0' } }
+    })
+  })
+
+  it('reads every port of a protocol as an array', async () => {
+    const { device } = await connect()
+    expect(await device.management.getNetworkProtocols()).toEqual({
+      networkProtocols: [
+        { name: 'HTTP', enabled: true, port: [80] },
+        { name: 'RTSP', enabled: true, port: [554] }
+      ]
+    })
+  })
+
+  it('sends the protocols with each port as its own element', async () => {
+    const { mock, device } = await connect()
+    await device.management.setNetworkProtocols({
+      networkProtocols: [{ name: 'HTTP', enabled: true, port: [80, 8080] }]
+    })
+    expect(requestOf(mock, 'SetNetworkProtocols')).toEqual({
+      SetNetworkProtocols: { NetworkProtocols: { Name: 'HTTP', Enabled: 'true', Port: ['80', '8080'] } }
+    })
+  })
+
+  it('reads and sets the discovery modes', async () => {
+    const { mock, device } = await connect()
+    expect(await device.management.getDiscoveryMode()).toEqual({ discoveryMode: 'Discoverable' })
+    expect(await device.management.getRemoteDiscoveryMode()).toEqual({ remoteDiscoveryMode: 'Discoverable' })
+    expect(await device.management.setDiscoveryMode({ discoveryMode: 'NonDiscoverable' })).toEqual({})
+    expect(await device.management.setRemoteDiscoveryMode({ remoteDiscoveryMode: 'NonDiscoverable' })).toEqual({})
+    expect(requestOf(mock, 'SetDiscoveryMode')).toEqual({ SetDiscoveryMode: { DiscoveryMode: 'NonDiscoverable' } })
+    expect(requestOf(mock, 'SetRemoteDiscoveryMode')).toEqual({
+      SetRemoteDiscoveryMode: { RemoteDiscoveryMode: 'NonDiscoverable' }
+    })
+  })
+
+  it('reports remote discovery on a device without it as a SOAP fault', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetRemoteDiscoveryMode': {
+          kind: 'status',
+          status: 400,
+          body: happytime('device.GetRemoteDiscoveryMode')
+        }
+      }
+    })
+    const error = await rejection(() => device.management.getRemoteDiscoveryMode())
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['ActionNotSupported'], action: 'GetRemoteDiscoveryMode' })
+  })
+
+  it('returns no discovery proxies when the device lists none', async () => {
+    const { mock, device } = await connect()
+    expect(await device.management.getDPAddresses()).toEqual({})
+    expect(await device.management.setDPAddresses({})).toEqual({})
+    expect(requestOf(mock, 'SetDPAddresses')).toEqual({ SetDPAddresses: '' })
+  })
+
+  it('sends discovery proxy addresses with the spec element names', async () => {
+    const { mock, device } = await connect()
+    await device.management.setDPAddresses({
+      dpAddress: [
+        { type: 'IPv4', ipv4Address: '192.0.2.40' },
+        { type: 'DNS', dnsName: 'proxy.example' }
+      ]
+    })
+    expect(requestOf(mock, 'SetDPAddresses')).toEqual({
+      SetDPAddresses: {
+        DPAddress: [
+          { Type: 'IPv4', IPv4Address: '192.0.2.40' },
+          { Type: 'DNS', DNSname: 'proxy.example' }
+        ]
+      }
+    })
+  })
+
+  it('reports the DS-2DE2C400IG-W-W rejecting the discovery proxy request as a SOAP fault', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetDPAddresses': { kind: 'status', status: 500, body: hikvision('device.GetDPAddresses') } }
+    })
+    const error = await rejection(() => device.management.getDPAddresses())
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'InvalidParameter'], action: 'GetDPAddresses' })
+  })
+
+  it('reports a device that closes the connection without an answer as a transport error after one retry', async () => {
+    const { mock, device } = await connect({ overrides: { 'device.GetDPAddresses': { kind: 'destroy' } } })
+    const error = await rejection(() => device.management.getDPAddresses())
+    expect(error).toBeInstanceOf(TransportError)
+    expect(error).toMatchObject({ service: 'tds', action: 'GetDPAddresses' })
+    expect(mock.requests.filter(({ action }) => action === 'GetDPAddresses')).toHaveLength(2)
+  })
+
+  it('sends the hostname as text, whatever characters it contains', async () => {
+    const { mock, device } = await connect()
+    const name = 'camera</Name><FromDHCP>true</FromDHCP><Name>'
+    expect(await device.management.setHostname({ name })).toEqual({})
+    expect(requestOf(mock, 'SetHostname')).toEqual({ SetHostname: { Name: name } })
+  })
+
+  it.each([
+    'live/dvc/dcn-bm2220lpr',
+    'live/ezviz/ds-2de2c400ig-w-w',
+    'live/dahua/dhi-itc413-pw4d-z1',
+    'simulator/happytimesoft/ipcamera'
+  ])('reports the invalid hostname fault of %s with the InvalidHostname subcode', async (directory) => {
+    const { xml, status } = fixture(`${directory}/device.SetHostnameInvalidFault.xml`)
+    const { device } = await connect({ overrides: { 'device.SetHostname': { kind: 'status', status, body: xml } } })
+    const error = await rejection(() => device.management.setHostname({ name: '-invalid_name-' }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'InvalidHostname'], action: 'SetHostname' })
+  })
+
+  it('reports a hostname the device rejects as a SOAP fault with the subcodes', async () => {
+    const { device } = await connect({
+      overrides: { 'device.SetHostname': { kind: 'status', status: 400, body: live('device.SetHostnameInvalidFault') } }
+    })
+    const error = await rejection(() => device.management.setHostname({ name: '-invalid_name-' }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({
+      subcodes: ['InvalidArgVal', 'InvalidHostname'],
+      reason: 'The requested hostname cannot be accepted by the device.',
+      action: 'SetHostname'
+    })
+  })
+
+  it('returns whether the device needs a reboot after the hostname source changed', async () => {
+    const { mock, device } = await connect()
+    expect(await device.management.setHostnameFromDHCP({ fromDHCP: true })).toEqual({ rebootNeeded: false })
+    expect(requestOf(mock, 'SetHostnameFromDHCP')).toEqual({ SetHostnameFromDHCP: { FromDHCP: 'true' } })
+  })
+
+  it('returns the reboot the DS-2DE2C400IG-W-W asks for after the hostname source changed', async () => {
+    const { device } = await connect({
+      overrides: { 'device.SetHostnameFromDHCP': answer(hikvision('device.SetHostnameFromDHCP')) }
+    })
+    expect(await device.management.setHostnameFromDHCP({ fromDHCP: false })).toEqual({ rebootNeeded: true })
+  })
+
+  it('reads the endpoint reference GUID', async () => {
+    const { device } = await connect()
+    expect(await device.management.getEndpointReference()).toEqual({
+      GUID: 'urn:uuid:00000000-0000-4000-8000-000000000014'
+    })
+  })
+
+  it('reads a GUID without the urn:uuid prefix as it is', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetEndpointReference': answer(happytime('device.GetEndpointReference')) }
+    })
+    expect(await device.management.getEndpointReference()).toEqual({ GUID: '00000000-0000-4000-8000-000000000012' })
+  })
+
+  it('reads the wireless capabilities of the DS-2DE2C400IG-W-W', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetDot11Capabilities': answer(hikvision('device.GetDot11Capabilities')) }
+    })
+    expect(await device.management.getDot11Capabilities()).toEqual({
+      capabilities: {
+        TKIP: true,
+        scanAvailableNetworks: true,
+        multipleConfiguration: true,
+        adHocStationMode: true,
+        WEP: true
+      }
+    })
+  })
+
+  it('rejects the nil wireless capabilities and status of a camera without wireless with the path', async () => {
+    const { device } = await connect()
+    await expect(device.management.getDot11Capabilities()).rejects.toMatchObject({
+      name: 'DecodeError',
+      path: 'GetDot11CapabilitiesResponse.Capabilities',
+      action: 'GetDot11Capabilities'
+    })
+    await expect(device.management.getDot11Status({ interfaceToken: 'eth0' })).rejects.toMatchObject({
+      name: 'DecodeError',
+      path: 'GetDot11StatusResponse.Status',
+      action: 'GetDot11Status'
+    })
+  })
+
+  it('reads an empty wireless status as empty names', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetDot11Status': answer(happytime('device.GetDot11Status')) }
+    })
+    expect(await device.management.getDot11Status({ interfaceToken: 'wlan0' })).toEqual({
+      status: { SSID: '', activeConfigAlias: '' }
+    })
+  })
+
+  it('reads wireless networks with their ciphers as arrays and a hex SSID of digits as text', async () => {
+    const networks =
+      '<tds:Networks><tt:SSID>31323334</tt:SSID><tt:BSSID>02:00:00:00:00:30</tt:BSSID>' +
+      '<tt:AuthAndMangementSuite>PSK</tt:AuthAndMangementSuite><tt:PairCipher>CCMP</tt:PairCipher>' +
+      '<tt:PairCipher>TKIP</tt:PairCipher><tt:GroupCipher>TKIP</tt:GroupCipher>' +
+      '<tt:SignalStrength>Very Good</tt:SignalStrength></tds:Networks>'
+    const { mock, device } = await connect({
+      overrides: {
+        'device.ScanAvailableDot11Networks': answer(
+          live('device.ScanAvailableDot11Networks').replace(
+            '<tds:ScanAvailableDot11NetworksResponse></tds:ScanAvailableDot11NetworksResponse>',
+            `<tds:ScanAvailableDot11NetworksResponse>${networks}</tds:ScanAvailableDot11NetworksResponse>`
+          )
+        )
+      }
+    })
+    expect(await device.management.scanAvailableDot11Networks({ interfaceToken: 'wlan0' })).toEqual({
+      networks: [
+        {
+          SSID: '31323334',
+          BSSID: '02:00:00:00:00:30',
+          authAndMangementSuite: ['PSK'],
+          pairCipher: ['CCMP', 'TKIP'],
+          groupCipher: ['TKIP'],
+          signalStrength: 'Very Good'
+        }
+      ]
+    })
+    expect(requestOf(mock, 'ScanAvailableDot11Networks')).toEqual({
+      ScanAvailableDot11Networks: { InterfaceToken: 'wlan0' }
+    })
+  })
+
+  it('reports the wireless status the DS-2DE2C400IG-W-W does not implement as a SOAP fault', async () => {
+    const { device } = await connect({
+      overrides: {
+        'device.GetDot11Status': { kind: 'status', status: 500, body: hikvision('device.GetDot11Status') }
+      }
+    })
+    const error = await rejection(() => device.management.getDot11Status({ interfaceToken: 'wlan0' }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ code: 'Receiver', subcodes: ['ActionNotSupported', 'InvalidOperation'] })
   })
 })

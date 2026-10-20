@@ -41,6 +41,24 @@ camera.management.getDynamicDNS()
 camera.management.setDynamicDNS(request)
 camera.management.getZeroConfiguration()
 camera.management.setZeroConfiguration(request)
+camera.management.getDNS()
+camera.management.setDNS(request)
+camera.management.setHostname(request) // device.getHostname() reads it
+camera.management.setHostnameFromDHCP(request)
+camera.management.getNetworkProtocols()
+camera.management.setNetworkProtocols(request)
+
+camera.management.getDiscoveryMode()
+camera.management.setDiscoveryMode(request)
+camera.management.getRemoteDiscoveryMode()
+camera.management.setRemoteDiscoveryMode(request)
+camera.management.getDPAddresses()
+camera.management.setDPAddresses(request)
+camera.management.getEndpointReference()
+
+camera.management.getDot11Capabilities()
+camera.management.getDot11Status(request)
+camera.management.scanAvailableDot11Networks(request)
 
 camera.management.getIPAddressFilter()
 camera.management.setIPAddressFilter(request)
@@ -72,6 +90,15 @@ if (relay) await camera.management.setRelayOutputState({ relayOutputToken: relay
 ```
 
 A relay in `Monostable` mode returns to idle after its `delayTime`.
+
+## Network
+
+```ts
+const { rebootNeeded } = await camera.management.setHostnameFromDHCP({ fromDHCP: true })
+if (rebootNeeded) await camera.systemReboot()
+```
+
+`setNetworkInterfaces()` and `setHostnameFromDHCP()` return `rebootNeeded`. The change applies after the reboot.
 
 ## Errors
 

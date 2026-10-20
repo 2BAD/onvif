@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { AuthError, Device, SoapFaultError } from '@2bad/onvif'
+import { AuthError, Device, SoapFaultError, TransportError } from '@2bad/onvif'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type ManagementClient, management } from '#index.ts'
 
@@ -12,6 +12,15 @@ const unlessNotSupported = async <T>(action: () => Promise<T>): Promise<T | unde
     return await action()
   } catch (error) {
     if (error instanceof SoapFaultError && error.subcodes.includes('ActionNotSupported')) return undefined
+    throw error
+  }
+}
+
+const unlessAnswered = async <T>(action: () => Promise<T>): Promise<T | undefined> => {
+  try {
+    return await action()
+  } catch (error) {
+    if (error instanceof SoapFaultError || error instanceof TransportError) return undefined
     throw error
   }
 }
@@ -49,6 +58,60 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
     expect((await device.management.getNTP()).ntpInformation).toEqual(ntpInformation)
     expect((await device.management.getNetworkDefaultGateway()).networkGateway).toEqual(networkGateway)
     expect((await device.management.getZeroConfiguration()).zeroConfiguration).toEqual(zeroConfiguration)
+  })
+
+  it('sends the DNS, hostname, protocol and discovery settings back unchanged', async () => {
+    const { dnsInformation } = await device.management.getDNS()
+    const { hostnameInformation } = await device.getHostname()
+    const { networkProtocols = [] } = await device.management.getNetworkProtocols()
+    const { discoveryMode } = await device.management.getDiscoveryMode()
+
+    const { fromDHCP, searchDomain, dnsManual } = dnsInformation
+    await device.management.setDNS({ fromDHCP, ...(searchDomain && { searchDomain }), ...(dnsManual && { dnsManual }) })
+    if (!hostnameInformation.fromDHCP && hostnameInformation.name !== undefined) {
+      await device.management.setHostname({ name: hostnameInformation.name })
+    }
+    if (networkProtocols.length > 0) await device.management.setNetworkProtocols({ networkProtocols })
+    await device.management.setDiscoveryMode({ discoveryMode })
+
+    expect((await device.management.getDNS()).dnsInformation).toEqual(dnsInformation)
+    expect((await device.getHostname()).hostnameInformation).toEqual(hostnameInformation)
+    expect((await device.management.getNetworkProtocols()).networkProtocols ?? []).toEqual(networkProtocols)
+    expect((await device.management.getDiscoveryMode()).discoveryMode).toEqual(discoveryMode)
+  })
+
+  it('rejects an invalid hostname', async () => {
+    const { hostnameInformation } = await device.getHostname()
+    try {
+      await expect(device.management.setHostname({ name: '-invalid_name-' })).rejects.toMatchObject({
+        subcodes: expect.arrayContaining(['InvalidHostname'])
+      })
+    } finally {
+      if (!hostnameInformation.fromDHCP && hostnameInformation.name !== undefined) {
+        await device.management.setHostname({ name: hostnameInformation.name })
+      }
+    }
+  })
+
+  it('sends the remote discovery mode back unchanged', async (context) => {
+    const remote = await unlessAnswered(() => device.management.getRemoteDiscoveryMode())
+    if (!remote) return context.skip('The device does not answer GetRemoteDiscoveryMode')
+    await device.management.setRemoteDiscoveryMode(remote)
+    expect(await device.management.getRemoteDiscoveryMode()).toEqual(remote)
+  })
+
+  it('sends the discovery proxies back unchanged', async (context) => {
+    const proxies = await unlessAnswered(() => device.management.getDPAddresses())
+    if (!proxies) return context.skip('The device does not answer GetDPAddresses')
+    await device.management.setDPAddresses(proxies)
+    expect(await device.management.getDPAddresses()).toEqual(proxies)
+  })
+
+  it('reads the wireless capabilities where the device offers wireless configuration', async (context) => {
+    const { capabilities: service } = await device.getServiceCapabilities()
+    if (!service.network.dot11Configuration) return context.skip('The device has no wireless configuration')
+    const { capabilities } = await device.management.getDot11Capabilities()
+    expect(capabilities).toMatchObject({ scanAvailableNetworks: expect.any(Boolean) })
   })
 
   it('sends the IP filter back unchanged', async (context) => {

@@ -85,7 +85,23 @@ const targets: Target[] = [
         'RemoveIPAddressFilter',
         'GetRelayOutputs',
         'SetRelayOutputSettings',
-        'SetRelayOutputState'
+        'SetRelayOutputState',
+        'GetDNS',
+        'SetDNS',
+        'SetHostname',
+        'SetHostnameFromDHCP',
+        'GetNetworkProtocols',
+        'SetNetworkProtocols',
+        'GetDiscoveryMode',
+        'SetDiscoveryMode',
+        'GetRemoteDiscoveryMode',
+        'SetRemoteDiscoveryMode',
+        'GetDPAddresses',
+        'SetDPAddresses',
+        'GetEndpointReference',
+        'GetDot11Capabilities',
+        'GetDot11Status',
+        'ScanAvailableDot11Networks'
       ]
     }
   },
