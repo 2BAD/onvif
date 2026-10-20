@@ -1,4 +1,4 @@
-import { AuthError, DecodeError, Device, OnvifError, SoapFaultError, TransportError } from '@2bad/onvif'
+import { AuthError, DecodeError, Device, OnvifError, SoapFaultError, TimeoutError, TransportError } from '@2bad/onvif'
 import { decode, parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
 import { afterEach, describe, expect, it } from 'vitest'
 import { corpus, fixture } from '../../../tools/fixtures/corpus.ts'
@@ -148,7 +148,11 @@ const operations = [
   Management.SetDot1XConfiguration,
   Management.GetDot1XConfiguration,
   Management.GetDot1XConfigurations,
-  Management.DeleteDot1XConfiguration
+  Management.DeleteDot1XConfiguration,
+  Management.GetSystemUris,
+  Management.StartFirmwareUpgrade,
+  Management.StartSystemRestore,
+  Management.UpgradeFirmware
 ]
 
 // no lab camera accepts these, so the simulator capture covers them
@@ -156,6 +160,7 @@ const simulatorOnly = new Set(['SetSystemFactoryDefault', 'SetStorageConfigurati
 // no capture target implements these
 const faultOnly = new Set([
   'SendAuxiliaryCommand',
+  'UpgradeFirmware',
   'GetUserRoles',
   'SetUserRole',
   'DeleteUserRole',
@@ -214,6 +219,8 @@ describe('management', () => {
     const { device } = await connect()
     const methods = Object.getOwnPropertyNames(Management.ManagementClient.prototype)
     const expected = operations.map(({ name }) => `${name.charAt(0).toLowerCase()}${name.slice(1)}`)
+    expect(typeof device.management.uploadFirmware).toBe('function')
+    expect(typeof device.management.uploadBackup).toBe('function')
     expect(methods.filter((name) => name !== 'constructor').toSorted()).toEqual(expected.toSorted())
     expect(device.management).toBeInstanceOf(Management.ManagementClient)
     expect(Object.getOwnPropertyDescriptor(device, 'management')).toMatchObject({ writable: false, enumerable: true })
@@ -1636,5 +1643,179 @@ describe('Certificates and 802.1X on the camera', () => {
     expect(leaks(error, 'Dot1X&lt;')).toBe(false)
     const sent = requestOf(mock, 'CreateDot1XConfiguration')['CreateDot1XConfiguration'] as XmlObject
     expect((sent['Dot1XConfiguration'] as XmlObject)['EAPMethodConfiguration']).toEqual({ Password: password })
+  })
+})
+
+describe('Firmware upgrade and system restore on the camera', () => {
+  const hikvision = (name: string): string => fixture(`live/ezviz/ds-2de2c400ig-w-w/${name}.xml`).xml
+  const dahua = (name: string): string => fixture(`live/dahua/dhi-itc413-pw4d-z1/${name}.xml`).xml
+  const happytime = (name: string): string => fixture(`simulator/happytimesoft/ipcamera/${name}.xml`).xml
+  const firmware = new Uint8Array([0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01])
+  const startAnswer = (uploadUri: string, uploadDelay: string): ActionOverride =>
+    answer(
+      happytime('device.StartFirmwareUpgrade')
+        .replace('http://192.0.2.12:80/FirmwareUpgrade', uploadUri)
+        .replace('<tds:UploadDelay>PT5S</tds:UploadDelay>', `<tds:UploadDelay>${uploadDelay}</tds:UploadDelay>`)
+    )
+
+  it('reads the download addresses of logs, support information and backup', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetSystemUris': answer(happytime('device.GetSystemUris')) }
+    })
+    expect(await device.management.getSystemUris()).toEqual({
+      systemLogUris: {
+        systemLog: [
+          { type: 'System', uri: 'http://192.0.2.12:80/SystemLog' },
+          { type: 'Access', uri: 'http://192.0.2.12:80/AccessLog' }
+        ]
+      },
+      supportInfoUri: 'http://192.0.2.12:80/SupportInfo',
+      systemBackupUri: 'http://192.0.2.12:80/SystemBackup'
+    })
+  })
+
+  it('reads the empty addresses of the DS-2DE2C400IG-W-W as empty strings', async () => {
+    const { device } = await connect({
+      overrides: { 'device.GetSystemUris': answer(hikvision('device.GetSystemUris')) }
+    })
+    expect(await device.management.getSystemUris()).toEqual({
+      systemLogUris: { systemLog: [{ type: 'System', uri: '' }] },
+      supportInfoUri: ''
+    })
+  })
+
+  it('uploads the firmware to the address the DS-2DE2C400IG-W-W returns, on the configured device', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.StartFirmwareUpgrade': answer(hikvision('device.StartFirmwareUpgrade')) }
+    })
+    expect(await device.management.uploadFirmware(firmware)).toEqual({ expectedDownTime: 'PT180S' })
+    expect(mock.uploads).toEqual([
+      {
+        path: '/onvif/device_service/StartFirmwareUpgrade',
+        contentType: 'application/octet-stream',
+        body: Buffer.from(firmware)
+      }
+    ])
+  })
+
+  it('waits the upload delay of the DHI-ITC413-PW4D-Z1 before uploading', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.StartFirmwareUpgrade': answer(
+          dahua('device.StartFirmwareUpgrade').replace(
+            '<tds:UploadDelay>PT3S</tds:UploadDelay>',
+            '<tds:UploadDelay>PT0.2S</tds:UploadDelay>'
+          )
+        )
+      }
+    })
+    const started = performance.now()
+    expect(await device.management.uploadFirmware(firmware)).toEqual({ expectedDownTime: 'PT300S' })
+    expect(performance.now() - started).toBeGreaterThanOrEqual(190)
+    expect(mock.uploads.map(({ path }) => path)).toEqual(['/onvif/firmwareupgrade_service/10031372'])
+  })
+
+  it('fails at once when the upload delay is longer than the timeout and uploads nothing', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', 'PT1H') }
+    })
+    const started = performance.now()
+    const error = await rejection(() => device.management.uploadFirmware(firmware, { timeoutMs: 2_000 }))
+    expect(error).toBeInstanceOf(TimeoutError)
+    expect(error).toMatchObject({
+      action: 'StartFirmwareUpgrade',
+      message: 'Upload delay of PT1H exceeds the timeout of 2000 ms'
+    })
+    expect(performance.now() - started).toBeLessThan(1_000)
+    expect(mock.uploads).toEqual([])
+  })
+
+  it.each(['P1M', 'PT-5S', 'P', 'PT', '5S', ''])(
+    'rejects the upload delay %j with the path and uploads nothing',
+    async (delay) => {
+      const { mock, device } = await connect({
+        overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', delay) }
+      })
+      const error = await rejection(() => device.management.uploadFirmware(firmware))
+      expect(error).toBeInstanceOf(DecodeError)
+      expect(error).toMatchObject({ path: 'StartFirmwareUpgradeResponse.UploadDelay', action: 'StartFirmwareUpgrade' })
+      expect(mock.uploads).toEqual([])
+    }
+  )
+
+  it('reads days, hours, minutes and fractional seconds of the upload delay', async () => {
+    const { device } = await connect({
+      overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', 'P0DT0H0M0.05S') }
+    })
+    expect(await device.management.uploadFirmware(firmware)).toEqual({ expectedDownTime: 'PT300S' })
+  })
+
+  it('stops waiting the upload delay when aborted and uploads nothing', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', 'PT5S') }
+    })
+    const controller = new AbortController()
+    const reason = new Error('stopped')
+    setTimeout(() => controller.abort(reason), 50)
+    await expect(device.management.uploadFirmware(firmware, { signal: controller.signal })).rejects.toBe(reason)
+    expect(mock.uploads).toEqual([])
+  })
+
+  it('reports a firmware file the device does not accept as a TransportError with the status', async () => {
+    const { device } = await connect({
+      upload: { status: 415 },
+      overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', 'PT0S') }
+    })
+    await expect(device.management.uploadFirmware(firmware)).rejects.toMatchObject({
+      name: 'TransportError',
+      status: 415,
+      action: 'POST'
+    })
+  })
+
+  it('counts the upload delay and the upload against one timeout', async () => {
+    const { device } = await connect({
+      upload: { delayMs: 1_000 },
+      overrides: { 'device.StartFirmwareUpgrade': startAnswer('http://192.0.2.12/upload', 'PT0.2S') }
+    })
+    const started = performance.now()
+    const error = await rejection(() => device.management.uploadFirmware(firmware, { timeoutMs: 400 }))
+    expect(error).toMatchObject({ name: 'TimeoutError', action: 'POST' })
+    expect(performance.now() - started).toBeLessThan(900)
+  })
+
+  it('uploads a backup to the address HappyTime returns', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'device.StartSystemRestore': answer(happytime('device.StartSystemRestore')) }
+    })
+    const backup = new TextEncoder().encode('<config/>')
+    expect(await device.management.uploadBackup(backup)).toEqual({ expectedDownTime: 'PT300S' })
+    expect(mock.uploads).toEqual([
+      { path: '/SystemRestore', contentType: 'application/octet-stream', body: Buffer.from(backup) }
+    ])
+  })
+
+  it('rejects the nil upload address of the camera before sending the backup', async () => {
+    const { mock, device } = await connect()
+    const error = await rejection(() => device.management.uploadBackup(new Uint8Array([1])))
+    expect(error).toBeInstanceOf(OnvifError)
+    expect((error as Error).message).toContain('Invalid service address')
+    expect(mock.uploads).toEqual([])
+    expect(mock.requests.filter(({ service }) => service === 'upload')).toEqual([])
+  })
+
+  it('sends the firmware version of a cloud upgrade and returns the down time', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'device.UpgradeFirmware': answer(
+          happytime('device.StartSystemRestore').replace(
+            /<tds:StartSystemRestoreResponse>[\s\S]*<\/tds:StartSystemRestoreResponse>/,
+            '<tds:UpgradeFirmwareResponse><tds:ExpectedDownTime>PT10M</tds:ExpectedDownTime></tds:UpgradeFirmwareResponse>'
+          )
+        )
+      }
+    })
+    expect(await device.management.upgradeFirmware({ version: '5.1.2' })).toEqual({ expectedDownTime: 'PT10M' })
+    expect(requestOf(mock, 'UpgradeFirmware')).toEqual({ UpgradeFirmware: { Version: '5.1.2' } })
   })
 })

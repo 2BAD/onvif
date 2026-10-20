@@ -81,6 +81,12 @@ camera.management.getSystemSupportInformation()
 camera.management.getWsdlUrl()
 camera.management.sendAuxiliaryCommand(request)
 camera.management.setSystemFactoryDefault(request)
+camera.management.getSystemUris()
+camera.management.uploadFirmware(firmware, options)
+camera.management.uploadBackup(backup, options)
+camera.management.startFirmwareUpgrade()
+camera.management.startSystemRestore()
+camera.management.upgradeFirmware(request)
 
 camera.management.getGeoLocation()
 camera.management.setGeoLocation(request)
@@ -148,6 +154,22 @@ const der = nvtCertificate[0]?.certificate.data // Uint8Array
 ```
 
 Certificate, key and policy data is a `Uint8Array` in both directions.
+
+## Firmware and backups
+
+```ts
+const { systemBackupUri } = await camera.management.getSystemUris()
+const backup = systemBackupUri && (await camera.download(systemBackupUri)).body
+
+const firmware = await readFile('firmware.bin')
+const { expectedDownTime } = await camera.management.uploadFirmware(firmware, { timeoutMs: 600_000 })
+```
+
+`uploadFirmware()` waits the upload delay the camera asks for. A camera that rejects the file throws a `TransportError` with `status` 415.
+
+`uploadBackup(backup)` restores a backup downloaded from `systemBackupUri`.
+
+`GetSystemBackup`, `RestoreSystem` and `UpgradeSystemFirmware` are not supported.
 
 ## Date and time
 

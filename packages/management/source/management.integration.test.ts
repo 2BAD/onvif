@@ -267,6 +267,29 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
     }
   })
 
+  it('downloads the system log, support information and backup', async (context) => {
+    const uris = await unlessAnswered(() => device.management.getSystemUris())
+    const addresses = [
+      ...(uris?.systemLogUris?.systemLog ?? []).map(({ uri }) => uri),
+      uris?.supportInfoUri,
+      uris?.systemBackupUri
+    ].filter((address) => address !== undefined && address !== '')
+    if (addresses.length === 0) return context.skip('The device lists no download addresses')
+    for (const address of addresses) {
+      const { body } = await device.download(address ?? '')
+      expect(body).toBeInstanceOf(Uint8Array)
+    }
+  })
+
+  it('restores the backup it downloaded', async (context) => {
+    const uris = await unlessAnswered(() => device.management.getSystemUris())
+    if (!uris?.systemBackupUri) return context.skip('The device lists no backup address')
+    const { body } = await device.download(uris.systemBackupUri)
+    const restored = await unlessAnswered(() => device.management.uploadBackup(body))
+    if (!restored) return context.skip('The device does not restore backups over HTTP')
+    expect(restored.expectedDownTime).toMatch(/^P/)
+  })
+
   it('sends the IP filter back unchanged', async (context) => {
     const filter = await unlessNotSupported(() => device.management.getIPAddressFilter())
     if (!filter) return context.skip('The device does not implement the IP address filter')

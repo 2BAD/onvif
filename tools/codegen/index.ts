@@ -152,7 +152,11 @@ const targets: Target[] = [
         'SetDot1XConfiguration',
         'GetDot1XConfiguration',
         'GetDot1XConfigurations',
-        'DeleteDot1XConfiguration'
+        'DeleteDot1XConfiguration',
+        'GetSystemUris',
+        'StartFirmwareUpgrade',
+        'StartSystemRestore',
+        'UpgradeFirmware'
       ]
     }
   },

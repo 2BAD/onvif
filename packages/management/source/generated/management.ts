@@ -647,6 +647,19 @@ export type GetSystemSupportInformationResponse = {
   supportInformation: SupportInformation
 }
 
+export type GetSystemUrisRequest = Record<string, never>
+
+export type GetSystemUrisResponse = {
+  systemLogUris?: SystemLogUriList
+  supportInfoUri?: string
+  systemBackupUri?: string
+  extension?: GetSystemUrisResponseExtension
+}
+
+export type GetSystemUrisResponseExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type GetUserRolesRequest = {
   userRole?: string
 }
@@ -1236,6 +1249,21 @@ export type SetZeroConfigurationRequest = {
 
 export type SetZeroConfigurationResponse = Record<string, never>
 
+export type StartFirmwareUpgradeRequest = Record<string, never>
+
+export type StartFirmwareUpgradeResponse = {
+  uploadUri: string
+  uploadDelay: string
+  expectedDownTime: string
+}
+
+export type StartSystemRestoreRequest = Record<string, never>
+
+export type StartSystemRestoreResponse = {
+  uploadUri: string
+  expectedDownTime: string
+}
+
 export type StorageConfiguration = {
   /** Unique identifier referencing the physical entity. */
   token: string
@@ -1299,6 +1327,16 @@ export type SystemLog = {
   string?: string
 }
 
+export type SystemLogUri = {
+  type: SystemLogType
+  uri: string
+  $any?: Record<string, unknown>
+}
+
+export type SystemLogUriList = {
+  systemLog?: SystemLogUri[]
+}
+
 export type Time = {
   /** Range is 0 to 23. */
   hour: number
@@ -1326,6 +1364,14 @@ export type TimeZone = {
 export type TLSConfiguration = {
   certificateID: string
   $any?: Record<string, unknown>
+}
+
+export type UpgradeFirmwareRequest = {
+  version: string
+}
+
+export type UpgradeFirmwareResponse = {
+  expectedDownTime: string
 }
 
 export type User = {
@@ -1957,6 +2003,22 @@ export const schema: Schema = {
   GetSystemSupportInformationResponse: {
     fields: [{ name: 'SupportInformation', property: 'supportInformation', type: 'SupportInformation', namespace: tds }]
   },
+  GetSystemUrisRequest: { fields: [] },
+  GetSystemUrisResponse: {
+    fields: [
+      { name: 'SystemLogUris', property: 'systemLogUris', type: 'SystemLogUriList', namespace: tds, optional: true },
+      { name: 'SupportInfoUri', property: 'supportInfoUri', type: 'string', namespace: tds, optional: true },
+      { name: 'SystemBackupUri', property: 'systemBackupUri', type: 'string', namespace: tds, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'GetSystemUrisResponseExtension',
+        namespace: tds,
+        optional: true
+      }
+    ]
+  },
+  GetSystemUrisResponseExtension: { fields: [], any: true },
   GetUserRolesRequest: {
     fields: [{ name: 'UserRole', property: 'userRole', type: 'string', namespace: tds, optional: true }]
   },
@@ -2457,6 +2519,21 @@ export const schema: Schema = {
     ]
   },
   SetZeroConfigurationResponse: { fields: [] },
+  StartFirmwareUpgradeRequest: { fields: [] },
+  StartFirmwareUpgradeResponse: {
+    fields: [
+      { name: 'UploadUri', property: 'uploadUri', type: 'string', namespace: tds },
+      { name: 'UploadDelay', property: 'uploadDelay', type: 'string', namespace: tds },
+      { name: 'ExpectedDownTime', property: 'expectedDownTime', type: 'string', namespace: tds }
+    ]
+  },
+  StartSystemRestoreRequest: { fields: [] },
+  StartSystemRestoreResponse: {
+    fields: [
+      { name: 'UploadUri', property: 'uploadUri', type: 'string', namespace: tds },
+      { name: 'ExpectedDownTime', property: 'expectedDownTime', type: 'string', namespace: tds }
+    ]
+  },
   StorageConfiguration: {
     fields: [
       { name: 'token', type: 'string', attribute: true },
@@ -2521,6 +2598,18 @@ export const schema: Schema = {
       { name: 'String', property: 'string', type: 'string', namespace: tt, optional: true }
     ]
   },
+  SystemLogUri: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tt },
+      { name: 'Uri', property: 'uri', type: 'string', namespace: tt }
+    ],
+    any: true
+  },
+  SystemLogUriList: {
+    fields: [
+      { name: 'SystemLog', property: 'systemLog', type: 'SystemLogUri', namespace: tt, optional: true, array: true }
+    ]
+  },
   Time: {
     fields: [
       { name: 'Hour', property: 'hour', type: 'integer', namespace: tt },
@@ -2532,6 +2621,10 @@ export const schema: Schema = {
   TLSConfiguration: {
     fields: [{ name: 'CertificateID', property: 'certificateID', type: 'string', namespace: tt }],
     any: true
+  },
+  UpgradeFirmwareRequest: { fields: [{ name: 'Version', property: 'version', type: 'string', namespace: tds }] },
+  UpgradeFirmwareResponse: {
+    fields: [{ name: 'ExpectedDownTime', property: 'expectedDownTime', type: 'string', namespace: tds }]
   },
   User: {
     fields: [
@@ -3309,6 +3402,38 @@ export const DeleteDot1XConfiguration: Operation<DeleteDot1XConfigurationRequest
   action: 'http://www.onvif.org/ver10/device/wsdl/DeleteDot1XConfiguration',
   request: { name: 'DeleteDot1XConfiguration', namespace: tds, type: 'DeleteDot1XConfigurationRequest' },
   response: { name: 'DeleteDot1XConfigurationResponse', type: 'DeleteDot1XConfigurationResponse' },
+  schema
+}
+
+export const GetSystemUris: Operation<GetSystemUrisRequest, GetSystemUrisResponse> = {
+  name: 'GetSystemUris',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetSystemUris',
+  request: { name: 'GetSystemUris', namespace: tds, type: 'GetSystemUrisRequest' },
+  response: { name: 'GetSystemUrisResponse', type: 'GetSystemUrisResponse' },
+  schema
+}
+
+export const StartFirmwareUpgrade: Operation<StartFirmwareUpgradeRequest, StartFirmwareUpgradeResponse> = {
+  name: 'StartFirmwareUpgrade',
+  action: 'http://www.onvif.org/ver10/device/wsdl/StartFirmwareUpgrade',
+  request: { name: 'StartFirmwareUpgrade', namespace: tds, type: 'StartFirmwareUpgradeRequest' },
+  response: { name: 'StartFirmwareUpgradeResponse', type: 'StartFirmwareUpgradeResponse' },
+  schema
+}
+
+export const StartSystemRestore: Operation<StartSystemRestoreRequest, StartSystemRestoreResponse> = {
+  name: 'StartSystemRestore',
+  action: 'http://www.onvif.org/ver10/device/wsdl/StartSystemRestore',
+  request: { name: 'StartSystemRestore', namespace: tds, type: 'StartSystemRestoreRequest' },
+  response: { name: 'StartSystemRestoreResponse', type: 'StartSystemRestoreResponse' },
+  schema
+}
+
+export const UpgradeFirmware: Operation<UpgradeFirmwareRequest, UpgradeFirmwareResponse> = {
+  name: 'UpgradeFirmware',
+  action: 'http://www.onvif.org/ver10/device/wsdl/UpgradeFirmware',
+  request: { name: 'UpgradeFirmware', namespace: tds, type: 'UpgradeFirmwareRequest' },
+  response: { name: 'UpgradeFirmwareResponse', type: 'UpgradeFirmwareResponse' },
   schema
 }
 
@@ -4490,5 +4615,92 @@ export class ManagementClient {
     options?: CallOptions
   ): Promise<DeleteDot1XConfigurationResponse> {
     return this.#device.call(DeleteDot1XConfiguration, request, options)
+  }
+
+  /**
+   * This operation is used to retrieve URIs from which system information may be downloaded using HTTP.
+   * URIs may be returned for the following system information: System Logs. Multiple system logs may be
+   * returned, of different types. The exact format of the system logs is outside the scope of this
+   * specification. Support Information. This consists of arbitrary device diagnostics information from a
+   * device. The exact format of the diagnostic information is outside the scope of this specification.
+   * System Backup. The received file is a backup file that can be used to restore the current device
+   * configuration at a later date. The exact format of the backup configuration file is outside the
+   * scope of this specification. If the device allows retrieval of system logs, support information or
+   * system backup data, it should make them available via HTTP GET. If it does, it shall support the
+   * GetSystemUris command.
+   *
+   * @param request - The `GetSystemUris` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetSystemUrisResponse`
+   */
+  getSystemUris(request?: GetSystemUrisRequest, options?: CallOptions): Promise<GetSystemUrisResponse> {
+    return this.#device.call(GetSystemUris, request, options)
+  }
+
+  /**
+   * This operation initiates a firmware upgrade using the HTTP POST mechanism. The response to the
+   * command includes an HTTP URL to which the upgrade file may be uploaded. The actual upgrade takes
+   * place as soon as the HTTP POST operation has completed. The device should support firmware upgrade
+   * through the StartFirmwareUpgrade command. The exact format of the firmware data is outside the scope
+   * of this specification. Firmware upgrade over HTTP may be achieved using the following steps: Client
+   * calls StartFirmwareUpgrade. Server responds with upload URI and optional delay value. Client waits
+   * for delay duration if specified by server. Client transmits the firmware image to the upload URI
+   * using HTTP POST. Server reprograms itself using the uploaded image, then reboots. If the firmware
+   * upgrade fails because the upgrade file was invalid, the HTTP POST response shall be "415 Unsupported
+   * Media Type". If the firmware upgrade fails due to an error at the device, the HTTP POST response
+   * shall be "500 Internal Server Error". The value of the Content-Type header in the HTTP POST request
+   * shall be "application/octetstream".
+   *
+   * @param request - The `StartFirmwareUpgrade` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `StartFirmwareUpgradeResponse`
+   */
+  startFirmwareUpgrade(
+    request?: StartFirmwareUpgradeRequest,
+    options?: CallOptions
+  ): Promise<StartFirmwareUpgradeResponse> {
+    return this.#device.call(StartFirmwareUpgrade, request, options)
+  }
+
+  /**
+   * This operation initiates a system restore from backed up configuration data using the HTTP POST
+   * mechanism. The response to the command includes an HTTP URL to which the backup file may be
+   * uploaded. The actual restore takes place as soon as the HTTP POST operation has completed. Devices
+   * should support system restore through the StartSystemRestore command. The exact format of the backup
+   * configuration data is outside the scope of this specification. System restore over HTTP may be
+   * achieved using the following steps: Client calls StartSystemRestore. Server responds with upload
+   * URI. Client transmits the configuration data to the upload URI using HTTP POST. Server applies the
+   * uploaded configuration, then reboots if necessary. If the system restore fails because the uploaded
+   * file was invalid, the HTTP POST response shall be "415 Unsupported Media Type". If the system
+   * restore fails due to an error at the device, the HTTP POST response shall be "500 Internal Server
+   * Error". The value of the Content-Type header in the HTTP POST request shall be
+   * "application/octetstream".
+   *
+   * @param request - The `StartSystemRestore` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `StartSystemRestoreResponse`
+   */
+  startSystemRestore(request?: StartSystemRestoreRequest, options?: CallOptions): Promise<StartSystemRestoreResponse> {
+    return this.#device.call(StartSystemRestore, request, options)
+  }
+
+  /**
+   * This operation initiates a firmware upgrade using between the device and the MCS, without further
+   * actions from the client. Cloud firmware upgrade may be achieved using the following steps: Client
+   * retrieves the list of available firmware versions from the MCS. Client calls UpgradeFirmware,
+   * selecting the desired FW version. Device service responds with a downtime value. Device and MCS
+   * perform the firmware upgrade procedure without further interaction from the Client Device notifies
+   * the Client of the result by emitting the appropriate CloudFirmwareUpgrade event After applying a
+   * firmware upgrade the device shall keep the basic network configuration like IP address, subnet mask
+   * and gateway or DHCP settings, as well as all the parameters of the Uplink and Security service
+   * unchanged, so that it can connect to the cloud. Additionally a firmware upgrade shall not change
+   * user credentials.
+   *
+   * @param request - The `UpgradeFirmware` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `UpgradeFirmwareResponse`
+   */
+  upgradeFirmware(request: UpgradeFirmwareRequest, options?: CallOptions): Promise<UpgradeFirmwareResponse> {
+    return this.#device.call(UpgradeFirmware, request, options)
   }
 }

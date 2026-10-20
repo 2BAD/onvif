@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added user role, remote user, password policy, access policy and hashing algorithm methods to `device.management`
 - Added certificate, client certificate mode and 802.1X methods to `device.management`
 - Added `device.upload()` for HTTP uploads to addresses the device reported
+- Added `uploadFirmware()`, `uploadBackup()`, `getSystemUris()` and the cloud `upgradeFirmware()` to `device.management`
 
 ### Fixed
 
