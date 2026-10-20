@@ -259,6 +259,12 @@ const captureManagement = async (): Promise<void> => {
   const dot11Token = `<InterfaceToken>${(wireless ?? interfaces[0])?.token ?? ''}</InterfaceToken>`
   await management.call('GetDot11Status', dot11Token)
   await management.call('ScanAvailableDot11Networks', dot11Token)
+  await management.call('GetSystemLog', '<LogType>System</LogType>')
+  await management.call('GetSystemLog', '<LogType>Access</LogType>', { as: 'GetSystemLogAccess' })
+  await management.call('GetSystemSupportInformation')
+  await management.call('GetWsdlUrl')
+  const geoXml = await management.call('GetGeoLocation')
+  await management.call('GetStorageConfigurations')
   if (!write) return
 
   const hostname = elements(hostnameXml, 'HostnameInformation')[0]
@@ -309,24 +315,88 @@ const captureManagement = async (): Promise<void> => {
     .filter((scope) => text(scope, 'ScopeDef') === 'Configurable')
     .map((scope) => `<Scopes>${text(scope, 'ScopeItem')}</Scopes>`)
   if (configurableScopes.length > 0) await management.call('SetScopes', configurableScopes.join(''))
+  const testScope = '<ScopeItem>onvif://www.onvif.org/onviftest</ScopeItem>'
+  await management.call('AddScopes', testScope)
+  try {
+    await management.call('GetScopes', '', { as: 'GetScopesWithAdded' })
+  } finally {
+    await management.call('RemoveScopes', testScope)
+  }
+  await management.call('RemoveScopes', testScope, { as: 'RemoveScopesMissingFault' })
 
   const time = elements(timeXml, 'SystemDateAndTime')[0]
   if (time !== undefined) {
     const type = text(time, 'DateTimeType')
+    const daylightSavings = `<DaylightSavings>${text(time, 'DaylightSavings')}</DaylightSavings>`
     const zone = text(elements(time, 'TimeZone')[0] ?? '', 'TZ')
-    const now = new Date(Date.now() + clockSkewMs)
-    const manual =
-      type === 'Manual'
-        ? `<UTCDateTime><Date ${tt}><Year>${now.getUTCFullYear()}</Year><Month>${now.getUTCMonth() + 1}</Month>` +
-          `<Day>${now.getUTCDate()}</Day></Date><Time ${tt}><Hour>${now.getUTCHours()}</Hour>` +
-          `<Minute>${now.getUTCMinutes()}</Minute><Second>${now.getUTCSeconds()}</Second></Time></UTCDateTime>`
-        : ''
-    await management.call(
-      'SetSystemDateAndTime',
-      `<DateTimeType>${type}</DateTimeType><DaylightSavings>${text(time, 'DaylightSavings')}</DaylightSavings>` +
-        (zone === undefined ? '' : `<TimeZone><TZ ${tt}>${zone}</TZ></TimeZone>`) +
-        manual
-    )
+    const timeZone = zone === undefined ? '' : `<TimeZone><TZ ${tt}>${zone}</TZ></TimeZone>`
+    const utcDateTime = (now: Date, month = now.getUTCMonth() + 1) =>
+      `<UTCDateTime><Date ${tt}><Year>${now.getUTCFullYear()}</Year><Month>${month}</Month>` +
+      `<Day>${now.getUTCDate()}</Day></Date><Time ${tt}><Hour>${now.getUTCHours()}</Hour>` +
+      `<Minute>${now.getUTCMinutes()}</Minute><Second>${now.getUTCSeconds()}</Second></Time></UTCDateTime>`
+    try {
+      await management.call(
+        'SetSystemDateAndTime',
+        `<DateTimeType>${type}</DateTimeType>${daylightSavings}<TimeZone><TZ ${tt}>!invalid</TZ></TimeZone>`,
+        { as: 'SetSystemDateAndTimeInvalidTimeZoneFault' }
+      )
+      await management.call(
+        'SetSystemDateAndTime',
+        `<DateTimeType>Manual</DateTimeType>${daylightSavings}${timeZone}${utcDateTime(new Date(Date.now() + clockSkewMs), 13)}`,
+        { as: 'SetSystemDateAndTimeInvalidDateFault' }
+      )
+    } finally {
+      const manual = type === 'Manual' ? utcDateTime(new Date(Date.now() + clockSkewMs)) : ''
+      await management.call(
+        'SetSystemDateAndTime',
+        `<DateTimeType>${type}</DateTimeType>${daylightSavings}${timeZone}${manual}`
+      )
+    }
+  }
+
+  await management.call('SendAuxiliaryCommand', '<AuxiliaryCommand>tt:onviftest|On</AuxiliaryCommand>')
+
+  if (geoXml.includes('GetGeoLocationResponse')) {
+    const locations = elements(geoXml, 'Location')
+    if (locations.length > 0) {
+      const content = [...geoXml.matchAll(/<[\w-]+:Location\b[^>]*>[\s\S]*?<\/[\w-]+:Location>/g)]
+        .map(([entry]) => entry)
+        .join('')
+      await management.call('SetGeoLocation', content, { as: 'SetGeoLocationUnchanged', from: geoXml })
+    }
+    const testLocation = `<Location Entity="Device" Token="onviftest" Fixed="false"><GeoLocation ${tt} lon="0" lat="0" elevation="0"/></Location>`
+    await management.call('SetGeoLocation', testLocation)
+    try {
+      await management.call('GetGeoLocation', '', { as: 'GetGeoLocationWithAdded' })
+    } finally {
+      await management.call('DeleteGeoLocation', testLocation)
+    }
+  }
+
+  const storageXml = await management.call(
+    'CreateStorageConfiguration',
+    '<StorageConfiguration type="NFS"><LocalPath>/onviftest</LocalPath>' +
+      '<StorageUri>nfs://198.51.100.7/onviftest</StorageUri></StorageConfiguration>'
+  )
+  const storageToken = text(storageXml, 'Token')
+  if (storageToken !== undefined) {
+    const token = `<Token>${storageToken}</Token>`
+    try {
+      const configurationXml = await management.call('GetStorageConfiguration', token)
+      const data = elements(configurationXml, 'Data')[0]
+      const dataType = /<[\w-]+:Data\b[^>]*\btype="([^"]*)"/.exec(configurationXml)?.[1] ?? 'NFS'
+      if (data !== undefined) {
+        await management.call(
+          'SetStorageConfiguration',
+          `<StorageConfiguration token="${storageToken}"><Data type="${dataType}">${data}</Data></StorageConfiguration>`,
+          { from: configurationXml }
+        )
+      }
+      await management.call('GetStorageConfigurations', '', { as: 'GetStorageConfigurationsWithAdded' })
+    } finally {
+      await management.call('DeleteStorageConfiguration', token)
+    }
+    await management.call('GetStorageConfiguration', token, { as: 'GetStorageConfigurationMissingFault' })
   }
 
   const [networkInterface] = tokenized(networkXml, 'NetworkInterfaces')
@@ -1167,6 +1237,9 @@ const scrub = (xml: string): string =>
       name.startsWith('REDACTED') ? match : `${start}${pseudonym('text')(name)}`
     )
     .replace(/(<[\w-]+:(?:SSID|ActiveConfigAlias)>)([^<]+)/g, replaceGroup('text'))
+    .replace(/(<[\w-]+:GeoLocation\b[^>]*)/g, (element: string) =>
+      element.replace(/\b(lon|lat|elevation)="[^"]*"/g, '$1="0"')
+    )
     .replace(/(<[\w-]+:DNSname>)([^<]+)/g, replaceGroup('host'))
     .replace(
       /(<[\w-]+:DynamicDNSInformation\b[^>]*>(?:(?!DynamicDNSInformation>)[\s\S])*?<[\w-]+:Name>)([^<]+)/g,
