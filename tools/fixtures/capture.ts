@@ -438,6 +438,59 @@ const captureMedia = async (): Promise<void> => {
     }
   }
   if (media1Url) await captureMediaConfiguration(media1Url)
+  if (media2Url) await captureMedia2Configuration(media2Url)
+}
+
+const captureMedia2Configuration = async (url: string): Promise<void> => {
+  const media2 = client('media', 'media2', url, ns.tr2)
+  const metadataXml = await media2.call('GetMetadataConfigurations')
+  const [metadata] = tokenized(metadataXml, 'Configurations')
+  const [profile] = tokenized((await media2.send('GetProfiles')).xml, 'Profiles')
+  if (metadata) {
+    await media2.call('GetMetadataConfigurationOptions', `<ConfigurationToken>${metadata.token}</ConfigurationToken>`)
+  }
+  if (profile) {
+    await media2.call('GetMetadataConfigurationOptions', `<ProfileToken>${profile.token}</ProfileToken>`, {
+      as: 'GetMetadataConfigurationOptionsForProfile'
+    })
+  }
+  const [analytics] = tokenized(await media2.call('GetAnalyticsConfigurations'), 'Configurations')
+  await media2.call('GetMetadataConfigurations', '<ConfigurationToken>missing</ConfigurationToken>', {
+    as: 'GetMetadataConfigurationsMissingFault'
+  })
+  if (!write) return
+
+  if (metadata) {
+    await media2.call(
+      'SetMetadataConfiguration',
+      `<Configuration${metadata.attributes}>${metadata.content}</Configuration>`,
+      { from: metadataXml }
+    )
+  }
+  const [source] = tokenized((await media2.send('GetVideoSourceConfigurations')).xml, 'Configurations')
+  const created = firstMatch(await media2.call('CreateProfile', '<Name>onviftest</Name>'), /<[\w-]+:Token>([^<]+)</)
+  if (!created) return
+  const token = `<ProfileToken>${created}</ProfileToken>`
+  // types in the order of tr2:ConfigurationEnumeration
+  const attached = [
+    source && { type: 'VideoSource', token: source.token },
+    metadata && { type: 'Metadata', token: metadata.token },
+    analytics && { type: 'Analytics', token: analytics.token }
+  ].filter((entry) => entry !== undefined)
+  const references = (withTokens: boolean) =>
+    attached
+      .map(
+        (entry) =>
+          `<Configuration><Type>${entry.type}</Type>${withTokens ? `<Token>${entry.token}</Token>` : ''}</Configuration>`
+      )
+      .join('')
+  try {
+    await media2.call('AddConfiguration', `${token}${references(true)}`)
+    await media2.call('GetProfiles', `<Token>${created}</Token><Type>All</Type>`, { as: 'GetProfilesAfterAdd' })
+    await media2.call('RemoveConfiguration', `${token}${references(false)}`)
+  } finally {
+    await media2.call('DeleteProfile', `<Token>${created}</Token>`)
+  }
 }
 
 const configurationKinds = ['VideoSource', 'VideoEncoder', 'AudioSource', 'AudioEncoder', 'Metadata']
