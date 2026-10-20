@@ -101,7 +101,24 @@ const targets: Target[] = [
         'GetEndpointReference',
         'GetDot11Capabilities',
         'GetDot11Status',
-        'ScanAvailableDot11Networks'
+        'ScanAvailableDot11Networks',
+        'SetScopes',
+        'AddScopes',
+        'RemoveScopes',
+        'SetSystemDateAndTime',
+        'SetSystemFactoryDefault',
+        'GetSystemLog',
+        'GetSystemSupportInformation',
+        'GetWsdlUrl',
+        'SendAuxiliaryCommand',
+        'GetGeoLocation',
+        'SetGeoLocation',
+        'DeleteGeoLocation',
+        'GetStorageConfigurations',
+        'CreateStorageConfiguration',
+        'GetStorageConfiguration',
+        'SetStorageConfiguration',
+        'DeleteStorageConfiguration'
       ]
     }
   },

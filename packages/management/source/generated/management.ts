@@ -25,6 +25,9 @@ export type Duplex = 'Full' | 'Half' | (string & Record<never, never>)
 
 export type DynamicDNSType = 'NoUpdate' | 'ClientUpdates' | 'ServerUpdates' | (string & Record<never, never>)
 
+/** Enumeration describing the available factory default modes. */
+export type FactoryDefaultType = 'Hard' | 'Soft' | (string & Record<never, never>)
+
 export type IPAddressFilterType = 'Allow' | 'Deny' | (string & Record<never, never>)
 
 export type IPType = 'IPv4' | 'IPv6' | (string & Record<never, never>)
@@ -41,6 +44,11 @@ export type RelayLogicalState = 'active' | 'inactive' | (string & Record<never, 
 
 export type RelayMode = 'Monostable' | 'Bistable' | (string & Record<never, never>)
 
+export type SetDateTimeType = 'Manual' | 'NTP' | (string & Record<never, never>)
+
+/** Enumeration describing the available system log modes. */
+export type SystemLogType = 'System' | 'Access' | (string & Record<never, never>)
+
 export type UserLevel =
   | 'Administrator'
   | 'Operator'
@@ -55,6 +63,29 @@ export type AddIPAddressFilterRequest = {
 
 export type AddIPAddressFilterResponse = Record<string, never>
 
+export type AddScopesRequest = {
+  /**
+   * Contains a list of new configurable scope parameters that will be added to the existing configurable
+   * scope.
+   */
+  scopeItem: string[]
+}
+
+export type AddScopesResponse = Record<string, never>
+
+export type AttachmentData = {
+  include: Include
+  contentType?: string
+}
+
+export type CreateStorageConfigurationRequest = {
+  storageConfiguration: StorageConfigurationData
+}
+
+export type CreateStorageConfigurationResponse = {
+  token: string
+}
+
 export type CreateUsersRequest = {
   /**
    * Creates new device users and corresponding credentials. Each user entry includes: username, password
@@ -67,6 +98,31 @@ export type CreateUsersRequest = {
 }
 
 export type CreateUsersResponse = Record<string, never>
+
+export type DateTime = {
+  time: Time
+  date: DateType
+}
+
+export type DateType = {
+  year: number
+  /** Range is 1 to 12. */
+  month: number
+  /** Range is 1 to 31. */
+  day: number
+}
+
+export type DeleteGeoLocationRequest = {
+  location: LocationEntity[]
+}
+
+export type DeleteGeoLocationResponse = Record<string, never>
+
+export type DeleteStorageConfigurationRequest = {
+  token: string
+}
+
+export type DeleteStorageConfigurationResponse = Record<string, never>
 
 export type DeleteUsersRequest = {
   /**
@@ -189,6 +245,26 @@ export type DynamicDNSInformationExtension = {
   $any?: Record<string, unknown>
 }
 
+export type GeoLocation = {
+  /** East west location as angle. */
+  lon?: number
+  /** North south location as angle. */
+  lat?: number
+  /** Height in meters above sea level. */
+  elevation?: number
+  $any?: Record<string, unknown>
+}
+
+export type GeoOrientation = {
+  /** Rotation around the x axis. */
+  roll?: number
+  /** Rotation around the y axis. */
+  pitch?: number
+  /** Rotation around the z axis. */
+  yaw?: number
+  $any?: Record<string, unknown>
+}
+
 export type GetDiscoveryModeRequest = Record<string, never>
 
 export type GetDiscoveryModeResponse = {
@@ -239,6 +315,12 @@ export type GetEndpointReferenceResponse = {
   $any?: Record<string, unknown>
 }
 
+export type GetGeoLocationRequest = Record<string, never>
+
+export type GetGeoLocationResponse = {
+  location?: LocationEntity[]
+}
+
 export type GetIPAddressFilterRequest = Record<string, never>
 
 export type GetIPAddressFilterResponse = {
@@ -283,6 +365,37 @@ export type GetRemoteDiscoveryModeResponse = {
   remoteDiscoveryMode: DiscoveryMode
 }
 
+export type GetStorageConfigurationRequest = {
+  token: string
+}
+
+export type GetStorageConfigurationResponse = {
+  storageConfiguration: StorageConfiguration
+}
+
+export type GetStorageConfigurationsRequest = Record<string, never>
+
+export type GetStorageConfigurationsResponse = {
+  storageConfigurations?: StorageConfiguration[]
+}
+
+export type GetSystemLogRequest = {
+  /** Specifies the type of system log to get. */
+  logType: SystemLogType
+}
+
+export type GetSystemLogResponse = {
+  /** Contains the system log information. */
+  systemLog: SystemLog
+}
+
+export type GetSystemSupportInformationRequest = Record<string, never>
+
+export type GetSystemSupportInformationResponse = {
+  /** Contains the arbitary device diagnostics information. */
+  supportInformation: SupportInformation
+}
+
 export type GetUsersRequest = Record<string, never>
 
 export type GetUsersResponse = {
@@ -293,11 +406,22 @@ export type GetUsersResponse = {
   user?: User[]
 }
 
+export type GetWsdlUrlRequest = Record<string, never>
+
+export type GetWsdlUrlResponse = {
+  wsdlUrl: string
+}
+
 export type GetZeroConfigurationRequest = Record<string, never>
 
 export type GetZeroConfigurationResponse = {
   /** Contains the zero-configuration. */
   zeroConfiguration: NetworkZeroConfiguration
+}
+
+export type Include = {
+  href: string
+  $any?: Record<string, unknown>
 }
 
 export type IPAddress = {
@@ -338,6 +462,47 @@ export type IPv6NetworkInterfaceSetConfiguration = {
   manual?: PrefixedIPv6Address[]
   /** DHCP configuration. */
   DHCP?: IPv6DHCPConfiguration
+}
+
+export type LocalLocation = {
+  /** East west location as angle. */
+  x?: number
+  /** North south location as angle. */
+  y?: number
+  /** Offset in meters from the sea level. */
+  z?: number
+  $any?: Record<string, unknown>
+}
+
+export type LocalOrientation = {
+  /** Rotation around the y axis. */
+  pan?: number
+  /** Rotation around the z axis. */
+  tilt?: number
+  /** Rotation around the x axis. */
+  roll?: number
+  $any?: Record<string, unknown>
+}
+
+export type LocationEntity = {
+  /** Location on earth. */
+  geoLocation?: GeoLocation
+  /** Orientation relative to earth. */
+  geoOrientation?: GeoOrientation
+  /** Indoor location offset. */
+  localLocation?: LocalLocation
+  /** Indoor orientation offset. */
+  localOrientation?: LocalOrientation
+  /** Entity type the entry refers to, use a value from the tt:Entity enumeration. */
+  entity?: string
+  /** Optional entity token. */
+  token?: string
+  /** If this value is true the entity cannot be deleted. */
+  fixed?: boolean
+  /** Optional reference to the XAddr of another devices DeviceManagement service. */
+  geoSource?: string
+  /** If set the geo location is obtained internally. */
+  autoGeo?: boolean
 }
 
 export type NetworkGateway = {
@@ -493,12 +658,34 @@ export type RemoveIPAddressFilterRequest = {
 
 export type RemoveIPAddressFilterResponse = Record<string, never>
 
+export type RemoveScopesRequest = {
+  /**
+   * Contains a list of URIs that should be removed from the device scope. Note that the response message
+   * always will match the request or an error will be returned. The use of the response is for that
+   * reason deprecated.
+   */
+  scopeItem: string[]
+}
+
+export type RemoveScopesResponse = {
+  /** Contains a list of URIs that has been removed from the device scope */
+  scopeItem?: string[]
+}
+
 export type ScanAvailableDot11NetworksRequest = {
   interfaceToken: string
 }
 
 export type ScanAvailableDot11NetworksResponse = {
   networks?: Dot11AvailableNetworks[]
+}
+
+export type SendAuxiliaryCommandRequest = {
+  auxiliaryCommand: string
+}
+
+export type SendAuxiliaryCommandResponse = {
+  auxiliaryCommandResponse?: string
 }
 
 export type SetDiscoveryModeRequest = {
@@ -535,6 +722,12 @@ export type SetDynamicDNSRequest = {
 }
 
 export type SetDynamicDNSResponse = Record<string, never>
+
+export type SetGeoLocationRequest = {
+  location: LocationEntity[]
+}
+
+export type SetGeoLocationResponse = Record<string, never>
 
 export type SetHostnameFromDHCPRequest = {
   /** True if the hostname shall be obtained via DHCP. */
@@ -628,6 +821,39 @@ export type SetRemoteDiscoveryModeRequest = {
 
 export type SetRemoteDiscoveryModeResponse = Record<string, never>
 
+export type SetScopesRequest = {
+  /** Contains a list of scope parameters that will replace all existing configurable scope parameters. */
+  scopes: string[]
+}
+
+export type SetScopesResponse = Record<string, never>
+
+export type SetStorageConfigurationRequest = {
+  storageConfiguration: StorageConfiguration
+}
+
+export type SetStorageConfigurationResponse = Record<string, never>
+
+export type SetSystemDateAndTimeRequest = {
+  /** Defines if the date and time is set via NTP or manually. */
+  dateTimeType: SetDateTimeType
+  /** Automatically adjust Daylight savings if defined in TimeZone. */
+  daylightSavings: boolean
+  /** The time zone in POSIX 1003.1 format */
+  timeZone?: TimeZone
+  /** Date and time in UTC. If time is obtained via NTP, UTCDateTime has no meaning */
+  utcDateTime?: DateTime
+}
+
+export type SetSystemDateAndTimeResponse = Record<string, never>
+
+export type SetSystemFactoryDefaultRequest = {
+  /** Specifies the factory default action type. */
+  factoryDefault: FactoryDefaultType
+}
+
+export type SetSystemFactoryDefaultResponse = Record<string, never>
+
 export type SetUserRequest = {
   /**
    * Updates the credentials for one or several users on an device. Either all change requests are
@@ -648,6 +874,93 @@ export type SetZeroConfigurationRequest = {
 
 export type SetZeroConfigurationResponse = Record<string, never>
 
+export type StorageConfiguration = {
+  /** Unique identifier referencing the physical entity. */
+  token: string
+  data: StorageConfigurationData
+}
+
+export type StorageConfigurationData = {
+  /** Local path */
+  localPath?: string
+  /** Storage server address */
+  storageUri?: string
+  /** User credential for the storage server */
+  user?: UserCredential
+  extension?: StorageConfigurationDataExtension
+  /**
+   * The unique identifier of the certification path validation policy to be used for validating the
+   * server certificate as declared in the security service.
+   */
+  certPathValidationPolicyID?: string
+  configurationRenewal?: StorageConfigurationDataConfigurationRenewal
+  /** tds:StorageType lists the acceptable values for type attribute */
+  type: string
+  /** Optional region of the storage server */
+  region?: string
+  $any?: Record<string, unknown>
+}
+
+export type StorageConfigurationDataConfigurationRenewal = {
+  /** Remote URL to be queried by the device to renew the storage configuration. */
+  renewalEndpoint: string
+  /**
+   * AuthorizationServer token referring to the server that provides access tokens to authorize with the
+   * the renewal endpoint.
+   */
+  authorizationServer: string
+  /**
+   * CertPathValidationPolicyID used to validate the renewal endpoint server certificate. If not
+   * configured, server certificate validation behavior is undefined and the device may either apply a
+   * vendor specific default validation policy or skip validation at all.
+   */
+  certPathValidationPolicyID?: string
+  /** Optional user readable error information (readonly). */
+  error?: string
+}
+
+export type StorageConfigurationDataExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type SupportInformation = {
+  /** The support information as attachment data. */
+  binary?: AttachmentData
+  /** The support information as character data. */
+  string?: string
+}
+
+export type SystemLog = {
+  /** The log information as attachment data. */
+  binary?: AttachmentData
+  /** The log information as character data. */
+  string?: string
+}
+
+export type Time = {
+  /** Range is 0 to 23. */
+  hour: number
+  /** Range is 0 to 59. */
+  minute: number
+  /** Range is 0 to 61 (typically 59). */
+  second: number
+}
+
+/**
+ * The TZ format is specified by POSIX, please refer to POSIX 1003.1 section 8.3 Example: Europe, Paris
+ * TZ=CET-1CEST,M3.5.0/2,M10.5.0/3 CET = designation for standard time when daylight saving is not in
+ * force -1 = offset in hours = negative so 1 hour east of Greenwich meridian CEST = designation when
+ * daylight saving is in force ("Central European Summer Time") , = no offset number between code and
+ * comma, so default to one hour ahead for daylight saving M3.5.0 = when daylight saving starts = the
+ * last Sunday in March (the "5th" week means the last in the month) /2, = the local time when the
+ * switch occurs = 2 a.m. in this case M10.5.0 = when daylight saving ends = the last Sunday in
+ * October. /3, = the local time when the switch occurs = 3 a.m. in this case
+ */
+export type TimeZone = {
+  /** Posix timezone string. */
+  TZ: string
+}
+
 export type User = {
   /** Username string. */
   username: string
@@ -658,6 +971,21 @@ export type User = {
   extension?: UserExtension
 }
 
+export type UserCredential = {
+  /** User name */
+  userName: string
+  /** optional password, device shall not return the credentials (password) in the reply. */
+  password?: string
+  extension?: UserCredentialExtension
+  /** optional access token, device shall not return the credentials (token) in the reply. */
+  token?: string
+  $any?: Record<string, unknown>
+}
+
+export type UserCredentialExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type UserExtension = {
   /** The names of the roles assigned to the user. */
   roles: string[]
@@ -665,6 +993,8 @@ export type UserExtension = {
 }
 
 const tds = 'http://www.onvif.org/ver10/device/wsdl'
+const xop = 'http://www.w3.org/2004/08/xop/include'
+const xmime = 'http://www.w3.org/2005/05/xmlmime'
 const tt = 'http://www.onvif.org/ver10/schema'
 
 export const schema: Schema = {
@@ -672,8 +1002,50 @@ export const schema: Schema = {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
   },
   AddIPAddressFilterResponse: { fields: [] },
+  AddScopesRequest: {
+    fields: [{ name: 'ScopeItem', property: 'scopeItem', type: 'string', namespace: tds, array: true }]
+  },
+  AddScopesResponse: { fields: [] },
+  AttachmentData: {
+    fields: [
+      { name: 'Include', property: 'include', type: 'Include', namespace: xop },
+      { name: 'contentType', type: 'string', namespace: xmime, attribute: true, optional: true }
+    ]
+  },
+  CreateStorageConfigurationRequest: {
+    fields: [
+      {
+        name: 'StorageConfiguration',
+        property: 'storageConfiguration',
+        type: 'StorageConfigurationData',
+        namespace: tds
+      }
+    ]
+  },
+  CreateStorageConfigurationResponse: {
+    fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tds }]
+  },
   CreateUsersRequest: { fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, array: true }] },
   CreateUsersResponse: { fields: [] },
+  DateTime: {
+    fields: [
+      { name: 'Time', property: 'time', type: 'Time', namespace: tt },
+      { name: 'Date', property: 'date', type: 'DateType', namespace: tt }
+    ]
+  },
+  DateType: {
+    fields: [
+      { name: 'Year', property: 'year', type: 'integer', namespace: tt },
+      { name: 'Month', property: 'month', type: 'integer', namespace: tt },
+      { name: 'Day', property: 'day', type: 'integer', namespace: tt }
+    ]
+  },
+  DeleteGeoLocationRequest: {
+    fields: [{ name: 'Location', property: 'location', type: 'LocationEntity', namespace: tds, array: true }]
+  },
+  DeleteGeoLocationResponse: { fields: [] },
+  DeleteStorageConfigurationRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tds }] },
+  DeleteStorageConfigurationResponse: { fields: [] },
   DeleteUsersRequest: {
     fields: [{ name: 'Username', property: 'username', type: 'string', namespace: tds, array: true }]
   },
@@ -784,6 +1156,22 @@ export const schema: Schema = {
     ]
   },
   DynamicDNSInformationExtension: { fields: [], any: true },
+  GeoLocation: {
+    fields: [
+      { name: 'lon', type: 'decimal', attribute: true, optional: true },
+      { name: 'lat', type: 'decimal', attribute: true, optional: true },
+      { name: 'elevation', type: 'decimal', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  GeoOrientation: {
+    fields: [
+      { name: 'roll', type: 'decimal', attribute: true, optional: true },
+      { name: 'pitch', type: 'decimal', attribute: true, optional: true },
+      { name: 'yaw', type: 'decimal', attribute: true, optional: true }
+    ],
+    any: true
+  },
   GetDiscoveryModeRequest: { fields: [] },
   GetDiscoveryModeResponse: {
     fields: [{ name: 'DiscoveryMode', property: 'discoveryMode', type: 'string', namespace: tds }]
@@ -819,6 +1207,12 @@ export const schema: Schema = {
   },
   GetEndpointReferenceRequest: { fields: [] },
   GetEndpointReferenceResponse: { fields: [{ name: 'GUID', type: 'string', namespace: tds }], any: true },
+  GetGeoLocationRequest: { fields: [] },
+  GetGeoLocationResponse: {
+    fields: [
+      { name: 'Location', property: 'location', type: 'LocationEntity', namespace: tds, optional: true, array: true }
+    ]
+  },
   GetIPAddressFilterRequest: { fields: [] },
   GetIPAddressFilterResponse: {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
@@ -861,16 +1255,44 @@ export const schema: Schema = {
   GetRemoteDiscoveryModeResponse: {
     fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
   },
+  GetStorageConfigurationRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tds }] },
+  GetStorageConfigurationResponse: {
+    fields: [
+      { name: 'StorageConfiguration', property: 'storageConfiguration', type: 'StorageConfiguration', namespace: tds }
+    ]
+  },
+  GetStorageConfigurationsRequest: { fields: [] },
+  GetStorageConfigurationsResponse: {
+    fields: [
+      {
+        name: 'StorageConfigurations',
+        property: 'storageConfigurations',
+        type: 'StorageConfiguration',
+        namespace: tds,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetSystemLogRequest: { fields: [{ name: 'LogType', property: 'logType', type: 'string', namespace: tds }] },
+  GetSystemLogResponse: { fields: [{ name: 'SystemLog', property: 'systemLog', type: 'SystemLog', namespace: tds }] },
+  GetSystemSupportInformationRequest: { fields: [] },
+  GetSystemSupportInformationResponse: {
+    fields: [{ name: 'SupportInformation', property: 'supportInformation', type: 'SupportInformation', namespace: tds }]
+  },
   GetUsersRequest: { fields: [] },
   GetUsersResponse: {
     fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, optional: true, array: true }]
   },
+  GetWsdlUrlRequest: { fields: [] },
+  GetWsdlUrlResponse: { fields: [{ name: 'WsdlUrl', property: 'wsdlUrl', type: 'string', namespace: tds }] },
   GetZeroConfigurationRequest: { fields: [] },
   GetZeroConfigurationResponse: {
     fields: [
       { name: 'ZeroConfiguration', property: 'zeroConfiguration', type: 'NetworkZeroConfiguration', namespace: tds }
     ]
   },
+  Include: { fields: [{ name: 'href', type: 'string', attribute: true }], any: true },
   IPAddress: {
     fields: [
       { name: 'Type', property: 'type', type: 'string', namespace: tt },
@@ -914,6 +1336,41 @@ export const schema: Schema = {
       { name: 'AcceptRouterAdvert', property: 'acceptRouterAdvert', type: 'boolean', namespace: tt, optional: true },
       { name: 'Manual', property: 'manual', type: 'PrefixedIPv6Address', namespace: tt, optional: true, array: true },
       { name: 'DHCP', type: 'string', namespace: tt, optional: true }
+    ]
+  },
+  LocalLocation: {
+    fields: [
+      { name: 'x', type: 'decimal', attribute: true, optional: true },
+      { name: 'y', type: 'decimal', attribute: true, optional: true },
+      { name: 'z', type: 'decimal', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  LocalOrientation: {
+    fields: [
+      { name: 'pan', type: 'decimal', attribute: true, optional: true },
+      { name: 'tilt', type: 'decimal', attribute: true, optional: true },
+      { name: 'roll', type: 'decimal', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  LocationEntity: {
+    fields: [
+      { name: 'GeoLocation', property: 'geoLocation', type: 'GeoLocation', namespace: tt, optional: true },
+      { name: 'GeoOrientation', property: 'geoOrientation', type: 'GeoOrientation', namespace: tt, optional: true },
+      { name: 'LocalLocation', property: 'localLocation', type: 'LocalLocation', namespace: tt, optional: true },
+      {
+        name: 'LocalOrientation',
+        property: 'localOrientation',
+        type: 'LocalOrientation',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Entity', property: 'entity', type: 'string', attribute: true, optional: true },
+      { name: 'Token', property: 'token', type: 'string', attribute: true, optional: true },
+      { name: 'Fixed', property: 'fixed', type: 'boolean', attribute: true, optional: true },
+      { name: 'GeoSource', property: 'geoSource', type: 'string', attribute: true, optional: true },
+      { name: 'AutoGeo', property: 'autoGeo', type: 'boolean', attribute: true, optional: true }
     ]
   },
   NetworkGateway: {
@@ -1053,6 +1510,12 @@ export const schema: Schema = {
     fields: [{ name: 'IPAddressFilter', property: 'ipAddressFilter', type: 'IPAddressFilter', namespace: tds }]
   },
   RemoveIPAddressFilterResponse: { fields: [] },
+  RemoveScopesRequest: {
+    fields: [{ name: 'ScopeItem', property: 'scopeItem', type: 'string', namespace: tds, array: true }]
+  },
+  RemoveScopesResponse: {
+    fields: [{ name: 'ScopeItem', property: 'scopeItem', type: 'string', namespace: tds, optional: true, array: true }]
+  },
   ScanAvailableDot11NetworksRequest: {
     fields: [{ name: 'InterfaceToken', property: 'interfaceToken', type: 'string', namespace: tds }]
   },
@@ -1065,6 +1528,20 @@ export const schema: Schema = {
         namespace: tds,
         optional: true,
         array: true
+      }
+    ]
+  },
+  SendAuxiliaryCommandRequest: {
+    fields: [{ name: 'AuxiliaryCommand', property: 'auxiliaryCommand', type: 'string', namespace: tds }]
+  },
+  SendAuxiliaryCommandResponse: {
+    fields: [
+      {
+        name: 'AuxiliaryCommandResponse',
+        property: 'auxiliaryCommandResponse',
+        type: 'string',
+        namespace: tds,
+        optional: true
       }
     ]
   },
@@ -1094,6 +1571,10 @@ export const schema: Schema = {
     ]
   },
   SetDynamicDNSResponse: { fields: [] },
+  SetGeoLocationRequest: {
+    fields: [{ name: 'Location', property: 'location', type: 'LocationEntity', namespace: tds, array: true }]
+  },
+  SetGeoLocationResponse: { fields: [] },
   SetHostnameFromDHCPRequest: { fields: [{ name: 'FromDHCP', property: 'fromDHCP', type: 'boolean', namespace: tds }] },
   SetHostnameFromDHCPResponse: {
     fields: [{ name: 'RebootNeeded', property: 'rebootNeeded', type: 'boolean', namespace: tds }]
@@ -1156,6 +1637,27 @@ export const schema: Schema = {
     fields: [{ name: 'RemoteDiscoveryMode', property: 'remoteDiscoveryMode', type: 'string', namespace: tds }]
   },
   SetRemoteDiscoveryModeResponse: { fields: [] },
+  SetScopesRequest: { fields: [{ name: 'Scopes', property: 'scopes', type: 'string', namespace: tds, array: true }] },
+  SetScopesResponse: { fields: [] },
+  SetStorageConfigurationRequest: {
+    fields: [
+      { name: 'StorageConfiguration', property: 'storageConfiguration', type: 'StorageConfiguration', namespace: tds }
+    ]
+  },
+  SetStorageConfigurationResponse: { fields: [] },
+  SetSystemDateAndTimeRequest: {
+    fields: [
+      { name: 'DateTimeType', property: 'dateTimeType', type: 'string', namespace: tds },
+      { name: 'DaylightSavings', property: 'daylightSavings', type: 'boolean', namespace: tds },
+      { name: 'TimeZone', property: 'timeZone', type: 'TimeZone', namespace: tds, optional: true },
+      { name: 'UTCDateTime', property: 'utcDateTime', type: 'DateTime', namespace: tds, optional: true }
+    ]
+  },
+  SetSystemDateAndTimeResponse: { fields: [] },
+  SetSystemFactoryDefaultRequest: {
+    fields: [{ name: 'FactoryDefault', property: 'factoryDefault', type: 'string', namespace: tds }]
+  },
+  SetSystemFactoryDefaultResponse: { fields: [] },
   SetUserRequest: { fields: [{ name: 'User', property: 'user', type: 'User', namespace: tds, array: true }] },
   SetUserResponse: { fields: [] },
   SetZeroConfigurationRequest: {
@@ -1165,6 +1667,78 @@ export const schema: Schema = {
     ]
   },
   SetZeroConfigurationResponse: { fields: [] },
+  StorageConfiguration: {
+    fields: [
+      { name: 'token', type: 'string', attribute: true },
+      { name: 'Data', property: 'data', type: 'StorageConfigurationData', namespace: tds }
+    ]
+  },
+  StorageConfigurationData: {
+    fields: [
+      { name: 'LocalPath', property: 'localPath', type: 'string', namespace: tds, optional: true },
+      { name: 'StorageUri', property: 'storageUri', type: 'string', namespace: tds, optional: true },
+      { name: 'User', property: 'user', type: 'UserCredential', namespace: tds, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'StorageConfigurationDataExtension',
+        namespace: tds,
+        optional: true
+      },
+      {
+        name: 'CertPathValidationPolicyID',
+        property: 'certPathValidationPolicyID',
+        type: 'string',
+        namespace: tds,
+        optional: true
+      },
+      {
+        name: 'ConfigurationRenewal',
+        property: 'configurationRenewal',
+        type: 'StorageConfigurationDataConfigurationRenewal',
+        namespace: tds,
+        optional: true
+      },
+      { name: 'type', type: 'string', attribute: true },
+      { name: 'Region', property: 'region', type: 'string', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  StorageConfigurationDataConfigurationRenewal: {
+    fields: [
+      { name: 'RenewalEndpoint', property: 'renewalEndpoint', type: 'string', namespace: tds },
+      { name: 'AuthorizationServer', property: 'authorizationServer', type: 'string', namespace: tds },
+      {
+        name: 'CertPathValidationPolicyID',
+        property: 'certPathValidationPolicyID',
+        type: 'string',
+        namespace: tds,
+        optional: true
+      },
+      { name: 'Error', property: 'error', type: 'string', namespace: tds, optional: true }
+    ]
+  },
+  StorageConfigurationDataExtension: { fields: [], any: true },
+  SupportInformation: {
+    fields: [
+      { name: 'Binary', property: 'binary', type: 'AttachmentData', namespace: tt, optional: true },
+      { name: 'String', property: 'string', type: 'string', namespace: tt, optional: true }
+    ]
+  },
+  SystemLog: {
+    fields: [
+      { name: 'Binary', property: 'binary', type: 'AttachmentData', namespace: tt, optional: true },
+      { name: 'String', property: 'string', type: 'string', namespace: tt, optional: true }
+    ]
+  },
+  Time: {
+    fields: [
+      { name: 'Hour', property: 'hour', type: 'integer', namespace: tt },
+      { name: 'Minute', property: 'minute', type: 'integer', namespace: tt },
+      { name: 'Second', property: 'second', type: 'integer', namespace: tt }
+    ]
+  },
+  TimeZone: { fields: [{ name: 'TZ', type: 'string', namespace: tt }] },
   User: {
     fields: [
       { name: 'Username', property: 'username', type: 'string', namespace: tt },
@@ -1173,6 +1747,16 @@ export const schema: Schema = {
       { name: 'Extension', property: 'extension', type: 'UserExtension', namespace: tt, optional: true }
     ]
   },
+  UserCredential: {
+    fields: [
+      { name: 'UserName', property: 'userName', type: 'string', namespace: tds },
+      { name: 'Password', property: 'password', type: 'string', namespace: tds, optional: true },
+      { name: 'Extension', property: 'extension', type: 'UserCredentialExtension', namespace: tds, optional: true },
+      { name: 'Token', property: 'token', type: 'string', namespace: tds, optional: true }
+    ],
+    any: true
+  },
+  UserCredentialExtension: { fields: [], any: true },
   UserExtension: { fields: [{ name: 'Roles', property: 'roles', type: 'string[]', namespace: tt }], any: true }
 }
 
@@ -1464,6 +2048,151 @@ export const ScanAvailableDot11Networks: Operation<
   action: 'http://www.onvif.org/ver10/device/wsdl/ScanAvailableDot11Networks',
   request: { name: 'ScanAvailableDot11Networks', namespace: tds, type: 'ScanAvailableDot11NetworksRequest' },
   response: { name: 'ScanAvailableDot11NetworksResponse', type: 'ScanAvailableDot11NetworksResponse' },
+  schema
+}
+
+export const SetScopes: Operation<SetScopesRequest, SetScopesResponse> = {
+  name: 'SetScopes',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetScopes',
+  request: { name: 'SetScopes', namespace: tds, type: 'SetScopesRequest' },
+  response: { name: 'SetScopesResponse', type: 'SetScopesResponse' },
+  schema
+}
+
+export const AddScopes: Operation<AddScopesRequest, AddScopesResponse> = {
+  name: 'AddScopes',
+  action: 'http://www.onvif.org/ver10/device/wsdl/AddScopes',
+  request: { name: 'AddScopes', namespace: tds, type: 'AddScopesRequest' },
+  response: { name: 'AddScopesResponse', type: 'AddScopesResponse' },
+  schema
+}
+
+export const RemoveScopes: Operation<RemoveScopesRequest, RemoveScopesResponse> = {
+  name: 'RemoveScopes',
+  action: 'http://www.onvif.org/ver10/device/wsdl/RemoveScopes',
+  request: { name: 'RemoveScopes', namespace: tds, type: 'RemoveScopesRequest' },
+  response: { name: 'RemoveScopesResponse', type: 'RemoveScopesResponse' },
+  schema
+}
+
+export const SetSystemDateAndTime: Operation<SetSystemDateAndTimeRequest, SetSystemDateAndTimeResponse> = {
+  name: 'SetSystemDateAndTime',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetSystemDateAndTime',
+  request: { name: 'SetSystemDateAndTime', namespace: tds, type: 'SetSystemDateAndTimeRequest' },
+  response: { name: 'SetSystemDateAndTimeResponse', type: 'SetSystemDateAndTimeResponse' },
+  schema
+}
+
+export const SetSystemFactoryDefault: Operation<SetSystemFactoryDefaultRequest, SetSystemFactoryDefaultResponse> = {
+  name: 'SetSystemFactoryDefault',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetSystemFactoryDefault',
+  request: { name: 'SetSystemFactoryDefault', namespace: tds, type: 'SetSystemFactoryDefaultRequest' },
+  response: { name: 'SetSystemFactoryDefaultResponse', type: 'SetSystemFactoryDefaultResponse' },
+  schema
+}
+
+export const GetSystemLog: Operation<GetSystemLogRequest, GetSystemLogResponse> = {
+  name: 'GetSystemLog',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetSystemLog',
+  request: { name: 'GetSystemLog', namespace: tds, type: 'GetSystemLogRequest' },
+  response: { name: 'GetSystemLogResponse', type: 'GetSystemLogResponse' },
+  schema
+}
+
+export const GetSystemSupportInformation: Operation<
+  GetSystemSupportInformationRequest,
+  GetSystemSupportInformationResponse
+> = {
+  name: 'GetSystemSupportInformation',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetSystemSupportInformation',
+  request: { name: 'GetSystemSupportInformation', namespace: tds, type: 'GetSystemSupportInformationRequest' },
+  response: { name: 'GetSystemSupportInformationResponse', type: 'GetSystemSupportInformationResponse' },
+  schema
+}
+
+export const GetWsdlUrl: Operation<GetWsdlUrlRequest, GetWsdlUrlResponse> = {
+  name: 'GetWsdlUrl',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetWsdlUrl',
+  request: { name: 'GetWsdlUrl', namespace: tds, type: 'GetWsdlUrlRequest' },
+  response: { name: 'GetWsdlUrlResponse', type: 'GetWsdlUrlResponse' },
+  schema
+}
+
+export const SendAuxiliaryCommand: Operation<SendAuxiliaryCommandRequest, SendAuxiliaryCommandResponse> = {
+  name: 'SendAuxiliaryCommand',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SendAuxiliaryCommand',
+  request: { name: 'SendAuxiliaryCommand', namespace: tds, type: 'SendAuxiliaryCommandRequest' },
+  response: { name: 'SendAuxiliaryCommandResponse', type: 'SendAuxiliaryCommandResponse' },
+  schema
+}
+
+export const GetGeoLocation: Operation<GetGeoLocationRequest, GetGeoLocationResponse> = {
+  name: 'GetGeoLocation',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetGeoLocation',
+  request: { name: 'GetGeoLocation', namespace: tds, type: 'GetGeoLocationRequest' },
+  response: { name: 'GetGeoLocationResponse', type: 'GetGeoLocationResponse' },
+  schema
+}
+
+export const SetGeoLocation: Operation<SetGeoLocationRequest, SetGeoLocationResponse> = {
+  name: 'SetGeoLocation',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetGeoLocation',
+  request: { name: 'SetGeoLocation', namespace: tds, type: 'SetGeoLocationRequest' },
+  response: { name: 'SetGeoLocationResponse', type: 'SetGeoLocationResponse' },
+  schema
+}
+
+export const DeleteGeoLocation: Operation<DeleteGeoLocationRequest, DeleteGeoLocationResponse> = {
+  name: 'DeleteGeoLocation',
+  action: 'http://www.onvif.org/ver10/device/wsdl/DeleteGeoLocation',
+  request: { name: 'DeleteGeoLocation', namespace: tds, type: 'DeleteGeoLocationRequest' },
+  response: { name: 'DeleteGeoLocationResponse', type: 'DeleteGeoLocationResponse' },
+  schema
+}
+
+export const GetStorageConfigurations: Operation<GetStorageConfigurationsRequest, GetStorageConfigurationsResponse> = {
+  name: 'GetStorageConfigurations',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetStorageConfigurations',
+  request: { name: 'GetStorageConfigurations', namespace: tds, type: 'GetStorageConfigurationsRequest' },
+  response: { name: 'GetStorageConfigurationsResponse', type: 'GetStorageConfigurationsResponse' },
+  schema
+}
+
+export const CreateStorageConfiguration: Operation<
+  CreateStorageConfigurationRequest,
+  CreateStorageConfigurationResponse
+> = {
+  name: 'CreateStorageConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/CreateStorageConfiguration',
+  request: { name: 'CreateStorageConfiguration', namespace: tds, type: 'CreateStorageConfigurationRequest' },
+  response: { name: 'CreateStorageConfigurationResponse', type: 'CreateStorageConfigurationResponse' },
+  schema
+}
+
+export const GetStorageConfiguration: Operation<GetStorageConfigurationRequest, GetStorageConfigurationResponse> = {
+  name: 'GetStorageConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/GetStorageConfiguration',
+  request: { name: 'GetStorageConfiguration', namespace: tds, type: 'GetStorageConfigurationRequest' },
+  response: { name: 'GetStorageConfigurationResponse', type: 'GetStorageConfigurationResponse' },
+  schema
+}
+
+export const SetStorageConfiguration: Operation<SetStorageConfigurationRequest, SetStorageConfigurationResponse> = {
+  name: 'SetStorageConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/SetStorageConfiguration',
+  request: { name: 'SetStorageConfiguration', namespace: tds, type: 'SetStorageConfigurationRequest' },
+  response: { name: 'SetStorageConfigurationResponse', type: 'SetStorageConfigurationResponse' },
+  schema
+}
+
+export const DeleteStorageConfiguration: Operation<
+  DeleteStorageConfigurationRequest,
+  DeleteStorageConfigurationResponse
+> = {
+  name: 'DeleteStorageConfiguration',
+  action: 'http://www.onvif.org/ver10/device/wsdl/DeleteStorageConfiguration',
+  request: { name: 'DeleteStorageConfiguration', namespace: tds, type: 'DeleteStorageConfigurationRequest' },
+  response: { name: 'DeleteStorageConfigurationResponse', type: 'DeleteStorageConfigurationResponse' },
   schema
 }
 
@@ -1982,5 +2711,249 @@ export class ManagementClient {
     options?: CallOptions
   ): Promise<ScanAvailableDot11NetworksResponse> {
     return this.#device.call(ScanAvailableDot11Networks, request, options)
+  }
+
+  /**
+   * This operation sets the scope parameters of a device. The scope parameters are used in the device
+   * discovery to match a probe message. This operation replaces all existing configurable scope
+   * parameters (not fixed parameters). If this shall be avoided, one should use the scope add command
+   * instead. The device shall support configuration of discovery scope parameters through the SetScopes
+   * command.
+   *
+   * @param request - The `SetScopes` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetScopesResponse`
+   */
+  setScopes(request: SetScopesRequest, options?: CallOptions): Promise<SetScopesResponse> {
+    return this.#device.call(SetScopes, request, options)
+  }
+
+  /**
+   * This operation adds new configurable scope parameters to a device. The scope parameters are used in
+   * the device discovery to match a probe message. The device shall support addition of discovery scope
+   * parameters through the AddScopes command.
+   *
+   * @param request - The `AddScopes` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AddScopesResponse`
+   */
+  addScopes(request: AddScopesRequest, options?: CallOptions): Promise<AddScopesResponse> {
+    return this.#device.call(AddScopes, request, options)
+  }
+
+  /**
+   * This operation deletes scope-configurable scope parameters from a device. The scope parameters are
+   * used in the device discovery to match a probe message, see Section 7. The device shall support
+   * deletion of discovery scope parameters through the RemoveScopes command. Table
+   *
+   * @param request - The `RemoveScopes` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemoveScopesResponse`
+   */
+  removeScopes(request: RemoveScopesRequest, options?: CallOptions): Promise<RemoveScopesResponse> {
+    return this.#device.call(RemoveScopes, request, options)
+  }
+
+  /**
+   * This operation sets the device system date and time. The device shall support the configuration of
+   * the daylight saving setting and of the manual system date and time (if applicable) or indication of
+   * NTP time (if applicable) through the SetSystemDateAndTime command. If system time and date are set
+   * manually, the client shall include UTCDateTime in the request. A TimeZone token which is not formed
+   * according to the rules of IEEE 1003.1 section 8.3 is considered as invalid timezone. The
+   * DayLightSavings flag should be set to true to activate any DST settings of the TimeZone string.
+   * Clear the DayLightSavings flag if the DST portion of the TimeZone settings should be ignored.
+   *
+   * @param request - The `SetSystemDateAndTime` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetSystemDateAndTimeResponse`
+   */
+  setSystemDateAndTime(
+    request: SetSystemDateAndTimeRequest,
+    options?: CallOptions
+  ): Promise<SetSystemDateAndTimeResponse> {
+    return this.#device.call(SetSystemDateAndTime, request, options)
+  }
+
+  /**
+   * This operation reloads the parameters on the device to their factory default values.
+   *
+   * @param request - The `SetSystemFactoryDefault` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetSystemFactoryDefaultResponse`
+   */
+  setSystemFactoryDefault(
+    request: SetSystemFactoryDefaultRequest,
+    options?: CallOptions
+  ): Promise<SetSystemFactoryDefaultResponse> {
+    return this.#device.call(SetSystemFactoryDefault, request, options)
+  }
+
+  /**
+   * This operation gets a system log from the device. The exact format of the system logs is outside the
+   * scope of this standard.
+   *
+   * @param request - The `GetSystemLog` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetSystemLogResponse`
+   */
+  getSystemLog(request: GetSystemLogRequest, options?: CallOptions): Promise<GetSystemLogResponse> {
+    return this.#device.call(GetSystemLog, request, options)
+  }
+
+  /**
+   * This operation gets arbitary device diagnostics information from the device.
+   *
+   * @param request - The `GetSystemSupportInformation` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetSystemSupportInformationResponse`
+   */
+  getSystemSupportInformation(
+    request?: GetSystemSupportInformationRequest,
+    options?: CallOptions
+  ): Promise<GetSystemSupportInformationResponse> {
+    return this.#device.call(GetSystemSupportInformation, request, options)
+  }
+
+  /**
+   * This method allows to provide a URL where product specific WSDL and schema definitions can be
+   * retrieved. This method is deprecated.
+   *
+   * @param request - The `GetWsdlUrl` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetWsdlUrlResponse`
+   */
+  getWsdlUrl(request?: GetWsdlUrlRequest, options?: CallOptions): Promise<GetWsdlUrlResponse> {
+    return this.#device.call(GetWsdlUrl, request, options)
+  }
+
+  /**
+   * Manage auxiliary commands supported by a device, such as controlling an Infrared (IR) lamp, a heater
+   * or a wiper or a thermometer that is connected to the device. The supported commands can be retrieved
+   * via the AuxiliaryCommands capability. Although the name of the auxiliary commands can be freely
+   * defined, commands starting with the prefix tt: are reserved to define frequently used commands and
+   * these reserved commands shall all share the "tt:command|parameter" syntax. tt:Wiper|On - Request to
+   * start the wiper. tt:Wiper|Off - Request to stop the wiper. tt:Washer|On - Request to start the
+   * washer. tt:Washer|Off - Request to stop the washer. tt:WashingProcedure|On - Request to start the
+   * washing procedure. tt: WashingProcedure |Off - Request to stop the washing procedure. tt:IRLamp|On -
+   * Request to turn ON an IR illuminator attached to the unit. tt:IRLamp|Off - Request to turn OFF an IR
+   * illuminator attached to the unit. tt:IRLamp|Auto - Request to configure an IR illuminator attached
+   * to the unit so that it automatically turns ON and OFF. A device that indicates auxiliary service
+   * capability shall support this command.
+   *
+   * @param request - The `SendAuxiliaryCommand` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SendAuxiliaryCommandResponse`
+   */
+  sendAuxiliaryCommand(
+    request: SendAuxiliaryCommandRequest,
+    options?: CallOptions
+  ): Promise<SendAuxiliaryCommandResponse> {
+    return this.#device.call(SendAuxiliaryCommand, request, options)
+  }
+
+  /**
+   * This operation lists all existing geo location configurations for the device.
+   *
+   * @param request - The `GetGeoLocation` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetGeoLocationResponse`
+   */
+  getGeoLocation(request?: GetGeoLocationRequest, options?: CallOptions): Promise<GetGeoLocationResponse> {
+    return this.#device.call(GetGeoLocation, request, options)
+  }
+
+  /**
+   * This operation allows to modify one or more geo configuration entries.
+   *
+   * @param request - The `SetGeoLocation` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetGeoLocationResponse`
+   */
+  setGeoLocation(request: SetGeoLocationRequest, options?: CallOptions): Promise<SetGeoLocationResponse> {
+    return this.#device.call(SetGeoLocation, request, options)
+  }
+
+  /**
+   * This operation deletes the given geo location entries.
+   *
+   * @param request - The `DeleteGeoLocation` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteGeoLocationResponse`
+   */
+  deleteGeoLocation(request: DeleteGeoLocationRequest, options?: CallOptions): Promise<DeleteGeoLocationResponse> {
+    return this.#device.call(DeleteGeoLocation, request, options)
+  }
+
+  /**
+   * This operation lists all existing storage configurations for the device.
+   *
+   * @param request - The `GetStorageConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetStorageConfigurationsResponse`
+   */
+  getStorageConfigurations(
+    request?: GetStorageConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<GetStorageConfigurationsResponse> {
+    return this.#device.call(GetStorageConfigurations, request, options)
+  }
+
+  /**
+   * This operation creates a new storage configuration. The configuration data shall be created in the
+   * device and shall be persistent (remain after reboot).
+   *
+   * @param request - The `CreateStorageConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateStorageConfigurationResponse`
+   */
+  createStorageConfiguration(
+    request: CreateStorageConfigurationRequest,
+    options?: CallOptions
+  ): Promise<CreateStorageConfigurationResponse> {
+    return this.#device.call(CreateStorageConfiguration, request, options)
+  }
+
+  /**
+   * This operation retrieves the Storage configuration associated with the given storage configuration
+   * token.
+   *
+   * @param request - The `GetStorageConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetStorageConfigurationResponse`
+   */
+  getStorageConfiguration(
+    request: GetStorageConfigurationRequest,
+    options?: CallOptions
+  ): Promise<GetStorageConfigurationResponse> {
+    return this.#device.call(GetStorageConfiguration, request, options)
+  }
+
+  /**
+   * This operation modifies an existing Storage configuration.
+   *
+   * @param request - The `SetStorageConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetStorageConfigurationResponse`
+   */
+  setStorageConfiguration(
+    request: SetStorageConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetStorageConfigurationResponse> {
+    return this.#device.call(SetStorageConfiguration, request, options)
+  }
+
+  /**
+   * This operation deletes the given storage configuration and configuration change shall always be
+   * persistent.
+   *
+   * @param request - The `DeleteStorageConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteStorageConfigurationResponse`
+   */
+  deleteStorageConfiguration(
+    request: DeleteStorageConfigurationRequest,
+    options?: CallOptions
+  ): Promise<DeleteStorageConfigurationResponse> {
+    return this.#device.call(DeleteStorageConfiguration, request, options)
   }
 }

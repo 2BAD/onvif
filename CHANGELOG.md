@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `@2bad/onvif-recording`: recording, search and replay operations as methods on `device.recording`, `device.search` and `device.replay`, with `search.recordings()`, `search.events()` and `replay.uri()`
 - Added Media2 metadata configuration, analytics configuration, `addConfiguration()` and `removeConfiguration()` methods to `device.media.v2`
 - Added DNS, hostname, network protocol, discovery mode and Wi-Fi methods to `device.management`
+- Added scope, date and time, system log, factory default, geo location and storage methods to `device.management`
+- Calls after `setSystemDateAndTime()` are now signed with the new device time
 
 ### Fixed
 

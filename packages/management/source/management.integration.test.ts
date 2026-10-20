@@ -114,6 +114,101 @@ describe.skipIf(!hostname)('Management on a live camera', () => {
     expect(capabilities).toMatchObject({ scanAvailableNetworks: expect.any(Boolean) })
   })
 
+  it('sends the date, time and time zone back and signs the next call with the device clock', async () => {
+    const { systemDateAndTime } = await device.getSystemDateAndTime()
+    const { dateTimeType, daylightSavings, timeZone } = systemDateAndTime
+    const now = new Date(Date.now() + device.clock.skewMs)
+    const utcDateTime = {
+      date: { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1, day: now.getUTCDate() },
+      time: { hour: now.getUTCHours(), minute: now.getUTCMinutes(), second: now.getUTCSeconds() }
+    }
+    await device.management.setSystemDateAndTime({
+      dateTimeType,
+      daylightSavings,
+      ...(timeZone && { timeZone }),
+      ...(dateTimeType === 'Manual' && { utcDateTime })
+    })
+    const { systemDateAndTime: after } = await device.getSystemDateAndTime()
+    expect(after).toMatchObject({ dateTimeType, daylightSavings })
+    await expect(device.management.getUsers()).resolves.toBeDefined()
+  })
+
+  it('rejects an invalid time zone', async () => {
+    const { systemDateAndTime } = await device.getSystemDateAndTime()
+    const { dateTimeType, daylightSavings, timeZone } = systemDateAndTime
+    try {
+      await expect(
+        device.management.setSystemDateAndTime({ dateTimeType: 'NTP', daylightSavings, timeZone: { TZ: '!invalid' } })
+      ).rejects.toMatchObject({ subcodes: expect.arrayContaining(['InvalidTimeZone']) })
+    } finally {
+      const { systemDateAndTime: current } = await device.getSystemDateAndTime()
+      if (current.timeZone?.TZ !== timeZone?.TZ) {
+        await device.management.setSystemDateAndTime({
+          dateTimeType,
+          daylightSavings,
+          ...(timeZone && { timeZone }),
+          ...(current.utcDateTime && { utcDateTime: current.utcDateTime })
+        })
+      }
+    }
+  })
+
+  it('adds and removes a scope', async () => {
+    const scope = 'onvif://www.onvif.org/onviftest'
+    await device.management.addScopes({ scopeItem: [scope] })
+    try {
+      const { scopes } = await device.getScopes()
+      expect(scopes.map(({ scopeItem }) => scopeItem)).toContain(scope)
+    } finally {
+      await device.management.removeScopes({ scopeItem: [scope] })
+    }
+    const { scopes } = await device.getScopes()
+    expect(scopes.map(({ scopeItem }) => scopeItem)).not.toContain(scope)
+    await expect(device.management.removeScopes({ scopeItem: [scope] })).rejects.toMatchObject({
+      subcodes: expect.arrayContaining(['NoScope'])
+    })
+  })
+
+  it('reads the system log and the WSDL address', async () => {
+    const { systemLog } = await device.management.getSystemLog({ logType: 'System' })
+    expect(typeof (systemLog.string ?? systemLog.binary?.include.href)).toBe('string')
+    expect((await device.management.getWsdlUrl()).wsdlUrl).toMatch(/^https?:\/\//)
+  })
+
+  it('creates, reads and deletes a storage configuration', async (context) => {
+    const data = { type: 'NFS', localPath: '/onviftest', storageUri: 'nfs://198.51.100.7/onviftest' }
+    const created = await unlessAnswered(() =>
+      device.management.createStorageConfiguration({ storageConfiguration: data })
+    )
+    if (!created?.token) return context.skip('The device does not create storage configurations')
+    const { token } = created
+    try {
+      expect((await device.management.getStorageConfiguration({ token })).storageConfiguration).toMatchObject({
+        token,
+        data: { type: 'NFS', localPath: '/onviftest' }
+      })
+    } finally {
+      await device.management.deleteStorageConfiguration({ token })
+    }
+    const { storageConfigurations = [] } = await device.management.getStorageConfigurations()
+    expect(storageConfigurations.map((configuration) => configuration.token)).not.toContain(token)
+  })
+
+  it('sets and deletes a location', async (context) => {
+    const before = await unlessAnswered(() => device.management.getGeoLocation())
+    if (!before) return context.skip('The device does not implement geo location')
+    const location = {
+      entity: 'Device',
+      token: 'onviftest',
+      fixed: false,
+      geoLocation: { lon: 0, lat: 0, elevation: 0 }
+    }
+    await device.management.setGeoLocation({ location: [location] })
+    await device.management.deleteGeoLocation({ location: [location] })
+    const { location: after = [] } = await device.management.getGeoLocation()
+    expect(after.map(({ token }) => token)).not.toContain('onviftest')
+  })
+
   it('sends the IP filter back unchanged', async (context) => {
     const filter = await unlessNotSupported(() => device.management.getIPAddressFilter())
     if (!filter) return context.skip('The device does not implement the IP address filter')

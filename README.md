@@ -17,7 +17,7 @@ Compared with other ONVIF libraries:
 - [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
 - [`@2bad/onvif-events`](packages/events): receive motion and other camera events
 - [`@2bad/onvif-imaging`](packages/imaging): change brightness, exposure, focus, white balance and the IR cut filter
-- [`@2bad/onvif-management`](packages/management): manage users, NTP, network settings, IP filter and relay outputs
+- [`@2bad/onvif-management`](packages/management): manage users, time, network settings, scopes, storage, IP filter and relay outputs
 - [`@2bad/onvif-media`](packages/media): get RTSP stream URLs and JPEG snapshots, change resolution, frame rate and bitrate
 - [`@2bad/onvif-ptz`](packages/ptz): pan, tilt and zoom a camera, save and recall presets
 - [`@2bad/onvif-recording`](packages/recording): search recordings and recorded events, replay them and control recording

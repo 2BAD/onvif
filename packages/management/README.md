@@ -1,6 +1,6 @@
 # @2bad/onvif-management
 
-ONVIF users, NTP, network settings, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
+ONVIF users, time, network settings, scopes, logs, storage, IP filter and relay outputs for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 ## Install
 
@@ -33,6 +33,27 @@ camera.management.deleteUsers(request)
 
 camera.management.getNTP()
 camera.management.setNTP(request)
+camera.management.setSystemDateAndTime(request) // device.getSystemDateAndTime() reads it
+
+camera.management.setScopes(request) // device.getScopes() reads them
+camera.management.addScopes(request)
+camera.management.removeScopes(request)
+
+camera.management.getSystemLog(request)
+camera.management.getSystemSupportInformation()
+camera.management.getWsdlUrl()
+camera.management.sendAuxiliaryCommand(request)
+camera.management.setSystemFactoryDefault(request)
+
+camera.management.getGeoLocation()
+camera.management.setGeoLocation(request)
+camera.management.deleteGeoLocation(request)
+
+camera.management.getStorageConfigurations()
+camera.management.getStorageConfiguration(request)
+camera.management.createStorageConfiguration(request)
+camera.management.setStorageConfiguration(request)
+camera.management.deleteStorageConfiguration(request)
 
 camera.management.setNetworkInterfaces(request) // device.getNetworkInterfaces() reads them
 camera.management.getNetworkDefaultGateway()
@@ -81,6 +102,14 @@ await camera.management.deleteUsers({ username: ['viewer'] })
 ```
 
 After changing the password of the user you are connected as, connect again with the new password.
+
+## Date and time
+
+```ts
+await camera.management.setSystemDateAndTime({ dateTimeType: 'NTP', daylightSavings: false, timeZone: { TZ: 'UTC0' } })
+```
+
+Calls after `setSystemDateAndTime()` are signed with the new device time.
 
 ## Relays
 
