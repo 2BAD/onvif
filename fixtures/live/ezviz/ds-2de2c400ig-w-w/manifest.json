@@ -874,6 +874,62 @@
     "device.DeleteStorageConfiguration": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetUserRoles": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetRemoteUser": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetPasswordComplexityOptions": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetPasswordComplexityConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetPasswordHistoryConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetAuthFailureWarningOptions": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetAuthFailureWarningConfiguration": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetAccessPolicy": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetUserRole": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetUserRolesWithAdded": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteUserRole": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.DeleteUserRoleMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetAccessPolicy": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.SetHashingAlgorithm": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

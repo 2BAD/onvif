@@ -914,6 +914,14 @@
     "device.CreateStorageConfiguration": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetRemoteUser": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "device.GetAccessPolicy": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
