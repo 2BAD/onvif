@@ -419,6 +419,7 @@ const captureManagement = async (): Promise<void> => {
   await management.call('GetAuthFailureWarningOptions')
   const warningXml = await management.call('GetAuthFailureWarningConfiguration')
   const policyXml = await management.call('GetAccessPolicy')
+  await management.call('GetSystemUris')
   if (!write) return
 
   const hostname = elements(hostnameXml, 'HostnameInformation')[0]
@@ -593,6 +594,11 @@ const captureManagement = async (): Promise<void> => {
         `<Data ${tt}>${text(policy, 'Data')}</Data></PolicyFile>`
     )
   }
+
+  // nothing is uploaded: the device drops the upload address after a while
+  await management.call('StartFirmwareUpgrade')
+  await management.call('StartSystemRestore')
+  await management.call('UpgradeFirmware', '<Version>onviftest</Version>')
 
   const capabilitiesXml = (await management.send('GetServiceCapabilities')).xml
   const algorithms = /\bHashingAlgorithms="([^"]*)"/.exec(capabilitiesXml)?.[1] ?? 'MD5'
