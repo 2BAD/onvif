@@ -265,6 +265,14 @@ const captureManagement = async (): Promise<void> => {
   await management.call('GetWsdlUrl')
   const geoXml = await management.call('GetGeoLocation')
   await management.call('GetStorageConfigurations')
+  const rolesXml = await management.call('GetUserRoles')
+  const remoteUserXml = await management.call('GetRemoteUser')
+  await management.call('GetPasswordComplexityOptions')
+  const complexityXml = await management.call('GetPasswordComplexityConfiguration')
+  const historyXml = await management.call('GetPasswordHistoryConfiguration')
+  await management.call('GetAuthFailureWarningOptions')
+  const warningXml = await management.call('GetAuthFailureWarningConfiguration')
+  const policyXml = await management.call('GetAccessPolicy')
   if (!write) return
 
   const hostname = elements(hostnameXml, 'HostnameInformation')[0]
@@ -398,6 +406,51 @@ const captureManagement = async (): Promise<void> => {
     }
     await management.call('GetStorageConfiguration', token, { as: 'GetStorageConfigurationMissingFault' })
   }
+
+  const functions = text(elements(rolesXml, 'UserRole')[0] ?? '', 'Functions') ?? ''
+  const testRole = `<UserRole><Name ${tt}>onviftest</Name><Functions ${tt}>${functions}</Functions></UserRole>`
+  await management.call('SetUserRole', testRole)
+  try {
+    await management.call('GetUserRoles', '<UserRole>onviftest</UserRole>', { as: 'GetUserRolesWithAdded' })
+  } finally {
+    await management.call('DeleteUserRole', '<UserRole>onviftest</UserRole>')
+  }
+  await management.call('DeleteUserRole', '<UserRole>onviftest</UserRole>', { as: 'DeleteUserRoleMissingFault' })
+
+  // a configured remote user is not sent back: devices do not return its password
+  if (remoteUserXml.includes('GetRemoteUserResponse') && !remoteUserXml.includes('RemoteUser>')) {
+    await management.call('SetRemoteUser')
+  }
+
+  const children = (xml: string, response: string) =>
+    (elements(xml, response)[0] ?? '').replace(/<(\/?)[\w-]+:/g, '<$1')
+  if (complexityXml.includes('GetPasswordComplexityConfigurationResponse')) {
+    const content = children(complexityXml, 'GetPasswordComplexityConfigurationResponse')
+    await management.call('SetPasswordComplexityConfiguration', content)
+  }
+  if (historyXml.includes('GetPasswordHistoryConfigurationResponse')) {
+    await management.call(
+      'SetPasswordHistoryConfiguration',
+      children(historyXml, 'GetPasswordHistoryConfigurationResponse')
+    )
+  }
+  if (warningXml.includes('GetAuthFailureWarningConfigurationResponse')) {
+    const content = children(warningXml, 'GetAuthFailureWarningConfigurationResponse')
+    await management.call('SetAuthFailureWarningConfiguration', content)
+  }
+  const policy = elements(policyXml, 'PolicyFile')[0]
+  if (policy !== undefined && text(policy, 'Data') !== undefined) {
+    const contentType = /<[\w-]+:PolicyFile\b[^>]*\bcontentType="([^"]*)"/.exec(policyXml)?.[1]
+    await management.call(
+      'SetAccessPolicy',
+      `<PolicyFile${contentType === undefined ? '' : ` xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmime:contentType="${contentType}"`}>` +
+        `<Data ${tt}>${text(policy, 'Data')}</Data></PolicyFile>`
+    )
+  }
+
+  const capabilitiesXml = (await management.send('GetServiceCapabilities')).xml
+  const algorithms = /\bHashingAlgorithms="([^"]*)"/.exec(capabilitiesXml)?.[1] ?? 'MD5'
+  await management.call('SetHashingAlgorithm', `<Algorithm>${algorithms}</Algorithm>`)
 
   const [networkInterface] = tokenized(networkXml, 'NetworkInterfaces')
   if (networkInterface) {
