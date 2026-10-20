@@ -143,7 +143,7 @@ export async function* discover(options: DiscoverOptions = {}): AsyncGenerator<D
   const seen = new Set<string>()
   const timers = new Set<NodeJS.Timeout>()
   const sockets: Socket[] = []
-  const probes = [buildProbe('NetworkVideoTransmitter'), buildProbe('Device')]
+  const probes = [buildProbe(), buildProbe('NetworkVideoTransmitter'), buildProbe('Device')]
   const messageIds = new Set(probes.map((probe) => probe.messageId))
   let finished = false
   let overflowReported = false

@@ -61,6 +61,12 @@ describe('buildProbe', () => {
     expect(parseEnvelope(first.xml).body['Probe']).toEqual({ Types: 'tds:Device', Scopes: '' })
     expect(buildProbe('Device').messageId).not.toBe(first.messageId)
   })
+
+  it('builds a probe with empty Types and Scopes that every device matches', () => {
+    const probe = buildProbe()
+    expect(probe.xml).toContain('<d:Probe><d:Types/><d:Scopes/></d:Probe>')
+    expect(parseEnvelope(probe.xml).body['Probe']).toEqual({ Types: '', Scopes: '' })
+  })
 })
 
 describe('readProbeMatches', () => {

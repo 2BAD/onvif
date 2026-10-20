@@ -50,13 +50,14 @@ export type Probe = {
 }
 
 /**
- * Build a WS-Discovery Probe for one device type. The type prefixes are declared on the envelope and the probe carries
- * an empty `Scopes`, the shape every camera answers.
+ * Build a WS-Discovery Probe for one device type, or for every device. The type prefixes are declared on the envelope
+ * and the probe carries an empty `Scopes`.
  *
- * @param type - `NetworkVideoTransmitter` for cameras and encoders, `Device` for any ONVIF device
+ * @param type - `NetworkVideoTransmitter` for cameras and encoders, `Device` for any ONVIF device, none for an empty
+ *   `Types` that every device matches
  * @returns The message id and the serialized envelope
  */
-export function buildProbe(type: 'NetworkVideoTransmitter' | 'Device'): Probe {
+export function buildProbe(type?: 'NetworkVideoTransmitter' | 'Device'): Probe {
   const messageId = `urn:uuid:${randomUUID()}`
   const envelope = serialize({
     name: 's:Envelope',
@@ -76,7 +77,10 @@ export function buildProbe(type: 'NetworkVideoTransmitter' | 'Device'): Probe {
           {
             name: 'd:Probe',
             children: [
-              { name: 'd:Types', children: [type === 'Device' ? 'tds:Device' : 'dn:NetworkVideoTransmitter'] },
+              {
+                name: 'd:Types',
+                children: type === undefined ? [] : [type === 'Device' ? 'tds:Device' : 'dn:NetworkVideoTransmitter']
+              },
               { name: 'd:Scopes' }
             ]
           }

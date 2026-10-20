@@ -95,12 +95,14 @@ describe('discover', () => {
       name: 'DVC'
     })
     expect(responder.probes.map((probe) => probe.types).sort()).toEqual([
+      '',
+      '',
       'dn:NetworkVideoTransmitter',
       'dn:NetworkVideoTransmitter',
       'tds:Device',
       'tds:Device'
     ])
-    expect(new Set(responder.probes.map((probe) => probe.messageId)).size).toBe(2)
+    expect(new Set(responder.probes.map((probe) => probe.messageId)).size).toBe(3)
   })
 
   it('yields devices that share an endpoint but list other addresses', async () => {
@@ -345,7 +347,7 @@ describe('discover by multicast', () => {
       const { devices, errors } = await collect({ interfaces: ['lo', 'eth0'], timeoutMs: 800 })
       expect(devices.map((device) => device.name)).toEqual(['DVC'])
       expect(errors).toEqual([expect.objectContaining({ name: 'TransportError', host: '192.0.2.200' })])
-      expect(responder.probes).toHaveLength(6)
+      expect(responder.probes).toHaveLength(9)
       expect(responder.probes.every((probe) => probe.from.address === '127.0.0.1')).toBe(true)
     }
   )
