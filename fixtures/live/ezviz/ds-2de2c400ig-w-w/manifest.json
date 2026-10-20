@@ -638,6 +638,98 @@
     "media2.DeleteProfile": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetRecordings": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetRecordingConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetRecordingOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetTrackConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetRecordingJobs": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "recording.GetRecordingConfigurationMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetRecordingSummary": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetRecordingInformation": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.FindRecordings": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetRecordingSearchResults": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.FindEvents": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetEventSearchResults": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetSearchStateAfterEvents": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.EndSearchAfterEvents": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetRecordingSearchResultsMissingFault": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "replay.GetServiceCapabilities": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "replay.GetReplayConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "replay.GetReplayUri": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "replay.SetReplayConfiguration": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.EndSearch": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "search.GetSearchState": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
