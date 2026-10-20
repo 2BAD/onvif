@@ -14,14 +14,23 @@ type Target = {
   operations?: Record<string, string[]>
   /** Global elements outside the operations, with the schema that defines them relative to the specs directory. */
   elements?: { schema: string; namespace: string; local: string }[]
-  /** Operations whose responses hold QNames or endpoint references and are parsed with namespaces. */
+  /** Operations whose responses hold endpoint references or QName text and are parsed with namespaces. */
   namespaces?: string[]
+  /** Decode `xs:QName` values with the `qname` primitive. */
+  qnames?: true
+  /**
+   * Typed elements that may stand in for the `xs:any` of a type, by type name. Each is typed by the global element of
+   * its name, or else by the complex type of its name.
+   */
+  substitutions?: Record<string, { schema?: string; namespace: string; local: string }[]>
   /** Required response elements that devices omit, as `Response.Element`, decoded as optional. */
   optional?: string[]
   client?: EmitOptions['client']
 }
 
 const root = join(import.meta.dirname, '../..')
+const tt = 'http://www.onvif.org/ver10/schema'
+const axt = 'http://www.onvif.org/ver20/analytics'
 
 const targets: Target[] = [
   {
@@ -236,6 +245,49 @@ const targets: Target[] = [
         'SetCurrentPreset'
       ]
     }
+  },
+  {
+    output: 'packages/analytics/source/generated/analytics.ts',
+    codecImport: '@2bad/onvif/soap',
+    client: {
+      name: 'AnalyticsClient',
+      typesImport: '@2bad/onvif',
+      scoped: { name: 'AnalyticsConfigurationClient', method: 'forConfiguration', field: 'ConfigurationToken' }
+    },
+    wsdl: 'ver20/analytics/wsdl/analytics.wsdl',
+    qnames: true,
+    operations: {
+      AnalyticsEnginePort: [
+        'GetServiceCapabilities',
+        'GetSupportedAnalyticsModules',
+        'GetAnalyticsModules',
+        'CreateAnalyticsModules',
+        'ModifyAnalyticsModules',
+        'DeleteAnalyticsModules',
+        'GetAnalyticsModuleOptions',
+        'GetSupportedMetadata'
+      ],
+      RuleEnginePort: ['GetSupportedRules', 'GetRules', 'CreateRules', 'ModifyRules', 'DeleteRules', 'GetRuleOptions']
+    },
+    substitutions: {
+      ItemListElementItem: [
+        { namespace: tt, local: 'CellLayout' },
+        { namespace: tt, local: 'Polygon' },
+        { namespace: tt, local: 'Polyline' },
+        { schema: 'onvif/ver20/analytics/rules.xsd', namespace: axt, local: 'MotionRegionConfig' }
+      ],
+      ConfigOptions: [
+        { namespace: tt, local: 'IntRange' },
+        { namespace: tt, local: 'IntList' },
+        { namespace: tt, local: 'FloatRange' },
+        { namespace: tt, local: 'FloatList' },
+        { namespace: tt, local: 'DurationRange' },
+        { namespace: tt, local: 'StringList' },
+        { namespace: tt, local: 'StringItems' },
+        { namespace: tt, local: 'IntRectangleRange' },
+        { schema: 'onvif/ver20/analytics/rules.xsd', namespace: axt, local: 'MotionRegionConfigOptions' }
+      ]
+    }
   }
 ]
 
@@ -246,7 +298,7 @@ const commit = readFileSync(join(specsDirectory, 'onvif', 'COMMIT'), 'utf8')
 const generate = (target: Target): string => {
   const registry = new Registry()
   if (target.wsdl) registry.load(join(specsDirectory, 'onvif', target.wsdl))
-  const builder = new ModelBuilder(registry)
+  const builder = new ModelBuilder(registry, { qnames: target.qnames === true })
   const operations = Object.entries(target.operations ?? {}).flatMap(([portType, names]) => {
     const available = new Map(registry.operations(portType).map((operation) => [operation.name, operation]))
     return names.map((name) => {
@@ -261,6 +313,15 @@ const generate = (target: Target): string => {
     const field = response?.type.fields.find((candidate) => candidate.name === name && !candidate.attribute)
     if (!field) throw new Error(`Response element ${path} not found in ${target.wsdl}`)
     field.optional = true
+  }
+  for (const [typeName, substitutes] of Object.entries(target.substitutions ?? {})) {
+    const models = builder.complexTypes.filter((model) => model.suggestedName === typeName)
+    const [model] = models
+    if (!model || models.length > 1) throw new Error(`Expected one type ${typeName} in ${target.output}`)
+    for (const { schema, ...name } of substitutes) {
+      if (schema) registry.load(join(specsDirectory, schema))
+      builder.substitute(model, name)
+    }
   }
   const elements = (target.elements ?? []).map(({ schema, ...element }) => {
     registry.load(join(specsDirectory, schema))

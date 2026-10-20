@@ -13,6 +13,7 @@ Compared with other ONVIF libraries:
 ## Packages
 
 - [`@2bad/onvif`](packages/onvif): connect to a camera, read its settings and send it commands
+- [`@2bad/onvif-analytics`](packages/analytics): configure motion, line crossing and field detection rules
 - [`@2bad/onvif-discovery`](packages/discovery): find the ONVIF cameras on your network
 - [`@2bad/onvif-events`](packages/events): receive motion and other camera events
 - [`@2bad/onvif-imaging`](packages/imaging): change brightness, exposure, focus, white balance and the IR cut filter
@@ -40,7 +41,7 @@ See [Migrating](packages/onvif/examples/migrating.md) for code written for `onvi
 | ------- | -------- | ---------------------------- |
 | S       | 7 of 7   |                              |
 | T       | 21 of 21 |                              |
-| M       | 5 of 7   | analytics, metadata          |
+| M       | 6 of 7   | metadata                     |
 | C       | 7 of 15  | access control, door control |
 | D       | 10 of 19 | access, doors                |
 | G       | 2 of 8   | recording search, replay     |
