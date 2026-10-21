@@ -1,8 +1,17 @@
+import { join } from 'node:path'
 import { DecodeError, SoapFaultError } from '@2bad/onvif'
 import { parseEnvelope, type XmlObject } from '@2bad/onvif/soap'
 import { describe, expect, it } from 'vitest'
 import { capturesOf, decodeCapture, fixture, operationsOf } from '../../../tools/fixtures/corpus.ts'
-import { answer, cam, connectMock, rawRequestOf, rejection, requestOf } from '../../../tools/mock-camera/harness.ts'
+import {
+  answer,
+  cam,
+  connectMock,
+  hik,
+  rawRequestOf,
+  rejection,
+  requestOf
+} from '../../../tools/mock-camera/harness.ts'
 import type { MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { Media, media } from '#index.ts'
 
@@ -13,14 +22,20 @@ const connect = async (options?: MockCameraOptions) => {
 
 const operations = operationsOf(Media)
 
+const ezviz = join(import.meta.dirname, '../../../fixtures/live/ezviz/ds-2de2c400ig-w-w')
+
+const envelope = (body: string): string =>
+  '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:trt="http://www.onvif.org/ver10/media/wsdl">' +
+  `<s:Body>${body}</s:Body></s:Envelope>`
+
 describe('generated media operations', () => {
   const fixtures = capturesOf('media', operations)
 
-  it('cover a camera capture for every operation', () => {
+  it('cover a camera capture for every operation but SetVideoSourceMode', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
-    expect(operations.map(({ name }) => name).filter((name) => !captured.has(name))).toEqual([])
+    expect(operations.map(({ name }) => name).filter((name) => !captured.has(name))).toEqual(['SetVideoSourceMode'])
   })
 
   it.each(fixtures.map((entry) => [entry.name, entry] as const))('decode %s', (_name, capture) => {
@@ -46,6 +61,9 @@ describe('media.v1', () => {
     const [audioSource] = (await v1.getCompatibleAudioSourceConfigurations({ profileToken })).configurations ?? []
     const [audioEncoder] = (await v1.getCompatibleAudioEncoderConfigurations({ profileToken })).configurations ?? []
     const [metadata] = (await v1.getCompatibleMetadataConfigurations({ profileToken })).configurations ?? []
+    const [analytics] = (await v1.getCompatibleVideoAnalyticsConfigurations({ profileToken })).configurations ?? []
+    const [audioOutput] = (await v1.getCompatibleAudioOutputConfigurations({ profileToken })).configurations ?? []
+    const [audioDecoder] = (await v1.getCompatibleAudioDecoderConfigurations({ profileToken })).configurations ?? []
     const token = (configuration: { token: string } | undefined) => ({
       profileToken,
       configurationToken: configuration?.token ?? ''
@@ -54,12 +72,19 @@ describe('media.v1', () => {
     await v1.addVideoEncoderConfiguration(token(videoEncoder))
     await v1.addAudioSourceConfiguration(token(audioSource))
     await v1.addAudioEncoderConfiguration(token(audioEncoder))
+    await v1.addVideoAnalyticsConfiguration(token(analytics))
     await v1.addMetadataConfiguration(token(metadata))
+    await v1.addAudioOutputConfiguration(token(audioOutput))
+    await v1.addAudioDecoderConfiguration(token(audioDecoder))
     await v1.addPTZConfiguration({ profileToken, configurationToken: 'PTZConfiguration_token_1' })
     await v1.startMulticastStreaming({ profileToken })
     await v1.stopMulticastStreaming({ profileToken })
+    await v1.setSynchronizationPoint({ profileToken })
     await v1.removePTZConfiguration({ profileToken })
+    await v1.removeAudioDecoderConfiguration({ profileToken })
+    await v1.removeAudioOutputConfiguration({ profileToken })
     await v1.removeMetadataConfiguration({ profileToken })
+    await v1.removeVideoAnalyticsConfiguration({ profileToken })
     await v1.removeAudioEncoderConfiguration({ profileToken })
     await v1.removeAudioSourceConfiguration({ profileToken })
     await v1.removeVideoEncoderConfiguration({ profileToken })
@@ -68,7 +93,10 @@ describe('media.v1', () => {
     expect(requestOf(mock, 'AddVideoEncoderConfiguration')).toEqual({
       AddVideoEncoderConfiguration: { ProfileToken: profileToken, ConfigurationToken: videoEncoder?.token }
     })
-    expect(mock.requests.filter(({ service }) => service === 'media')).toHaveLength(21)
+    expect(requestOf(mock, 'AddAudioDecoderConfiguration')).toEqual({
+      AddAudioDecoderConfiguration: { ProfileToken: profileToken, ConfigurationToken: audioDecoder?.token }
+    })
+    expect(mock.requests.filter(({ service }) => service === 'media')).toHaveLength(31)
   })
 
   it('lists the sources and configurations of the camera', async () => {
@@ -98,10 +126,18 @@ describe('media.v1', () => {
 })
 
 describe('media.v1 requests', () => {
-  const kinds = ['VideoSource', 'VideoEncoder', 'AudioSource', 'AudioEncoder', 'Metadata'] as const
+  const kinds = [
+    ['VideoSource', cam],
+    ['VideoEncoder', cam],
+    ['AudioSource', cam],
+    ['AudioEncoder', cam],
+    ['Metadata', cam],
+    ['AudioOutput', cam],
+    ['AudioDecoder', hik]
+  ] as const
 
-  it.each(kinds)('sends a %s configuration back exactly as the camera reported it', async (kind) => {
-    const { mock, v1 } = await connect()
+  it.each(kinds)('sends a %s configuration back exactly as the camera reported it', async (kind, camera) => {
+    const { mock, v1 } = await connect(camera === hik ? { fixtureDirectory: ezviz } : undefined)
     const get = v1[`get${kind}Configuration`].bind(v1) as (request: {
       configurationToken: string
     }) => Promise<{ configuration: never }>
@@ -111,7 +147,7 @@ describe('media.v1 requests', () => {
     }) => Promise<unknown>
     const { configuration } = await get({ configurationToken: 'any' })
     await set({ configuration, forcePersistence: false })
-    const reported = parseEnvelope(cam(`media.Get${kind}Configuration`)).body
+    const reported = parseEnvelope(camera(`media.Get${kind}Configuration`)).body
     const sent = requestOf(mock, `Set${kind}Configuration`)
     expect(sent).toEqual({
       [`Set${kind}Configuration`]: {
@@ -119,6 +155,17 @@ describe('media.v1 requests', () => {
         ForcePersistence: 'false'
       }
     })
+  })
+
+  it('sends the cell layout of a video analytics configuration back', async () => {
+    const { mock, v1 } = await connect({ fixtureDirectory: ezviz })
+    const { configuration } = await v1.getVideoAnalyticsConfiguration({ configurationToken: 'any' })
+    await v1.setVideoAnalyticsConfiguration({ configuration, forcePersistence: true })
+    expect(rawRequestOf(mock, 'SetVideoAnalyticsConfiguration')).toContain(
+      '<tt:ElementItem Name="Layout"><tt:CellLayout Columns="22" Rows="18"><tt:Transformation>' +
+        '<tt:Translate x="-1" y="-1"/><tt:Scale x="0.090909" y="0.111111"/></tt:Transformation></tt:CellLayout>' +
+        '</tt:ElementItem>'
+    )
   })
 
   it('puts the configuration content in the schema namespace and ForcePersistence after it', async () => {
@@ -215,5 +262,130 @@ describe('media.v1 responses', () => {
       message: expect.stringContaining('Address'),
       path: 'GetAudioEncoderConfigurationResponse.Configuration.Multicast'
     })
+  })
+})
+
+describe('media.v1 video sources and outputs', () => {
+  it('reads the video source modes and the encoder instances of a video source', async () => {
+    const { mock, v1 } = await connect()
+    const { videoSourceModes = [] } = await v1.getVideoSourceModes({ videoSourceToken: 'VideoSource_1' })
+    expect(
+      videoSourceModes.map(({ token, enabled, reboot, maxFramerate }) => [token, enabled, reboot, maxFramerate])
+    ).toEqual([
+      ['NTSC', false, true, 30],
+      ['PAL', true, true, 25]
+    ])
+    expect(await v1.getGuaranteedNumberOfVideoEncoderInstances({ configurationToken: 'VideoSource_token_1' })).toEqual({
+      totalNumber: 3,
+      H264: 3
+    })
+    expect(requestOf(mock, 'GetVideoSourceModes')).toEqual({
+      GetVideoSourceModes: { VideoSourceToken: 'VideoSource_1' }
+    })
+  })
+
+  it('reads an empty list of video source modes', async () => {
+    const { v1 } = await connect({ fixtureDirectory: ezviz })
+    expect(await v1.getVideoSourceModes({ videoSourceToken: 'VideoSource_1' })).toEqual({})
+  })
+
+  it('switches the video source mode and reports whether the device reboots', async () => {
+    const { mock, v1 } = await connect({
+      overrides: {
+        'media.SetVideoSourceMode': answer(
+          envelope('<trt:SetVideoSourceModeResponse><trt:Reboot>true</trt:Reboot></trt:SetVideoSourceModeResponse>')
+        )
+      }
+    })
+    await expect(
+      v1.setVideoSourceMode({ videoSourceToken: 'VideoSource_1', videoSourceModeToken: 'PAL' })
+    ).resolves.toEqual({
+      reboot: true
+    })
+    expect(requestOf(mock, 'SetVideoSourceMode')).toEqual({
+      SetVideoSourceMode: { VideoSourceToken: 'VideoSource_1', VideoSourceModeToken: 'PAL' }
+    })
+  })
+
+  it('reads the audio outputs and their configurations', async () => {
+    const { v1 } = await connect()
+    expect((await v1.getAudioOutputs()).audioOutputs).toEqual([{ token: 'AudioOutput_token_1' }])
+    const [output] = (await v1.getAudioOutputConfigurations()).configurations ?? []
+    expect(output?.outputToken).toBe('AudioOutput_token_1')
+    const { options } = await v1.getAudioOutputConfigurationOptions({ configurationToken: output?.token ?? '' })
+    expect(options.outputTokensAvailable).toEqual(['AudioOutput_token_1'])
+    const [decoder] = (await v1.getAudioDecoderConfigurations()).configurations ?? []
+    const { options: decoderOptions } = await v1.getAudioDecoderConfigurationOptions({
+      configurationToken: decoder?.token ?? ''
+    })
+    expect(decoderOptions).toBeDefined()
+    const [analytics] = (await v1.getVideoAnalyticsConfigurations()).configurations ?? []
+    expect(analytics?.token).toBe('VideoAnalytics0')
+  })
+})
+
+describe('media.v1 OSDs', () => {
+  const osd = {
+    token: 'onviftest',
+    videoSourceConfigurationToken: { value: 'VideoSource_token_1' },
+    type: 'Text',
+    position: { type: 'Custom', pos: { x: 0, y: 0 } },
+    textString: { type: 'Plain', plainText: 'onviftest' }
+  }
+
+  it('reads the OSDs of a video source configuration and their options', async () => {
+    const { v1 } = await connect()
+    const { osds = [] } = await v1.getOSDs({ configurationToken: 'VideoSource_token_1' })
+    expect(osds.map(({ token, textString }) => [token, textString?.type])).toEqual([
+      ['OSD_DATE_TIME', 'DateAndTime'],
+      ['OSD_DEVICE_NAME', 'Plain']
+    ])
+    const { osdOptions } = await v1.getOSDOptions({ configurationToken: 'VideoSource_token_1' })
+    expect(osdOptions.maximumNumberOfOSDs).toEqual({ total: 6, image: 0, plainText: 5, dateAndTime: 1 })
+    expect(osdOptions.positionOption).toEqual(['Custom'])
+  })
+
+  it('creates, reads, changes and deletes a text OSD', async () => {
+    const { mock, v1 } = await connect({ overrides: { 'media.GetOSD': answer(cam('media.GetOSDCreated')) } })
+    const { osdToken } = await v1.createOSD({ OSD: osd })
+    expect(osdToken).toBe('OSD_ITEM_0')
+    const { OSD: created } = await v1.getOSD({ osdToken })
+    expect(created.textString?.plainText).toBe('onviftest')
+    await expect(
+      v1.setOSD({ OSD: { ...created, textString: { ...created.textString, type: 'Plain', plainText: 'changed' } } })
+    ).resolves.toEqual({})
+    await expect(v1.deleteOSD({ osdToken })).resolves.toEqual({})
+    expect(rawRequestOf(mock, 'CreateOSD')).toContain(
+      '<trt:OSD token="onviftest"><tt:VideoSourceConfigurationToken>VideoSource_token_1' +
+        '</tt:VideoSourceConfigurationToken><tt:Type>Text</tt:Type><tt:Position><tt:Type>Custom</tt:Type>' +
+        '<tt:Pos x="0" y="0"/></tt:Position><tt:TextString><tt:Type>Plain</tt:Type><tt:PlainText>onviftest' +
+        '</tt:PlainText></tt:TextString></trt:OSD>'
+    )
+    expect(requestOf(mock, 'SetOSD')).toMatchObject({
+      SetOSD: { OSD: { $: { token: 'OSD_ITEM_0' }, TextString: { PlainText: 'changed' } } }
+    })
+    expect(requestOf(mock, 'DeleteOSD')).toEqual({ DeleteOSD: { OSDToken: 'OSD_ITEM_0' } })
+  })
+})
+
+describe('media.v1 on the DCN-BM2220LPR', () => {
+  it('rejects changing a video analytics configuration with the fault of the device', async () => {
+    const { v1 } = await connect()
+    const { configuration } = await v1.getVideoAnalyticsConfiguration({ configurationToken: 'VideoAnalytics0' })
+    const error = await rejection(() => v1.setVideoAnalyticsConfiguration({ configuration, forcePersistence: true }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({
+      subcodes: ['ActionNotSupported', 'VideoAnalyticsNotSupported'],
+      action: 'SetVideoAnalyticsConfiguration'
+    })
+  })
+
+  it('rejects changing an audio decoder configuration with a fault without subcodes', async () => {
+    const { v1 } = await connect()
+    const [configuration] = (await v1.getAudioDecoderConfigurations()).configurations ?? []
+    if (!configuration) throw new Error('no audio decoder configuration')
+    const error = await rejection(() => v1.setAudioDecoderConfiguration({ configuration, forcePersistence: true }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: [], action: 'SetAudioDecoderConfiguration' })
   })
 })

@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `device.resolveStreamAddress()` for stream addresses the device reported
 - Added `uploadFirmware()`, `uploadBackup()`, `getSystemUris()` and the cloud `upgradeFirmware()` to `device.management`
 - Added `service` to `Operation` for operations sent to another service than their request element
+- Added video analytics, audio output, audio decoder, OSD and video source mode methods to `device.media.v1`
+- Added the remaining Media2 operations to `device.media.v2`, including OSDs, privacy masks, audio clips and WebRTC
 
 ### Fixed
 

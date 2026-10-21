@@ -52,8 +52,8 @@ camera.media.setVideoEncoderConfiguration(
   options?: MediaOptions
 ): Promise<VideoEncoder>
 
-camera.media.v1 // a method per Media operation, including profile, audio, metadata and multicast configuration
-camera.media.v2 // a method per Media2 operation, including metadata and analytics configuration
+camera.media.v1 // a method per Media operation
+camera.media.v2 // a method per Media2 operation
 
 function defaultProfile(profiles: Profile[]): Profile | undefined // first profile with a video source and an encoder
 
@@ -138,6 +138,29 @@ if (metadata) await camera.media.v2.setMetadataConfiguration({ configuration: { 
 ```
 
 `getMetadataConfigurations()` returns topics with the prefix `tns1`, whatever prefix the camera sent. A topic in another namespace reads as `{namespace}Name`. Both forms can be sent back.
+
+## On-screen text
+
+```ts
+const { v1 } = camera.media
+const { osdToken } = await v1.createOSD({
+  OSD: {
+    token: 'new',
+    videoSourceConfigurationToken: { value: source.token },
+    type: 'Text',
+    position: { type: 'UpperLeft' },
+    textString: { type: 'Plain', plainText: 'Gate 1' }
+  }
+})
+
+await v1.deleteOSD({ osdToken })
+```
+
+`getOSDOptions()` lists the positions and text types the camera accepts.
+
+## Video source modes
+
+`setVideoSourceMode()` returns `reboot: true` when the camera restarts to apply the mode.
 
 ## Limits
 

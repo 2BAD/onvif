@@ -41,6 +41,12 @@ const filters = [
   { namespace: wsnt, local: 'MessageContent' }
 ]
 const topicExpressions = ['TopicExpressionType', 'QueryExpressionType']
+const elementItems = [
+  { namespace: tt, local: 'CellLayout' },
+  { namespace: tt, local: 'Polygon' },
+  { namespace: tt, local: 'Polyline' },
+  { schema: 'onvif/ver20/analytics/rules.xsd', namespace: axt, local: 'MotionRegionConfig' }
+]
 
 const targets: Target[] = [
   {
@@ -193,6 +199,7 @@ const targets: Target[] = [
     output: 'packages/media/source/generated/media.ts',
     client: { name: 'MediaClient' },
     wsdl: 'ver10/media/wsdl/media.wsdl',
+    optional: ['GetVideoSourceModesResponse.VideoSourceModes'],
     operations: {
       Media: [
         'GetServiceCapabilities',
@@ -242,32 +249,110 @@ const targets: Target[] = [
         'AddMetadataConfiguration',
         'RemoveMetadataConfiguration',
         'AddPTZConfiguration',
-        'RemovePTZConfiguration'
+        'RemovePTZConfiguration',
+        'GetVideoSourceModes',
+        'SetVideoSourceMode',
+        'GetGuaranteedNumberOfVideoEncoderInstances',
+        'SetSynchronizationPoint',
+        'GetVideoAnalyticsConfigurations',
+        'GetVideoAnalyticsConfiguration',
+        'GetCompatibleVideoAnalyticsConfigurations',
+        'SetVideoAnalyticsConfiguration',
+        'AddVideoAnalyticsConfiguration',
+        'RemoveVideoAnalyticsConfiguration',
+        'GetAudioOutputs',
+        'GetAudioOutputConfigurations',
+        'GetAudioOutputConfiguration',
+        'GetCompatibleAudioOutputConfigurations',
+        'GetAudioOutputConfigurationOptions',
+        'SetAudioOutputConfiguration',
+        'AddAudioOutputConfiguration',
+        'RemoveAudioOutputConfiguration',
+        'GetAudioDecoderConfigurations',
+        'GetAudioDecoderConfiguration',
+        'GetCompatibleAudioDecoderConfigurations',
+        'GetAudioDecoderConfigurationOptions',
+        'SetAudioDecoderConfiguration',
+        'AddAudioDecoderConfiguration',
+        'RemoveAudioDecoderConfiguration',
+        'GetOSDs',
+        'GetOSD',
+        'GetOSDOptions',
+        'CreateOSD',
+        'SetOSD',
+        'DeleteOSD'
       ]
     },
     namespaces: ['GetMetadataConfigurations', 'GetMetadataConfiguration', 'GetCompatibleMetadataConfigurations'],
-    substitutions: { FilterType: filters },
+    substitutions: { FilterType: filters, ItemListElementItem: elementItems },
     prefixed: topicExpressions
   },
   {
     output: 'packages/media/source/generated/media2.ts',
     client: { name: 'Media2Client' },
     wsdl: 'ver20/media/wsdl/media.wsdl',
+    optional: ['GetVideoSourceModesResponse.VideoSourceModes'],
     operations: {
       Media2: [
+        'GetServiceCapabilities',
         'GetProfiles',
+        'CreateProfile',
+        'DeleteProfile',
+        'AddConfiguration',
+        'RemoveConfiguration',
         'GetStreamUri',
         'GetSnapshotUri',
+        'StartMulticastStreaming',
+        'StopMulticastStreaming',
+        'SetSynchronizationPoint',
+        'GetVideoSourceModes',
+        'SetVideoSourceMode',
+        'GetVideoEncoderInstances',
         'GetVideoSourceConfigurations',
+        'GetVideoSourceConfigurationOptions',
+        'SetVideoSourceConfiguration',
         'GetVideoEncoderConfigurations',
         'GetVideoEncoderConfigurationOptions',
         'SetVideoEncoderConfiguration',
+        'GetAudioSourceConfigurations',
+        'GetAudioSourceConfigurationOptions',
+        'SetAudioSourceConfiguration',
+        'GetAudioEncoderConfigurations',
+        'GetAudioEncoderConfigurationOptions',
+        'SetAudioEncoderConfiguration',
+        'GetAudioOutputConfigurations',
+        'GetAudioOutputConfigurationOptions',
+        'SetAudioOutputConfiguration',
+        'GetAudioDecoderConfigurations',
+        'GetAudioDecoderConfigurationOptions',
+        'SetAudioDecoderConfiguration',
+        'GetMulticastAudioDecoderConfigurations',
+        'GetMulticastAudioDecoderConfigurationOptions',
+        'SetMulticastAudioDecoderConfiguration',
         'GetMetadataConfigurations',
         'GetMetadataConfigurationOptions',
         'SetMetadataConfiguration',
         'GetAnalyticsConfigurations',
-        'AddConfiguration',
-        'RemoveConfiguration'
+        'GetOSDs',
+        'GetOSDOptions',
+        'CreateOSD',
+        'SetOSD',
+        'DeleteOSD',
+        'GetMasks',
+        'GetMaskOptions',
+        'CreateMask',
+        'SetMask',
+        'DeleteMask',
+        'GetAudioClips',
+        'AddAudioClip',
+        'AddTTSAudioClip',
+        'SetAudioClip',
+        'DeleteAudioClip',
+        'PlayAudioClip',
+        'GetPlayingAudioClips',
+        'SetEQPresetConfiguration',
+        'GetWebRTCConfigurations',
+        'SetWebRTCConfigurations'
       ]
     },
     namespaces: ['GetMetadataConfigurations'],
@@ -416,12 +501,7 @@ const targets: Target[] = [
       RuleEnginePort: ['GetSupportedRules', 'GetRules', 'CreateRules', 'ModifyRules', 'DeleteRules', 'GetRuleOptions']
     },
     substitutions: {
-      ItemListElementItem: [
-        { namespace: tt, local: 'CellLayout' },
-        { namespace: tt, local: 'Polygon' },
-        { namespace: tt, local: 'Polyline' },
-        { schema: 'onvif/ver20/analytics/rules.xsd', namespace: axt, local: 'MotionRegionConfig' }
-      ],
+      ItemListElementItem: elementItems,
       ConfigOptions: [
         { namespace: tt, local: 'IntRange' },
         { namespace: tt, local: 'IntList' },

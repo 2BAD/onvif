@@ -6,6 +6,8 @@ export type EFlipMode = 'OFF' | 'ON' | 'Extended' | (string & Record<never, neve
 
 export type IPType = 'IPv4' | 'IPv6' | (string & Record<never, never>)
 
+export type OSDType = 'Text' | 'Image' | 'Extended' | (string & Record<never, never>)
+
 /** Specifies a receiver connection mode. */
 export type ReceiverMode =
   | 'AutoConnect'
@@ -24,6 +26,22 @@ export type StreamType = 'RTP-Unicast' | 'RTP-Multicast' | (string & Record<neve
 
 export type TransportProtocol = 'UDP' | 'TCP' | 'RTSP' | 'HTTP' | (string & Record<never, never>)
 
+export type AddAudioClipRequest = {
+  /** Optional token associated with the audio clip. */
+  token?: string
+  /** Audio clip configuration to add. */
+  configuration: AudioClip
+}
+
+export type AddAudioClipResponse = {
+  /** Unique token of the audio clip to be uploaded. */
+  token: string
+  /** A URL to which the audio clip can be uploaded. */
+  uploadUri: string
+  /** Expiry time by which the client should upload the audio clip to the device. */
+  expiryTime: Date
+}
+
 export type AddConfigurationRequest = {
   /** Reference to the profile where the configuration should be added */
   profileToken: string
@@ -39,12 +57,84 @@ export type AddConfigurationRequest = {
 
 export type AddConfigurationResponse = Record<string, never>
 
+export type AddTTSAudioClipRequest = {
+  /** Optional token associated with the audio clip. */
+  token?: string
+  /** Audio clip configuration to add. */
+  configuration: AudioClip
+  /** The configuration for the TTS audio clip to add. */
+  ttsConfiguration: TTSAudio
+}
+
+export type AddTTSAudioClipResponse = {
+  /** Unique token assigned by device for the TTS audio clip. */
+  token: string
+}
+
 export type AnalyticsEngineConfiguration = {
   analyticsModule?: Config[]
   extension?: AnalyticsEngineConfigurationExtension
 }
 
 export type AnalyticsEngineConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type AudioClip = {
+  /** Enables/disables the audio clip. */
+  enabled: boolean
+  /** Name of the audio clip. */
+  name: string
+  /** Optional token list of physical audio outputs. */
+  audioOutputToken?: string[]
+  /** Format of the audio clip. For definitions see tr2:SupportedAudioClipFormat parameter. */
+  type: string
+  /**
+   * The number of times the audio clip can be repeated when it is played. A value of 0 means no repeat
+   * (i.e., the audio clip plays once and does not repeat). A value of 1 means the audio clip plays once
+   * and repeats once after the first play. A value of -1 means the audio clip repeats infinitely after
+   * the first play until it is stopped by the user.
+   */
+  repeatCycles: number
+  /** Optional time interval, in seconds, between audio clips when the audio clip is repeated. */
+  repeatInterval?: number
+  /** Optional level to control the volume of the audio clip when it is played. */
+  audioOutputLevel?: number
+  /**
+   * Optional schedule token associated with the audio clip configuration. The audio clip shall be played
+   * when the configured schedule is triggered.
+   */
+  scheduleToken?: string
+  $any?: Record<string, unknown>
+}
+
+export type AudioClipCapabilities = {
+  /** Indicates device has TTS capability. */
+  ttsCapabilities?: TTSCapabilities
+  /** Indicates the maximum number of audio clips that can be uploaded to the device. */
+  maxAudioClipLimit?: number
+  /** Indicates the maximum size of the audio clip that can be uploaded, in KB. */
+  maxAudioClipSize?: number
+  /** Enumerates the supported audio clip formats. See tr2: SupportedAudioClipFormat. */
+  supportedAudioClipFormat?: string[]
+  $any?: Record<string, unknown>
+}
+
+export type AudioDecoder2Options = {
+  /**
+   * Audio Media Subtype for the audio format. For definitions see tt:AudioEncodingMimeNames and IANA
+   * Media Types.
+   */
+  encoding: string
+  /** List of supported bitrates in kbps for the specified Encoding. */
+  bitrateList: IntItems
+  /** List of supported Sample Rates in kHz for the specified Encoding */
+  sampleRateList: IntItems
+  /**
+   * Optional element for specifying the RTP payload type, particularly when it is fixed for a specific
+   * audio encoding as defined in IANA RTP Payload Types.
+   */
+  rtpPayloadType?: number
   $any?: Record<string, unknown>
 }
 
@@ -91,6 +181,24 @@ export type AudioEncoder2Configuration = {
   $any?: Record<string, unknown>
 }
 
+export type AudioEncoder2ConfigurationOptions = {
+  /**
+   * Audio Media Subtype for the audio format. For definitions see tt:AudioEncodingMimeNames and IANA
+   * Media Types.
+   */
+  encoding: string
+  /** List of supported bitrates in kbps for the specified Encoding. */
+  bitrateList: IntItems
+  /** List of supported Sample Rates in kHz for the specified Encoding */
+  sampleRateList: IntItems
+  /**
+   * If secure RTSP streaming is supported, this shall return the list of supported cryptographic
+   * algorithms as defined by tt:SrtpSecurityAlgorithms.
+   */
+  secureStreamingProtocolAlgorithms?: string[]
+  $any?: Record<string, unknown>
+}
+
 export type AudioOutputConfiguration = {
   /** User readable name. Length up to 64 characters. */
   name: string
@@ -125,6 +233,32 @@ export type AudioOutputConfiguration = {
   $any?: Record<string, unknown>
 }
 
+export type AudioOutputConfigurationOptions = {
+  /** Tokens of the physical Audio outputs (typically one). */
+  outputTokensAvailable: string[]
+  /**
+   * An audio channel MAY support different types of audio transmission. While for full duplex operation
+   * no special handling is required, in half duplex operation the transmission direction needs to be
+   * switched. The optional SendPrimacy parameter inside the AudioOutputConfiguration indicates which
+   * direction is currently active. An NVC can switch between different modes by setting the
+   * AudioOutputConfiguration. The following modes for the Send-Primacy are defined:
+   * www.onvif.org/ver20/HalfDuplex/Server The server is allowed to send audio data to the client. The
+   * client shall not send audio data via the backchannel to the NVT in this mode.
+   * www.onvif.org/ver20/HalfDuplex/Client The client is allowed to send audio data via the backchannel
+   * to the server. The NVT shall not send audio data to the client in this mode.
+   * www.onvif.org/ver20/HalfDuplex/Auto It is up to the device how to deal with sending and receiving
+   * audio data. Acoustic echo cancellation is out of ONVIF scope.
+   */
+  sendPrimacyOptions?: string[]
+  /** Minimum and maximum level range supported for this Output. */
+  outputLevelRange: IntRange
+  /** Indicates whether EQPreset scheduling is supported. */
+  eqPresetScheduleSupport?: boolean
+  /** List of supported EQPresets. */
+  eqPresets?: EQPreset[]
+  $any?: Record<string, unknown>
+}
+
 export type AudioSourceConfiguration = {
   /** User readable name. Length up to 64 characters. */
   name: string
@@ -138,6 +272,84 @@ export type AudioSourceConfiguration = {
   /** Token of the Audio Source the configuration applies to */
   sourceToken: string
   $any?: Record<string, unknown>
+}
+
+export type AudioSourceConfigurationOptions = {
+  /** Tokens of the audio source the configuration can be used for. */
+  inputTokensAvailable: string[]
+  extension?: AudioSourceOptionsExtension
+}
+
+export type AudioSourceOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type Capabilities2 = {
+  /** Media profile capabilities. */
+  profileCapabilities: ProfileCapabilities
+  /** Streaming capabilities. */
+  streamingCapabilities: StreamingCapabilities
+  /** Audio clip capabilities. */
+  audioClipCapabilities?: AudioClipCapabilities
+  /** MulticastAudioDecoder capabilities. */
+  multicastAudioDecoderCapabilities?: MulticastAudioDecoderCapabilities
+  /** Indicates if GetSnapshotUri is supported. */
+  snapshotUri?: boolean
+  /** Indicates whether or not Rotation feature is supported. */
+  rotation?: boolean
+  /** Indicates the support for changing video source mode. */
+  videoSourceMode?: boolean
+  /** Indicates if OSD is supported. */
+  OSD?: boolean
+  /** Indicates the support for temporary osd text configuration. */
+  temporaryOSDText?: boolean
+  /** Indicates if Masking is supported. */
+  mask?: boolean
+  /**
+   * Indicates that privacy masks are only supported at the video source level and not the video source
+   * configuration level. If this is true any addition, deletion or change of a privacy mask done for one
+   * video source configuration will automatically be applied by the device to a corresponding privacy
+   * mask for all other video source configuration associated with the same video source.
+   */
+  sourceMask?: boolean
+  /** Indicates number of supported WebRTC configurations. */
+  webRTC?: number
+  /** List of supported video and audio media types as defined by IANA. E.g. "video/H264 audio/opus". */
+  webRTC_codecs?: string[]
+  $any?: Record<string, unknown>
+}
+
+export type Color = {
+  X: number
+  Y: number
+  Z: number
+  /**
+   * Acceptable values: http://www.onvif.org/ver10/colorspace/YCbCr - YCbCr X attribute = Y value Y
+   * attribute = Cb value Z attribute = Cr value http://www.onvif.org/ver10/colorspace/RGB - RGB X
+   * attribute = R value Y attribute = G value Z attribute = B value If the Colorspace attribute is
+   * absent and not defined on higher level, YCbCr is implied. Deprecated values:
+   * http://www.onvif.org/ver10/colorspace/CIELUV - CIE LUV http://www.onvif.org/ver10/colorspace/CIELAB
+   * - CIE 1976 (L*a*b*) http://www.onvif.org/ver10/colorspace/HSV - HSV
+   */
+  colorspace?: string
+  /** Likelihood that the color is correct. */
+  likelihood?: number
+}
+
+/** Describe the colors supported. Either list each color or define the range of color values. */
+export type ColorOptions = {
+  /** List the supported color. */
+  colorList?: Color[]
+  /** Define the range of color supported. */
+  colorspaceRange?: ColorspaceRange[]
+}
+
+export type ColorspaceRange = {
+  X: FloatRange
+  Y: FloatRange
+  Z: FloatRange
+  /** Acceptable values are the same as in tt:Color. */
+  colorspace: string
 }
 
 export type Config = {
@@ -191,9 +403,116 @@ export type ConfigurationSet = {
   $any?: Record<string, unknown>
 }
 
+export type CreateMaskRequest = {
+  /** Contain the initial mask configuration for create. */
+  mask: Mask
+}
+
+export type CreateMaskResponse = {
+  /** Returns Token of the newly created Mask */
+  token: string
+}
+
+export type CreateOSDRequest = {
+  /** Contain the initial OSD configuration for create. */
+  OSD: OSDConfiguration
+}
+
+export type CreateOSDResponse = {
+  /** Returns Token of the newly created OSD */
+  osdToken: string
+}
+
+export type CreateProfileRequest = {
+  /** friendly name of the profile to be created */
+  name: string
+  /**
+   * Optional set of configurations to be assigned to the profile. List entries with
+   * tr2:ConfigurationEnumeration value "All" shall be ignored.
+   */
+  configuration?: ConfigurationRef[]
+}
+
+export type CreateProfileResponse = {
+  /** Token assigned by the device for the newly created profile. */
+  token: string
+}
+
+export type DeleteAudioClipRequest = {
+  /** Token of the audio clip to be deleted from the device. */
+  token: string
+}
+
+export type DeleteAudioClipResponse = Record<string, never>
+
+export type DeleteMaskRequest = {
+  /** This element contains a reference to the Mask configuration that should be deleted. */
+  token: string
+}
+
+export type DeleteOSDRequest = {
+  /** This element contains a reference to the OSD configuration that should be deleted. */
+  osdToken: string
+}
+
+export type DeleteProfileRequest = {
+  /** This element contains a reference to the profile that should be deleted. */
+  token: string
+}
+
+export type DeleteProfileResponse = Record<string, never>
+
 export type EFlip = {
   /** Parameter to enable/disable E-Flip feature. */
   mode: EFlipMode
+  $any?: Record<string, unknown>
+}
+
+export type EncoderInstance = {
+  /**
+   * Video Media Subtype for the video format. For definitions see tt:VideoEncodingMimeNames and IANA
+   * Media Types.
+   */
+  encoding: string
+  /** The minimum guaranteed number of encoder instances (applications) for the VideoSourceConfiguration. */
+  number: number
+}
+
+export type EncoderInstanceInfo = {
+  /**
+   * If a device limits the number of instances for respective Video Codecs the response contains the
+   * information how many streams can be set up at the same time per VideoSource.
+   */
+  codec?: EncoderInstance[]
+  /**
+   * The minimum guaranteed total number of encoder instances (applications) per
+   * VideoSourceConfiguration. The device is able to deliver the Total number of streams
+   */
+  total: number
+  $any?: Record<string, unknown>
+}
+
+export type EQPreset = {
+  /** Unique identifier for the preset. */
+  token: string
+  /** Preset name. (Readonly) */
+  name: string
+  /**
+   * This indicates whether the EQ preset is designated as the default. When the scheduler is inactive,
+   * this preset will be applied. Only one preset can be set as the default among the EQ presets linked
+   * to an audio output. If all presets have isDefault set to false, the device may automatically select
+   * one preset as the default.
+   */
+  isDefault: boolean
+  /** Optional schedule token (if supported). */
+  scheduleToken?: string
+  /** Indicates whether the device allows changing the decibel level for frequencies. (Readonly) */
+  isFrequencyDecibelEditable: boolean
+  /**
+   * List of frequency decibel pairs, each defined by a center frequency and its corresponding decibel
+   * value.
+   */
+  frequencyDecibelPair?: FrequencyDecibelPair[]
   $any?: Record<string, unknown>
 }
 
@@ -220,9 +539,98 @@ export type FloatRange = {
   max: number
 }
 
+export type FrequencyDecibelPair = {
+  /**
+   * The center frequency of the band in hertz (Readonly). For example, value of 1000 refers to 1kHz and
+   * 2000 refers to 2kHz.
+   */
+  centerFrequency: number
+  /** Decibel value associated with the center frequency. */
+  decibel: number
+  $any?: Record<string, unknown>
+}
+
 export type GetAnalyticsConfigurationsResponse = {
   /** This element contains a list of Analytics configurations. */
   configurations?: VideoAnalyticsConfiguration[]
+}
+
+export type GetAudioClipsRequest = {
+  /** Audio clip token. */
+  token?: string
+}
+
+export type GetAudioClipsResponse = {
+  /** List of audio clip items. */
+  audioClipItem?: GetAudioClipsResponseItem[]
+}
+
+export type GetAudioClipsResponseItem = {
+  /** Unique token associated with the audio clip. */
+  token: string
+  /** Configuration of the audio clip. */
+  configuration: AudioClip
+  $any?: Record<string, unknown>
+}
+
+export type GetAudioDecoderConfigurationOptionsResponse = {
+  /**
+   * This message contains the audio decoder configuration options. If a audio decoder configuration is
+   * specified, the options shall concern that particular configuration. If a media profile is specified,
+   * the options shall be compatible with that media profile. If no tokens are specified, the options
+   * shall be considered generic for the device.
+   */
+  options: AudioEncoder2ConfigurationOptions[]
+}
+
+export type GetAudioDecoderConfigurationsResponse = {
+  /** This element contains a list of audio decoder configurations */
+  configurations?: AudioDecoderConfiguration[]
+}
+
+export type GetAudioEncoderConfigurationOptionsResponse = {
+  /**
+   * This message contains the audio encoder configuration options. If a audio encoder configuration is
+   * specified, the options shall concern that particular configuration. If a media profile is specified,
+   * the options shall be compatible with that media profile. If no tokens are specified, the options
+   * shall be considered generic for the device.
+   */
+  options: AudioEncoder2ConfigurationOptions[]
+}
+
+export type GetAudioEncoderConfigurationsResponse = {
+  /** This element contains a list of audio encoder configurations. */
+  configurations?: AudioEncoder2Configuration[]
+}
+
+export type GetAudioOutputConfigurationOptionsResponse = {
+  /**
+   * This message contains the audio output configuration options. If a audio output configuration is
+   * specified, the options shall concern that particular configuration. If a media profile is specified,
+   * the options shall be compatible with that media profile. If no tokens are specified, the options
+   * shall be considered generic for the device.
+   */
+  options: AudioOutputConfigurationOptions
+}
+
+export type GetAudioOutputConfigurationsResponse = {
+  /** This element contains a list of audio output configurations */
+  configurations?: AudioOutputConfiguration[]
+}
+
+export type GetAudioSourceConfigurationOptionsResponse = {
+  /**
+   * This message contains the audio source configuration options. If a audio source configuration is
+   * specified, the options shall concern that particular configuration. If a media profile is specified,
+   * the options shall be compatible with that media profile. If no tokens are specified, the options
+   * shall be considered generic for the device.
+   */
+  options: AudioSourceConfigurationOptions
+}
+
+export type GetAudioSourceConfigurationsResponse = {
+  /** This element contains a list of audio source configurations. */
+  configurations?: AudioSourceConfiguration[]
 }
 
 export type GetConfiguration = {
@@ -230,6 +638,30 @@ export type GetConfiguration = {
   configurationToken?: string
   /** Contains the token of an existing media profile the configurations shall be compatible with. */
   profileToken?: string
+}
+
+export type GetMaskOptionsRequest = {
+  /**
+   * Video Source Configuration Token that specifies an existing video source configuration that the
+   * options shall be compatible with.
+   */
+  configurationToken: string
+}
+
+export type GetMaskOptionsResponse = {
+  options: MaskOptions
+}
+
+export type GetMasksRequest = {
+  /** Optional mask token of an existing mask. */
+  token?: string
+  /** Optional token of a Video Source Configuration. */
+  configurationToken?: string
+}
+
+export type GetMasksResponse = {
+  /** List of Mask configurations. */
+  masks?: Mask[]
 }
 
 export type GetMetadataConfigurationOptionsResponse = {
@@ -247,6 +679,65 @@ export type GetMetadataConfigurationsResponse = {
   configurations?: MetadataConfiguration[]
 }
 
+export type GetMulticastAudioDecoderConfigurationOptionsRequest = {
+  /**
+   * This response contains the available MulticastAudioDecoderConfigurationOptions. If a multicast audio
+   * decoder configuration is specified, the options shall concern that particular configuration.
+   */
+  configurationToken?: string
+}
+
+export type GetMulticastAudioDecoderConfigurationOptionsResponse = {
+  options: MulticastAudioDecoderConfigurationOptions[]
+}
+
+export type GetMulticastAudioDecoderConfigurationsRequest = {
+  /**
+   * Unique token of the multicast audio decoder configuration. If not passed, device shall respond with
+   * all configurations.
+   */
+  configurationToken?: string
+}
+
+export type GetMulticastAudioDecoderConfigurationsResponse = {
+  /** This message contains the list of multicast audio decoder configurations. */
+  configurations?: MulticastAudioDecoderConfiguration[]
+}
+
+export type GetOSDOptionsRequest = {
+  /**
+   * Video Source Configuration Token that specifies an existing video source configuration that the
+   * options shall be compatible with.
+   */
+  configurationToken: string
+}
+
+export type GetOSDOptionsResponse = {
+  osdOptions: OSDConfigurationOptions
+}
+
+export type GetOSDsRequest = {
+  /** The GetOSDs command fetches the OSD configuration if the OSD token is known. */
+  osdToken?: string
+  /**
+   * Token of the Video Source Configuration, which has OSDs associated with are requested. If token not
+   * exist, request all available OSDs.
+   */
+  configurationToken?: string
+}
+
+export type GetOSDsResponse = {
+  /** This element contains a list of requested OSDs. */
+  osds?: OSDConfiguration[]
+}
+
+export type GetPlayingAudioClipsRequest = Record<string, never>
+
+export type GetPlayingAudioClipsResponse = {
+  /** List of audio clips currently playing in the device. */
+  playingAudioClips?: PlayingAudioClips[]
+}
+
 export type GetProfilesRequest = {
   /** Optional token of the requested profile. */
   token?: string
@@ -260,6 +751,13 @@ export type GetProfilesResponse = {
    * Configurations as far as available. If a profile doesn't contain a type no error shall be provided.
    */
   profiles?: MediaProfile[]
+}
+
+export type GetServiceCapabilitiesRequest = Record<string, never>
+
+export type GetServiceCapabilitiesResponse = {
+  /** The capabilities for the media service is returned in the Capabilities element. */
+  capabilities: Capabilities2
 }
 
 export type GetSnapshotUriRequest = {
@@ -299,9 +797,57 @@ export type GetVideoEncoderConfigurationsResponse = {
   configurations?: VideoEncoder2Configuration[]
 }
 
+export type GetVideoEncoderInstancesRequest = {
+  /** Token of the video source configuration */
+  configurationToken: string
+}
+
+export type GetVideoEncoderInstancesResponse = {
+  /**
+   * The minimum guaranteed total number of encoder instances (applications) per
+   * VideoSourceConfiguration.
+   */
+  info: EncoderInstanceInfo
+}
+
+export type GetVideoSourceConfigurationOptionsResponse = {
+  /**
+   * This message contains the video source configuration options. If a video source configuration is
+   * specified, the options shall concern that particular configuration. If a media profile is specified,
+   * the options shall be compatible with that media profile. If no tokens are specified, the options
+   * shall be considered generic for the device.
+   */
+  options: VideoSourceConfigurationOptions
+}
+
 export type GetVideoSourceConfigurationsResponse = {
   /** This element contains a list of video source configurations. */
   configurations?: VideoSourceConfiguration[]
+}
+
+export type GetVideoSourceModesRequest = {
+  /** Contains a video source reference for which a video source mode is requested. */
+  videoSourceToken: string
+}
+
+export type GetVideoSourceModesResponse = {
+  /** Return the information for specified video source mode. */
+  videoSourceModes?: VideoSourceMode[]
+}
+
+export type GetWebRTCConfigurationsRequest = Record<string, never>
+
+export type GetWebRTCConfigurationsResponse = {
+  /**
+   * Video Source Configuration Token that specifies an existing video source configuration that the
+   * options shall be compatible with.
+   */
+  webRTCConfiguration?: WebRTCConfiguration[]
+}
+
+/** List of values. */
+export type IntItems = {
+  items?: number[]
 }
 
 /** Range of values greater equal Min value and less equal Max value. */
@@ -316,6 +862,21 @@ export type IntRectangle = {
   y: number
   width: number
   height: number
+}
+
+/**
+ * Range of a rectangle. The rectangle itself is defined by lower left corner position and size. Units
+ * are pixel.
+ */
+export type IntRectangleRange = {
+  /** Range of X-axis. */
+  xRange: IntRange
+  /** Range of Y-axis. */
+  yRange: IntRange
+  /** Range of width. */
+  widthRange: IntRange
+  /** Range of height. */
+  heightRange: IntRange
 }
 
 export type IPAddress = {
@@ -384,6 +945,58 @@ export type LensProjection = {
   /** Optional ray absorption at the given angle due to vignetting. A value of one means no absorption. */
   transmittance?: number
   $any?: Record<string, unknown>
+}
+
+export type Mask = {
+  /** Token of the VideoSourceConfiguration the Mask is associated with. */
+  configurationToken: string
+  /** Geometric representation of the mask area. */
+  polygon: Polygon
+  /**
+   * Type of masking as defined by tr2:MaskType: Color - The masked area is colored with color defined by
+   * the Color field. Pixelated - The masked area is filled in mosaic style to hide details. Blurred -
+   * The masked area is low pass filtered to hide details.
+   */
+  type: string
+  /** Color of the masked area. */
+  color?: Color
+  /** If set the mask will cover the image, otherwise it will be fully transparent. */
+  enabled: boolean
+  /** Token of the mask. */
+  token?: string
+  $any?: Record<string, unknown>
+}
+
+export type MaskOptions = {
+  /** Maximum supported number of masks per VideoSourceConfiguration. */
+  maxMasks: number
+  /** Maximum supported number of points per mask. */
+  maxPoints: number
+  /**
+   * Information which types of tr2:MaskType are supported. Valid values are 'Color', 'Pixelated' and
+   * 'Blurred'.
+   */
+  types: string[]
+  /** Colors supported. */
+  color: ColorOptions
+  /** Information whether the polygon must have four points and a rectangular shape. */
+  rectangleOnly?: boolean
+  /**
+   * Indicates the device capability of change in color of privacy mask for one video source
+   * configuration will automatically be applied to all the privacy masks associated with the same video
+   * source configuration.
+   */
+  singleColorOnly?: boolean
+  $any?: Record<string, unknown>
+}
+
+export type MaximumNumberOfOSDs = {
+  total: number
+  image?: number
+  plainText?: number
+  date?: number
+  time?: number
+  dateAndTime?: number
 }
 
 /** A media profile consists of a set of media configurations. */
@@ -500,6 +1113,87 @@ export type MetadataConfigurationOptionsExtension2 = {
   $any?: Record<string, unknown>
 }
 
+export type MulticastAudioDecoderCapabilities = {
+  /** Indicates support for multicast audio decoder. */
+  multicastAudioDecoder?: boolean
+  /** Indicates whether the SRTP is supported in MulticastAudioDecoder or not. */
+  SRTP?: boolean
+  /** Indicates whether the IPv6 is supported in MulticastAudioDecoder or not. */
+  ipv6?: boolean
+  $any?: Record<string, unknown>
+}
+
+/** Configuration for the Multicast Audio Decoder. */
+export type MulticastAudioDecoderConfiguration = {
+  /** User readable name. Length up to 64 characters. */
+  name: string
+  /**
+   * Number of internal references currently using this configuration. This informational parameter is
+   * read-only. Deprecated for Media2 Service.
+   */
+  useCount: number
+  /** Token that uniquely references this configuration. Length up to 64 characters. */
+  token: string
+  /** Indicates whether the Multicast Audio Decoder is enabled or disabled. */
+  enable: boolean
+  /** Token of the physical Audio output. This element is optional and can occur multiple times. */
+  audioOutputToken?: string[]
+  /** Specifies the encoding type according to IANA media types. */
+  encoding: string
+  /** The bitrate of the audio stream in bits per second. */
+  bitrate: number
+  /** The sampling rate of the audio stream in kHz. */
+  samplingRate: number
+  /** Contains configuration details for multicast settings. */
+  multicast: MulticastReceiverConfiguration
+  /**
+   * Defines the RTP payload type used for the audio stream. To ensure compatibility, it is recommended
+   * to use dynamic payload types (96 and above), as specified in RFC 3551. Standard payload types (0-95)
+   * should only be used for predefined audio formats matching the audio encoding as defined in IANA RTP
+   * Payload Types, as using them for non-standard media may lead to unexpected errors or
+   * interoperability issues.
+   */
+  rtpPayloadType: number
+  /**
+   * Indicates the priority level when multiple configurations are active. A higher value signifies a
+   * higher priority. If several configurations have the same priority value the order between those
+   * configurations is undefined.
+   */
+  priority: number
+  /** Optional media format parameters as specified in SDP, such as: a=fmtp:101 stereo=1; sprop-stereo=1. */
+  mediaFormatParameters?: string
+  /**
+   * Optional configuration parameters for SRTP pre-shared key usage, applicable when SRTP is supported.
+   * When this configuration is present, RTP packets shall be encrypted. When this configuration is
+   * absent, RTP packets shall not be encrypted. On GetMulticastAudioDecoderConfiguration, this element
+   * shall be present only if encryption is enabled; it shall be absent if encryption is disabled.
+   */
+  srtpPreSharedParameters?: SRTPPreShared
+  $any?: Record<string, unknown>
+}
+
+export type MulticastAudioDecoderConfigurationOptions = {
+  /** Supported encoding options for the multicast audio decoder. */
+  encodingOptions: AudioDecoder2Options
+  /**
+   * Specifies the priority range as an integer. This indicates the priority level for audio
+   * configuration.
+   */
+  priorityRange: IntRange
+  /**
+   * Optional list of physical Audio output tokens. This element is used when only certain audio outputs
+   * can be configured for this token.
+   */
+  audioOutputTokens?: string[]
+  /**
+   * An optional parameter specifies the list of supported cryptographic algorithms when SRTP support is
+   * signaled as 'true' in the GetServiceCapabilitiesResponse. Refer to tt:SrtpSecurityAlgorithms for the
+   * acceptable values.
+   */
+  secureStreamingProtocolAlgorithms?: string[]
+  $any?: Record<string, unknown>
+}
+
 export type MulticastConfiguration = {
   /** The multicast address (if this address is set to 0 no multicast streaming is enabled) */
   address: IPAddress
@@ -523,9 +1217,277 @@ export type MulticastConfiguration = {
   $any?: Record<string, unknown>
 }
 
+export type MulticastReceiverConfiguration = {
+  /** The multicast address (if this address is set to 0 no multicast streaming is enabled) */
+  address: IPAddress
+  /**
+   * The RTP multicast port used for receiving. The RTP port number shall be even. If RTCP is supported,
+   * the corresponding RTCP stream shall be mapped to the next higher (odd) port number as defined in RFC
+   * 3550.
+   */
+  port: number
+  /**
+   * In case of IPv6 the TTL value is assumed as the hop limit. Note that for IPV6 and administratively
+   * scoped IPv4 multicast the primary use for hop limit / TTL is to prevent packets from (endlessly)
+   * circulating and not limiting scope. In these cases the address contains the scope.
+   */
+  TTL: number
+  /**
+   * Unique identifier of the network interface on the device. If not specified, all available interfaces
+   * will be used for listening.
+   */
+  interfaceToken?: string[]
+  /**
+   * When a source-specific multicast address is configured, the device will process multicast data only
+   * from the specified source, in accordance with SSM principles defined in RFC 4607.
+   */
+  sourceSpecificMulticast?: IPAddress
+  $any?: Record<string, unknown>
+}
+
+/**
+ * The value range of "Transparent" could be defined by vendors only and should follow this rule: the
+ * minimum value means non-transparent and the maximum value means fully transparent.
+ */
+export type OSDColor = {
+  color: Color
+  transparent?: number
+}
+
+/** Describe the option of the color and its transparency. */
+export type OSDColorOptions = {
+  /** Optional list of supported colors. */
+  color?: ColorOptions
+  /** Range of the transparent level. Larger means more transparent. */
+  transparent?: IntRange
+  extension?: OSDColorOptionsExtension
+}
+
+export type OSDColorOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDConfiguration = {
+  /** Unique identifier referencing the physical entity. */
+  token: string
+  /** Reference to the video source configuration. */
+  videoSourceConfigurationToken: OSDReference
+  /** Type of OSD. */
+  type: OSDType
+  /** Position configuration of OSD. */
+  position: OSDPosConfiguration
+  /** Text configuration of OSD. It shall be present when the value of Type field is Text. */
+  textString?: OSDTextConfiguration
+  /** Image configuration of OSD. It shall be present when the value of Type field is Image */
+  image?: OSDImgConfiguration
+  extension?: OSDConfigurationExtension
+}
+
+export type OSDConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDConfigurationOptions = {
+  /**
+   * The maximum number of OSD configurations supported for the specified video source configuration. If
+   * the configuration does not support OSDs, this value shall be zero and the Type and PositionOption
+   * elements are ignored. If a device limits the number of instances by OSDType, it shall indicate the
+   * supported number for each type via the related attribute.
+   */
+  maximumNumberOfOSDs: MaximumNumberOfOSDs
+  /**
+   * List supported type of OSD configuration. When a device indicates the supported number for each
+   * types in MaximumNumberOfOSDs, related type shall be presented. A device shall return Option element
+   * relating to listed type.
+   */
+  type: OSDType[]
+  /**
+   * List available OSD position type. Following are the pre-defined:UpperLeft UpperRight LowerLeft
+   * LowerRight Custom
+   */
+  positionOption: string[]
+  /**
+   * Option of the OSD text configuration. This element shall be returned if the device is signaling the
+   * support for Text.
+   */
+  textOption?: OSDTextOptions
+  /**
+   * Option of the OSD image configuration. This element shall be returned if the device is signaling the
+   * support for Image.
+   */
+  imageOption?: OSDImgOptions
+  extension?: OSDConfigurationOptionsExtension
+}
+
+export type OSDConfigurationOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDImgConfiguration = {
+  /** The URI of the image which to be displayed. */
+  imgPath: string
+  extension?: OSDImgConfigurationExtension
+}
+
+export type OSDImgConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDImgOptions = {
+  /** List of available image URIs. */
+  imagePath: string[]
+  extension?: OSDImgOptionsExtension
+  /** List of supported image MIME types, such as "image/png". */
+  formatsSupported?: string[]
+  /** The maximum size (in bytes) of the image that can be uploaded. */
+  maxSize?: number
+  /** The maximum width (in pixels) of the image that can be uploaded. */
+  maxWidth?: number
+  /** The maximum height (in pixels) of the image that can be uploaded. */
+  maxHeight?: number
+}
+
+export type OSDImgOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDPosConfiguration = {
+  /**
+   * For OSD position type, following are the pre-defined: UpperLeft UpperRight LowerLeft LowerRight
+   * Custom
+   */
+  type: string
+  pos?: Vector
+  extension?: OSDPosConfigurationExtension
+}
+
+export type OSDPosConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDReference = {
+  value: string
+}
+
+export type OSDTextConfiguration = {
+  /**
+   * The following OSD Text Type are defined: Plain - The Plain type means the OSD is shown as a text
+   * string which defined in the "PlainText" item. Date - The Date type means the OSD is shown as a date,
+   * format of which should be present in the "DateFormat" item. Time - The Time type means the OSD is
+   * shown as a time, format of which should be present in the "TimeFormat" item. DateAndTime - The
+   * DateAndTime type means the OSD is shown as date and time, format of which should be present in the
+   * "DateFormat" and the "TimeFormat" item.
+   */
+  type: string
+  /**
+   * List of supported OSD date formats. This element shall be present when the value of Type field has
+   * Date or DateAndTime. The following DateFormat are defined: M/d/yyyy - e.g. 3/6/2013 MM/dd/yyyy -
+   * e.g. 03/06/2013 dd/MM/yyyy - e.g. 06/03/2013 yyyy/MM/dd - e.g. 2013/03/06 yyyy-MM-dd - e.g.
+   * 2013-06-03 dddd, MMMM dd, yyyy - e.g. Wednesday, March 06, 2013 MMMM dd, yyyy - e.g. March 06, 2013
+   * dd MMMM, yyyy - e.g. 06 March, 2013
+   */
+  dateFormat?: string
+  /**
+   * List of supported OSD time formats. This element shall be present when the value of Type field has
+   * Time or DateAndTime. The following TimeFormat are defined: h:mm:ss tt - e.g. 2:14:21 PM hh:mm:ss tt
+   * - e.g. 02:14:21 PM H:mm:ss - e.g. 14:14:21 HH:mm:ss - e.g. 14:14:21
+   */
+  timeFormat?: string
+  /** Font size of the text in pt. */
+  fontSize?: number
+  /** Font color of the text. */
+  fontColor?: OSDColor
+  /** Background color of the text. */
+  backgroundColor?: OSDColor
+  /** The content of text to be displayed. */
+  plainText?: string
+  extension?: OSDTextConfigurationExtension
+  /**
+   * This flag is applicable for Type Plain and defaults to true. When set to false the PlainText content
+   * will not be persistent across device reboots.
+   */
+  isPersistentText?: boolean
+}
+
+export type OSDTextConfigurationExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type OSDTextOptions = {
+  /**
+   * List of supported OSD text type. When a device indicates the supported number relating to Text type
+   * in MaximumNumberOfOSDs, the type shall be presented.
+   */
+  type: string[]
+  /** Range of the font size value. */
+  fontSizeRange?: IntRange
+  /** List of supported date format. */
+  dateFormat?: string[]
+  /** List of supported time format. */
+  timeFormat?: string[]
+  /** List of supported font color. */
+  fontColor?: OSDColorOptions
+  /** List of supported background color. */
+  backgroundColor?: OSDColorOptions
+  extension?: OSDTextOptionsExtension
+}
+
+export type OSDTextOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type PanTiltLimits = {
   /** A range of pan tilt limits. */
   range: Space2DDescription
+}
+
+export type PlayAudioClipRequest = {
+  /** Token of the audio clip to be played or stopped. */
+  token: string
+  /**
+   * Optional token list of physical audio outputs. If the AudioOutputToken is not provided in the API
+   * request, the AudioOutputToken from the audio clip configuration will be used.
+   */
+  audioOutputToken?: string[]
+  /** If it is true, play the audio clip; if it is false, stop the ongoing audio clip. */
+  play: boolean
+  /**
+   * Optional RepeatCycles to be used for the current play operation. If RepeatCycles is not provided in
+   * the API request, the RepeatCycles specified in the audio clip configuration will be used for the
+   * current play operation.
+   */
+  repeatCycles?: number
+}
+
+export type PlayAudioClipResponse = Record<string, never>
+
+export type PlayingAudioClips = {
+  /** Unique token associated with the audio clip. */
+  token: string
+  /** Name of the audio clip. */
+  name: string
+  /** Token list of physical audio outputs. */
+  audioOutputToken: string[]
+  /** Output level to control the volume of the audio clip when it is played. */
+  audioOutputLevel: number
+  /** Number of repeat cycles left while playing the audio clip. */
+  repeatsLeft: number
+  $any?: Record<string, unknown>
+}
+
+export type Polygon = {
+  point: Vector[]
+}
+
+export type ProfileCapabilities = {
+  /** Maximum number of profiles supported. */
+  maximumNumberOfProfiles?: number
+  /**
+   * The configurations supported by the device as defined by tr2:ConfigurationEnumeration. The
+   * enumeration value "All" shall not be included in this list.
+   */
+  configurationsSupported?: string[]
+  $any?: Record<string, unknown>
 }
 
 export type PTControlDirection = {
@@ -725,6 +1687,25 @@ export type RotateExtension = {
   $any?: Record<string, unknown>
 }
 
+export type RotateOptions = {
+  /** Supported options of Rotate mode parameter. */
+  mode: RotateMode[]
+  /** List of supported degree value for rotation. */
+  degreeList?: IntItems
+  extension?: RotateOptionsExtension
+  /**
+   * Signals if a device requires a reboot after changing the rotation or mirror. If a device can handle
+   * rotation changes or mirror changes without rebooting this value shall be set to false.
+   */
+  reboot?: boolean
+  /** Signals if video source mirroring is supported. */
+  mirror?: boolean
+}
+
+export type RotateOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type RuleEngineConfiguration = {
   rule?: Config[]
   extension?: RuleEngineConfigurationExtension
@@ -774,17 +1755,106 @@ export type SensorDataFilterOptions = {
   $any?: Record<string, unknown>
 }
 
+export type SetAudioClipRequest = {
+  /** Unique token associated with the audio clip. */
+  token: string
+  /** Audio clip configuration to modify. */
+  configuration: AudioClip
+}
+
+export type SetAudioClipResponse = Record<string, never>
+
+export type SetAudioDecoderConfigurationRequest = {
+  /** Contains the modified audio decoder configuration. The configuration shall exist in the device. */
+  configuration: AudioDecoderConfiguration
+}
+
+export type SetAudioEncoderConfigurationRequest = {
+  /** Contains the modified audio encoder configuration. The configuration shall exist in the device. */
+  configuration: AudioEncoder2Configuration
+}
+
+export type SetAudioOutputConfigurationRequest = {
+  /** Contains the modified audio output configuration. The configuration shall exist in the device. */
+  configuration: AudioOutputConfiguration
+}
+
+export type SetAudioSourceConfigurationRequest = {
+  /** Contains the modified audio source configuration. The configuration shall exist in the device. */
+  configuration: AudioSourceConfiguration
+}
+
 export type SetConfigurationResponse = Record<string, never>
+
+export type SetEQPresetConfigurationRequest = {
+  /** Contains the modified EQ Preset configuration. */
+  configuration: EQPreset
+}
+
+export type SetMaskRequest = {
+  /** Mask to be updated. */
+  mask: Mask
+}
 
 export type SetMetadataConfigurationRequest = {
   /** Contains the modified metadata configuration. The configuration shall exist in the device. */
   configuration: MetadataConfiguration
 }
 
+export type SetMulticastAudioDecoderConfigurationRequest = {
+  /**
+   * Contains the modified multicast audio decoder configuration. The configuration shall exist in the
+   * device.
+   */
+  configuration: MulticastAudioDecoderConfiguration
+}
+
+export type SetOSDRequest = {
+  /** Contains the modified OSD configuration. */
+  OSD: OSDConfiguration
+}
+
+export type SetSynchronizationPointRequest = {
+  /** Contains a Profile reference for which a Synchronization Point is requested. */
+  profileToken: string
+}
+
+export type SetSynchronizationPointResponse = Record<string, never>
+
 export type SetVideoEncoderConfigurationRequest = {
   /** Contains the modified video encoder configuration. The configuration shall exist in the device. */
   configuration: VideoEncoder2Configuration
 }
+
+export type SetVideoSourceConfigurationRequest = {
+  /** Contains the modified video source configuration. The configuration shall exist in the device. */
+  configuration: VideoSourceConfiguration
+}
+
+export type SetVideoSourceModeRequest = {
+  /** Contains a video source reference for which a video source mode is requested. */
+  videoSourceToken: string
+  /** Indicate video source mode. */
+  videoSourceModeToken: string
+}
+
+export type SetVideoSourceModeResponse = {
+  /**
+   * The response contains information about rebooting after returning response. When Reboot is set true,
+   * a device will reboot automatically after setting mode.
+   */
+  reboot: boolean
+}
+
+export type SetWebRTCConfigurationsRequest = {
+  /**
+   * This message contains the WebRTC configurations to use for the device. If empty, existing WebRTC
+   * configurations are deleted.
+   */
+  webRTCConfiguration?: WebRTCConfiguration[]
+}
+
+export type SetWebRTCConfigurationsResponse = Record<string, never>
 
 export type Space1DDescription = {
   /** A URI of coordinate systems. */
@@ -800,6 +1870,55 @@ export type Space2DDescription = {
   xRange: FloatRange
   /** A range of y-axis. */
   yRange: FloatRange
+}
+
+export type SRTPPreShared = {
+  /**
+   * SRTP Pre-Shared Key (PSK) represented as a hexadecimal string. This includes both the SRTP master
+   * key, followed by the master salt. The sizes of the key and salt depend on the specified
+   * SecureStreamingProtocolAlgorithm. The SRTPPSK shall be returned as an empty string on a get method.
+   * In SetMulticastAudioDecoderConfiguration requests, if SRTPPreSharedParameters is present but SRTPPSK
+   * is empty, the device shall retain the previously configured pre-shared key. To update the PSK, a
+   * valid non-empty hexadecimal value must be provided.
+   */
+  SRTPPSK: string
+  /**
+   * The RTP header extension ID (ExtMapID) used to identify the ROC extension, as defined in RFC 8285.
+   * Valid values are 1 to 14 for one-byte header extensions.
+   */
+  rocExtMapID: number
+  /**
+   * Specifies the cryptographic algorithm when using SRTP, selecting from predefined values provided in
+   * the GetMulticastAudioDecoderConfigurationOptions response.
+   */
+  secureStreamingProtocolAlgorithm?: string
+  $any?: Record<string, unknown>
+}
+
+export type StartStopMulticastStreaming = {
+  /** Contains the token of the Profile that is used to define the multicast stream. */
+  profileToken: string
+}
+
+export type StreamingCapabilities = {
+  /** Indicates support for live media streaming via RTSP. */
+  rtspStreaming?: boolean
+  /** Indicates support for RTP multicast. */
+  rtpMulticast?: boolean
+  /** Indicates support for RTP/RTSP/TCP. */
+  RTP_RTSP_TCP?: boolean
+  /** Indicates support for non aggregate RTSP control. */
+  nonAggregateControl?: boolean
+  /**
+   * If streaming over WebSocket is supported, this shall return the RTSP WebSocket URI as described in
+   * Streaming Specification Section 5.1.1.5.
+   */
+  rtspWebSocketUri?: string
+  /** Indicates support for non-RTSP controlled multicast streaming. */
+  autoStartMulticast?: boolean
+  /** Indicates support for live media streaming via RTSPS and SRTP. */
+  secureRTSPStreaming?: boolean
+  $any?: Record<string, unknown>
 }
 
 export type StreamSetup = {
@@ -827,6 +1946,45 @@ export type Transport = {
 
 export type TransportTunnel = {
   $any?: Record<string, unknown>
+}
+
+export type TTSAudio = {
+  /** Content of the audio clip. */
+  content: string
+  /**
+   * The language that is supported by the device and used for TTS audio clip playback. Uses ISO 639-1
+   * alpha-2 language codes for definition, such as"en" for English. See Codes for the Representation of
+   * Names of Languages. Optionally combined with ISO 3166-1 alpha-2 country codes using the
+   * "language-country" format to specify regional variations, such as"en-US" for American English. For
+   * country codes, see ISO 3166-1 Country Codes.
+   */
+  language: string
+  /**
+   * The voice type that is supported by the device and used for TTS audio clip playback. See tr2:
+   * TTSVoiceType.
+   */
+  voiceType: string
+  $any?: Record<string, unknown>
+}
+
+export type TTSCapabilities = {
+  /** Indicates the maximum length of content of a text for device to convert to an audio clip. */
+  maxContentLength?: number
+  /**
+   * List of supported languages. Uses ISO 639-1 alpha-2 language codes, such as"en" for English. See
+   * Codes for the Representation of Names of Languages. Optionally combined with ISO 3166-1 alpha-2
+   * country codes using the "language-country" format to specify regional variations, such as"en-US" for
+   * American English. For country codes, see ISO 3166-1 Country Codes.
+   */
+  ttsLanguage?: string[]
+  /** List of supported voice types. See tr2: TTSVoiceType. */
+  ttsVoiceType?: string[]
+  $any?: Record<string, unknown>
+}
+
+export type Vector = {
+  x: number
+  y: number
 }
 
 export type Vector1D = {
@@ -985,6 +2143,19 @@ export type VideoRateControl2 = {
   $any?: Record<string, unknown>
 }
 
+export type VideoResolution = {
+  /**
+   * Number of the columns of the Video image. If there is a 90-degree rotation, this represents the
+   * number of lines of the Video image.
+   */
+  width: number
+  /**
+   * Number of the lines of the Video image. If there is a 90-degree rotation, this represents the number
+   * of columns of the Video image.
+   */
+  height: number
+}
+
 export type VideoResolution2 = {
   /**
    * Number of the columns of the Video image. If there is a 90-degree rotation, this represents the
@@ -1049,6 +2220,85 @@ export type VideoSourceConfigurationExtension2 = {
   $any?: Record<string, unknown>
 }
 
+export type VideoSourceConfigurationOptions = {
+  /**
+   * Supported range for the capturing area. Device that does not support cropped streaming shall express
+   * BoundsRange option as mentioned below BoundsRange->XRange and BoundsRange->YRange with same Min/Max
+   * values HeightRange and WidthRange Min/Max values same as VideoSource Height and Width Limits.
+   */
+  boundsRange: IntRectangleRange
+  /** List of physical inputs. */
+  videoSourceTokensAvailable: string[]
+  extension?: VideoSourceConfigurationOptionsExtension
+  /** Maximum number of profiles. */
+  maximumNumberOfProfiles?: number
+}
+
+export type VideoSourceConfigurationOptionsExtension = {
+  /** Options of parameters for Rotation feature. */
+  rotate?: RotateOptions
+  extension?: VideoSourceConfigurationOptionsExtension2
+  $any?: Record<string, unknown>
+}
+
+export type VideoSourceConfigurationOptionsExtension2 = {
+  /** Scene orientation modes supported by the device for this configuration. */
+  sceneOrientationMode?: SceneOrientationMode[]
+  $any?: Record<string, unknown>
+}
+
+export type VideoSourceMode = {
+  /** Max frame rate in frames per second for this video source mode. */
+  maxFramerate: number
+  /** Max horizontal and vertical resolution for this video source mode. */
+  maxResolution: VideoResolution
+  /**
+   * List of one or more encodings supported for this video source. For name definitions see
+   * tt:VideoEncodingMimeNames, and see IANA Media Types.
+   */
+  encodings: string[]
+  /**
+   * After setting the mode if a device starts to reboot this value is true. If a device change the mode
+   * without rebooting this value is false. If true, configured parameters may not be guaranteed by the
+   * device after rebooting.
+   */
+  reboot: boolean
+  /** Informative description of this video source mode. This field should be described in English. */
+  description?: string
+  /** Indicate token for video source mode. */
+  token: string
+  /**
+   * Indication of whether this mode is active. If active this value is true. In case of non-indication,
+   * it means as false. The value of true shall be had by only one video source mode.
+   */
+  enabled?: boolean
+  $any?: Record<string, unknown>
+}
+
+export type WebRTCConfiguration = {
+  /** The signaling server URI. */
+  signalingServer: string
+  /** The CertPathValidationPolicyID for validating the signaling server certificate. */
+  certPathValidationPolicyID?: string
+  /**
+   * The Authorization Server to use for getting access tokens. This refers to an entity in the list of
+   * configured Authorization Servers in the [ONVIF Security Service Specification].
+   */
+  authorizationServer: string
+  /**
+   * The default media profile to use for streaming if no specific profile is specified when initializing
+   * a session.
+   */
+  defaultProfile: string
+  /** Enables/disables the configuration. */
+  enabled: boolean
+  /** Indicates if the device is connected to the server. This parameter is read-only. */
+  connected?: boolean
+  /** Optional user readable error information (readonly). */
+  error?: string
+  $any?: Record<string, unknown>
+}
+
 export type ZoomLimits = {
   /** A range of zoom limit */
   range: Space1DDescription
@@ -1059,6 +2309,19 @@ const tt = 'http://www.onvif.org/ver10/schema'
 const wsnt = 'http://docs.oasis-open.org/wsn/b-2'
 
 export const schema: Schema = {
+  AddAudioClipRequest: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true },
+      { name: 'Configuration', property: 'configuration', type: 'AudioClip', namespace: tr2 }
+    ]
+  },
+  AddAudioClipResponse: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2 },
+      { name: 'UploadUri', property: 'uploadUri', type: 'string', namespace: tr2 },
+      { name: 'ExpiryTime', property: 'expiryTime', type: 'dateTime', namespace: tr2 }
+    ]
+  },
   AddConfigurationRequest: {
     fields: [
       { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 },
@@ -1074,6 +2337,14 @@ export const schema: Schema = {
     ]
   },
   AddConfigurationResponse: { fields: [] },
+  AddTTSAudioClipRequest: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true },
+      { name: 'Configuration', property: 'configuration', type: 'AudioClip', namespace: tr2 },
+      { name: 'TTSConfiguration', property: 'ttsConfiguration', type: 'TTSAudio', namespace: tr2 }
+    ]
+  },
+  AddTTSAudioClipResponse: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
   AnalyticsEngineConfiguration: {
     fields: [
       {
@@ -1094,6 +2365,50 @@ export const schema: Schema = {
     ]
   },
   AnalyticsEngineConfigurationExtension: { fields: [], any: true },
+  AudioClip: {
+    fields: [
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tr2 },
+      { name: 'Name', property: 'name', type: 'string', namespace: tr2 },
+      {
+        name: 'AudioOutputToken',
+        property: 'audioOutputToken',
+        type: 'string',
+        namespace: tr2,
+        optional: true,
+        array: true
+      },
+      { name: 'Type', property: 'type', type: 'string', namespace: tr2 },
+      { name: 'RepeatCycles', property: 'repeatCycles', type: 'integer', namespace: tr2 },
+      { name: 'RepeatInterval', property: 'repeatInterval', type: 'integer', namespace: tr2, optional: true },
+      { name: 'AudioOutputLevel', property: 'audioOutputLevel', type: 'integer', namespace: tr2, optional: true },
+      { name: 'ScheduleToken', property: 'scheduleToken', type: 'string', namespace: tr2, optional: true }
+    ],
+    any: true
+  },
+  AudioClipCapabilities: {
+    fields: [
+      { name: 'TTSCapabilities', property: 'ttsCapabilities', type: 'TTSCapabilities', namespace: tr2, optional: true },
+      { name: 'MaxAudioClipLimit', property: 'maxAudioClipLimit', type: 'integer', attribute: true, optional: true },
+      { name: 'MaxAudioClipSize', property: 'maxAudioClipSize', type: 'decimal', attribute: true, optional: true },
+      {
+        name: 'SupportedAudioClipFormat',
+        property: 'supportedAudioClipFormat',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  AudioDecoder2Options: {
+    fields: [
+      { name: 'Encoding', property: 'encoding', type: 'string', namespace: tt },
+      { name: 'BitrateList', property: 'bitrateList', type: 'IntItems', namespace: tt },
+      { name: 'SampleRateList', property: 'sampleRateList', type: 'IntItems', namespace: tt },
+      { name: 'RTPPayloadType', property: 'rtpPayloadType', type: 'integer', namespace: tt, optional: true }
+    ],
+    any: true
+  },
   AudioDecoderConfiguration: {
     fields: [
       { name: 'Name', property: 'name', type: 'string', namespace: tt },
@@ -1121,6 +2436,21 @@ export const schema: Schema = {
     ],
     any: true
   },
+  AudioEncoder2ConfigurationOptions: {
+    fields: [
+      { name: 'Encoding', property: 'encoding', type: 'string', namespace: tt },
+      { name: 'BitrateList', property: 'bitrateList', type: 'IntItems', namespace: tt },
+      { name: 'SampleRateList', property: 'sampleRateList', type: 'IntItems', namespace: tt },
+      {
+        name: 'SecureStreamingProtocolAlgorithms',
+        property: 'secureStreamingProtocolAlgorithms',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
   AudioOutputConfiguration: {
     fields: [
       { name: 'Name', property: 'name', type: 'string', namespace: tt },
@@ -1132,6 +2462,29 @@ export const schema: Schema = {
     ],
     any: true
   },
+  AudioOutputConfigurationOptions: {
+    fields: [
+      { name: 'OutputTokensAvailable', property: 'outputTokensAvailable', type: 'string', namespace: tt, array: true },
+      {
+        name: 'SendPrimacyOptions',
+        property: 'sendPrimacyOptions',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'OutputLevelRange', property: 'outputLevelRange', type: 'IntRange', namespace: tt },
+      {
+        name: 'EQPresetScheduleSupport',
+        property: 'eqPresetScheduleSupport',
+        type: 'boolean',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'EQPresets', property: 'eqPresets', type: 'EQPreset', namespace: tt, optional: true, array: true }
+    ],
+    any: true
+  },
   AudioSourceConfiguration: {
     fields: [
       { name: 'Name', property: 'name', type: 'string', namespace: tt },
@@ -1140,6 +2493,79 @@ export const schema: Schema = {
       { name: 'SourceToken', property: 'sourceToken', type: 'string', namespace: tt }
     ],
     any: true
+  },
+  AudioSourceConfigurationOptions: {
+    fields: [
+      { name: 'InputTokensAvailable', property: 'inputTokensAvailable', type: 'string', namespace: tt, array: true },
+      { name: 'Extension', property: 'extension', type: 'AudioSourceOptionsExtension', namespace: tt, optional: true }
+    ]
+  },
+  AudioSourceOptionsExtension: { fields: [], any: true },
+  Capabilities2: {
+    fields: [
+      { name: 'ProfileCapabilities', property: 'profileCapabilities', type: 'ProfileCapabilities', namespace: tr2 },
+      {
+        name: 'StreamingCapabilities',
+        property: 'streamingCapabilities',
+        type: 'StreamingCapabilities',
+        namespace: tr2
+      },
+      {
+        name: 'AudioClipCapabilities',
+        property: 'audioClipCapabilities',
+        type: 'AudioClipCapabilities',
+        namespace: tr2,
+        optional: true
+      },
+      {
+        name: 'MulticastAudioDecoderCapabilities',
+        property: 'multicastAudioDecoderCapabilities',
+        type: 'MulticastAudioDecoderCapabilities',
+        namespace: tr2,
+        optional: true
+      },
+      { name: 'SnapshotUri', property: 'snapshotUri', type: 'boolean', attribute: true, optional: true },
+      { name: 'Rotation', property: 'rotation', type: 'boolean', attribute: true, optional: true },
+      { name: 'VideoSourceMode', property: 'videoSourceMode', type: 'boolean', attribute: true, optional: true },
+      { name: 'OSD', type: 'boolean', attribute: true, optional: true },
+      { name: 'TemporaryOSDText', property: 'temporaryOSDText', type: 'boolean', attribute: true, optional: true },
+      { name: 'Mask', property: 'mask', type: 'boolean', attribute: true, optional: true },
+      { name: 'SourceMask', property: 'sourceMask', type: 'boolean', attribute: true, optional: true },
+      { name: 'WebRTC', property: 'webRTC', type: 'integer', attribute: true, optional: true },
+      { name: 'WebRTC_codecs', property: 'webRTC_codecs', type: 'string[]', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  Color: {
+    fields: [
+      { name: 'X', type: 'decimal', attribute: true },
+      { name: 'Y', type: 'decimal', attribute: true },
+      { name: 'Z', type: 'decimal', attribute: true },
+      { name: 'Colorspace', property: 'colorspace', type: 'string', attribute: true, optional: true },
+      { name: 'Likelihood', property: 'likelihood', type: 'decimal', attribute: true, optional: true }
+    ]
+  },
+  ColorOptions: {
+    fields: [
+      { name: 'ColorList', property: 'colorList', type: 'Color', namespace: tt, optional: true, array: true },
+      {
+        name: 'ColorspaceRange',
+        property: 'colorspaceRange',
+        type: 'ColorspaceRange',
+        namespace: tt,
+        optional: true,
+        array: true
+      }
+    ],
+    choice: ['colorList', 'colorspaceRange']
+  },
+  ColorspaceRange: {
+    fields: [
+      { name: 'X', type: 'FloatRange', namespace: tt },
+      { name: 'Y', type: 'FloatRange', namespace: tt },
+      { name: 'Z', type: 'FloatRange', namespace: tt },
+      { name: 'Colorspace', property: 'colorspace', type: 'string', namespace: tt }
+    ]
   },
   Config: {
     fields: [
@@ -1205,7 +2631,62 @@ export const schema: Schema = {
     ],
     any: true
   },
+  CreateMaskRequest: { fields: [{ name: 'Mask', property: 'mask', type: 'Mask', namespace: tr2 }] },
+  CreateMaskResponse: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
+  CreateOSDRequest: { fields: [{ name: 'OSD', type: 'OSDConfiguration', namespace: tr2 }] },
+  CreateOSDResponse: { fields: [{ name: 'OSDToken', property: 'osdToken', type: 'string', namespace: tr2 }] },
+  CreateProfileRequest: {
+    fields: [
+      { name: 'Name', property: 'name', type: 'string', namespace: tr2 },
+      {
+        name: 'Configuration',
+        property: 'configuration',
+        type: 'ConfigurationRef',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  CreateProfileResponse: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
+  DeleteAudioClipRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
+  DeleteAudioClipResponse: { fields: [] },
+  DeleteMaskRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
+  DeleteOSDRequest: { fields: [{ name: 'OSDToken', property: 'osdToken', type: 'string', namespace: tr2 }] },
+  DeleteProfileRequest: { fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2 }] },
+  DeleteProfileResponse: { fields: [] },
   EFlip: { fields: [{ name: 'Mode', property: 'mode', type: 'string', namespace: tt }], any: true },
+  EncoderInstance: {
+    fields: [
+      { name: 'Encoding', property: 'encoding', type: 'string', namespace: tr2 },
+      { name: 'Number', property: 'number', type: 'integer', namespace: tr2 }
+    ]
+  },
+  EncoderInstanceInfo: {
+    fields: [
+      { name: 'Codec', property: 'codec', type: 'EncoderInstance', namespace: tr2, optional: true, array: true },
+      { name: 'Total', property: 'total', type: 'integer', namespace: tr2 }
+    ],
+    any: true
+  },
+  EQPreset: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tt },
+      { name: 'Name', property: 'name', type: 'string', namespace: tt },
+      { name: 'isDefault', type: 'boolean', namespace: tt },
+      { name: 'ScheduleToken', property: 'scheduleToken', type: 'string', namespace: tt, optional: true },
+      { name: 'isFrequencyDecibelEditable', type: 'boolean', namespace: tt },
+      {
+        name: 'FrequencyDecibelPair',
+        property: 'frequencyDecibelPair',
+        type: 'FrequencyDecibelPair',
+        namespace: tt,
+        optional: true,
+        array: true
+      }
+    ],
+    any: true
+  },
   EventSubscription: {
     fields: [
       { name: 'Filter', property: 'filter', type: 'FilterType', namespace: tt, optional: true },
@@ -1247,6 +2728,13 @@ export const schema: Schema = {
       { name: 'Max', property: 'max', type: 'decimal', namespace: tt }
     ]
   },
+  FrequencyDecibelPair: {
+    fields: [
+      { name: 'CenterFrequency', property: 'centerFrequency', type: 'integer', namespace: tt },
+      { name: 'Decibel', property: 'decibel', type: 'decimal', namespace: tt }
+    ],
+    any: true
+  },
   GetAnalyticsConfigurationsResponse: {
     fields: [
       {
@@ -1259,11 +2747,110 @@ export const schema: Schema = {
       }
     ]
   },
+  GetAudioClipsRequest: {
+    fields: [{ name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true }]
+  },
+  GetAudioClipsResponse: {
+    fields: [
+      {
+        name: 'AudioClipItem',
+        property: 'audioClipItem',
+        type: 'GetAudioClipsResponseItem',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetAudioClipsResponseItem: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2 },
+      { name: 'Configuration', property: 'configuration', type: 'AudioClip', namespace: tr2 }
+    ],
+    any: true
+  },
+  GetAudioDecoderConfigurationOptionsResponse: {
+    fields: [
+      { name: 'Options', property: 'options', type: 'AudioEncoder2ConfigurationOptions', namespace: tr2, array: true }
+    ]
+  },
+  GetAudioDecoderConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'AudioDecoderConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetAudioEncoderConfigurationOptionsResponse: {
+    fields: [
+      { name: 'Options', property: 'options', type: 'AudioEncoder2ConfigurationOptions', namespace: tr2, array: true }
+    ]
+  },
+  GetAudioEncoderConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'AudioEncoder2Configuration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetAudioOutputConfigurationOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'AudioOutputConfigurationOptions', namespace: tr2 }]
+  },
+  GetAudioOutputConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'AudioOutputConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetAudioSourceConfigurationOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'AudioSourceConfigurationOptions', namespace: tr2 }]
+  },
+  GetAudioSourceConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'AudioSourceConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
   GetConfiguration: {
     fields: [
       { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true },
       { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2, optional: true }
     ]
+  },
+  GetMaskOptionsRequest: {
+    fields: [{ name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2 }]
+  },
+  GetMaskOptionsResponse: { fields: [{ name: 'Options', property: 'options', type: 'MaskOptions', namespace: tr2 }] },
+  GetMasksRequest: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true },
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
+  GetMasksResponse: {
+    fields: [{ name: 'Masks', property: 'masks', type: 'Mask', namespace: tr2, optional: true, array: true }]
   },
   GetMetadataConfigurationOptionsResponse: {
     fields: [{ name: 'Options', property: 'options', type: 'MetadataConfigurationOptions', namespace: tr2 }]
@@ -1280,6 +2867,67 @@ export const schema: Schema = {
       }
     ]
   },
+  GetMulticastAudioDecoderConfigurationOptionsRequest: {
+    fields: [
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
+  GetMulticastAudioDecoderConfigurationOptionsResponse: {
+    fields: [
+      {
+        name: 'Options',
+        property: 'options',
+        type: 'MulticastAudioDecoderConfigurationOptions',
+        namespace: tr2,
+        array: true
+      }
+    ]
+  },
+  GetMulticastAudioDecoderConfigurationsRequest: {
+    fields: [
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
+  GetMulticastAudioDecoderConfigurationsResponse: {
+    fields: [
+      {
+        name: 'Configurations',
+        property: 'configurations',
+        type: 'MulticastAudioDecoderConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetOSDOptionsRequest: {
+    fields: [{ name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2 }]
+  },
+  GetOSDOptionsResponse: {
+    fields: [{ name: 'OSDOptions', property: 'osdOptions', type: 'OSDConfigurationOptions', namespace: tr2 }]
+  },
+  GetOSDsRequest: {
+    fields: [
+      { name: 'OSDToken', property: 'osdToken', type: 'string', namespace: tr2, optional: true },
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2, optional: true }
+    ]
+  },
+  GetOSDsResponse: {
+    fields: [{ name: 'OSDs', property: 'osds', type: 'OSDConfiguration', namespace: tr2, optional: true, array: true }]
+  },
+  GetPlayingAudioClipsRequest: { fields: [] },
+  GetPlayingAudioClipsResponse: {
+    fields: [
+      {
+        name: 'PlayingAudioClips',
+        property: 'playingAudioClips',
+        type: 'PlayingAudioClips',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
   GetProfilesRequest: {
     fields: [
       { name: 'Token', property: 'token', type: 'string', namespace: tr2, optional: true },
@@ -1290,6 +2938,10 @@ export const schema: Schema = {
     fields: [
       { name: 'Profiles', property: 'profiles', type: 'MediaProfile', namespace: tr2, optional: true, array: true }
     ]
+  },
+  GetServiceCapabilitiesRequest: { fields: [] },
+  GetServiceCapabilitiesResponse: {
+    fields: [{ name: 'Capabilities', property: 'capabilities', type: 'Capabilities2', namespace: tr2 }]
   },
   GetSnapshotUriRequest: {
     fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 }]
@@ -1319,6 +2971,15 @@ export const schema: Schema = {
       }
     ]
   },
+  GetVideoEncoderInstancesRequest: {
+    fields: [{ name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2 }]
+  },
+  GetVideoEncoderInstancesResponse: {
+    fields: [{ name: 'Info', property: 'info', type: 'EncoderInstanceInfo', namespace: tr2 }]
+  },
+  GetVideoSourceConfigurationOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'VideoSourceConfigurationOptions', namespace: tr2 }]
+  },
   GetVideoSourceConfigurationsResponse: {
     fields: [
       {
@@ -1330,6 +2991,37 @@ export const schema: Schema = {
         array: true
       }
     ]
+  },
+  GetVideoSourceModesRequest: {
+    fields: [{ name: 'VideoSourceToken', property: 'videoSourceToken', type: 'string', namespace: tr2 }]
+  },
+  GetVideoSourceModesResponse: {
+    fields: [
+      {
+        name: 'VideoSourceModes',
+        property: 'videoSourceModes',
+        type: 'VideoSourceMode',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  GetWebRTCConfigurationsRequest: { fields: [] },
+  GetWebRTCConfigurationsResponse: {
+    fields: [
+      {
+        name: 'WebRTCConfiguration',
+        property: 'webRTCConfiguration',
+        type: 'WebRTCConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  IntItems: {
+    fields: [{ name: 'Items', property: 'items', type: 'integer', namespace: tt, optional: true, array: true }]
   },
   IntRange: {
     fields: [
@@ -1343,6 +3035,14 @@ export const schema: Schema = {
       { name: 'y', type: 'integer', attribute: true },
       { name: 'width', type: 'integer', attribute: true },
       { name: 'height', type: 'integer', attribute: true }
+    ]
+  },
+  IntRectangleRange: {
+    fields: [
+      { name: 'XRange', property: 'xRange', type: 'IntRange', namespace: tt },
+      { name: 'YRange', property: 'yRange', type: 'IntRange', namespace: tt },
+      { name: 'WidthRange', property: 'widthRange', type: 'IntRange', namespace: tt },
+      { name: 'HeightRange', property: 'heightRange', type: 'IntRange', namespace: tt }
     ]
   },
   IPAddress: {
@@ -1403,6 +3103,38 @@ export const schema: Schema = {
       { name: 'Transmittance', property: 'transmittance', type: 'decimal', namespace: tt, optional: true }
     ],
     any: true
+  },
+  Mask: {
+    fields: [
+      { name: 'ConfigurationToken', property: 'configurationToken', type: 'string', namespace: tr2 },
+      { name: 'Polygon', property: 'polygon', type: 'Polygon', namespace: tr2 },
+      { name: 'Type', property: 'type', type: 'string', namespace: tr2 },
+      { name: 'Color', property: 'color', type: 'Color', namespace: tr2, optional: true },
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tr2 },
+      { name: 'token', type: 'string', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  MaskOptions: {
+    fields: [
+      { name: 'MaxMasks', property: 'maxMasks', type: 'integer', namespace: tr2 },
+      { name: 'MaxPoints', property: 'maxPoints', type: 'integer', namespace: tr2 },
+      { name: 'Types', property: 'types', type: 'string', namespace: tr2, array: true },
+      { name: 'Color', property: 'color', type: 'ColorOptions', namespace: tr2 },
+      { name: 'RectangleOnly', property: 'rectangleOnly', type: 'boolean', attribute: true, optional: true },
+      { name: 'SingleColorOnly', property: 'singleColorOnly', type: 'boolean', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  MaximumNumberOfOSDs: {
+    fields: [
+      { name: 'Total', property: 'total', type: 'integer', attribute: true },
+      { name: 'Image', property: 'image', type: 'integer', attribute: true, optional: true },
+      { name: 'PlainText', property: 'plainText', type: 'integer', attribute: true, optional: true },
+      { name: 'Date', property: 'date', type: 'integer', attribute: true, optional: true },
+      { name: 'Time', property: 'time', type: 'integer', attribute: true, optional: true },
+      { name: 'DateAndTime', property: 'dateAndTime', type: 'integer', attribute: true, optional: true }
+    ]
   },
   MediaProfile: {
     fields: [
@@ -1511,6 +3243,72 @@ export const schema: Schema = {
     ]
   },
   MetadataConfigurationOptionsExtension2: { fields: [], any: true },
+  MulticastAudioDecoderCapabilities: {
+    fields: [
+      {
+        name: 'MulticastAudioDecoder',
+        property: 'multicastAudioDecoder',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'SRTP', type: 'boolean', attribute: true, optional: true },
+      { name: 'IPv6', property: 'ipv6', type: 'boolean', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  MulticastAudioDecoderConfiguration: {
+    fields: [
+      { name: 'Name', property: 'name', type: 'string', namespace: tt },
+      { name: 'UseCount', property: 'useCount', type: 'integer', namespace: tt },
+      { name: 'token', type: 'string', attribute: true },
+      { name: 'Enable', property: 'enable', type: 'boolean', namespace: tt },
+      {
+        name: 'AudioOutputToken',
+        property: 'audioOutputToken',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      { name: 'Encoding', property: 'encoding', type: 'string', namespace: tt },
+      { name: 'Bitrate', property: 'bitrate', type: 'integer', namespace: tt },
+      { name: 'SamplingRate', property: 'samplingRate', type: 'integer', namespace: tt },
+      { name: 'Multicast', property: 'multicast', type: 'MulticastReceiverConfiguration', namespace: tt },
+      { name: 'RTPPayloadType', property: 'rtpPayloadType', type: 'integer', namespace: tt },
+      { name: 'Priority', property: 'priority', type: 'integer', namespace: tt },
+      {
+        name: 'MediaFormatParameters',
+        property: 'mediaFormatParameters',
+        type: 'string',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'SRTPPreSharedParameters',
+        property: 'srtpPreSharedParameters',
+        type: 'SRTPPreShared',
+        namespace: tt,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  MulticastAudioDecoderConfigurationOptions: {
+    fields: [
+      { name: 'EncodingOptions', property: 'encodingOptions', type: 'AudioDecoder2Options', namespace: tt },
+      { name: 'PriorityRange', property: 'priorityRange', type: 'IntRange', namespace: tt },
+      { name: 'AudioOutputTokens', property: 'audioOutputTokens', type: 'string[]', namespace: tt, optional: true },
+      {
+        name: 'SecureStreamingProtocolAlgorithms',
+        property: 'secureStreamingProtocolAlgorithms',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
   MulticastConfiguration: {
     fields: [
       { name: 'Address', property: 'address', type: 'IPAddress', namespace: tt },
@@ -1520,7 +3318,183 @@ export const schema: Schema = {
     ],
     any: true
   },
+  MulticastReceiverConfiguration: {
+    fields: [
+      { name: 'Address', property: 'address', type: 'IPAddress', namespace: tt },
+      { name: 'Port', property: 'port', type: 'integer', namespace: tt },
+      { name: 'TTL', type: 'integer', namespace: tt },
+      {
+        name: 'InterfaceToken',
+        property: 'interfaceToken',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'SourceSpecificMulticast',
+        property: 'sourceSpecificMulticast',
+        type: 'IPAddress',
+        namespace: tt,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  OSDColor: {
+    fields: [
+      { name: 'Color', property: 'color', type: 'Color', namespace: tt },
+      { name: 'Transparent', property: 'transparent', type: 'integer', attribute: true, optional: true }
+    ]
+  },
+  OSDColorOptions: {
+    fields: [
+      { name: 'Color', property: 'color', type: 'ColorOptions', namespace: tt, optional: true },
+      { name: 'Transparent', property: 'transparent', type: 'IntRange', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'OSDColorOptionsExtension', namespace: tt, optional: true }
+    ]
+  },
+  OSDColorOptionsExtension: { fields: [], any: true },
+  OSDConfiguration: {
+    fields: [
+      { name: 'token', type: 'string', attribute: true },
+      {
+        name: 'VideoSourceConfigurationToken',
+        property: 'videoSourceConfigurationToken',
+        type: 'OSDReference',
+        namespace: tt
+      },
+      { name: 'Type', property: 'type', type: 'string', namespace: tt },
+      { name: 'Position', property: 'position', type: 'OSDPosConfiguration', namespace: tt },
+      { name: 'TextString', property: 'textString', type: 'OSDTextConfiguration', namespace: tt, optional: true },
+      { name: 'Image', property: 'image', type: 'OSDImgConfiguration', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'OSDConfigurationExtension', namespace: tt, optional: true }
+    ]
+  },
+  OSDConfigurationExtension: { fields: [], any: true },
+  OSDConfigurationOptions: {
+    fields: [
+      { name: 'MaximumNumberOfOSDs', property: 'maximumNumberOfOSDs', type: 'MaximumNumberOfOSDs', namespace: tt },
+      { name: 'Type', property: 'type', type: 'string', namespace: tt, array: true },
+      { name: 'PositionOption', property: 'positionOption', type: 'string', namespace: tt, array: true },
+      { name: 'TextOption', property: 'textOption', type: 'OSDTextOptions', namespace: tt, optional: true },
+      { name: 'ImageOption', property: 'imageOption', type: 'OSDImgOptions', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'OSDConfigurationOptionsExtension',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  OSDConfigurationOptionsExtension: { fields: [], any: true },
+  OSDImgConfiguration: {
+    fields: [
+      { name: 'ImgPath', property: 'imgPath', type: 'string', namespace: tt },
+      { name: 'Extension', property: 'extension', type: 'OSDImgConfigurationExtension', namespace: tt, optional: true }
+    ]
+  },
+  OSDImgConfigurationExtension: { fields: [], any: true },
+  OSDImgOptions: {
+    fields: [
+      { name: 'ImagePath', property: 'imagePath', type: 'string', namespace: tt, array: true },
+      { name: 'Extension', property: 'extension', type: 'OSDImgOptionsExtension', namespace: tt, optional: true },
+      { name: 'FormatsSupported', property: 'formatsSupported', type: 'string[]', attribute: true, optional: true },
+      { name: 'MaxSize', property: 'maxSize', type: 'integer', attribute: true, optional: true },
+      { name: 'MaxWidth', property: 'maxWidth', type: 'integer', attribute: true, optional: true },
+      { name: 'MaxHeight', property: 'maxHeight', type: 'integer', attribute: true, optional: true }
+    ]
+  },
+  OSDImgOptionsExtension: { fields: [], any: true },
+  OSDPosConfiguration: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tt },
+      { name: 'Pos', property: 'pos', type: 'Vector', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'OSDPosConfigurationExtension', namespace: tt, optional: true }
+    ]
+  },
+  OSDPosConfigurationExtension: { fields: [], any: true },
+  OSDReference: { fields: [], text: 'string' },
+  OSDTextConfiguration: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tt },
+      { name: 'DateFormat', property: 'dateFormat', type: 'string', namespace: tt, optional: true },
+      { name: 'TimeFormat', property: 'timeFormat', type: 'string', namespace: tt, optional: true },
+      { name: 'FontSize', property: 'fontSize', type: 'integer', namespace: tt, optional: true },
+      { name: 'FontColor', property: 'fontColor', type: 'OSDColor', namespace: tt, optional: true },
+      { name: 'BackgroundColor', property: 'backgroundColor', type: 'OSDColor', namespace: tt, optional: true },
+      { name: 'PlainText', property: 'plainText', type: 'string', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'OSDTextConfigurationExtension',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'IsPersistentText', property: 'isPersistentText', type: 'boolean', attribute: true, optional: true }
+    ]
+  },
+  OSDTextConfigurationExtension: { fields: [], any: true },
+  OSDTextOptions: {
+    fields: [
+      { name: 'Type', property: 'type', type: 'string', namespace: tt, array: true },
+      { name: 'FontSizeRange', property: 'fontSizeRange', type: 'IntRange', namespace: tt, optional: true },
+      { name: 'DateFormat', property: 'dateFormat', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'TimeFormat', property: 'timeFormat', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'FontColor', property: 'fontColor', type: 'OSDColorOptions', namespace: tt, optional: true },
+      { name: 'BackgroundColor', property: 'backgroundColor', type: 'OSDColorOptions', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'OSDTextOptionsExtension', namespace: tt, optional: true }
+    ]
+  },
+  OSDTextOptionsExtension: { fields: [], any: true },
   PanTiltLimits: { fields: [{ name: 'Range', property: 'range', type: 'Space2DDescription', namespace: tt }] },
+  PlayAudioClipRequest: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2 },
+      {
+        name: 'AudioOutputToken',
+        property: 'audioOutputToken',
+        type: 'string',
+        namespace: tr2,
+        optional: true,
+        array: true
+      },
+      { name: 'Play', property: 'play', type: 'boolean', namespace: tr2 },
+      { name: 'RepeatCycles', property: 'repeatCycles', type: 'integer', namespace: tr2, optional: true }
+    ]
+  },
+  PlayAudioClipResponse: { fields: [] },
+  PlayingAudioClips: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2 },
+      { name: 'Name', property: 'name', type: 'string', namespace: tr2 },
+      { name: 'AudioOutputToken', property: 'audioOutputToken', type: 'string', namespace: tr2, array: true },
+      { name: 'AudioOutputLevel', property: 'audioOutputLevel', type: 'integer', namespace: tr2 },
+      { name: 'RepeatsLeft', property: 'repeatsLeft', type: 'integer', namespace: tr2 }
+    ],
+    any: true
+  },
+  Polygon: { fields: [{ name: 'Point', property: 'point', type: 'Vector', namespace: tt, array: true }] },
+  ProfileCapabilities: {
+    fields: [
+      {
+        name: 'MaximumNumberOfProfiles',
+        property: 'maximumNumberOfProfiles',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      },
+      {
+        name: 'ConfigurationsSupported',
+        property: 'configurationsSupported',
+        type: 'string[]',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
   PTControlDirection: {
     fields: [
       { name: 'EFlip', property: 'eFlip', type: 'EFlip', namespace: tt, optional: true },
@@ -1675,6 +3649,16 @@ export const schema: Schema = {
     ]
   },
   RotateExtension: { fields: [], any: true },
+  RotateOptions: {
+    fields: [
+      { name: 'Mode', property: 'mode', type: 'string', namespace: tt, array: true },
+      { name: 'DegreeList', property: 'degreeList', type: 'IntItems', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'RotateOptionsExtension', namespace: tt, optional: true },
+      { name: 'Reboot', property: 'reboot', type: 'boolean', attribute: true, optional: true },
+      { name: 'Mirror', property: 'mirror', type: 'boolean', attribute: true, optional: true }
+    ]
+  },
+  RotateOptionsExtension: { fields: [], any: true },
   RuleEngineConfiguration: {
     fields: [
       { name: 'Rule', property: 'rule', type: 'Config', namespace: tt, optional: true, array: true },
@@ -1708,13 +3692,69 @@ export const schema: Schema = {
     ],
     any: true
   },
+  SetAudioClipRequest: {
+    fields: [
+      { name: 'Token', property: 'token', type: 'string', namespace: tr2 },
+      { name: 'Configuration', property: 'configuration', type: 'AudioClip', namespace: tr2 }
+    ]
+  },
+  SetAudioClipResponse: { fields: [] },
+  SetAudioDecoderConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'AudioDecoderConfiguration', namespace: tr2 }]
+  },
+  SetAudioEncoderConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'AudioEncoder2Configuration', namespace: tr2 }]
+  },
+  SetAudioOutputConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'AudioOutputConfiguration', namespace: tr2 }]
+  },
+  SetAudioSourceConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'AudioSourceConfiguration', namespace: tr2 }]
+  },
   SetConfigurationResponse: { fields: [] },
+  SetEQPresetConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'EQPreset', namespace: tr2 }]
+  },
+  SetMaskRequest: { fields: [{ name: 'Mask', property: 'mask', type: 'Mask', namespace: tr2 }] },
   SetMetadataConfigurationRequest: {
     fields: [{ name: 'Configuration', property: 'configuration', type: 'MetadataConfiguration', namespace: tr2 }]
   },
+  SetMulticastAudioDecoderConfigurationRequest: {
+    fields: [
+      { name: 'Configuration', property: 'configuration', type: 'MulticastAudioDecoderConfiguration', namespace: tr2 }
+    ]
+  },
+  SetOSDRequest: { fields: [{ name: 'OSD', type: 'OSDConfiguration', namespace: tr2 }] },
+  SetSynchronizationPointRequest: {
+    fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 }]
+  },
+  SetSynchronizationPointResponse: { fields: [] },
   SetVideoEncoderConfigurationRequest: {
     fields: [{ name: 'Configuration', property: 'configuration', type: 'VideoEncoder2Configuration', namespace: tr2 }]
   },
+  SetVideoSourceConfigurationRequest: {
+    fields: [{ name: 'Configuration', property: 'configuration', type: 'VideoSourceConfiguration', namespace: tr2 }]
+  },
+  SetVideoSourceModeRequest: {
+    fields: [
+      { name: 'VideoSourceToken', property: 'videoSourceToken', type: 'string', namespace: tr2 },
+      { name: 'VideoSourceModeToken', property: 'videoSourceModeToken', type: 'string', namespace: tr2 }
+    ]
+  },
+  SetVideoSourceModeResponse: { fields: [{ name: 'Reboot', property: 'reboot', type: 'boolean', namespace: tr2 }] },
+  SetWebRTCConfigurationsRequest: {
+    fields: [
+      {
+        name: 'WebRTCConfiguration',
+        property: 'webRTCConfiguration',
+        type: 'WebRTCConfiguration',
+        namespace: tr2,
+        optional: true,
+        array: true
+      }
+    ]
+  },
+  SetWebRTCConfigurationsResponse: { fields: [] },
   Space1DDescription: {
     fields: [
       { name: 'URI', type: 'string', namespace: tt },
@@ -1727,6 +3767,41 @@ export const schema: Schema = {
       { name: 'XRange', property: 'xRange', type: 'FloatRange', namespace: tt },
       { name: 'YRange', property: 'yRange', type: 'FloatRange', namespace: tt }
     ]
+  },
+  SRTPPreShared: {
+    fields: [
+      { name: 'SRTPPSK', type: 'string', namespace: tt },
+      { name: 'ROCExtMapID', property: 'rocExtMapID', type: 'integer', namespace: tt },
+      {
+        name: 'SecureStreamingProtocolAlgorithm',
+        property: 'secureStreamingProtocolAlgorithm',
+        type: 'string',
+        attribute: true,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  StartStopMulticastStreaming: {
+    fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tr2 }]
+  },
+  StreamingCapabilities: {
+    fields: [
+      { name: 'RTSPStreaming', property: 'rtspStreaming', type: 'boolean', attribute: true, optional: true },
+      { name: 'RTPMulticast', property: 'rtpMulticast', type: 'boolean', attribute: true, optional: true },
+      { name: 'RTP_RTSP_TCP', type: 'boolean', attribute: true, optional: true },
+      {
+        name: 'NonAggregateControl',
+        property: 'nonAggregateControl',
+        type: 'boolean',
+        attribute: true,
+        optional: true
+      },
+      { name: 'RTSPWebSocketUri', property: 'rtspWebSocketUri', type: 'string', attribute: true, optional: true },
+      { name: 'AutoStartMulticast', property: 'autoStartMulticast', type: 'boolean', attribute: true, optional: true },
+      { name: 'SecureRTSPStreaming', property: 'secureRTSPStreaming', type: 'boolean', attribute: true, optional: true }
+    ],
+    any: true
   },
   StreamSetup: {
     fields: [
@@ -1747,6 +3822,28 @@ export const schema: Schema = {
     ]
   },
   TransportTunnel: { fields: [], any: true },
+  TTSAudio: {
+    fields: [
+      { name: 'Content', property: 'content', type: 'string', namespace: tr2 },
+      { name: 'Language', property: 'language', type: 'string', namespace: tr2 },
+      { name: 'VoiceType', property: 'voiceType', type: 'string', namespace: tr2 }
+    ],
+    any: true
+  },
+  TTSCapabilities: {
+    fields: [
+      { name: 'MaxContentLength', property: 'maxContentLength', type: 'integer', attribute: true, optional: true },
+      { name: 'TTSLanguage', property: 'ttsLanguage', type: 'string[]', attribute: true, optional: true },
+      { name: 'TTSVoiceType', property: 'ttsVoiceType', type: 'string[]', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  Vector: {
+    fields: [
+      { name: 'x', type: 'decimal', attribute: true },
+      { name: 'y', type: 'decimal', attribute: true }
+    ]
+  },
   Vector1D: {
     fields: [
       { name: 'x', type: 'decimal', attribute: true },
@@ -1886,6 +3983,12 @@ export const schema: Schema = {
     ],
     any: true
   },
+  VideoResolution: {
+    fields: [
+      { name: 'Width', property: 'width', type: 'integer', namespace: tt },
+      { name: 'Height', property: 'height', type: 'integer', namespace: tt }
+    ]
+  },
   VideoResolution2: {
     fields: [
       { name: 'Width', property: 'width', type: 'integer', namespace: tt },
@@ -1943,7 +4046,97 @@ export const schema: Schema = {
     ],
     any: true
   },
+  VideoSourceConfigurationOptions: {
+    fields: [
+      { name: 'BoundsRange', property: 'boundsRange', type: 'IntRectangleRange', namespace: tt },
+      {
+        name: 'VideoSourceTokensAvailable',
+        property: 'videoSourceTokensAvailable',
+        type: 'string',
+        namespace: tt,
+        array: true
+      },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'VideoSourceConfigurationOptionsExtension',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'MaximumNumberOfProfiles',
+        property: 'maximumNumberOfProfiles',
+        type: 'integer',
+        attribute: true,
+        optional: true
+      }
+    ]
+  },
+  VideoSourceConfigurationOptionsExtension: {
+    fields: [
+      { name: 'Rotate', property: 'rotate', type: 'RotateOptions', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'VideoSourceConfigurationOptionsExtension2',
+        namespace: tt,
+        optional: true
+      }
+    ],
+    any: true
+  },
+  VideoSourceConfigurationOptionsExtension2: {
+    fields: [
+      {
+        name: 'SceneOrientationMode',
+        property: 'sceneOrientationMode',
+        type: 'string',
+        namespace: tt,
+        optional: true,
+        array: true
+      }
+    ],
+    any: true
+  },
+  VideoSourceMode: {
+    fields: [
+      { name: 'MaxFramerate', property: 'maxFramerate', type: 'decimal', namespace: tr2 },
+      { name: 'MaxResolution', property: 'maxResolution', type: 'VideoResolution', namespace: tr2 },
+      { name: 'Encodings', property: 'encodings', type: 'string[]', namespace: tr2 },
+      { name: 'Reboot', property: 'reboot', type: 'boolean', namespace: tr2 },
+      { name: 'Description', property: 'description', type: 'string', namespace: tr2, optional: true },
+      { name: 'token', type: 'string', attribute: true },
+      { name: 'Enabled', property: 'enabled', type: 'boolean', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  WebRTCConfiguration: {
+    fields: [
+      { name: 'SignalingServer', property: 'signalingServer', type: 'string', namespace: tr2 },
+      {
+        name: 'CertPathValidationPolicyID',
+        property: 'certPathValidationPolicyID',
+        type: 'string',
+        namespace: tr2,
+        optional: true
+      },
+      { name: 'AuthorizationServer', property: 'authorizationServer', type: 'string', namespace: tr2 },
+      { name: 'DefaultProfile', property: 'defaultProfile', type: 'string', namespace: tr2 },
+      { name: 'Enabled', property: 'enabled', type: 'boolean', namespace: tr2 },
+      { name: 'Connected', property: 'connected', type: 'boolean', namespace: tr2, optional: true },
+      { name: 'Error', property: 'error', type: 'string', namespace: tr2, optional: true }
+    ],
+    any: true
+  },
   ZoomLimits: { fields: [{ name: 'Range', property: 'range', type: 'Space1DDescription', namespace: tt }] }
+}
+
+export const GetServiceCapabilities: Operation<GetServiceCapabilitiesRequest, GetServiceCapabilitiesResponse> = {
+  name: 'GetServiceCapabilities',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetServiceCapabilities',
+  request: { name: 'GetServiceCapabilities', namespace: tr2, type: 'GetServiceCapabilitiesRequest' },
+  response: { name: 'GetServiceCapabilitiesResponse', type: 'GetServiceCapabilitiesResponse' },
+  schema
 }
 
 export const GetProfiles: Operation<GetProfilesRequest, GetProfilesResponse> = {
@@ -1951,6 +4144,38 @@ export const GetProfiles: Operation<GetProfilesRequest, GetProfilesResponse> = {
   action: 'http://www.onvif.org/ver20/media/wsdl/GetProfiles',
   request: { name: 'GetProfiles', namespace: tr2, type: 'GetProfilesRequest' },
   response: { name: 'GetProfilesResponse', type: 'GetProfilesResponse' },
+  schema
+}
+
+export const CreateProfile: Operation<CreateProfileRequest, CreateProfileResponse> = {
+  name: 'CreateProfile',
+  action: 'http://www.onvif.org/ver20/media/wsdl/CreateProfile',
+  request: { name: 'CreateProfile', namespace: tr2, type: 'CreateProfileRequest' },
+  response: { name: 'CreateProfileResponse', type: 'CreateProfileResponse' },
+  schema
+}
+
+export const DeleteProfile: Operation<DeleteProfileRequest, DeleteProfileResponse> = {
+  name: 'DeleteProfile',
+  action: 'http://www.onvif.org/ver20/media/wsdl/DeleteProfile',
+  request: { name: 'DeleteProfile', namespace: tr2, type: 'DeleteProfileRequest' },
+  response: { name: 'DeleteProfileResponse', type: 'DeleteProfileResponse' },
+  schema
+}
+
+export const AddConfiguration: Operation<AddConfigurationRequest, AddConfigurationResponse> = {
+  name: 'AddConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/AddConfiguration',
+  request: { name: 'AddConfiguration', namespace: tr2, type: 'AddConfigurationRequest' },
+  response: { name: 'AddConfigurationResponse', type: 'AddConfigurationResponse' },
+  schema
+}
+
+export const RemoveConfiguration: Operation<RemoveConfigurationRequest, RemoveConfigurationResponse> = {
+  name: 'RemoveConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/RemoveConfiguration',
+  request: { name: 'RemoveConfiguration', namespace: tr2, type: 'RemoveConfigurationRequest' },
+  response: { name: 'RemoveConfigurationResponse', type: 'RemoveConfigurationResponse' },
   schema
 }
 
@@ -1970,11 +4195,78 @@ export const GetSnapshotUri: Operation<GetSnapshotUriRequest, GetSnapshotUriResp
   schema
 }
 
+export const StartMulticastStreaming: Operation<StartStopMulticastStreaming, SetConfigurationResponse> = {
+  name: 'StartMulticastStreaming',
+  action: 'http://www.onvif.org/ver20/media/wsdl/StartMulticastStreaming',
+  request: { name: 'StartMulticastStreaming', namespace: tr2, type: 'StartStopMulticastStreaming' },
+  response: { name: 'StartMulticastStreamingResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const StopMulticastStreaming: Operation<StartStopMulticastStreaming, SetConfigurationResponse> = {
+  name: 'StopMulticastStreaming',
+  action: 'http://www.onvif.org/ver20/media/wsdl/StopMulticastStreaming',
+  request: { name: 'StopMulticastStreaming', namespace: tr2, type: 'StartStopMulticastStreaming' },
+  response: { name: 'StopMulticastStreamingResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const SetSynchronizationPoint: Operation<SetSynchronizationPointRequest, SetSynchronizationPointResponse> = {
+  name: 'SetSynchronizationPoint',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetSynchronizationPoint',
+  request: { name: 'SetSynchronizationPoint', namespace: tr2, type: 'SetSynchronizationPointRequest' },
+  response: { name: 'SetSynchronizationPointResponse', type: 'SetSynchronizationPointResponse' },
+  schema
+}
+
+export const GetVideoSourceModes: Operation<GetVideoSourceModesRequest, GetVideoSourceModesResponse> = {
+  name: 'GetVideoSourceModes',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoSourceModes',
+  request: { name: 'GetVideoSourceModes', namespace: tr2, type: 'GetVideoSourceModesRequest' },
+  response: { name: 'GetVideoSourceModesResponse', type: 'GetVideoSourceModesResponse' },
+  schema
+}
+
+export const SetVideoSourceMode: Operation<SetVideoSourceModeRequest, SetVideoSourceModeResponse> = {
+  name: 'SetVideoSourceMode',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetVideoSourceMode',
+  request: { name: 'SetVideoSourceMode', namespace: tr2, type: 'SetVideoSourceModeRequest' },
+  response: { name: 'SetVideoSourceModeResponse', type: 'SetVideoSourceModeResponse' },
+  schema
+}
+
+export const GetVideoEncoderInstances: Operation<GetVideoEncoderInstancesRequest, GetVideoEncoderInstancesResponse> = {
+  name: 'GetVideoEncoderInstances',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoEncoderInstances',
+  request: { name: 'GetVideoEncoderInstances', namespace: tr2, type: 'GetVideoEncoderInstancesRequest' },
+  response: { name: 'GetVideoEncoderInstancesResponse', type: 'GetVideoEncoderInstancesResponse' },
+  schema
+}
+
 export const GetVideoSourceConfigurations: Operation<GetConfiguration, GetVideoSourceConfigurationsResponse> = {
   name: 'GetVideoSourceConfigurations',
   action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoSourceConfigurations',
   request: { name: 'GetVideoSourceConfigurations', namespace: tr2, type: 'GetConfiguration' },
   response: { name: 'GetVideoSourceConfigurationsResponse', type: 'GetVideoSourceConfigurationsResponse' },
+  schema
+}
+
+export const GetVideoSourceConfigurationOptions: Operation<
+  GetConfiguration,
+  GetVideoSourceConfigurationOptionsResponse
+> = {
+  name: 'GetVideoSourceConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetVideoSourceConfigurationOptions/',
+  request: { name: 'GetVideoSourceConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetVideoSourceConfigurationOptionsResponse', type: 'GetVideoSourceConfigurationOptionsResponse' },
+  schema
+}
+
+export const SetVideoSourceConfiguration: Operation<SetVideoSourceConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetVideoSourceConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetVideoSourceConfiguration',
+  request: { name: 'SetVideoSourceConfiguration', namespace: tr2, type: 'SetVideoSourceConfigurationRequest' },
+  response: { name: 'SetVideoSourceConfigurationResponse', type: 'SetConfigurationResponse' },
   schema
 }
 
@@ -2005,6 +4297,171 @@ export const SetVideoEncoderConfiguration: Operation<SetVideoEncoderConfiguratio
   action: 'http://www.onvif.org/ver20/media/wsdl/SetVideoEncoderConfiguration',
   request: { name: 'SetVideoEncoderConfiguration', namespace: tr2, type: 'SetVideoEncoderConfigurationRequest' },
   response: { name: 'SetVideoEncoderConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAudioSourceConfigurations: Operation<GetConfiguration, GetAudioSourceConfigurationsResponse> = {
+  name: 'GetAudioSourceConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioSourceConfigurations/',
+  request: { name: 'GetAudioSourceConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioSourceConfigurationsResponse', type: 'GetAudioSourceConfigurationsResponse' },
+  schema
+}
+
+export const GetAudioSourceConfigurationOptions: Operation<
+  GetConfiguration,
+  GetAudioSourceConfigurationOptionsResponse
+> = {
+  name: 'GetAudioSourceConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioSourceConfigurationOptions',
+  request: { name: 'GetAudioSourceConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioSourceConfigurationOptionsResponse', type: 'GetAudioSourceConfigurationOptionsResponse' },
+  schema
+}
+
+export const SetAudioSourceConfiguration: Operation<SetAudioSourceConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetAudioSourceConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetAudioSourceConfiguration',
+  request: { name: 'SetAudioSourceConfiguration', namespace: tr2, type: 'SetAudioSourceConfigurationRequest' },
+  response: { name: 'SetAudioSourceConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAudioEncoderConfigurations: Operation<GetConfiguration, GetAudioEncoderConfigurationsResponse> = {
+  name: 'GetAudioEncoderConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioEncoderConfigurations',
+  request: { name: 'GetAudioEncoderConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioEncoderConfigurationsResponse', type: 'GetAudioEncoderConfigurationsResponse' },
+  schema
+}
+
+export const GetAudioEncoderConfigurationOptions: Operation<
+  GetConfiguration,
+  GetAudioEncoderConfigurationOptionsResponse
+> = {
+  name: 'GetAudioEncoderConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioEncoderConfigurationOptions',
+  request: { name: 'GetAudioEncoderConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: {
+    name: 'GetAudioEncoderConfigurationOptionsResponse',
+    type: 'GetAudioEncoderConfigurationOptionsResponse'
+  },
+  schema
+}
+
+export const SetAudioEncoderConfiguration: Operation<SetAudioEncoderConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetAudioEncoderConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetAudioEncoderConfiguration',
+  request: { name: 'SetAudioEncoderConfiguration', namespace: tr2, type: 'SetAudioEncoderConfigurationRequest' },
+  response: { name: 'SetAudioEncoderConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAudioOutputConfigurations: Operation<GetConfiguration, GetAudioOutputConfigurationsResponse> = {
+  name: 'GetAudioOutputConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioOutputConfigurations',
+  request: { name: 'GetAudioOutputConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioOutputConfigurationsResponse', type: 'GetAudioOutputConfigurationsResponse' },
+  schema
+}
+
+export const GetAudioOutputConfigurationOptions: Operation<
+  GetConfiguration,
+  GetAudioOutputConfigurationOptionsResponse
+> = {
+  name: 'GetAudioOutputConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioOutputConfigurationOptions',
+  request: { name: 'GetAudioOutputConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioOutputConfigurationOptionsResponse', type: 'GetAudioOutputConfigurationOptionsResponse' },
+  schema
+}
+
+export const SetAudioOutputConfiguration: Operation<SetAudioOutputConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetAudioOutputConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetAudioOutputConfiguration',
+  request: { name: 'SetAudioOutputConfiguration', namespace: tr2, type: 'SetAudioOutputConfigurationRequest' },
+  response: { name: 'SetAudioOutputConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAudioDecoderConfigurations: Operation<GetConfiguration, GetAudioDecoderConfigurationsResponse> = {
+  name: 'GetAudioDecoderConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioDecoderConfigurations',
+  request: { name: 'GetAudioDecoderConfigurations', namespace: tr2, type: 'GetConfiguration' },
+  response: { name: 'GetAudioDecoderConfigurationsResponse', type: 'GetAudioDecoderConfigurationsResponse' },
+  schema
+}
+
+export const GetAudioDecoderConfigurationOptions: Operation<
+  GetConfiguration,
+  GetAudioDecoderConfigurationOptionsResponse
+> = {
+  name: 'GetAudioDecoderConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioDecoderConfigurationOptions',
+  request: { name: 'GetAudioDecoderConfigurationOptions', namespace: tr2, type: 'GetConfiguration' },
+  response: {
+    name: 'GetAudioDecoderConfigurationOptionsResponse',
+    type: 'GetAudioDecoderConfigurationOptionsResponse'
+  },
+  schema
+}
+
+export const SetAudioDecoderConfiguration: Operation<SetAudioDecoderConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetAudioDecoderConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetAudioDecoderConfiguration',
+  request: { name: 'SetAudioDecoderConfiguration', namespace: tr2, type: 'SetAudioDecoderConfigurationRequest' },
+  response: { name: 'SetAudioDecoderConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetMulticastAudioDecoderConfigurations: Operation<
+  GetMulticastAudioDecoderConfigurationsRequest,
+  GetMulticastAudioDecoderConfigurationsResponse
+> = {
+  name: 'GetMulticastAudioDecoderConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMulticastAudioDecoderConfigurations',
+  request: {
+    name: 'GetMulticastAudioDecoderConfigurations',
+    namespace: tr2,
+    type: 'GetMulticastAudioDecoderConfigurationsRequest'
+  },
+  response: {
+    name: 'GetMulticastAudioDecoderConfigurationsResponse',
+    type: 'GetMulticastAudioDecoderConfigurationsResponse'
+  },
+  schema
+}
+
+export const GetMulticastAudioDecoderConfigurationOptions: Operation<
+  GetMulticastAudioDecoderConfigurationOptionsRequest,
+  GetMulticastAudioDecoderConfigurationOptionsResponse
+> = {
+  name: 'GetMulticastAudioDecoderConfigurationOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMulticastAudioDecoderConfigurationOptions',
+  request: {
+    name: 'GetMulticastAudioDecoderConfigurationOptions',
+    namespace: tr2,
+    type: 'GetMulticastAudioDecoderConfigurationOptionsRequest'
+  },
+  response: {
+    name: 'GetMulticastAudioDecoderConfigurationOptionsResponse',
+    type: 'GetMulticastAudioDecoderConfigurationOptionsResponse'
+  },
+  schema
+}
+
+export const SetMulticastAudioDecoderConfiguration: Operation<
+  SetMulticastAudioDecoderConfigurationRequest,
+  SetConfigurationResponse
+> = {
+  name: 'SetMulticastAudioDecoderConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetMulticastAudioDecoderConfiguration',
+  request: {
+    name: 'SetMulticastAudioDecoderConfiguration',
+    namespace: tr2,
+    type: 'SetMulticastAudioDecoderConfigurationRequest'
+  },
+  response: { name: 'SetMulticastAudioDecoderConfigurationResponse', type: 'SetConfigurationResponse' },
   schema
 }
 
@@ -2041,19 +4498,163 @@ export const GetAnalyticsConfigurations: Operation<GetConfiguration, GetAnalytic
   schema
 }
 
-export const AddConfiguration: Operation<AddConfigurationRequest, AddConfigurationResponse> = {
-  name: 'AddConfiguration',
-  action: 'http://www.onvif.org/ver20/media/wsdl/AddConfiguration',
-  request: { name: 'AddConfiguration', namespace: tr2, type: 'AddConfigurationRequest' },
-  response: { name: 'AddConfigurationResponse', type: 'AddConfigurationResponse' },
+export const GetOSDs: Operation<GetOSDsRequest, GetOSDsResponse> = {
+  name: 'GetOSDs',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetOSDs',
+  request: { name: 'GetOSDs', namespace: tr2, type: 'GetOSDsRequest' },
+  response: { name: 'GetOSDsResponse', type: 'GetOSDsResponse' },
   schema
 }
 
-export const RemoveConfiguration: Operation<RemoveConfigurationRequest, RemoveConfigurationResponse> = {
-  name: 'RemoveConfiguration',
-  action: 'http://www.onvif.org/ver20/media/wsdl/RemoveConfiguration',
-  request: { name: 'RemoveConfiguration', namespace: tr2, type: 'RemoveConfigurationRequest' },
-  response: { name: 'RemoveConfigurationResponse', type: 'RemoveConfigurationResponse' },
+export const GetOSDOptions: Operation<GetOSDOptionsRequest, GetOSDOptionsResponse> = {
+  name: 'GetOSDOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetOSDOptions',
+  request: { name: 'GetOSDOptions', namespace: tr2, type: 'GetOSDOptionsRequest' },
+  response: { name: 'GetOSDOptionsResponse', type: 'GetOSDOptionsResponse' },
+  schema
+}
+
+export const CreateOSD: Operation<CreateOSDRequest, CreateOSDResponse> = {
+  name: 'CreateOSD',
+  action: 'http://www.onvif.org/ver20/media/wsdl/CreateOSD',
+  request: { name: 'CreateOSD', namespace: tr2, type: 'CreateOSDRequest' },
+  response: { name: 'CreateOSDResponse', type: 'CreateOSDResponse' },
+  schema
+}
+
+export const SetOSD: Operation<SetOSDRequest, SetConfigurationResponse> = {
+  name: 'SetOSD',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetOSD',
+  request: { name: 'SetOSD', namespace: tr2, type: 'SetOSDRequest' },
+  response: { name: 'SetOSDResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const DeleteOSD: Operation<DeleteOSDRequest, SetConfigurationResponse> = {
+  name: 'DeleteOSD',
+  action: 'http://www.onvif.org/ver20/media/wsdl/DeleteOSD',
+  request: { name: 'DeleteOSD', namespace: tr2, type: 'DeleteOSDRequest' },
+  response: { name: 'DeleteOSDResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetMasks: Operation<GetMasksRequest, GetMasksResponse> = {
+  name: 'GetMasks',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMasks',
+  request: { name: 'GetMasks', namespace: tr2, type: 'GetMasksRequest' },
+  response: { name: 'GetMasksResponse', type: 'GetMasksResponse' },
+  schema
+}
+
+export const GetMaskOptions: Operation<GetMaskOptionsRequest, GetMaskOptionsResponse> = {
+  name: 'GetMaskOptions',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetMaskOptions',
+  request: { name: 'GetMaskOptions', namespace: tr2, type: 'GetMaskOptionsRequest' },
+  response: { name: 'GetMaskOptionsResponse', type: 'GetMaskOptionsResponse' },
+  schema
+}
+
+export const CreateMask: Operation<CreateMaskRequest, CreateMaskResponse> = {
+  name: 'CreateMask',
+  action: 'http://www.onvif.org/ver20/media/wsdl/CreateMask',
+  request: { name: 'CreateMask', namespace: tr2, type: 'CreateMaskRequest' },
+  response: { name: 'CreateMaskResponse', type: 'CreateMaskResponse' },
+  schema
+}
+
+export const SetMask: Operation<SetMaskRequest, SetConfigurationResponse> = {
+  name: 'SetMask',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetMask',
+  request: { name: 'SetMask', namespace: tr2, type: 'SetMaskRequest' },
+  response: { name: 'SetMaskResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const DeleteMask: Operation<DeleteMaskRequest, SetConfigurationResponse> = {
+  name: 'DeleteMask',
+  action: 'http://www.onvif.org/ver20/media/wsdl/DeleteMask',
+  request: { name: 'DeleteMask', namespace: tr2, type: 'DeleteMaskRequest' },
+  response: { name: 'DeleteMaskResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetAudioClips: Operation<GetAudioClipsRequest, GetAudioClipsResponse> = {
+  name: 'GetAudioClips',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetAudioClips',
+  request: { name: 'GetAudioClips', namespace: tr2, type: 'GetAudioClipsRequest' },
+  response: { name: 'GetAudioClipsResponse', type: 'GetAudioClipsResponse' },
+  schema
+}
+
+export const AddAudioClip: Operation<AddAudioClipRequest, AddAudioClipResponse> = {
+  name: 'AddAudioClip',
+  action: 'http://www.onvif.org/ver20/media/wsdl/AddAudioClip',
+  request: { name: 'AddAudioClip', namespace: tr2, type: 'AddAudioClipRequest' },
+  response: { name: 'AddAudioClipResponse', type: 'AddAudioClipResponse' },
+  schema
+}
+
+export const AddTTSAudioClip: Operation<AddTTSAudioClipRequest, AddTTSAudioClipResponse> = {
+  name: 'AddTTSAudioClip',
+  action: 'http://www.onvif.org/ver20/media/wsdl/AddTTSAudioClip',
+  request: { name: 'AddTTSAudioClip', namespace: tr2, type: 'AddTTSAudioClipRequest' },
+  response: { name: 'AddTTSAudioClipResponse', type: 'AddTTSAudioClipResponse' },
+  schema
+}
+
+export const SetAudioClip: Operation<SetAudioClipRequest, SetAudioClipResponse> = {
+  name: 'SetAudioClip',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetAudioClip',
+  request: { name: 'SetAudioClip', namespace: tr2, type: 'SetAudioClipRequest' },
+  response: { name: 'SetAudioClipResponse', type: 'SetAudioClipResponse' },
+  schema
+}
+
+export const DeleteAudioClip: Operation<DeleteAudioClipRequest, DeleteAudioClipResponse> = {
+  name: 'DeleteAudioClip',
+  action: 'http://www.onvif.org/ver20/media/wsdl/DeleteAudioClip',
+  request: { name: 'DeleteAudioClip', namespace: tr2, type: 'DeleteAudioClipRequest' },
+  response: { name: 'DeleteAudioClipResponse', type: 'DeleteAudioClipResponse' },
+  schema
+}
+
+export const PlayAudioClip: Operation<PlayAudioClipRequest, PlayAudioClipResponse> = {
+  name: 'PlayAudioClip',
+  action: 'http://www.onvif.org/ver20/media/wsdl/PlayAudioClip',
+  request: { name: 'PlayAudioClip', namespace: tr2, type: 'PlayAudioClipRequest' },
+  response: { name: 'PlayAudioClipResponse', type: 'PlayAudioClipResponse' },
+  schema
+}
+
+export const GetPlayingAudioClips: Operation<GetPlayingAudioClipsRequest, GetPlayingAudioClipsResponse> = {
+  name: 'GetPlayingAudioClips',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetPlayingAudioClips',
+  request: { name: 'GetPlayingAudioClips', namespace: tr2, type: 'GetPlayingAudioClipsRequest' },
+  response: { name: 'GetPlayingAudioClipsResponse', type: 'GetPlayingAudioClipsResponse' },
+  schema
+}
+
+export const SetEQPresetConfiguration: Operation<SetEQPresetConfigurationRequest, SetConfigurationResponse> = {
+  name: 'SetEQPresetConfiguration',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetEQPresetConfiguration',
+  request: { name: 'SetEQPresetConfiguration', namespace: tr2, type: 'SetEQPresetConfigurationRequest' },
+  response: { name: 'SetEQPresetConfigurationResponse', type: 'SetConfigurationResponse' },
+  schema
+}
+
+export const GetWebRTCConfigurations: Operation<GetWebRTCConfigurationsRequest, GetWebRTCConfigurationsResponse> = {
+  name: 'GetWebRTCConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/GetWebRTCConfigurations',
+  request: { name: 'GetWebRTCConfigurations', namespace: tr2, type: 'GetWebRTCConfigurationsRequest' },
+  response: { name: 'GetWebRTCConfigurationsResponse', type: 'GetWebRTCConfigurationsResponse' },
+  schema
+}
+
+export const SetWebRTCConfigurations: Operation<SetWebRTCConfigurationsRequest, SetWebRTCConfigurationsResponse> = {
+  name: 'SetWebRTCConfigurations',
+  action: 'http://www.onvif.org/ver20/media/wsdl/SetWebRTCConfigurations',
+  request: { name: 'SetWebRTCConfigurations', namespace: tr2, type: 'SetWebRTCConfigurationsRequest' },
+  response: { name: 'SetWebRTCConfigurationsResponse', type: 'SetWebRTCConfigurationsResponse' },
   schema
 }
 
@@ -2062,6 +4663,20 @@ export class Media2Client {
 
   constructor(device: Device) {
     this.#device = device
+  }
+
+  /**
+   * Returns the capabilities of the media service. The result is returned in a typed answer.
+   *
+   * @param request - The `GetServiceCapabilities` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetServiceCapabilitiesResponse`
+   */
+  getServiceCapabilities(
+    request?: GetServiceCapabilitiesRequest,
+    options?: CallOptions
+  ): Promise<GetServiceCapabilitiesResponse> {
+    return this.#device.call(GetServiceCapabilities, request, options)
   }
 
   /**
@@ -2076,6 +4691,59 @@ export class Media2Client {
    */
   getProfiles(request?: GetProfilesRequest, options?: CallOptions): Promise<GetProfilesResponse> {
     return this.#device.call(GetProfiles, request, options)
+  }
+
+  /**
+   * This operation creates a new media profile. A created profile created via this method may be deleted
+   * via the DeleteProfile method. Optionally Configurations can be assinged to the profile on creation.
+   * For details regarding profile assignement check also the method AddConfiguration.
+   *
+   * @param request - The `CreateProfile` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateProfileResponse`
+   */
+  createProfile(request: CreateProfileRequest, options?: CallOptions): Promise<CreateProfileResponse> {
+    return this.#device.call(CreateProfile, request, options)
+  }
+
+  /**
+   * This operation deletes a profile. Deletion of a profile is only possible for non-fixed profiles
+   *
+   * @param request - The `DeleteProfile` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteProfileResponse`
+   */
+  deleteProfile(request: DeleteProfileRequest, options?: CallOptions): Promise<DeleteProfileResponse> {
+    return this.#device.call(DeleteProfile, request, options)
+  }
+
+  /**
+   * This operation adds one or more Configurations to an existing media profile. If a configuration
+   * exists in the media profile, it will be replaced. A device shall support adding a compatible
+   * Configuration to a Profile containing a VideoSourceConfiguration and shall support streaming video
+   * data of such a profile. Note that OSD elements must be added via the CreateOSD command.
+   *
+   * @param request - The `AddConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AddConfigurationResponse`
+   */
+  addConfiguration(request: AddConfigurationRequest, options?: CallOptions): Promise<AddConfigurationResponse> {
+    return this.#device.call(AddConfiguration, request, options)
+  }
+
+  /**
+   * This operation removes the listed configurations from an existing media profile. If the media
+   * profile does not contain one of the listed configurations that item shall be ignored.
+   *
+   * @param request - The `RemoveConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemoveConfigurationResponse`
+   */
+  removeConfiguration(
+    request: RemoveConfigurationRequest,
+    options?: CallOptions
+  ): Promise<RemoveConfigurationResponse> {
+    return this.#device.call(RemoveConfiguration, request, options)
   }
 
   /**
@@ -2114,6 +4782,105 @@ export class Media2Client {
   }
 
   /**
+   * This command starts multicast streaming using a specified media profile of a device. Streaming
+   * continues until StopMulticastStreaming is called for the same Profile. The streaming shall continue
+   * after a reboot of the device until a StopMulticastStreaming request is received. The multicast
+   * address, port and TTL are configured in the VideoEncoderConfiguration, AudioEncoderConfiguration and
+   * MetadataConfiguration respectively.
+   *
+   * @param request - The `StartMulticastStreaming` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `StartMulticastStreamingResponse`
+   */
+  startMulticastStreaming(
+    request: StartStopMulticastStreaming,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(StartMulticastStreaming, request, options)
+  }
+
+  /**
+   * This command stops multicast streaming using a specified media profile of a device
+   *
+   * @param request - The `StopMulticastStreaming` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `StopMulticastStreamingResponse`
+   */
+  stopMulticastStreaming(
+    request: StartStopMulticastStreaming,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(StopMulticastStreaming, request, options)
+  }
+
+  /**
+   * Synchronization points allow clients to decode and correctly use all data after the synchronization
+   * point. For example, if a video stream is configured with a large I-frame distance and a client loses
+   * a single packet, the client does not display video until the next I-frame is transmitted. In such
+   * cases, the client can request a Synchronization Point which enforces the device to add an I-Frame as
+   * soon as possible. Clients can request Synchronization Points for profiles. The device shall add
+   * synchronization points for all streams associated with this profile. Similarly, a synchronization
+   * point is used to get an update on full PTZ or event status through the metadata stream. If a video
+   * stream is associated with the profile, an I-frame shall be added to this video stream. If a PTZ
+   * metadata stream is associated to the profile, the PTZ position shall be repeated within the metadata
+   * stream.
+   *
+   * @param request - The `SetSynchronizationPoint` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetSynchronizationPointResponse`
+   */
+  setSynchronizationPoint(
+    request: SetSynchronizationPointRequest,
+    options?: CallOptions
+  ): Promise<SetSynchronizationPointResponse> {
+    return this.#device.call(SetSynchronizationPoint, request, options)
+  }
+
+  /**
+   * A device returns the information for current video source mode and settable video source modes of
+   * specified video source. A device that indicates a capability of VideoSourceModes shall support this
+   * command.
+   *
+   * @param request - The `GetVideoSourceModes` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetVideoSourceModesResponse`
+   */
+  getVideoSourceModes(
+    request: GetVideoSourceModesRequest,
+    options?: CallOptions
+  ): Promise<GetVideoSourceModesResponse> {
+    return this.#device.call(GetVideoSourceModes, request, options)
+  }
+
+  /**
+   * SetVideoSourceMode changes the media profile structure relating to video source for the specified
+   * video source mode. A device that indicates a capability of VideoSourceModes shall support this
+   * command. The behavior after changing the mode is not defined in this specification.
+   *
+   * @param request - The `SetVideoSourceMode` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetVideoSourceModeResponse`
+   */
+  setVideoSourceMode(request: SetVideoSourceModeRequest, options?: CallOptions): Promise<SetVideoSourceModeResponse> {
+    return this.#device.call(SetVideoSourceMode, request, options)
+  }
+
+  /**
+   * The GetVideoEncoderInstances command can be used to request the minimum number of guaranteed video
+   * encoder instances (applications) per Video Source Configuration.
+   *
+   * @param request - The `GetVideoEncoderInstances` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetVideoEncoderInstancesResponse`
+   */
+  getVideoEncoderInstances(
+    request: GetVideoEncoderInstancesRequest,
+    options?: CallOptions
+  ): Promise<GetVideoEncoderInstancesResponse> {
+    return this.#device.call(GetVideoEncoderInstances, request, options)
+  }
+
+  /**
    * By default this operation lists all existing video source configurations for a device. Provide a
    * profile token to list only configurations that are compatible with the profile. If a configuration
    * token is provided only a single configuration will be returned.
@@ -2127,6 +4894,40 @@ export class Media2Client {
     options?: CallOptions
   ): Promise<GetVideoSourceConfigurationsResponse> {
     return this.#device.call(GetVideoSourceConfigurations, request, options)
+  }
+
+  /**
+   * This operation returns the available options (supported values and ranges for video source
+   * configuration parameters) when the video source parameters are reconfigured If a video source
+   * configuration is specified, the options shall concern that particular configuration. If a media
+   * profile is specified, the options shall be compatible with that media profile.
+   *
+   * @param request - The `GetVideoSourceConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetVideoSourceConfigurationOptionsResponse`
+   */
+  getVideoSourceConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetVideoSourceConfigurationOptionsResponse> {
+    return this.#device.call(GetVideoSourceConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies a video source configuration. Running streams using this configuration may
+   * be immediately updated according to the new settings. The changes are not guaranteed to take effect
+   * unless the client requests a new stream URI and restarts any affected stream. NVC methods for
+   * changing a running stream are out of scope for this specification.
+   *
+   * @param request - The `SetVideoSourceConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetVideoSourceConfigurationResponse`
+   */
+  setVideoSourceConfiguration(
+    request: SetVideoSourceConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetVideoSourceConfiguration, request, options)
   }
 
   /**
@@ -2182,6 +4983,237 @@ export class Media2Client {
     options?: CallOptions
   ): Promise<SetConfigurationResponse> {
     return this.#device.call(SetVideoEncoderConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing audio source configurations for a device. Provide a
+   * profile token to list only configurations that are compatible with the profile. If a configuration
+   * token is provided only a single configuration will be returned.
+   *
+   * @param request - The `GetAudioSourceConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioSourceConfigurationsResponse`
+   */
+  getAudioSourceConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioSourceConfigurationsResponse> {
+    return this.#device.call(GetAudioSourceConfigurations, request, options)
+  }
+
+  /**
+   * This operation returns the available options (supported values and ranges for audio source
+   * configuration parameters) when the audio source parameters are reconfigured. If an audio source
+   * configuration is specified, the options shall concern that particular configuration. If a media
+   * profile is specified, the options shall be compatible with that media profile.
+   *
+   * @param request - The `GetAudioSourceConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioSourceConfigurationOptionsResponse`
+   */
+  getAudioSourceConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioSourceConfigurationOptionsResponse> {
+    return this.#device.call(GetAudioSourceConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies an audio source configuration. Running streams using this configuration may
+   * be immediately updated according to the new settings. The changes are not guaranteed to take effect
+   * unless the client requests a new stream URI and restarts any affected stream NVC methods for
+   * changing a running stream are out of scope for this specification.
+   *
+   * @param request - The `SetAudioSourceConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAudioSourceConfigurationResponse`
+   */
+  setAudioSourceConfiguration(
+    request: SetAudioSourceConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetAudioSourceConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing audio encoder configurations for a device. Provide a
+   * profile token to list only configurations that are compatible with the profile. If a configuration
+   * token is provided only a single configuration will be returned.
+   *
+   * @param request - The `GetAudioEncoderConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioEncoderConfigurationsResponse`
+   */
+  getAudioEncoderConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioEncoderConfigurationsResponse> {
+    return this.#device.call(GetAudioEncoderConfigurations, request, options)
+  }
+
+  /**
+   * This operation returns the available options (supported values and ranges for audio encoder
+   * configuration parameters) when the audio encoder parameters are reconfigured.
+   *
+   * @param request - The `GetAudioEncoderConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioEncoderConfigurationOptionsResponse`
+   */
+  getAudioEncoderConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioEncoderConfigurationOptionsResponse> {
+    return this.#device.call(GetAudioEncoderConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies an audio encoder configuration. Running streams using this configuration may
+   * be immediately updated according to the new settings. The changes are not guaranteed to take effect
+   * unless the client requests a new stream URI and restarts any affected streams. NVC methods for
+   * changing a running stream are out of scope for this specification.
+   *
+   * @param request - The `SetAudioEncoderConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAudioEncoderConfigurationResponse`
+   */
+  setAudioEncoderConfiguration(
+    request: SetAudioEncoderConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetAudioEncoderConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing audio output configurations for a device. Provide a
+   * profile token to list only configurations that are compatible with the profile. If a configuration
+   * token is provided only a single configuration will be returned.
+   *
+   * @param request - The `GetAudioOutputConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioOutputConfigurationsResponse`
+   */
+  getAudioOutputConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioOutputConfigurationsResponse> {
+    return this.#device.call(GetAudioOutputConfigurations, request, options)
+  }
+
+  /**
+   * This operation returns the available options (supported values and ranges for audio output
+   * configuration parameters) for configuring an audio output. To retrieve the EQPresetList, a valid
+   * ConfigurationToken must be provided. If EQPreset is supported and isFrequencyDecibelEditable is
+   * signaled as true, the response shall include the FrequencyDecibelPair.
+   *
+   * @param request - The `GetAudioOutputConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioOutputConfigurationOptionsResponse`
+   */
+  getAudioOutputConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioOutputConfigurationOptionsResponse> {
+    return this.#device.call(GetAudioOutputConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies an audio output configuration.
+   *
+   * @param request - The `SetAudioOutputConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAudioOutputConfigurationResponse`
+   */
+  setAudioOutputConfiguration(
+    request: SetAudioOutputConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetAudioOutputConfiguration, request, options)
+  }
+
+  /**
+   * By default this operation lists all existing audio decoder configurations for a device. Provide a
+   * profile token to list only configurations that are compatible with the profile. If a configuration
+   * token is provided only a single configuration will be returned.
+   *
+   * @param request - The `GetAudioDecoderConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioDecoderConfigurationsResponse`
+   */
+  getAudioDecoderConfigurations(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioDecoderConfigurationsResponse> {
+    return this.#device.call(GetAudioDecoderConfigurations, request, options)
+  }
+
+  /**
+   * This command list the audio decoding capabilities for a given profile and configuration of a device.
+   *
+   * @param request - The `GetAudioDecoderConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioDecoderConfigurationOptionsResponse`
+   */
+  getAudioDecoderConfigurationOptions(
+    request?: GetConfiguration,
+    options?: CallOptions
+  ): Promise<GetAudioDecoderConfigurationOptionsResponse> {
+    return this.#device.call(GetAudioDecoderConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation modifies an audio decoder configuration.
+   *
+   * @param request - The `SetAudioDecoderConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAudioDecoderConfigurationResponse`
+   */
+  setAudioDecoderConfiguration(
+    request: SetAudioDecoderConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetAudioDecoderConfiguration, request, options)
+  }
+
+  /**
+   * This operation gets the list of multicast audio decoder configurations.
+   *
+   * @param request - The `GetMulticastAudioDecoderConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMulticastAudioDecoderConfigurationsResponse`
+   */
+  getMulticastAudioDecoderConfigurations(
+    request?: GetMulticastAudioDecoderConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<GetMulticastAudioDecoderConfigurationsResponse> {
+    return this.#device.call(GetMulticastAudioDecoderConfigurations, request, options)
+  }
+
+  /**
+   * This operation gets the available options for the MulticastAudioDecoder configuration.
+   *
+   * @param request - The `GetMulticastAudioDecoderConfigurationOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMulticastAudioDecoderConfigurationOptionsResponse`
+   */
+  getMulticastAudioDecoderConfigurationOptions(
+    request?: GetMulticastAudioDecoderConfigurationOptionsRequest,
+    options?: CallOptions
+  ): Promise<GetMulticastAudioDecoderConfigurationOptionsResponse> {
+    return this.#device.call(GetMulticastAudioDecoderConfigurationOptions, request, options)
+  }
+
+  /**
+   * This operation sets the MulticastAudioDecoderConfiguration.
+   *
+   * @param request - The `SetMulticastAudioDecoderConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetMulticastAudioDecoderConfigurationResponse`
+   */
+  setMulticastAudioDecoderConfiguration(
+    request: SetMulticastAudioDecoderConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetMulticastAudioDecoderConfiguration, request, options)
   }
 
   /**
@@ -2249,31 +5281,252 @@ export class Media2Client {
   }
 
   /**
-   * This operation adds one or more Configurations to an existing media profile. If a configuration
-   * exists in the media profile, it will be replaced. A device shall support adding a compatible
-   * Configuration to a Profile containing a VideoSourceConfiguration and shall support streaming video
-   * data of such a profile. Note that OSD elements must be added via the CreateOSD command.
+   * This operation lists existing OSD configurations for the device. If an OSD token is provided the
+   * device shall respond with the requested configuration or provide an error if it does not exist. In
+   * case only a video source configuration token is provided the device shall respond with all
+   * configurations that exist for the video source configuration. If no tokens are provided the device
+   * shall respond with all available OSD configurations.
    *
-   * @param request - The `AddConfiguration` request
+   * @param request - The `GetOSDs` request
    * @param options - Abort signal, timeout and addressing for this call
-   * @returns The decoded `AddConfigurationResponse`
+   * @returns The decoded `GetOSDsResponse`
    */
-  addConfiguration(request: AddConfigurationRequest, options?: CallOptions): Promise<AddConfigurationResponse> {
-    return this.#device.call(AddConfiguration, request, options)
+  getOSDs(request?: GetOSDsRequest, options?: CallOptions): Promise<GetOSDsResponse> {
+    return this.#device.call(GetOSDs, request, options)
   }
 
   /**
-   * This operation removes the listed configurations from an existing media profile. If the media
-   * profile does not contain one of the listed configurations that item shall be ignored.
+   * Get the OSD Options.
    *
-   * @param request - The `RemoveConfiguration` request
+   * @param request - The `GetOSDOptions` request
    * @param options - Abort signal, timeout and addressing for this call
-   * @returns The decoded `RemoveConfigurationResponse`
+   * @returns The decoded `GetOSDOptionsResponse`
    */
-  removeConfiguration(
-    request: RemoveConfigurationRequest,
+  getOSDOptions(request: GetOSDOptionsRequest, options?: CallOptions): Promise<GetOSDOptionsResponse> {
+    return this.#device.call(GetOSDOptions, request, options)
+  }
+
+  /**
+   * Create the OSD.
+   *
+   * @param request - The `CreateOSD` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateOSDResponse`
+   */
+  createOSD(request: CreateOSDRequest, options?: CallOptions): Promise<CreateOSDResponse> {
+    return this.#device.call(CreateOSD, request, options)
+  }
+
+  /**
+   * Set the OSD
+   *
+   * @param request - The `SetOSD` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetOSDResponse`
+   */
+  setOSD(request: SetOSDRequest, options?: CallOptions): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetOSD, request, options)
+  }
+
+  /**
+   * Delete the OSD.
+   *
+   * @param request - The `DeleteOSD` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteOSDResponse`
+   */
+  deleteOSD(request: DeleteOSDRequest, options?: CallOptions): Promise<SetConfigurationResponse> {
+    return this.#device.call(DeleteOSD, request, options)
+  }
+
+  /**
+   * This operation lists existing Mask configurations for the device. If an Mask token is provided the
+   * device shall respond with the requested configuration or provide an error if it does not exist. In
+   * case only a video source configuration token is provided the device shall respond with all
+   * configurations that exist for the video source configuration. If no tokens are provided the device
+   * shall respond with all available Mask configurations.
+   *
+   * @param request - The `GetMasks` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMasksResponse`
+   */
+  getMasks(request?: GetMasksRequest, options?: CallOptions): Promise<GetMasksResponse> {
+    return this.#device.call(GetMasks, request, options)
+  }
+
+  /**
+   * Get the Mask Options.
+   *
+   * @param request - The `GetMaskOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetMaskOptionsResponse`
+   */
+  getMaskOptions(request: GetMaskOptionsRequest, options?: CallOptions): Promise<GetMaskOptionsResponse> {
+    return this.#device.call(GetMaskOptions, request, options)
+  }
+
+  /**
+   * Create the Mask.
+   *
+   * @param request - The `CreateMask` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreateMaskResponse`
+   */
+  createMask(request: CreateMaskRequest, options?: CallOptions): Promise<CreateMaskResponse> {
+    return this.#device.call(CreateMask, request, options)
+  }
+
+  /**
+   * Set the Mask
+   *
+   * @param request - The `SetMask` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetMaskResponse`
+   */
+  setMask(request: SetMaskRequest, options?: CallOptions): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetMask, request, options)
+  }
+
+  /**
+   * Delete the Mask.
+   *
+   * @param request - The `DeleteMask` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteMaskResponse`
+   */
+  deleteMask(request: DeleteMaskRequest, options?: CallOptions): Promise<SetConfigurationResponse> {
+    return this.#device.call(DeleteMask, request, options)
+  }
+
+  /**
+   * This operation retrieves audio clip configurations from the device. If an audio clip token is
+   * provided, the device shall return the audio clip configuration associated with that token. If no
+   * token is provided, the device shall return all audio clip configurations that exist on the device.
+   *
+   * @param request - The `GetAudioClips` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetAudioClipsResponse`
+   */
+  getAudioClips(request?: GetAudioClipsRequest, options?: CallOptions): Promise<GetAudioClipsResponse> {
+    return this.#device.call(GetAudioClips, request, options)
+  }
+
+  /**
+   * This operation adds audio clip configuration to the device and provides audio clip upload URI to the
+   * client. The response to the command includes an HTTP URL to which the audio clip may be uploaded
+   * within the expiry time. If the client is unable to upload the audio clip within the URL's expiry
+   * time, the associated audio clip configuration will be permanently removed from the device.
+   *
+   * @param request - The `AddAudioClip` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AddAudioClipResponse`
+   */
+  addAudioClip(request: AddAudioClipRequest, options?: CallOptions): Promise<AddAudioClipResponse> {
+    return this.#device.call(AddAudioClip, request, options)
+  }
+
+  /**
+   * This operation sends a text and its configuartion to device that supports TTS function, so that
+   * device could convert the text into an audio clip and play it according to audio clip Configuration
+   * and TTS Configuration.
+   *
+   * @param request - The `AddTTSAudioClip` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `AddTTSAudioClipResponse`
+   */
+  addTTSAudioClip(request: AddTTSAudioClipRequest, options?: CallOptions): Promise<AddTTSAudioClipResponse> {
+    return this.#device.call(AddTTSAudioClip, request, options)
+  }
+
+  /**
+   * This operation modifies the existing audio clip configuration on the device.
+   *
+   * @param request - The `SetAudioClip` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetAudioClipResponse`
+   */
+  setAudioClip(request: SetAudioClipRequest, options?: CallOptions): Promise<SetAudioClipResponse> {
+    return this.#device.call(SetAudioClip, request, options)
+  }
+
+  /**
+   * This operation deletes the audio clip configuration and the associated audio clip on the device. The
+   * audio clip should be de-associated from the event or schedule trigger if it was previously
+   * associated before this operation. This operation will fail if the device is playing the audio clip
+   * at the same time due to user operation, schedule, or event trigger.
+   *
+   * @param request - The `DeleteAudioClip` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `DeleteAudioClipResponse`
+   */
+  deleteAudioClip(request: DeleteAudioClipRequest, options?: CallOptions): Promise<DeleteAudioClipResponse> {
+    return this.#device.call(DeleteAudioClip, request, options)
+  }
+
+  /**
+   * This operation plays or stops the ongoing audio clip on the device.
+   *
+   * @param request - The `PlayAudioClip` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `PlayAudioClipResponse`
+   */
+  playAudioClip(request: PlayAudioClipRequest, options?: CallOptions): Promise<PlayAudioClipResponse> {
+    return this.#device.call(PlayAudioClip, request, options)
+  }
+
+  /**
+   * This operation retrieves audio clips information which are playing currently in the device.
+   *
+   * @param request - The `GetPlayingAudioClips` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPlayingAudioClipsResponse`
+   */
+  getPlayingAudioClips(
+    request?: GetPlayingAudioClipsRequest,
     options?: CallOptions
-  ): Promise<RemoveConfigurationResponse> {
-    return this.#device.call(RemoveConfiguration, request, options)
+  ): Promise<GetPlayingAudioClipsResponse> {
+    return this.#device.call(GetPlayingAudioClips, request, options)
+  }
+
+  /**
+   * This command is to configure Audio EQPreset.
+   *
+   * @param request - The `SetEQPresetConfiguration` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetEQPresetConfigurationResponse`
+   */
+  setEQPresetConfiguration(
+    request: SetEQPresetConfigurationRequest,
+    options?: CallOptions
+  ): Promise<SetConfigurationResponse> {
+    return this.#device.call(SetEQPresetConfiguration, request, options)
+  }
+
+  /**
+   * This operation gets the current WebRTC configuration for the device.
+   *
+   * @param request - The `GetWebRTCConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetWebRTCConfigurationsResponse`
+   */
+  getWebRTCConfigurations(
+    request?: GetWebRTCConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<GetWebRTCConfigurationsResponse> {
+    return this.#device.call(GetWebRTCConfigurations, request, options)
+  }
+
+  /**
+   * This operation sets the WebRTC configuration for the device.
+   *
+   * @param request - The `SetWebRTCConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `SetWebRTCConfigurationsResponse`
+   */
+  setWebRTCConfigurations(
+    request?: SetWebRTCConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<SetWebRTCConfigurationsResponse> {
+    return this.#device.call(SetWebRTCConfigurations, request, options)
   }
 }

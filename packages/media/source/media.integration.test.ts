@@ -194,4 +194,100 @@ describe.skipIf(!hostname)('Media on a live camera', () => {
       connected.close()
     }
   })
+
+  it('reads the video source modes, encoder instances, audio outputs and OSD options', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    try {
+      const { v1, v2 } = connected.use(media).media
+      const [source] = (await v1.getVideoSourceConfigurations()).configurations ?? []
+      if (!source) throw new Error('The camera reported no video source configuration')
+      const configurationToken = source.token
+      await v1.getVideoSourceModes({ videoSourceToken: source.sourceToken })
+      expect((await v1.getGuaranteedNumberOfVideoEncoderInstances({ configurationToken })).totalNumber).toBeGreaterThan(
+        0
+      )
+      expect((await v1.getOSDOptions({ configurationToken })).osdOptions).toBeDefined()
+      await v1.getOSDs({ configurationToken })
+      await v1.getAudioOutputs()
+      await v1.getAudioOutputConfigurations()
+      await v1.getAudioDecoderConfigurations()
+      await v1.getVideoAnalyticsConfigurations()
+
+      if (!connected.services.has('http://www.onvif.org/ver20/media/wsdl')) return
+      expect((await v2.getServiceCapabilities()).capabilities.profileCapabilities).toBeDefined()
+      await v2.getVideoSourceModes({ videoSourceToken: source.sourceToken })
+      expect((await v2.getVideoEncoderInstances({ configurationToken })).info.total).toBeGreaterThan(0)
+      expect((await v2.getOSDOptions({ configurationToken })).osdOptions).toBeDefined()
+      await v2.getOSDs({ configurationToken })
+    } finally {
+      connected.close()
+    }
+  })
+
+  it('creates, changes and deletes a text OSD through Media and Media2', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    try {
+      const { v1, v2 } = connected.use(media).media
+      const [source] = (await v1.getVideoSourceConfigurations()).configurations ?? []
+      if (!source) throw new Error('The camera reported no video source configuration')
+      const { osdOptions } = await v1.getOSDOptions({ configurationToken: source.token })
+      const [position = 'UpperLeft'] = osdOptions.positionOption ?? []
+      const osd = {
+        token: 'onviftest',
+        videoSourceConfigurationToken: { value: source.token },
+        type: 'Text',
+        position: position === 'Custom' ? { type: position, pos: { x: 0, y: 0 } } : { type: position },
+        textString: { type: 'Plain', plainText: 'onviftest' }
+      }
+      const clients = connected.services.has('http://www.onvif.org/ver20/media/wsdl') ? [v1, v2] : [v1]
+      for (const client of clients) {
+        const { osdToken } = await client.createOSD({ OSD: osd })
+        try {
+          await client.setOSD({
+            OSD: { ...osd, token: osdToken, textString: { type: 'Plain', plainText: 'onviftest2' } }
+          })
+          const { osds = [] } = await client.getOSDs({ configurationToken: source.token })
+          expect(osds.find(({ token }) => token === osdToken)?.textString?.plainText).toBe('onviftest2')
+        } finally {
+          await client.deleteOSD({ osdToken })
+        }
+        const { osds = [] } = await client.getOSDs({ configurationToken: source.token })
+        expect(osds.map(({ token }) => token)).not.toContain(osdToken)
+      }
+    } finally {
+      connected.close()
+    }
+  })
+
+  it('sends the Media2 audio configurations back unchanged', async () => {
+    const connected = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    try {
+      if (!connected.services.has('http://www.onvif.org/ver20/media/wsdl')) return
+      const { v2 } = connected.use(media).media
+      const [audioSource] = (await v2.getAudioSourceConfigurations()).configurations ?? []
+      if (audioSource) await v2.setAudioSourceConfiguration({ configuration: audioSource })
+      const [audioEncoder] = (await v2.getAudioEncoderConfigurations()).configurations ?? []
+      if (audioEncoder) await v2.setAudioEncoderConfiguration({ configuration: audioEncoder })
+      const [audioOutput] = (await v2.getAudioOutputConfigurations()).configurations ?? []
+      if (audioOutput) await v2.setAudioOutputConfiguration({ configuration: audioOutput })
+      const [audioDecoder] = (await v2.getAudioDecoderConfigurations()).configurations ?? []
+      if (audioDecoder) await v2.setAudioDecoderConfiguration({ configuration: audioDecoder })
+      expect((await v2.getAudioOutputConfigurations()).configurations?.[0]).toEqual(audioOutput)
+      expect((await v2.getAudioEncoderConfigurations()).configurations?.[0]).toEqual(audioEncoder)
+    } finally {
+      connected.close()
+    }
+  })
 })
