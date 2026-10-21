@@ -717,8 +717,18 @@ const captureMedia = async (): Promise<void> => {
   if (media2Url) await captureMedia2Configuration(media2Url)
 }
 
+const media2Kinds = [
+  'VideoSource',
+  'AudioSource',
+  'AudioEncoder',
+  'AudioOutput',
+  'AudioDecoder',
+  'MulticastAudioDecoder'
+]
+
 const captureMedia2Configuration = async (url: string): Promise<void> => {
   const media2 = client('media', 'media2', url, ns.tr2)
+  const capabilitiesXml = await media2.call('GetServiceCapabilities')
   const metadataXml = await media2.call('GetMetadataConfigurations')
   const [metadata] = tokenized(metadataXml, 'Configurations')
   const [profile] = tokenized((await media2.send('GetProfiles')).xml, 'Profiles')
@@ -734,7 +744,55 @@ const captureMedia2Configuration = async (url: string): Promise<void> => {
   await media2.call('GetMetadataConfigurations', '<ConfigurationToken>missing</ConfigurationToken>', {
     as: 'GetMetadataConfigurationsMissingFault'
   })
+  const first = new Map<string, { xml: string; attributes: string; token: string; content: string; options: string }>()
+  for (const kind of media2Kinds) {
+    // the media suite already captures the video source configurations
+    const action = `Get${kind}Configurations`
+    const xml = kind === 'VideoSource' ? (await media2.send(action)).xml : await media2.call(action)
+    const [configuration] = tokenized(xml, 'Configurations')
+    if (!configuration) continue
+    const options = await media2.call(
+      `Get${kind}ConfigurationOptions`,
+      `<ConfigurationToken>${configuration.token}</ConfigurationToken>`
+    )
+    first.set(kind, { xml, options, ...configuration })
+  }
+  const source = first.get('VideoSource')
+  const sourceToken = source && text(source.content, 'SourceToken')
+  const videoSource = `<VideoSourceToken>${sourceToken}</VideoSourceToken>`
+  const modesXml = sourceToken === undefined ? '' : await media2.call('GetVideoSourceModes', videoSource)
+  const sourceConfiguration = source && `<ConfigurationToken>${source.token}</ConfigurationToken>`
+  const osds = source && (await captureOsds(media2, source.token))
+  const maskOptionsXml = sourceConfiguration ? await media2.call('GetMaskOptions', sourceConfiguration) : ''
+  if (sourceConfiguration) {
+    await media2.call('GetMasks', sourceConfiguration)
+    await media2.call('GetVideoEncoderInstances', sourceConfiguration)
+  }
+  await media2.call('GetAudioClips')
+  await media2.call('GetPlayingAudioClips')
+  const webRtcXml = await media2.call('GetWebRTCConfigurations')
   if (!write) return
+
+  if (sourceToken !== undefined) await sendBackMode(media2, videoSource, modesXml)
+  for (const kind of media2Kinds) {
+    const configuration = first.get(kind)
+    if (!configuration) continue
+    await media2.call(
+      `Set${kind}Configuration`,
+      `<Configuration${configuration.attributes}>${configuration.content}</Configuration>`,
+      { from: configuration.xml }
+    )
+  }
+  const output = first.get('AudioOutput')
+  const preset = output && outerElements(output.options, 'EQPreset')[0]
+  if (preset) {
+    await media2.call('SetEQPresetConfiguration', renamed(preset, 'Configuration'), { from: output.options })
+  }
+  const webRtc = outerElements(webRtcXml, 'WebRTCConfiguration')
+  if (webRtc.length > 0) await media2.call('SetWebRTCConfigurations', webRtc.join(''), { from: webRtcXml })
+  if (osds) await osds.write()
+  if (source) await captureMask(media2, source.token, maskOptionsXml)
+  await captureAudioClips(media2, capabilitiesXml)
 
   if (metadata) {
     await media2.call(
@@ -743,7 +801,6 @@ const captureMedia2Configuration = async (url: string): Promise<void> => {
       { from: metadataXml }
     )
   }
-  const [source] = tokenized((await media2.send('GetVideoSourceConfigurations')).xml, 'Configurations')
   const created = firstMatch(await media2.call('CreateProfile', '<Name>onviftest</Name>'), /<[\w-]+:Token>([^<]+)</)
   if (!created) return
   const token = `<ProfileToken>${created}</ProfileToken>`
@@ -763,22 +820,83 @@ const captureMedia2Configuration = async (url: string): Promise<void> => {
   try {
     await media2.call('AddConfiguration', `${token}${references(true)}`)
     await media2.call('GetProfiles', `<Token>${created}</Token><Type>All</Type>`, { as: 'GetProfilesAfterAdd' })
+    await media2.call('StartMulticastStreaming', token)
+    await media2.call('StopMulticastStreaming', token)
+    await media2.call('SetSynchronizationPoint', token)
     await media2.call('RemoveConfiguration', `${token}${references(false)}`)
   } finally {
     await media2.call('DeleteProfile', `<Token>${created}</Token>`)
   }
 }
 
-const configurationKinds = ['VideoSource', 'VideoEncoder', 'AudioSource', 'AudioEncoder', 'Metadata']
+// sends back the video source mode in use, unless switching to it needs a reboot
+const sendBackMode = async (media: Client, videoSource: string, modesXml: string): Promise<void> => {
+  const modes = tokenized(modesXml, 'VideoSourceModes')
+  const mode = modes.find(({ attributes }) => /\sEnabled="(?:true|1)"/.test(attributes)) ?? modes[0]
+  if (!mode) return
+  if (/<(?:[\w-]+:)?Reboot>(?:true|1)</.test(mode.content)) {
+    log(JSON.stringify({ skipped: 'SetVideoSourceMode', reason: 'mode needs a reboot' }))
+    return
+  }
+  await media.call('SetVideoSourceMode', `${videoSource}<VideoSourceModeToken>${mode.token}</VideoSourceModeToken>`)
+}
+
+const captureMask = async (media2: Client, configurationToken: string, optionsXml: string): Promise<void> => {
+  const type = text(optionsXml, 'Types') ?? 'Color'
+  const mask = (token: string, enabled: boolean) =>
+    `<Mask token="${token}"><ConfigurationToken>${configurationToken}</ConfigurationToken>` +
+    `<Polygon><Point ${tt} x="0" y="0"/><Point ${tt} x="0" y="0.1"/><Point ${tt} x="0.1" y="0.1"/>` +
+    `<Point ${tt} x="0.1" y="0"/></Polygon><Type>${type}</Type><Enabled>${enabled}</Enabled></Mask>`
+  const token = firstMatch(await media2.call('CreateMask', mask('onviftest', false)), /Token>([^<]+)</)
+  if (token === undefined) return
+  try {
+    await media2.call('GetMasks', `<Token>${token}</Token>`, { as: 'GetMasksCreated' })
+    await media2.call('SetMask', mask(token, false))
+  } finally {
+    await media2.call('DeleteMask', `<Token>${token}</Token>`)
+  }
+}
+
+const captureAudioClips = async (media2: Client, capabilitiesXml: string): Promise<void> => {
+  const format = firstMatch(capabilitiesXml, /SupportedAudioClipFormat="([^"\s]+)/) ?? 'G711'
+  const clip = `<Configuration><Enabled>false</Enabled><Name>onviftest</Name><Type>${format}</Type><RepeatCycles>1</RepeatCycles></Configuration>`
+  const added = firstMatch(await media2.call('AddAudioClip', clip), /Token>([^<]+)</)
+  if (added !== undefined) {
+    try {
+      await media2.call('GetAudioClips', `<Token>${added}</Token>`, { as: 'GetAudioClipsAdded' })
+      await media2.call('SetAudioClip', `<Token>${added}</Token>${clip}`)
+      await media2.call('PlayAudioClip', `<Token>${added}</Token><Play>false</Play>`)
+    } finally {
+      await media2.call('DeleteAudioClip', `<Token>${added}</Token>`)
+    }
+  }
+  const speech =
+    '<TTSConfiguration><Content>onviftest</Content><Language>en</Language><VoiceType>Female</VoiceType></TTSConfiguration>'
+  const spoken = firstMatch(await media2.call('AddTTSAudioClip', `${clip}${speech}`), /Token>([^<]+)</)
+  if (spoken === undefined) return
+  await media2.call('DeleteAudioClip', `<Token>${spoken}</Token>`, { as: 'DeleteTTSAudioClip' })
+}
+
+const configurationKinds = [
+  'VideoSource',
+  'VideoEncoder',
+  'AudioSource',
+  'AudioEncoder',
+  'VideoAnalytics',
+  'Metadata',
+  'AudioOutput',
+  'AudioDecoder'
+]
 
 const captureMediaConfiguration = async (url: string): Promise<void> => {
   const media = client('media', 'media', url, ns.trt)
-  // the media suite already captures the video configurations and encoder options of both media services
+  // the media and analytics suites already capture the video configurations and encoder options of both media services
   const captured = (action: string) => /^GetVideo\w+Configurations$|^GetVideoEncoderConfigurationOptions$/.test(action)
   const get = async (action: string, content = '') =>
     captured(action) ? (await media.send(action, content)).xml : await media.call(action, content)
   await media.call('GetServiceCapabilities')
   await media.call('GetAudioSources')
+  await media.call('GetAudioOutputs')
   const token = await profileToken()
   if (token !== undefined) await media.call('GetProfile', `<ProfileToken>${token}</ProfileToken>`)
   const first = new Map<string, { xml: string; attributes: string; token: string; content: string }>()
@@ -789,13 +907,25 @@ const captureMediaConfiguration = async (url: string): Promise<void> => {
     first.set(kind, { xml, ...configuration })
     const configurationToken = `<ConfigurationToken>${configuration.token}</ConfigurationToken>`
     await media.call(`Get${kind}Configuration`, configurationToken)
-    await get(`Get${kind}ConfigurationOptions`, configurationToken)
+    if (kind !== 'VideoAnalytics') await get(`Get${kind}ConfigurationOptions`, configurationToken)
     if (token !== undefined) {
       await media.call(`GetCompatible${kind}Configurations`, `<ProfileToken>${token}</ProfileToken>`)
     }
   }
+  const sourceToken = await videoSourceToken()
+  const source = `<VideoSourceToken>${sourceToken}</VideoSourceToken>`
+  const modesXml = sourceToken === undefined ? '' : await media.call('GetVideoSourceModes', source)
+  const videoSource = first.get('VideoSource')
+  const osds = videoSource && (await captureOsds(media, videoSource.token, { media1: true }))
+  if (videoSource) {
+    await media.call(
+      'GetGuaranteedNumberOfVideoEncoderInstances',
+      `<ConfigurationToken>${videoSource.token}</ConfigurationToken>`
+    )
+  }
   if (!write) return
 
+  if (sourceToken !== undefined) await sendBackMode(media, source, modesXml)
   for (const kind of configurationKinds.filter((name) => name !== 'VideoEncoder')) {
     const configuration = first.get(kind)
     if (!configuration) continue
@@ -806,6 +936,7 @@ const captureMediaConfiguration = async (url: string): Promise<void> => {
       { from: configuration.xml }
     )
   }
+  if (osds) await osds.write()
   const created = tokenized(await media.call('CreateProfile', '<Name>onviftest</Name>'), 'Profile')[0]
   if (!created) return
   const profile = `<ProfileToken>${created.token}</ProfileToken>`
@@ -828,9 +959,37 @@ const captureMediaConfiguration = async (url: string): Promise<void> => {
     }
     await media.call('StartMulticastStreaming', profile)
     await media.call('StopMulticastStreaming', profile)
+    await media.call('SetSynchronizationPoint', profile)
     for (const { kind } of attached.toReversed()) await media.call(`Remove${kind}Configuration`, profile)
   } finally {
     await media.call('DeleteProfile', profile)
+  }
+}
+
+// only Media v1 has GetOSD
+const captureOsds = async (media: Client, configurationToken: string, { media1 = false } = {}) => {
+  const configuration = `<ConfigurationToken>${configurationToken}</ConfigurationToken>`
+  const osdsXml = await media.call('GetOSDs', configuration)
+  const optionsXml = await media.call('GetOSDOptions', configuration)
+  const [existing] = tokenized(osdsXml, 'OSDs')
+  if (media1 && existing) await media.call('GetOSD', `<OSDToken>${existing.token}</OSDToken>`)
+  return {
+    write: async () => {
+      const position = text(optionsXml, 'PositionOption') ?? 'UpperLeft'
+      const osd = (token: string, plainText: string) =>
+        `<OSD token="${token}"><VideoSourceConfigurationToken ${tt}>${configurationToken}</VideoSourceConfigurationToken>` +
+        `<Type ${tt}>Text</Type>` +
+        `<Position ${tt}><Type>${position}</Type>${position === 'Custom' ? '<Pos x="0" y="0"/>' : ''}</Position>` +
+        `<TextString ${tt}><Type>Plain</Type><PlainText>${plainText}</PlainText></TextString></OSD>`
+      const token = firstMatch(await media.call('CreateOSD', osd('onviftest', 'onviftest')), /OSDToken>([^<]+)</)
+      if (token === undefined) return
+      try {
+        if (media1) await media.call('GetOSD', `<OSDToken>${token}</OSDToken>`, { as: 'GetOSDCreated' })
+        await media.call('SetOSD', osd(token, 'onviftest2'))
+      } finally {
+        await media.call('DeleteOSD', `<OSDToken>${token}</OSDToken>`)
+      }
+    }
   }
 }
 
