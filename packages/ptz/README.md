@@ -24,7 +24,13 @@ await profile.stop()
 
 Moves, status and presets belong to a media profile. `getProfiles()` from [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media) lists the profile tokens.
 
-## Operations
+## Examples
+
+- [Moving](examples/moving.md): continuous, relative and stop
+- [Presets](examples/presets.md): save and go to presets
+- [Errors](examples/errors.md): unsupported moves and home position
+
+## API
 
 ```ts
 camera.ptz.getServiceCapabilities()
@@ -54,34 +60,6 @@ profile.sendAuxiliaryCommand(request)
 Each method has TypeScript types for its request and response. Each one takes call options as second argument, such as `{ timeoutMs: 2_000 }`.
 
 The profile methods are also on `camera.ptz`, with `profileToken` in the request.
-
-## Moving
-
-```ts
-await profile.continuousMove({ velocity: { zoom: { x: -1 } } })
-await profile.relativeMove({ translation: { panTilt: { x: 0.1, y: 0 } } })
-await profile.stop({ panTilt: true, zoom: false })
-```
-
-Only the axes you pass are sent. Pan and tilt only cameras accept a move without `zoom`.
-
-Values are in the camera's generic spaces, -1 to 1, unless a vector names another `space`. `getNodes()` lists the spaces a camera supports.
-
-## Presets
-
-```ts
-const { presetToken } = await profile.setPreset({ presetName: 'Gate' })
-await profile.gotoPreset({ presetToken })
-
-const { preset = [] } = await profile.getPresets()
-console.log(preset.map(({ token, name }) => `${token} ${name}`)) // [ '1 Gate' ]
-```
-
-## Errors
-
-A move the camera cannot do throws a `SoapFaultError`. Its `subcodes` say why, such as `['InvalidArgVal', 'SpaceNotSupported']`.
-
-Some cameras answer `gotoHomePosition()` with success and do not move. Check `homeSupported` from `getNodes()` first.
 
 ## License
 

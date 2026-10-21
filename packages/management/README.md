@@ -23,7 +23,17 @@ console.log(user.map(({ username, userLevel }) => `${username} ${userLevel}`)) /
 await camera.management.setNTP({ fromDHCP: false, ntpManual: [{ type: 'DNS', dnsName: 'pool.ntp.org' }] })
 ```
 
-## Operations
+## Examples
+
+- [Users](examples/users.md): create, change and delete users
+- [Certificates](examples/certificates.md): read certificates
+- [Firmware and backups](examples/firmware.md): upgrade firmware, download and restore backups
+- [Date and time](examples/date-and-time.md): NTP and time zone
+- [Relays](examples/relays.md): switch a relay output
+- [Network](examples/network.md): hostname, interfaces and reboots
+- [Errors](examples/errors.md): rejected settings
+
+## API
 
 ```ts
 camera.management.getUsers()
@@ -135,73 +145,6 @@ camera.management.setRelayOutputState(request)
 ```
 
 Each method has TypeScript types for its request and response. Each one takes call options as second argument, such as `{ timeoutMs: 2_000 }`.
-
-## Users
-
-```ts
-await camera.management.createUsers({ user: [{ username: 'viewer', password: 'secret', userLevel: 'User' }] })
-await camera.management.setUser({ user: [{ username: 'viewer', password: 'changed', userLevel: 'User' }] })
-await camera.management.deleteUsers({ username: ['viewer'] })
-```
-
-After changing the password of the user you are connected as, connect again with the new password.
-
-## Certificates
-
-```ts
-const { nvtCertificate = [] } = await camera.management.getCertificates()
-const der = nvtCertificate[0]?.certificate.data // Uint8Array
-```
-
-Certificate, key and policy data is a `Uint8Array` in both directions.
-
-## Firmware and backups
-
-```ts
-const { systemBackupUri } = await camera.management.getSystemUris()
-const backup = systemBackupUri && (await camera.download(systemBackupUri)).body
-
-const firmware = await readFile('firmware.bin')
-const { expectedDownTime } = await camera.management.uploadFirmware(firmware, { timeoutMs: 600_000 })
-```
-
-`uploadFirmware()` waits the upload delay the camera asks for. A camera that rejects the file throws a `TransportError` with `status` 415.
-
-`uploadBackup(backup)` restores a backup downloaded from `systemBackupUri`.
-
-`GetSystemBackup`, `RestoreSystem` and `UpgradeSystemFirmware` are not supported.
-
-## Date and time
-
-```ts
-await camera.management.setSystemDateAndTime({ dateTimeType: 'NTP', daylightSavings: false, timeZone: { TZ: 'UTC0' } })
-```
-
-Calls after `setSystemDateAndTime()` are signed with the new device time.
-
-## Relays
-
-```ts
-const { relayOutputs: [relay] = [] } = await camera.management.getRelayOutputs()
-if (relay) await camera.management.setRelayOutputState({ relayOutputToken: relay.token, logicalState: 'active' })
-```
-
-A relay in `Monostable` mode returns to idle after its `delayTime`.
-
-## Network
-
-```ts
-const { rebootNeeded } = await camera.management.setHostnameFromDHCP({ fromDHCP: true })
-if (rebootNeeded) await camera.systemReboot()
-```
-
-`setNetworkInterfaces()` and `setHostnameFromDHCP()` return `rebootNeeded`. The change applies after the reboot.
-
-## Errors
-
-A camera that rejects a setting throws a `SoapFaultError`. Its `subcodes` say why, such as `['OperationProhibited', 'PasswordTooWeak']`.
-
-Network changes can move the camera to another address. Connect again at the new address.
 
 ## License
 

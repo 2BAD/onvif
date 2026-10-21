@@ -23,7 +23,14 @@ console.log(relayOutputs.map(({ token, properties }) => `${token} ${properties.m
 await camera.io.setRelayOutputState({ relayOutputToken: '0', logicalState: 'active' })
 ```
 
-## Operations
+## Examples
+
+- [Relays](examples/relays.md): monostable and bistable relays
+- [Digital inputs](examples/digital-inputs.md): input states and events
+- [Serial ports](examples/serial-ports.md): send a command and read the reply
+- [Errors](examples/errors.md): missing tokens and unsupported IO
+
+## API
 
 ```ts
 camera.io.getServiceCapabilities()
@@ -52,47 +59,6 @@ camera.io.getAudioOutputs()
 Video and audio sources and outputs also have `get`, `set` and `getOptions` calls for their configuration, such as `getVideoSourceConfiguration()`, `setVideoSourceConfiguration()` and `getVideoSourceConfigurationOptions()`.
 
 Each method has TypeScript types for its request and response. Each one takes call options as second argument, such as `{ timeoutMs: 2_000 }`.
-
-## Relays
-
-```ts
-await camera.io.setRelayOutputSettings({
-  relayOutput: { token: '0', properties: { mode: 'Monostable', delayTime: 'PT5S', idleState: 'closed' } }
-})
-await camera.io.setRelayOutputState({ relayOutputToken: '0', logicalState: 'active' })
-```
-
-A `Monostable` relay returns to its idle state after `delayTime`. A `Bistable` relay stays in the state you set.
-
-`getRelayOutputOptions()` lists the modes and delay times a camera accepts. Delay times are seconds.
-
-## Digital inputs
-
-```ts
-const { digitalInputs = [] } = await camera.io.getDigitalInputs()
-console.log(digitalInputs) // [ { token: '1', idleState: 'open' } ]
-```
-
-Inputs that change state send `tns1:Device/Trigger/DigitalInput` events. Receive them with [`@2bad/onvif-events`](https://www.npmjs.com/package/@2bad/onvif-events).
-
-## Serial ports
-
-```ts
-const { serialData } = await camera.io.sendReceiveSerialCommand({
-  token: 'SerialPort_1',
-  serialData: { binary: new Uint8Array([0xff, 0x01, 0x00, 0x08, 0x00, 0x20, 0x29]) },
-  timeOut: 'PT1S'
-})
-console.log(serialData?.binary) // Uint8Array(4) [ 255, 1, 0, 0 ]
-```
-
-`serialData` takes one of `binary` or `string`. Use `binary` for control characters. A `string` reply has its leading and trailing whitespace removed.
-
-## Errors
-
-A token that does not exist throws a `SoapFaultError`, such as with the subcodes `['InvalidArgVal', 'RelayToken']`.
-
-Cameras without a kind of IO throw a `SoapFaultError` from its calls. Its `subcodes` often start with `ActionNotSupported` or `InvalidArgVal`.
 
 ## License
 

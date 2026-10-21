@@ -27,11 +27,16 @@ const jpeg = await camera.media.fetchSnapshot(await camera.media.getSnapshotUri(
 
 Media2 is used when the camera supports it, Media v1 otherwise.
 
+Cameras without Media2 can't report H.265. Their H.265 profiles may have no `videoEncoder`. Their snapshot and stream addresses still work.
+
 ## Examples
 
 - [Stream URLs](examples/stream-urls.md): RTSP, UDP and HTTP addresses for each profile
 - [Snapshots](examples/snapshots.md): save a JPEG from the camera
 - [Encoder settings](examples/encoder-settings.md): change codec, resolution, frame rate and bitrate
+- [Profiles](examples/profiles.md): create profiles and add configurations
+- [Metadata](examples/metadata.md): event topics and analytics in the metadata stream
+- [On-screen text](examples/on-screen-text.md): add and remove text overlays
 
 ## API
 
@@ -96,75 +101,7 @@ Each method is also exported as a function that takes the device first, such as 
 
 `camera.media.v1` and `camera.media.v2` return the responses as the camera sent them.
 
-## Profiles
-
-```ts
-const { v1 } = camera.media
-const { profile } = await v1.createProfile({ name: 'analytics' })
-const profileToken = profile.token
-
-const { configurations: [source] = [] } = await v1.getCompatibleVideoSourceConfigurations({ profileToken })
-const { configurations: [encoder] = [] } = await v1.getCompatibleVideoEncoderConfigurations({ profileToken })
-if (!source || !encoder) throw new Error('No compatible configurations')
-await v1.addVideoSourceConfiguration({ profileToken, configurationToken: source.token })
-await v1.addVideoEncoderConfiguration({ profileToken, configurationToken: encoder.token })
-
-await v1.deleteProfile({ profileToken })
-```
-
-Audio, metadata and PTZ configurations are added the same way. Profiles with `fixed: true` can't be deleted.
-
-With Media2, `addConfiguration()` adds several configurations in one call.
-
-```ts
-await camera.media.v2.addConfiguration({
-  profileToken,
-  configuration: [
-    { type: 'Metadata', token: metadata.token },
-    { type: 'Analytics', token: analytics.token }
-  ]
-})
-```
-
-List the types in the order of `VideoSource`, `VideoEncoder`, `AudioSource`, `AudioEncoder`, `AudioOutput`, `AudioDecoder`, `Metadata`, `Analytics`, `PTZ`.
-
-## Metadata
-
-```ts
-const { configurations: [metadata] = [] } = await camera.media.v2.getMetadataConfigurations()
-console.log(metadata?.events?.filter?.topicExpression?.[0]?.value) // tns1:RuleEngine/CellMotionDetector/Motion
-
-if (metadata) await camera.media.v2.setMetadataConfiguration({ configuration: { ...metadata, analytics: true } })
-```
-
-`getMetadataConfigurations()` returns topics with the prefix `tns1`, whatever prefix the camera sent. A topic in another namespace reads as `{namespace}Name`. Both forms can be sent back.
-
-## On-screen text
-
-```ts
-const { v1 } = camera.media
-const { osdToken } = await v1.createOSD({
-  OSD: {
-    token: 'new',
-    videoSourceConfigurationToken: { value: source.token },
-    type: 'Text',
-    position: { type: 'UpperLeft' },
-    textString: { type: 'Plain', plainText: 'Gate 1' }
-  }
-})
-
-await v1.deleteOSD({ osdToken })
-```
-
-`getOSDOptions()` lists the positions and text types the camera accepts.
-
-## Video source modes
-
 `setVideoSourceMode()` returns `reboot: true` when the camera restarts to apply the mode.
-
-## Limits
-
-Cameras without Media2 can't report H.265. Their H.265 profiles may have no `videoEncoder`. Their snapshot and stream addresses still work.
 
 ## License
 

@@ -23,7 +23,14 @@ for await (const found of camera.search.recordings()) {
 }
 ```
 
-## Operations
+## Examples
+
+- [Searching](examples/searching.md): recorded events and search options
+- [Replay](examples/replay.md): RTSP, UDP and HTTP replay addresses
+- [Recording control](examples/recording-control.md): create recordings and recording jobs
+- [Errors](examples/errors.md): missing recordings and memory cards
+
+## API
 
 ```ts
 camera.search.recordings(request?, options?) // each recording found
@@ -38,72 +45,6 @@ camera.replay // a method per Replay operation, such as camera.replay.getReplayC
 Each method has TypeScript types for its request and response. The generated methods take call options as second argument, such as `{ timeoutMs: 2_000 }`.
 
 `camera.recording.forRecording(recordingToken)` has the recording methods without `recordingToken` in the request.
-
-## Searching
-
-```ts
-const startPoint = new Date(Date.now() - 86_400_000)
-const searchFilter = {
-  topicExpression: [
-    { dialect: 'http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet', value: 'tns1:RecordingHistory//.' }
-  ]
-}
-for await (const found of camera.search.events({ startPoint, searchFilter })) {
-  console.log(found.time, found.recordingToken, found.event.topic?.value) // 2026-10-19T13:15:34.000Z RecordingToken_1 tns1:RecordingHistory/Recording/State
-}
-```
-
-The search ends on the camera after the last result, on an error and when the loop stops early.
-
-```ts
-camera.search.recordings(
-  { scope: { includedRecordings: [recordingToken] }, maxMatches: 100 },
-  {
-    // optional, values are the defaults
-    timeoutMs: 60_000, // time for the whole search
-    pageSize: 100, // results asked for per request
-    keepAliveTime: 'PT60S', // how long the camera keeps the search open, the time of the whole search
-
-    // optional, off by default
-    signal // stops the search
-  }
-)
-```
-
-A search that does not complete within `timeoutMs` throws a `TimeoutError`.
-
-## Replay
-
-```ts
-const { uri, reported } = await camera.replay.uri(recordingToken, { protocol: 'HTTP' })
-```
-
-The address gets the host you connected to. `reported` is the address as the camera sent it. Under `serviceAddresses: 'reject'`, an address on another host throws an `OnvifError`.
-
-`protocol` is `RTSP` by default, or `UDP` or `HTTP`.
-
-## Recording control
-
-```ts
-const { recordingToken } = await camera.recording.createRecording({
-  recordingConfiguration: {
-    source: { sourceId: 'cam1', name: 'Gate', location: '', description: '', address: '' },
-    content: 'Gate camera',
-    maximumRetentionTime: 'PT0S'
-  }
-})
-const { jobToken } = await camera.recording.createRecordingJob({
-  jobConfiguration: { recordingToken, mode: 'Active', priority: 1 }
-})
-```
-
-`getServiceCapabilities()` reports whether a camera creates recordings and tracks, as `dynamicRecordings` and `dynamicTracks`.
-
-## Errors
-
-A recording that does not exist throws a `SoapFaultError` with the subcodes `['InvalidArgVal', 'NoRecording']`.
-
-A camera without a memory card can throw a `SoapFaultError` from `getRecordingInformation()` and `getMediaAttributes()`.
 
 ## License
 
