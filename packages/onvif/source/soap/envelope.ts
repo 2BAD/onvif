@@ -11,6 +11,16 @@ export type Envelope = {
 
 const authFaults = new Set(['NotAuthorized', 'FailedAuthentication', 'InvalidSecurity', 'InvalidSecurityToken'])
 
+const faultDetails = new WeakMap<SoapFaultError, XmlObject>()
+
+/**
+ * The `Detail` of a SOAP fault. It is not a property of the error.
+ *
+ * @param error - A fault raised by `parseEnvelope`
+ * @returns The children of `Detail` with namespace prefixes removed, `undefined` if the fault has none
+ */
+export const faultDetail = (error: SoapFaultError): XmlObject | undefined => faultDetails.get(error)
+
 /**
  * Build a SOAP 1.2 envelope. The envelope prefix is `s`.
  *
@@ -104,7 +114,10 @@ export function parseEnvelope(
     if ([details.code, ...details.subcodes].some((code) => authFaults.has(code))) {
       throw new AuthError(`Not authorized: ${details.reason}`, context, details)
     }
-    throw new SoapFaultError(details, context)
+    const error = new SoapFaultError(details, context)
+    const detail = isObject(fault) ? first(fault['Detail'] ?? fault['detail']) : undefined
+    if (isObject(detail)) faultDetails.set(error, detail)
+    throw error
   }
   return { header, body }
 }

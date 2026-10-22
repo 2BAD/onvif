@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fixture } from '../../../../tools/fixtures/corpus.ts'
 import { AuthError, ParseError, SoapFaultError } from '#errors.ts'
-import { buildEnvelope, parseEnvelope } from '#soap/envelope.ts'
+import { buildEnvelope, faultDetail, parseEnvelope } from '#soap/envelope.ts'
 
 const live = 'live/dvc/dcn-bm2220lpr'
 
@@ -118,6 +118,34 @@ describe('parseEnvelope', () => {
       '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><SOAP-ENV:Fault>' +
       '<faultcode>SOAP-ENV:Client</faultcode><faultstring>bad request</faultstring></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>'
     expect(() => parseEnvelope(xml)).toThrow('SOAP fault Client: bad request')
+  })
+
+  it('keeps the fault detail off the error, where only faultDetail() reads it', () => {
+    const xml = fixture('live/ezviz/ds-2de2c400ig-w-w/events.PullMessagesOverLimits.xml').xml
+    const error = thrown(() => parseEnvelope(xml, context)) as SoapFaultError
+    expect(faultDetail(error)).toEqual({ Text: 'Timeout too long' })
+    expect(Object.values(error)).not.toContainEqual({ Text: 'Timeout too long' })
+    expect(JSON.stringify(error)).not.toContain('Timeout too long')
+    expect(error.message).not.toContain('Timeout too long')
+  })
+
+  it('reads the detail of SOAP 1.1 faults', () => {
+    const xml =
+      '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><SOAP-ENV:Fault>' +
+      '<faultcode>SOAP-ENV:Client</faultcode><faultstring>bad request</faultstring>' +
+      '<detail><Limit>10</Limit></detail></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>'
+    expect(faultDetail(thrown(() => parseEnvelope(xml)) as SoapFaultError)).toEqual({ Limit: '10' })
+  })
+
+  it('has no detail for a fault without one or with text only', () => {
+    const text =
+      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><s:Fault><s:Code><s:Value>s:Sender' +
+      '</s:Value></s:Code><s:Reason><s:Text xml:lang="en">x</s:Text></s:Reason><s:Detail>text</s:Detail>' +
+      '</s:Fault></s:Body></s:Envelope>'
+    expect(faultDetail(thrown(() => parseEnvelope(text)) as SoapFaultError)).toBeUndefined()
+    expect(faultDetail(thrown(() => parseEnvelope(soap12Fault(['ActionNotSupported'], 'x'))) as SoapFaultError)).toBe(
+      undefined
+    )
   })
 
   it('raises ParseError with context for malformed XML', () => {
