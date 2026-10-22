@@ -386,7 +386,17 @@ const targets: Target[] = [
         'GotoPreset',
         'GotoHomePosition',
         'SetHomePosition',
-        'SendAuxiliaryCommand'
+        'SendAuxiliaryCommand',
+        'GetCompatibleConfigurations',
+        'GeoMove',
+        'MoveAndStartTracking',
+        'GetPresetTours',
+        'GetPresetTour',
+        'GetPresetTourOptions',
+        'CreatePresetTour',
+        'ModifyPresetTour',
+        'OperatePresetTour',
+        'RemovePresetTour'
       ]
     }
   },

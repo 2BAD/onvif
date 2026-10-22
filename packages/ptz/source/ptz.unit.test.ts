@@ -9,7 +9,8 @@ import {
   hik,
   rawRequestOf,
   rejection,
-  requestOf
+  requestOf,
+  simulator
 } from '../../../tools/mock-camera/harness.ts'
 import type { ActionOverride, MockCameraOptions } from '../../../tools/mock-camera/server.ts'
 import { PTZ, ptz } from '#index.ts'
@@ -24,13 +25,15 @@ const profileToken = 'Profile_1'
 const operations = operationsOf(PTZ)
 
 describe('generated ptz operations', () => {
-  const fixtures = capturesOf('ptz', operations)
+  const fixtures = capturesOf('ptz', operations).filter(
+    ({ name }) => name !== 'live/ezviz/ds-2de2c400ig-w-w/ptz.GetPresetTourMissing.xml'
+  )
 
   it('cover a camera capture for every operation', () => {
     const captured = new Set(
       fixtures.filter(({ name }) => name.startsWith('live/')).map(({ operation }) => operation.name)
     )
-    const faultOnly = ['RelativeMove', 'AbsoluteMove', 'SendAuxiliaryCommand']
+    const faultOnly = ['RelativeMove', 'AbsoluteMove', 'SendAuxiliaryCommand', 'GeoMove', 'MoveAndStartTracking']
     expect(
       operations.map(({ name }) => name).filter((name) => !captured.has(name) && !faultOnly.includes(name))
     ).toEqual([])
@@ -66,7 +69,17 @@ describe('ptz', () => {
         'gotoPreset',
         'gotoHomePosition',
         'setHomePosition',
-        'sendAuxiliaryCommand'
+        'sendAuxiliaryCommand',
+        'getCompatibleConfigurations',
+        'geoMove',
+        'moveAndStartTracking',
+        'getPresetTours',
+        'getPresetTour',
+        'getPresetTourOptions',
+        'createPresetTour',
+        'modifyPresetTour',
+        'operatePresetTour',
+        'removePresetTour'
       ].toSorted()
     )
   })
@@ -266,6 +279,210 @@ describe('PTZ requests', () => {
   })
 })
 
+describe('PTZ preset tours', () => {
+  const tour = (name: string): Record<string, ActionOverride> => ({ 'ptz.GetPresetTour': answer(simulator(name)) })
+
+  it('sends AutoStart and RandomPresetOrder when they are false', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'ptz.ModifyPresetTour': answer(simulator('ptz.ModifyPresetTour')) }
+    })
+    await device.ptz.modifyPresetTour({
+      profileToken,
+      presetTour: {
+        token: 'tour1',
+        name: '',
+        status: { state: 'Idle' },
+        autoStart: false,
+        startingCondition: { randomPresetOrder: false, recurringTime: 0 },
+        tourSpot: [
+          { presetDetail: { presetToken: '1' }, stayTime: 'PT5S' },
+          { presetDetail: { home: true }, speed: { panTilt: { x: 0.5, y: 0.5 } } }
+        ]
+      }
+    })
+    expect(requestOf(mock, 'ModifyPresetTour')).toEqual({
+      ModifyPresetTour: {
+        ProfileToken: profileToken,
+        PresetTour: {
+          $: { token: 'tour1' },
+          Name: '',
+          Status: { State: 'Idle' },
+          AutoStart: 'false',
+          StartingCondition: { $: { RandomPresetOrder: 'false' }, RecurringTime: '0' },
+          TourSpot: [
+            { PresetDetail: { PresetToken: '1' }, StayTime: 'PT5S' },
+            { PresetDetail: { Home: 'true' }, Speed: { PanTilt: { $: { x: '0.5', y: '0.5' } } } }
+          ]
+        }
+      }
+    })
+  })
+
+  it('sends a tour back as it was read', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        ...tour('ptz.GetPresetTourModified'),
+        'ptz.ModifyPresetTour': answer(simulator('ptz.ModifyPresetTour'))
+      }
+    })
+    const { presetTour } = await device.ptz.getPresetTour({ profileToken, presetTourToken: 'PresetTourToken_3' })
+    expect(presetTour).toEqual({
+      token: 'PresetTourToken_3',
+      name: 'onviftest',
+      status: { state: 'Idle' },
+      autoStart: false,
+      startingCondition: { randomPresetOrder: false },
+      tourSpot: [{ presetDetail: { presetToken: 'PTZPresetToken_3' }, stayTime: 'PT5S' }]
+    })
+    expect(await device.ptz.modifyPresetTour({ profileToken, presetTour })).toEqual({})
+    expect(requestOf(mock, 'ModifyPresetTour')).toMatchObject({
+      ModifyPresetTour: { PresetTour: { TourSpot: { PresetDetail: { PresetToken: 'PTZPresetToken_3' } } } }
+    })
+  })
+
+  it.each([
+    ['no preset detail', {}],
+    ['a preset token and the home position', { presetToken: '1', home: true }]
+  ])('rejects a tour spot with %s before sending', async (_name, presetDetail) => {
+    const { mock, device } = await connect()
+    const presetTour = {
+      status: { state: 'Idle' },
+      autoStart: false,
+      startingCondition: {},
+      tourSpot: [{ presetDetail }]
+    }
+    await expect(device.ptz.modifyPresetTour({ profileToken, presetTour })).rejects.toThrow(
+      'Expected one of presetToken, home, ptzPosition, typeExtension at ModifyPresetTour.presetTour.tourSpot[0].presetDetail'
+    )
+    expect(mock.requests.some(({ action }) => action === 'ModifyPresetTour')).toBe(false)
+  })
+
+  it('creates, starts, stops and removes a tour through forProfile()', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'ptz.CreatePresetTour': answer(simulator('ptz.CreatePresetTour')),
+        'ptz.OperatePresetTour': answer(simulator('ptz.OperatePresetTour')),
+        'ptz.RemovePresetTour': answer(simulator('ptz.RemovePresetTour')),
+        ...tour('ptz.GetPresetTourTouring')
+      }
+    })
+    const profile = device.ptz.forProfile(profileToken)
+    const { presetTourToken } = await profile.createPresetTour()
+    expect(presetTourToken).toBe('PresetTourToken_3')
+    await profile.operatePresetTour({ presetTourToken, operation: 'Start' })
+    expect((await profile.getPresetTour({ presetTourToken })).presetTour.status.state).toBe('Touring')
+    await profile.removePresetTour({ presetTourToken })
+    expect(requestOf(mock, 'CreatePresetTour')).toEqual({ CreatePresetTour: { ProfileToken: profileToken } })
+    expect(requestOf(mock, 'OperatePresetTour')).toEqual({
+      OperatePresetTour: { ProfileToken: profileToken, PresetTourToken: presetTourToken, Operation: 'Start' }
+    })
+    expect(requestOf(mock, 'RemovePresetTour')).toEqual({
+      RemovePresetTour: { ProfileToken: profileToken, PresetTourToken: presetTourToken }
+    })
+  })
+
+  it('reads the tour options with the presets a spot can use', async () => {
+    const { mock, device } = await connect({
+      overrides: { 'ptz.GetPresetTourOptions': answer(simulator('ptz.GetPresetTourOptionsForTour')) }
+    })
+    const { options } = await device.ptz.getPresetTourOptions({ profileToken, presetTourToken: 'PresetTourToken_3' })
+    expect(options).toEqual({
+      autoStart: false,
+      startingCondition: {
+        recurringTime: { min: 10, max: 100 },
+        recurringDuration: { min: 'PT10S', max: 'PT100S' },
+        direction: ['Forward', 'Backward']
+      },
+      tourSpot: {
+        presetDetail: { presetToken: ['PTZPresetToken_3'], home: true },
+        stayTime: { min: 'PT0S', max: 'PT100S' }
+      }
+    })
+    expect(requestOf(mock, 'GetPresetTourOptions')).toEqual({
+      GetPresetTourOptions: { ProfileToken: profileToken, PresetTourToken: 'PresetTourToken_3' }
+    })
+  })
+
+  it('reads no tours as no array', async () => {
+    const { device } = await connect()
+    expect(await device.ptz.getPresetTours({ profileToken })).toEqual({})
+  })
+})
+
+describe('PTZ geo moves and tracking', () => {
+  it('sends the geo target as attributes of a tt element', async () => {
+    const { mock, device } = await connect({ overrides: { 'ptz.GeoMove': answer(simulator('ptz.GeoMove')) } })
+    await device.ptz.geoMove({
+      profileToken,
+      target: { lon: 8.5417, lat: 47.3769, elevation: 408 },
+      areaHeight: 2,
+      areaWidth: 3
+    })
+    expect(requestOf(mock, 'GeoMove')).toEqual({
+      GeoMove: {
+        ProfileToken: profileToken,
+        Target: { $: { lon: '8.5417', lat: '47.3769', elevation: '408' } },
+        AreaHeight: '2',
+        AreaWidth: '3'
+      }
+    })
+    const raw = rawRequestOf(mock, 'GeoMove')
+    const target = /<(\w+):Target\b/.exec(raw)?.[1] ?? ''
+    expect(raw).toContain(`xmlns:${target}="http://www.onvif.org/ver20/ptz/wsdl"`)
+  })
+
+  it('sends an object id of 0 and a target position', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'ptz.MoveAndStartTracking': answer(simulator('ptz.GeoMove').replaceAll('GeoMove', 'MoveAndStartTracking'))
+      }
+    })
+    await device.ptz.moveAndStartTracking({ profileToken, targetPosition: { panTilt: { x: 0, y: 0 } }, objectID: 0 })
+    expect(requestOf(mock, 'MoveAndStartTracking')).toEqual({
+      MoveAndStartTracking: {
+        ProfileToken: profileToken,
+        TargetPosition: { PanTilt: { $: { x: '0', y: '0' } } },
+        ObjectID: '0'
+      }
+    })
+  })
+
+  it('sends the same geo move, tracking and tour requests through forProfile()', async () => {
+    const actions = ['GeoMove', 'MoveAndStartTracking', 'ModifyPresetTour', 'OperatePresetTour', 'RemovePresetTour']
+    const empty = (action: string) => answer(simulator('ptz.GeoMove').replaceAll('GeoMove', action))
+    const { mock, device } = await connect({
+      overrides: Object.fromEntries(actions.map((action) => [`ptz.${action}`, empty(action)]))
+    })
+    const profile = device.ptz.forProfile(profileToken)
+    const target = { lon: 1, lat: 2 }
+    const presetTour = { status: { state: 'Idle' }, autoStart: true, startingCondition: {} }
+    const operation = { presetTourToken: 'tour1', operation: 'Stop' }
+    await device.ptz.geoMove({ profileToken, target })
+    await profile.geoMove({ target })
+    await device.ptz.moveAndStartTracking({ profileToken, presetToken: '1' })
+    await profile.moveAndStartTracking({ presetToken: '1' })
+    await device.ptz.modifyPresetTour({ profileToken, presetTour })
+    await profile.modifyPresetTour({ presetTour })
+    await device.ptz.operatePresetTour({ profileToken, ...operation })
+    await profile.operatePresetTour(operation)
+    await device.ptz.removePresetTour({ profileToken, presetTourToken: 'tour1' })
+    await profile.removePresetTour({ presetTourToken: 'tour1' })
+    for (const action of actions) {
+      const [direct, scoped] = mock.requests.filter((request) => request.action === action)
+      expect(parseEnvelope(scoped?.body ?? '').body).toEqual(parseEnvelope(direct?.body ?? '').body)
+    }
+  })
+
+  it('reads the configurations compatible with a profile', async () => {
+    const { mock, device } = await connect()
+    const { ptzConfiguration = [] } = await device.ptz.getCompatibleConfigurations({ profileToken })
+    expect(ptzConfiguration.map(({ token, nodeToken }) => [token, nodeToken])).toEqual([['PTZToken', 'PTZToken']])
+    expect(requestOf(mock, 'GetCompatibleConfigurations')).toEqual({
+      GetCompatibleConfigurations: { ProfileToken: profileToken }
+    })
+  })
+})
+
 describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
   const hikAnswers = (names: string[]): Record<string, ActionOverride> =>
     Object.fromEntries(names.map((name) => [`ptz.${name}`, answer(hik(`ptz.${name}`))]))
@@ -384,7 +601,9 @@ describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
     ['RelativeMove', 'relativeMove', ['InvalidArgVal', 'SpaceNotSupported']],
     ['AbsoluteMove', 'absoluteMove', ['InvalidArgVal', 'SpaceNotSupported']],
     ['SendAuxiliaryCommand', 'sendAuxiliaryCommand', ['InvalidArgVal', 'AuxiliaryDataNotSupported']],
-    ['GotoPresetMissing', 'gotoPreset', ['InvalidArgVal', 'InvalidParameter']]
+    ['GotoPresetMissing', 'gotoPreset', ['InvalidArgVal', 'InvalidParameter']],
+    ['GeoMove', 'geoMove', ['ActionNotSupported', 'InvalidOperation']],
+    ['MoveAndStartTracking', 'moveAndStartTracking', ['ActionNotSupported', 'InvalidOperation']]
   ] as const)('reports the %s fault with its subcodes', async (name, method, subcodes) => {
     const action = name.replace(/Zoom$|Missing$/, '')
     const { device } = await connect({ overrides: { [`ptz.${action}`]: answer(hik(`ptz.${name}`), 500) } })
@@ -393,7 +612,9 @@ describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
       relativeMove: () => device.ptz.relativeMove({ profileToken, translation: { panTilt: { x: 0.1, y: 0 } } }),
       absoluteMove: () => device.ptz.absoluteMove({ profileToken, position: { panTilt: { x: 0, y: 0 } } }),
       sendAuxiliaryCommand: () => device.ptz.sendAuxiliaryCommand({ profileToken, auxiliaryData: 'tt:Wiper|On' }),
-      gotoPreset: () => device.ptz.gotoPreset({ profileToken, presetToken: 'missing' })
+      gotoPreset: () => device.ptz.gotoPreset({ profileToken, presetToken: 'missing' }),
+      geoMove: () => device.ptz.geoMove({ profileToken, target: { lon: 0, lat: 0, elevation: 0 } }),
+      moveAndStartTracking: () => device.ptz.moveAndStartTracking({ profileToken, presetToken: '1' })
     }
     const error = await rejection(requests[method])
     expect(error).toBeInstanceOf(SoapFaultError)
@@ -401,7 +622,70 @@ describe('PTZ on the Hikvision DS-2DE2C400IG-W-W', () => {
   })
 })
 
+describe('PTZ preset tours on the Hikvision DS-2DE2C400IG-W-W', () => {
+  it('reads a tour spot with every preset detail element, and sends it back with only the preset token', async () => {
+    const { mock, device } = await connect({
+      overrides: {
+        'ptz.GetPresetTours': answer(hik('ptz.GetPresetToursWithTour')),
+        'ptz.ModifyPresetTour': answer(hik('ptz.ModifyPresetTour'))
+      }
+    })
+    const { presetTour: [presetTour] = [] } = await device.ptz.getPresetTours({ profileToken })
+    if (!presetTour) throw new Error('No preset tour in the capture')
+    expect(presetTour).toMatchObject({ token: '1', autoStart: true, startingCondition: {} })
+    expect(presetTour).not.toHaveProperty('name')
+    const [spot] = presetTour.tourSpot ?? []
+    if (!spot) throw new Error('No tour spot in the capture')
+    expect(spot.presetDetail).toEqual({ presetToken: '1', home: false, ptzPosition: {}, typeExtension: {} })
+
+    await expect(device.ptz.modifyPresetTour({ profileToken, presetTour })).rejects.toThrow(
+      'at ModifyPresetTour.presetTour.tourSpot[0].presetDetail'
+    )
+    expect(mock.requests.some(({ action }) => action === 'ModifyPresetTour')).toBe(false)
+    const tourSpot = [{ ...spot, presetDetail: { presetToken: '1' } }]
+    expect(await device.ptz.modifyPresetTour({ profileToken, presetTour: { ...presetTour, tourSpot } })).toEqual({})
+    expect(requestOf(mock, 'ModifyPresetTour')).toMatchObject({
+      ModifyPresetTour: { PresetTour: { TourSpot: { PresetDetail: { PresetToken: '1' } } } }
+    })
+  })
+
+  it('rejects the empty answer for a removed tour with the path of the element', async () => {
+    const { device } = await connect({ overrides: { 'ptz.GetPresetTour': answer(hik('ptz.GetPresetTourMissing')) } })
+    const error = await rejection(() => device.ptz.getPresetTour({ profileToken, presetTourToken: '1' }))
+    expect(error).toBeInstanceOf(DecodeError)
+    expect(error).toMatchObject({ path: 'GetPresetTourResponse', service: 'tptz', action: 'GetPresetTour' })
+    expect((error as Error).message).toContain('PresetTour')
+  })
+
+  it('reads tour options without a preset detail choice', async () => {
+    const { device } = await connect({
+      overrides: { 'ptz.GetPresetTourOptions': answer(hik('ptz.GetPresetTourOptions')) }
+    })
+    expect(await device.ptz.getPresetTourOptions({ profileToken })).toEqual({
+      options: {
+        autoStart: true,
+        startingCondition: {},
+        tourSpot: { presetDetail: {}, stayTime: { min: 'PT0S', max: 'PT120S' } }
+      }
+    })
+  })
+})
+
 describe('PTZ on the DCN-BM2220LPR', () => {
+  it('reports that it has no room for a preset tour', async () => {
+    const { device } = await connect()
+    const error = await rejection(() => device.ptz.createPresetTour({ profileToken }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ subcodes: ['InvalidArgVal', 'TooManyPresetTours'], action: 'CreatePresetTour' })
+  })
+
+  it('reads tour options that rule out the home position', async () => {
+    const { device } = await connect()
+    const { options } = await device.ptz.getPresetTourOptions({ profileToken })
+    expect(options.tourSpot.presetDetail).toEqual({ home: false })
+    expect(options.startingCondition.recurringTime).toEqual({ min: 60, max: 86400 })
+  })
+
   it('reads the preset tour extension GetNode adds to the node of GetNodes, and no preset slots', async () => {
     const { device } = await connect()
     const { ptzNode: [listed] = [] } = await device.ptz.getNodes()

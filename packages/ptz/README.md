@@ -1,6 +1,6 @@
 # @2bad/onvif-ptz
 
-ONVIF pan, tilt, zoom, presets and home position for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
+ONVIF pan, tilt, zoom, presets, preset tours and home position for [`@2bad/onvif`](https://www.npmjs.com/package/@2bad/onvif).
 
 ## Install
 
@@ -20,6 +20,9 @@ const camera = device.use(ptz)
 const profile = camera.ptz.forProfile('Profile_1')
 await profile.continuousMove({ velocity: { panTilt: { x: 0.5, y: 0 } }, timeout: 'PT1S' })
 await profile.stop()
+profile.geoMove(request)
+profile.moveAndStartTracking(request)
+profile.getCompatibleConfigurations()
 ```
 
 Moves, status and presets belong to a media profile. `getProfiles()` from [`@2bad/onvif-media`](https://www.npmjs.com/package/@2bad/onvif-media) lists the profile tokens.
@@ -28,6 +31,7 @@ Moves, status and presets belong to a media profile. `getProfiles()` from [`@2ba
 
 - [Moving](examples/moving.md): continuous, relative and stop
 - [Presets](examples/presets.md): save and go to presets
+- [Preset tours](examples/preset-tours.md): create, start and stop a tour
 - [Errors](examples/errors.md): unsupported moves and home position
 
 ## API
@@ -55,6 +59,14 @@ profile.gotoPreset(request)
 profile.gotoHomePosition()
 profile.setHomePosition()
 profile.sendAuxiliaryCommand(request)
+
+profile.getPresetTours()
+profile.getPresetTour(request)
+profile.getPresetTourOptions()
+profile.createPresetTour()
+profile.modifyPresetTour(request)
+profile.operatePresetTour(request)
+profile.removePresetTour(request)
 ```
 
 Each method has TypeScript types for its request and response. Each one takes call options as second argument, such as `{ timeoutMs: 2_000 }`.

@@ -6,7 +6,11 @@ export type EFlipMode = 'OFF' | 'ON' | 'Extended' | (string & Record<never, neve
 
 export type MoveStatus = 'IDLE' | 'MOVING' | 'UNKNOWN' | (string & Record<never, never>)
 
+export type PTZPresetTourDirection = 'Forward' | 'Backward' | 'Extended' | (string & Record<never, never>)
+
 export type PTZPresetTourOperation = 'Start' | 'Stop' | 'Pause' | 'Extended' | (string & Record<never, never>)
+
+export type PTZPresetTourState = 'Idle' | 'Touring' | 'Paused' | 'Extended' | (string & Record<never, never>)
 
 export type ReverseMode = 'OFF' | 'ON' | 'AUTO' | 'Extended' | (string & Record<never, never>)
 
@@ -51,6 +55,14 @@ export type ContinuousMoveRequest = {
 
 export type ContinuousMoveResponse = Record<string, never>
 
+export type CreatePresetTourRequest = {
+  profileToken: string
+}
+
+export type CreatePresetTourResponse = {
+  presetTourToken: string
+}
+
 /** Range of duration greater equal Min duration and less equal Max duration. */
 export type DurationRange = {
   min: string
@@ -84,6 +96,44 @@ export type FieldOfView = {
 export type FloatRange = {
   min: number
   max: number
+}
+
+export type GeoLocation = {
+  /** East west location as angle. */
+  lon?: number
+  /** North south location as angle. */
+  lat?: number
+  /** Height in meters above sea level. */
+  elevation?: number
+  $any?: Record<string, unknown>
+}
+
+export type GeoMoveRequest = {
+  /** A reference to the MediaProfile. */
+  profileToken: string
+  /** The geolocation of the target position. */
+  target: GeoLocation
+  /** An optional Speed. */
+  speed?: PTZSpeed
+  /** An optional indication of the height of the target/area. */
+  areaHeight?: number
+  /** An optional indication of the width of the target/area. */
+  areaWidth?: number
+}
+
+export type GeoMoveResponse = Record<string, never>
+
+export type GetCompatibleConfigurationsRequest = {
+  /** Contains the token of an existing media profile the configurations shall be compatible with. */
+  profileToken: string
+}
+
+export type GetCompatibleConfigurationsResponse = {
+  /**
+   * A list of all existing PTZConfigurations on the NVT that is suitable to be added to the addressed
+   * media profile.
+   */
+  ptzConfiguration?: PTZConfiguration[]
 }
 
 export type GetConfigurationOptionsRequest = {
@@ -140,6 +190,32 @@ export type GetPresetsResponse = {
   preset?: PTZPreset[]
 }
 
+export type GetPresetTourOptionsRequest = {
+  profileToken: string
+  presetTourToken?: string
+}
+
+export type GetPresetTourOptionsResponse = {
+  options: PTZPresetTourOptions
+}
+
+export type GetPresetTourRequest = {
+  profileToken: string
+  presetTourToken: string
+}
+
+export type GetPresetTourResponse = {
+  presetTour: PresetTour
+}
+
+export type GetPresetToursRequest = {
+  profileToken: string
+}
+
+export type GetPresetToursResponse = {
+  presetTour?: PresetTour[]
+}
+
 export type GetServiceCapabilitiesRequest = Record<string, never>
 
 export type GetServiceCapabilitiesResponse = {
@@ -183,9 +259,64 @@ export type GotoPresetRequest = {
 
 export type GotoPresetResponse = Record<string, never>
 
+/** Range of values greater equal Min value and less equal Max value. */
+export type IntRange = {
+  min: number
+  max: number
+}
+
+export type ModifyPresetTourRequest = {
+  profileToken: string
+  presetTour: PresetTour
+}
+
+export type ModifyPresetTourResponse = Record<string, never>
+
+export type MoveAndStartTrackingRequest = {
+  /** A reference to the MediaProfile where the operation should take place. */
+  profileToken: string
+  /** A preset token. */
+  presetToken?: string
+  /** The geolocation of the target position. */
+  geoLocation?: GeoLocation
+  /** A Position vector specifying the absolute target position. */
+  targetPosition?: PTZVector
+  /** Speed vector specifying the velocity of pan, tilt and zoom. */
+  speed?: PTZSpeed
+  /** Object ID of the object to track. */
+  objectID?: number
+  $any?: Record<string, unknown>
+}
+
+export type MoveAndStartTrackingResponse = Record<string, never>
+
+export type OperatePresetTourRequest = {
+  profileToken: string
+  presetTourToken: string
+  operation: PTZPresetTourOperation
+}
+
+export type OperatePresetTourResponse = Record<string, never>
+
 export type PanTiltLimits = {
   /** A range of pan tilt limits. */
   range: Space2DDescription
+}
+
+export type PresetTour = {
+  /** Readable name of the preset tour. */
+  name?: string
+  /** Read only parameters to indicate the status of the preset tour. */
+  status: PTZPresetTourStatus
+  /** Auto Start flag of the preset tour. True allows the preset tour to be activated always. */
+  autoStart: boolean
+  /** Parameters to specify the detail behavior of the preset tour. */
+  startingCondition: PTZPresetTourStartingCondition
+  /** A list of detail of touring spots including preset positions. */
+  tourSpot?: PTZPresetTourSpot[]
+  extension?: PTZPresetTourExtension
+  /** Unique identifier of this preset tour. */
+  token?: string
 }
 
 export type PTControlDirection = {
@@ -374,6 +505,120 @@ export type PTZPreset = {
   token?: string
 }
 
+export type PTZPresetTourExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourOptions = {
+  /** Indicates whether or not the AutoStart is supported. */
+  autoStart: boolean
+  /** Supported options for Preset Tour Starting Condition. */
+  startingCondition: PTZPresetTourStartingConditionOptions
+  /** Supported options for Preset Tour Spot. */
+  tourSpot: PTZPresetTourSpotOptions
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourPresetDetail = {
+  /** Option to specify the preset position with Preset Token defined in advance. */
+  presetToken?: string
+  /**
+   * Option to specify the preset position with the home position of this PTZ Node. "False" to this
+   * parameter shall be treated as an invalid argument.
+   */
+  home?: boolean
+  /** Option to specify the preset position with vector of PTZ node directly. */
+  ptzPosition?: PTZVector
+  typeExtension?: PTZPresetTourTypeExtension
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourPresetDetailOptions = {
+  /** A list of available Preset Tokens for tour spots. */
+  presetToken?: string[]
+  /** An option to indicate Home position for tour spots. */
+  home?: boolean
+  /** Supported range of Pan and Tilt for tour spots. */
+  panTiltPositionSpace?: Space2DDescription
+  /** Supported range of Zoom for a tour spot. */
+  zoomPositionSpace?: Space1DDescription
+  extension?: PTZPresetTourPresetDetailOptionsExtension
+}
+
+export type PTZPresetTourPresetDetailOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourSpot = {
+  /** Detail definition of preset position of the tour spot. */
+  presetDetail: PTZPresetTourPresetDetail
+  /** Optional parameter to specify Pan/Tilt and Zoom speed on moving toward this tour spot. */
+  speed?: PTZSpeed
+  /** Optional parameter to specify time duration of staying on this tour sport. */
+  stayTime?: string
+  extension?: PTZPresetTourSpotExtension
+}
+
+export type PTZPresetTourSpotExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourSpotOptions = {
+  /** Supported options for detail definition of preset position of the tour spot. */
+  presetDetail: PTZPresetTourPresetDetailOptions
+  /** Supported range of stay time for a tour spot. */
+  stayTime: DurationRange
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourStartingCondition = {
+  /** Optional parameter to specify how many times the preset tour is recurred. */
+  recurringTime?: number
+  /** Optional parameter to specify how long time duration the preset tour is recurred. */
+  recurringDuration?: string
+  /**
+   * Optional parameter to choose which direction the preset tour goes. Forward shall be chosen in case
+   * it is omitted.
+   */
+  direction?: PTZPresetTourDirection
+  extension?: PTZPresetTourStartingConditionExtension
+  /**
+   * Execute presets in random order. If set to true and Direction is also present, Direction will be
+   * ignored and presets of the Tour will be recalled randomly.
+   */
+  randomPresetOrder?: boolean
+}
+
+export type PTZPresetTourStartingConditionExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourStartingConditionOptions = {
+  /** Supported range of Recurring Time. */
+  recurringTime?: IntRange
+  /** Supported range of Recurring Duration. */
+  recurringDuration?: DurationRange
+  /** Supported options for Direction of Preset Tour. */
+  direction?: PTZPresetTourDirection[]
+  extension?: PTZPresetTourStartingConditionOptionsExtension
+}
+
+export type PTZPresetTourStartingConditionOptionsExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourStatus = {
+  /** Indicates state of this preset tour by Idle/Touring/Paused. */
+  state: PTZPresetTourState
+  /** Indicates a tour spot currently staying. */
+  currentTourSpot?: PTZPresetTourSpot
+  extension?: PTZPresetTourStatusExtension
+}
+
+export type PTZPresetTourStatusExtension = {
+  $any?: Record<string, unknown>
+}
+
 export type PTZPresetTourSupported = {
   /**
    * Indicates number of preset tours that can be created. Required preset tour operations shall be
@@ -386,6 +631,10 @@ export type PTZPresetTourSupported = {
 }
 
 export type PTZPresetTourSupportedExtension = {
+  $any?: Record<string, unknown>
+}
+
+export type PTZPresetTourTypeExtension = {
   $any?: Record<string, unknown>
 }
 
@@ -510,6 +759,13 @@ export type RemovePresetRequest = {
 }
 
 export type RemovePresetResponse = Record<string, never>
+
+export type RemovePresetTourRequest = {
+  profileToken: string
+  presetTourToken: string
+}
+
+export type RemovePresetTourResponse = Record<string, never>
 
 export type Reverse = {
   /** Parameter to enable/disable Reverse feature. */
@@ -671,6 +927,12 @@ export const schema: Schema = {
     ]
   },
   ContinuousMoveResponse: { fields: [] },
+  CreatePresetTourRequest: {
+    fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz }]
+  },
+  CreatePresetTourResponse: {
+    fields: [{ name: 'PresetTourToken', property: 'presetTourToken', type: 'string', namespace: tptz }]
+  },
   DurationRange: {
     fields: [
       { name: 'Min', property: 'min', type: 'string', namespace: tt },
@@ -695,6 +957,39 @@ export const schema: Schema = {
     fields: [
       { name: 'Min', property: 'min', type: 'decimal', namespace: tt },
       { name: 'Max', property: 'max', type: 'decimal', namespace: tt }
+    ]
+  },
+  GeoLocation: {
+    fields: [
+      { name: 'lon', type: 'decimal', attribute: true, optional: true },
+      { name: 'lat', type: 'decimal', attribute: true, optional: true },
+      { name: 'elevation', type: 'decimal', attribute: true, optional: true }
+    ],
+    any: true
+  },
+  GeoMoveRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'Target', property: 'target', type: 'GeoLocation', namespace: tptz },
+      { name: 'Speed', property: 'speed', type: 'PTZSpeed', namespace: tptz, optional: true },
+      { name: 'AreaHeight', property: 'areaHeight', type: 'decimal', namespace: tptz, optional: true },
+      { name: 'AreaWidth', property: 'areaWidth', type: 'decimal', namespace: tptz, optional: true }
+    ]
+  },
+  GeoMoveResponse: { fields: [] },
+  GetCompatibleConfigurationsRequest: {
+    fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz }]
+  },
+  GetCompatibleConfigurationsResponse: {
+    fields: [
+      {
+        name: 'PTZConfiguration',
+        property: 'ptzConfiguration',
+        type: 'PTZConfiguration',
+        namespace: tptz,
+        optional: true,
+        array: true
+      }
     ]
   },
   GetConfigurationOptionsRequest: {
@@ -739,6 +1034,32 @@ export const schema: Schema = {
   GetPresetsResponse: {
     fields: [{ name: 'Preset', property: 'preset', type: 'PTZPreset', namespace: tptz, optional: true, array: true }]
   },
+  GetPresetTourOptionsRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetTourToken', property: 'presetTourToken', type: 'string', namespace: tptz, optional: true }
+    ]
+  },
+  GetPresetTourOptionsResponse: {
+    fields: [{ name: 'Options', property: 'options', type: 'PTZPresetTourOptions', namespace: tptz }]
+  },
+  GetPresetTourRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetTourToken', property: 'presetTourToken', type: 'string', namespace: tptz }
+    ]
+  },
+  GetPresetTourResponse: {
+    fields: [{ name: 'PresetTour', property: 'presetTour', type: 'PresetTour', namespace: tptz }]
+  },
+  GetPresetToursRequest: {
+    fields: [{ name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz }]
+  },
+  GetPresetToursResponse: {
+    fields: [
+      { name: 'PresetTour', property: 'presetTour', type: 'PresetTour', namespace: tptz, optional: true, array: true }
+    ]
+  },
   GetServiceCapabilitiesRequest: { fields: [] },
   GetServiceCapabilitiesResponse: {
     fields: [{ name: 'Capabilities', property: 'capabilities', type: 'Capabilities', namespace: tptz }]
@@ -760,7 +1081,56 @@ export const schema: Schema = {
     ]
   },
   GotoPresetResponse: { fields: [] },
+  IntRange: {
+    fields: [
+      { name: 'Min', property: 'min', type: 'integer', namespace: tt },
+      { name: 'Max', property: 'max', type: 'integer', namespace: tt }
+    ]
+  },
+  ModifyPresetTourRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetTour', property: 'presetTour', type: 'PresetTour', namespace: tptz }
+    ]
+  },
+  ModifyPresetTourResponse: { fields: [] },
+  MoveAndStartTrackingRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetToken', property: 'presetToken', type: 'string', namespace: tptz, optional: true },
+      { name: 'GeoLocation', property: 'geoLocation', type: 'GeoLocation', namespace: tptz, optional: true },
+      { name: 'TargetPosition', property: 'targetPosition', type: 'PTZVector', namespace: tptz, optional: true },
+      { name: 'Speed', property: 'speed', type: 'PTZSpeed', namespace: tptz, optional: true },
+      { name: 'ObjectID', property: 'objectID', type: 'integer', namespace: tptz, optional: true }
+    ],
+    any: true
+  },
+  MoveAndStartTrackingResponse: { fields: [] },
+  OperatePresetTourRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetTourToken', property: 'presetTourToken', type: 'string', namespace: tptz },
+      { name: 'Operation', property: 'operation', type: 'string', namespace: tptz }
+    ]
+  },
+  OperatePresetTourResponse: { fields: [] },
   PanTiltLimits: { fields: [{ name: 'Range', property: 'range', type: 'Space2DDescription', namespace: tt }] },
+  PresetTour: {
+    fields: [
+      { name: 'Name', property: 'name', type: 'string', namespace: tt, optional: true },
+      { name: 'Status', property: 'status', type: 'PTZPresetTourStatus', namespace: tt },
+      { name: 'AutoStart', property: 'autoStart', type: 'boolean', namespace: tt },
+      {
+        name: 'StartingCondition',
+        property: 'startingCondition',
+        type: 'PTZPresetTourStartingCondition',
+        namespace: tt
+      },
+      { name: 'TourSpot', property: 'tourSpot', type: 'PTZPresetTourSpot', namespace: tt, optional: true, array: true },
+      { name: 'Extension', property: 'extension', type: 'PTZPresetTourExtension', namespace: tt, optional: true },
+      { name: 'token', type: 'string', attribute: true, optional: true }
+    ]
+  },
   PTControlDirection: {
     fields: [
       { name: 'EFlip', property: 'eFlip', type: 'EFlip', namespace: tt, optional: true },
@@ -919,6 +1289,131 @@ export const schema: Schema = {
       { name: 'token', type: 'string', attribute: true, optional: true }
     ]
   },
+  PTZPresetTourExtension: { fields: [], any: true },
+  PTZPresetTourOptions: {
+    fields: [
+      { name: 'AutoStart', property: 'autoStart', type: 'boolean', namespace: tt },
+      {
+        name: 'StartingCondition',
+        property: 'startingCondition',
+        type: 'PTZPresetTourStartingConditionOptions',
+        namespace: tt
+      },
+      { name: 'TourSpot', property: 'tourSpot', type: 'PTZPresetTourSpotOptions', namespace: tt }
+    ],
+    any: true
+  },
+  PTZPresetTourPresetDetail: {
+    fields: [
+      { name: 'PresetToken', property: 'presetToken', type: 'string', namespace: tt, optional: true },
+      { name: 'Home', property: 'home', type: 'boolean', namespace: tt, optional: true },
+      { name: 'PTZPosition', property: 'ptzPosition', type: 'PTZVector', namespace: tt, optional: true },
+      {
+        name: 'TypeExtension',
+        property: 'typeExtension',
+        type: 'PTZPresetTourTypeExtension',
+        namespace: tt,
+        optional: true
+      }
+    ],
+    any: true,
+    choice: ['presetToken', 'home', 'ptzPosition', 'typeExtension']
+  },
+  PTZPresetTourPresetDetailOptions: {
+    fields: [
+      { name: 'PresetToken', property: 'presetToken', type: 'string', namespace: tt, optional: true, array: true },
+      { name: 'Home', property: 'home', type: 'boolean', namespace: tt, optional: true },
+      {
+        name: 'PanTiltPositionSpace',
+        property: 'panTiltPositionSpace',
+        type: 'Space2DDescription',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'ZoomPositionSpace',
+        property: 'zoomPositionSpace',
+        type: 'Space1DDescription',
+        namespace: tt,
+        optional: true
+      },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'PTZPresetTourPresetDetailOptionsExtension',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  PTZPresetTourPresetDetailOptionsExtension: { fields: [], any: true },
+  PTZPresetTourSpot: {
+    fields: [
+      { name: 'PresetDetail', property: 'presetDetail', type: 'PTZPresetTourPresetDetail', namespace: tt },
+      { name: 'Speed', property: 'speed', type: 'PTZSpeed', namespace: tt, optional: true },
+      { name: 'StayTime', property: 'stayTime', type: 'string', namespace: tt, optional: true },
+      { name: 'Extension', property: 'extension', type: 'PTZPresetTourSpotExtension', namespace: tt, optional: true }
+    ]
+  },
+  PTZPresetTourSpotExtension: { fields: [], any: true },
+  PTZPresetTourSpotOptions: {
+    fields: [
+      { name: 'PresetDetail', property: 'presetDetail', type: 'PTZPresetTourPresetDetailOptions', namespace: tt },
+      { name: 'StayTime', property: 'stayTime', type: 'DurationRange', namespace: tt }
+    ],
+    any: true
+  },
+  PTZPresetTourStartingCondition: {
+    fields: [
+      { name: 'RecurringTime', property: 'recurringTime', type: 'integer', namespace: tt, optional: true },
+      { name: 'RecurringDuration', property: 'recurringDuration', type: 'string', namespace: tt, optional: true },
+      { name: 'Direction', property: 'direction', type: 'string', namespace: tt, optional: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'PTZPresetTourStartingConditionExtension',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'RandomPresetOrder', property: 'randomPresetOrder', type: 'boolean', attribute: true, optional: true }
+    ]
+  },
+  PTZPresetTourStartingConditionExtension: { fields: [], any: true },
+  PTZPresetTourStartingConditionOptions: {
+    fields: [
+      { name: 'RecurringTime', property: 'recurringTime', type: 'IntRange', namespace: tt, optional: true },
+      {
+        name: 'RecurringDuration',
+        property: 'recurringDuration',
+        type: 'DurationRange',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Direction', property: 'direction', type: 'string', namespace: tt, optional: true, array: true },
+      {
+        name: 'Extension',
+        property: 'extension',
+        type: 'PTZPresetTourStartingConditionOptionsExtension',
+        namespace: tt,
+        optional: true
+      }
+    ]
+  },
+  PTZPresetTourStartingConditionOptionsExtension: { fields: [], any: true },
+  PTZPresetTourStatus: {
+    fields: [
+      { name: 'State', property: 'state', type: 'string', namespace: tt },
+      {
+        name: 'CurrentTourSpot',
+        property: 'currentTourSpot',
+        type: 'PTZPresetTourSpot',
+        namespace: tt,
+        optional: true
+      },
+      { name: 'Extension', property: 'extension', type: 'PTZPresetTourStatusExtension', namespace: tt, optional: true }
+    ]
+  },
+  PTZPresetTourStatusExtension: { fields: [], any: true },
   PTZPresetTourSupported: {
     fields: [
       { name: 'MaximumNumberOfPresetTours', property: 'maximumNumberOfPresetTours', type: 'integer', namespace: tt },
@@ -940,6 +1435,7 @@ export const schema: Schema = {
     ]
   },
   PTZPresetTourSupportedExtension: { fields: [], any: true },
+  PTZPresetTourTypeExtension: { fields: [], any: true },
   PTZSpaces: {
     fields: [
       {
@@ -1047,6 +1543,13 @@ export const schema: Schema = {
     ]
   },
   RemovePresetResponse: { fields: [] },
+  RemovePresetTourRequest: {
+    fields: [
+      { name: 'ProfileToken', property: 'profileToken', type: 'string', namespace: tptz },
+      { name: 'PresetTourToken', property: 'presetTourToken', type: 'string', namespace: tptz }
+    ]
+  },
+  RemovePresetTourResponse: { fields: [] },
   Reverse: { fields: [{ name: 'Mode', property: 'mode', type: 'string', namespace: tt }], any: true },
   ReverseOptions: {
     fields: [
@@ -1269,6 +1772,89 @@ export const SendAuxiliaryCommand: Operation<SendAuxiliaryCommandRequest, SendAu
   action: 'http://www.onvif.org/ver20/ptz/wsdl/SendAuxiliaryCommand',
   request: { name: 'SendAuxiliaryCommand', namespace: tptz, type: 'SendAuxiliaryCommandRequest' },
   response: { name: 'SendAuxiliaryCommandResponse', type: 'SendAuxiliaryCommandResponse' },
+  schema
+}
+
+export const GetCompatibleConfigurations: Operation<
+  GetCompatibleConfigurationsRequest,
+  GetCompatibleConfigurationsResponse
+> = {
+  name: 'GetCompatibleConfigurations',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/GetCompatibleConfigurations',
+  request: { name: 'GetCompatibleConfigurations', namespace: tptz, type: 'GetCompatibleConfigurationsRequest' },
+  response: { name: 'GetCompatibleConfigurationsResponse', type: 'GetCompatibleConfigurationsResponse' },
+  schema
+}
+
+export const GeoMove: Operation<GeoMoveRequest, GeoMoveResponse> = {
+  name: 'GeoMove',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/GeoMove',
+  request: { name: 'GeoMove', namespace: tptz, type: 'GeoMoveRequest' },
+  response: { name: 'GeoMoveResponse', type: 'GeoMoveResponse' },
+  schema
+}
+
+export const MoveAndStartTracking: Operation<MoveAndStartTrackingRequest, MoveAndStartTrackingResponse> = {
+  name: 'MoveAndStartTracking',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/MoveAndStartTracking',
+  request: { name: 'MoveAndStartTracking', namespace: tptz, type: 'MoveAndStartTrackingRequest' },
+  response: { name: 'MoveAndStartTrackingResponse', type: 'MoveAndStartTrackingResponse' },
+  schema
+}
+
+export const GetPresetTours: Operation<GetPresetToursRequest, GetPresetToursResponse> = {
+  name: 'GetPresetTours',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/GetPresetTours',
+  request: { name: 'GetPresetTours', namespace: tptz, type: 'GetPresetToursRequest' },
+  response: { name: 'GetPresetToursResponse', type: 'GetPresetToursResponse' },
+  schema
+}
+
+export const GetPresetTour: Operation<GetPresetTourRequest, GetPresetTourResponse> = {
+  name: 'GetPresetTour',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/GetPresetTour',
+  request: { name: 'GetPresetTour', namespace: tptz, type: 'GetPresetTourRequest' },
+  response: { name: 'GetPresetTourResponse', type: 'GetPresetTourResponse' },
+  schema
+}
+
+export const GetPresetTourOptions: Operation<GetPresetTourOptionsRequest, GetPresetTourOptionsResponse> = {
+  name: 'GetPresetTourOptions',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/GetPresetTourOptions',
+  request: { name: 'GetPresetTourOptions', namespace: tptz, type: 'GetPresetTourOptionsRequest' },
+  response: { name: 'GetPresetTourOptionsResponse', type: 'GetPresetTourOptionsResponse' },
+  schema
+}
+
+export const CreatePresetTour: Operation<CreatePresetTourRequest, CreatePresetTourResponse> = {
+  name: 'CreatePresetTour',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/CreatePresetTour',
+  request: { name: 'CreatePresetTour', namespace: tptz, type: 'CreatePresetTourRequest' },
+  response: { name: 'CreatePresetTourResponse', type: 'CreatePresetTourResponse' },
+  schema
+}
+
+export const ModifyPresetTour: Operation<ModifyPresetTourRequest, ModifyPresetTourResponse> = {
+  name: 'ModifyPresetTour',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/ModifyPresetTour',
+  request: { name: 'ModifyPresetTour', namespace: tptz, type: 'ModifyPresetTourRequest' },
+  response: { name: 'ModifyPresetTourResponse', type: 'ModifyPresetTourResponse' },
+  schema
+}
+
+export const OperatePresetTour: Operation<OperatePresetTourRequest, OperatePresetTourResponse> = {
+  name: 'OperatePresetTour',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/OperatePresetTour',
+  request: { name: 'OperatePresetTour', namespace: tptz, type: 'OperatePresetTourRequest' },
+  response: { name: 'OperatePresetTourResponse', type: 'OperatePresetTourResponse' },
+  schema
+}
+
+export const RemovePresetTour: Operation<RemovePresetTourRequest, RemovePresetTourResponse> = {
+  name: 'RemovePresetTour',
+  action: 'http://www.onvif.org/ver20/ptz/wsdl/RemovePresetTour',
+  request: { name: 'RemovePresetTour', namespace: tptz, type: 'RemovePresetTourRequest' },
+  response: { name: 'RemovePresetTourResponse', type: 'RemovePresetTourResponse' },
   schema
 }
 
@@ -1561,6 +2147,140 @@ export class PTZClient {
   ): Promise<SendAuxiliaryCommandResponse> {
     return this.#device.call(SendAuxiliaryCommand, request, options)
   }
+
+  /**
+   * Operation to get all available PTZConfigurations that can be added to the referenced media profile.
+   * A device providing more than one PTZConfiguration or more than one VideoSourceConfiguration or which
+   * has any other resource interdependency between PTZConfiguration entities and other resources
+   * listable in a media profile should implement this operation. PTZConfiguration entities returned by
+   * this operation shall not fail on adding them to the referenced media profile.
+   *
+   * @param request - The `GetCompatibleConfigurations` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCompatibleConfigurationsResponse`
+   */
+  getCompatibleConfigurations(
+    request: GetCompatibleConfigurationsRequest,
+    options?: CallOptions
+  ): Promise<GetCompatibleConfigurationsResponse> {
+    return this.#device.call(GetCompatibleConfigurations, request, options)
+  }
+
+  /**
+   * Operation to move pan,tilt or zoom to point to a destination based on the geolocation of the target.
+   * The speed argument is optional. If an x/y speed value is given it is up to the device to either use
+   * the x value as absolute resoluting speed vector or to map x and y to the component speed. If the
+   * speed argument is omitted, the default speed set by the PTZConfiguration will be used. The area
+   * height and area dwidth parameters are optional, they can be used independently and may be used by
+   * the device to automatically determine the best zoom level to show the target.
+   *
+   * @param request - The `GeoMove` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GeoMoveResponse`
+   */
+  geoMove(request: GeoMoveRequest, options?: CallOptions): Promise<GeoMoveResponse> {
+    return this.#device.call(GeoMove, request, options)
+  }
+
+  /**
+   * Operation to send an an atomic command to the device: move the camera to a wanted position and then
+   * delegate the PTZ control to the tracking algorithm. An existing Speed argument overrides
+   * DefaultSpeed of the corresponding PTZ configuration during movement to the requested position. If
+   * spaces are referenced within the Speed argument, they shall be speed spaces supported by the PTZ
+   * node. If the detection and the tracking are done in the same device, an ObjectID reference can be
+   * passed as an argument, in order to specify which object should be tracked. The operation shall fail
+   * if the requested absolute position is not reachable.
+   *
+   * @param request - The `MoveAndStartTracking` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `MoveAndStartTrackingResponse`
+   */
+  moveAndStartTracking(
+    request: MoveAndStartTrackingRequest,
+    options?: CallOptions
+  ): Promise<MoveAndStartTrackingResponse> {
+    return this.#device.call(MoveAndStartTracking, request, options)
+  }
+
+  /**
+   * Operation to request PTZ preset tours in the selected media profiles.
+   *
+   * @param request - The `GetPresetTours` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetToursResponse`
+   */
+  getPresetTours(request: GetPresetToursRequest, options?: CallOptions): Promise<GetPresetToursResponse> {
+    return this.#device.call(GetPresetTours, request, options)
+  }
+
+  /**
+   * Operation to request a specific PTZ preset tour in the selected media profile.
+   *
+   * @param request - The `GetPresetTour` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetTourResponse`
+   */
+  getPresetTour(request: GetPresetTourRequest, options?: CallOptions): Promise<GetPresetTourResponse> {
+    return this.#device.call(GetPresetTour, request, options)
+  }
+
+  /**
+   * Operation to request available options to configure PTZ preset tour.
+   *
+   * @param request - The `GetPresetTourOptions` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetTourOptionsResponse`
+   */
+  getPresetTourOptions(
+    request: GetPresetTourOptionsRequest,
+    options?: CallOptions
+  ): Promise<GetPresetTourOptionsResponse> {
+    return this.#device.call(GetPresetTourOptions, request, options)
+  }
+
+  /**
+   * Operation to create a preset tour for the selected media profile.
+   *
+   * @param request - The `CreatePresetTour` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreatePresetTourResponse`
+   */
+  createPresetTour(request: CreatePresetTourRequest, options?: CallOptions): Promise<CreatePresetTourResponse> {
+    return this.#device.call(CreatePresetTour, request, options)
+  }
+
+  /**
+   * Operation to modify a preset tour for the selected media profile.
+   *
+   * @param request - The `ModifyPresetTour` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `ModifyPresetTourResponse`
+   */
+  modifyPresetTour(request: ModifyPresetTourRequest, options?: CallOptions): Promise<ModifyPresetTourResponse> {
+    return this.#device.call(ModifyPresetTour, request, options)
+  }
+
+  /**
+   * Operation to perform specific operation on the preset tour in selected media profile.
+   *
+   * @param request - The `OperatePresetTour` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `OperatePresetTourResponse`
+   */
+  operatePresetTour(request: OperatePresetTourRequest, options?: CallOptions): Promise<OperatePresetTourResponse> {
+    return this.#device.call(OperatePresetTour, request, options)
+  }
+
+  /**
+   * Operation to delete a specific preset tour from the media profile.
+   *
+   * @param request - The `RemovePresetTour` request
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemovePresetTourResponse`
+   */
+  removePresetTour(request: RemovePresetTourRequest, options?: CallOptions): Promise<RemovePresetTourResponse> {
+    return this.#device.call(RemovePresetTour, request, options)
+  }
 }
 
 export class PTZProfileClient {
@@ -1748,5 +2468,157 @@ export class PTZProfileClient {
     options?: CallOptions
   ): Promise<SendAuxiliaryCommandResponse> {
     return this.#device.call(SendAuxiliaryCommand, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to get all available PTZConfigurations that can be added to the referenced media profile.
+   * A device providing more than one PTZConfiguration or more than one VideoSourceConfiguration or which
+   * has any other resource interdependency between PTZConfiguration entities and other resources
+   * listable in a media profile should implement this operation. PTZConfiguration entities returned by
+   * this operation shall not fail on adding them to the referenced media profile.
+   *
+   * @param request - The `GetCompatibleConfigurations` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetCompatibleConfigurationsResponse`
+   */
+  getCompatibleConfigurations(
+    request?: Omit<GetCompatibleConfigurationsRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<GetCompatibleConfigurationsResponse> {
+    return this.#device.call(GetCompatibleConfigurations, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to move pan,tilt or zoom to point to a destination based on the geolocation of the target.
+   * The speed argument is optional. If an x/y speed value is given it is up to the device to either use
+   * the x value as absolute resoluting speed vector or to map x and y to the component speed. If the
+   * speed argument is omitted, the default speed set by the PTZConfiguration will be used. The area
+   * height and area dwidth parameters are optional, they can be used independently and may be used by
+   * the device to automatically determine the best zoom level to show the target.
+   *
+   * @param request - The `GeoMove` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GeoMoveResponse`
+   */
+  geoMove(request: Omit<GeoMoveRequest, 'profileToken'>, options?: CallOptions): Promise<GeoMoveResponse> {
+    return this.#device.call(GeoMove, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to send an an atomic command to the device: move the camera to a wanted position and then
+   * delegate the PTZ control to the tracking algorithm. An existing Speed argument overrides
+   * DefaultSpeed of the corresponding PTZ configuration during movement to the requested position. If
+   * spaces are referenced within the Speed argument, they shall be speed spaces supported by the PTZ
+   * node. If the detection and the tracking are done in the same device, an ObjectID reference can be
+   * passed as an argument, in order to specify which object should be tracked. The operation shall fail
+   * if the requested absolute position is not reachable.
+   *
+   * @param request - The `MoveAndStartTracking` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `MoveAndStartTrackingResponse`
+   */
+  moveAndStartTracking(
+    request?: Omit<MoveAndStartTrackingRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<MoveAndStartTrackingResponse> {
+    return this.#device.call(MoveAndStartTracking, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to request PTZ preset tours in the selected media profiles.
+   *
+   * @param request - The `GetPresetTours` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetToursResponse`
+   */
+  getPresetTours(
+    request?: Omit<GetPresetToursRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<GetPresetToursResponse> {
+    return this.#device.call(GetPresetTours, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to request a specific PTZ preset tour in the selected media profile.
+   *
+   * @param request - The `GetPresetTour` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetTourResponse`
+   */
+  getPresetTour(
+    request: Omit<GetPresetTourRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<GetPresetTourResponse> {
+    return this.#device.call(GetPresetTour, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to request available options to configure PTZ preset tour.
+   *
+   * @param request - The `GetPresetTourOptions` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `GetPresetTourOptionsResponse`
+   */
+  getPresetTourOptions(
+    request?: Omit<GetPresetTourOptionsRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<GetPresetTourOptionsResponse> {
+    return this.#device.call(GetPresetTourOptions, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to create a preset tour for the selected media profile.
+   *
+   * @param request - The `CreatePresetTour` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `CreatePresetTourResponse`
+   */
+  createPresetTour(
+    request?: Omit<CreatePresetTourRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<CreatePresetTourResponse> {
+    return this.#device.call(CreatePresetTour, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to modify a preset tour for the selected media profile.
+   *
+   * @param request - The `ModifyPresetTour` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `ModifyPresetTourResponse`
+   */
+  modifyPresetTour(
+    request: Omit<ModifyPresetTourRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<ModifyPresetTourResponse> {
+    return this.#device.call(ModifyPresetTour, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to perform specific operation on the preset tour in selected media profile.
+   *
+   * @param request - The `OperatePresetTour` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `OperatePresetTourResponse`
+   */
+  operatePresetTour(
+    request: Omit<OperatePresetTourRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<OperatePresetTourResponse> {
+    return this.#device.call(OperatePresetTour, { ...request, profileToken: this.#profileToken }, options)
+  }
+
+  /**
+   * Operation to delete a specific preset tour from the media profile.
+   *
+   * @param request - The `RemovePresetTour` request without `profileToken`
+   * @param options - Abort signal, timeout and addressing for this call
+   * @returns The decoded `RemovePresetTourResponse`
+   */
+  removePresetTour(
+    request: Omit<RemovePresetTourRequest, 'profileToken'>,
+    options?: CallOptions
+  ): Promise<RemovePresetTourResponse> {
+    return this.#device.call(RemovePresetTour, { ...request, profileToken: this.#profileToken }, options)
   }
 }

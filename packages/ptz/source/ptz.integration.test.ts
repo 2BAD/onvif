@@ -69,6 +69,39 @@ describe.skipIf(!hostname)('PTZ on a live camera', () => {
     expect(preset.map(({ token }) => token)).not.toContain(presetToken)
   })
 
+  it('creates, changes, runs and removes a preset tour', async (context) => {
+    const profile = device.ptz.forProfile(profileToken)
+    const { ptzConfiguration = [] } = await profile.getCompatibleConfigurations()
+    expect(ptzConfiguration.length).toBeGreaterThan(0)
+    await profile.getPresetTours()
+    await profile.getPresetTourOptions()
+    const { ptzNode: [listed] = [] } = await device.ptz.getNodes()
+    const { ptzNode: node } = await device.ptz.getNode({ nodeToken: listed?.token ?? '' })
+    if (node.extension?.supportedPresetTour?.maximumNumberOfPresetTours === 0 || node.maximumNumberOfPresets === 0) {
+      context.skip('The node has no room for a preset tour')
+    }
+    const { presetToken } = await profile.setPreset({ presetName: 'onviftest' })
+    try {
+      const { presetTourToken } = await profile.createPresetTour()
+      try {
+        const { presetTour } = await profile.getPresetTour({ presetTourToken })
+        const tourSpot = [{ presetDetail: { presetToken }, stayTime: 'PT5S' }]
+        await profile.modifyPresetTour({ presetTour: { ...presetTour, autoStart: false, tourSpot } })
+        const { presetTour: modified } = await profile.getPresetTour({ presetTourToken })
+        expect(modified.tourSpot?.map((spot) => spot.presetDetail.presetToken)).toEqual([presetToken])
+        await profile.operatePresetTour({ presetTourToken, operation: 'Start' })
+        await sleep(1_000)
+        await profile.operatePresetTour({ presetTourToken, operation: 'Stop' })
+      } finally {
+        await profile.removePresetTour({ presetTourToken })
+      }
+      const { presetTour = [] } = await profile.getPresetTours()
+      expect(presetTour.map(({ token }) => token)).not.toContain(presetTourToken)
+    } finally {
+      await profile.removePreset({ presetToken })
+    }
+  })
+
   it('reports a move in a space the node does not have as a SOAP fault', async () => {
     const { ptzNode: [node] = [] } = await device.ptz.getNodes()
     if (node?.supportedPTZSpaces.continuousZoomVelocitySpace) return
