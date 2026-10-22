@@ -1442,6 +1442,46 @@
     "ptz.MoveAndStartTracking": {
       "status": 500,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.SetSynchronizationPoint": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesAfterSynchronization": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.SetSynchronizationPointBeforeOverLimits": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesOverLimits": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.CreatePullPointSubscriptionFiltered": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesFiltered": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.UnsubscribeFiltered": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.CreatePullPointSubscriptionUnknownTopic": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.PullMessagesUnknownTopic": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "events.UnsubscribeUnknownTopic": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
