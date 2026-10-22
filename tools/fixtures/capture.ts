@@ -1517,6 +1517,7 @@ const subscription = (suite: string, subscriptionXml: string) => {
     client(suite, 'events', pinToHost(address), namespace, { addressing: { action, to: address } })
   return {
     pullPoint: addressed(ns.tev, `${ns.tev}/PullPointSubscription/PullMessagesRequest`),
+    synchronization: addressed(ns.tev, `${ns.tev}/PullPointSubscription/SetSynchronizationPointRequest`),
     manager: addressed(ns.wsnt, 'http://docs.oasis-open.org/wsn/bw-2/SubscriptionManager/UnsubscribeRequest')
   }
 }
@@ -1532,8 +1533,32 @@ const captureEvents = async (): Promise<void> => {
     await events.call('CreatePullPointSubscription', '<InitialTerminationTime>PT60S</InitialTerminationTime>')
   )
   if (!created) return
-  await created.pullPoint.call('PullMessages', '<Timeout>PT5S</Timeout><MessageLimit>50</MessageLimit>')
+  const pull = '<Timeout>PT5S</Timeout><MessageLimit>50</MessageLimit>'
+  await created.pullPoint.call('PullMessages', pull)
+  await created.synchronization.call('SetSynchronizationPoint')
+  await created.pullPoint.call('PullMessages', pull, { as: 'PullMessagesAfterSynchronization' })
+  await created.synchronization.call('SetSynchronizationPoint', '', { as: 'SetSynchronizationPointBeforeOverLimits' })
+  await created.pullPoint.call('PullMessages', '<Timeout>PT24H</Timeout><MessageLimit>1000000</MessageLimit>', {
+    as: 'PullMessagesOverLimits'
+  })
   await created.manager.call('Unsubscribe')
+
+  const filtered = async (name: string, topics: string): Promise<void> => {
+    const filter =
+      `<Filter><wsnt:TopicExpression xmlns:wsnt="${ns.wsnt}" xmlns:tns1="http://www.onvif.org/ver10/topics" ` +
+      `Dialect="http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet">${topics}</wsnt:TopicExpression></Filter>`
+    const xml = await events.call(
+      'CreatePullPointSubscription',
+      `${filter}<InitialTerminationTime>PT60S</InitialTerminationTime>`,
+      { as: `CreatePullPointSubscription${name}` }
+    )
+    const pullPoint = subscription('events', xml)
+    if (!pullPoint) return
+    await pullPoint.pullPoint.call('PullMessages', pull, { as: `PullMessages${name}` })
+    await pullPoint.manager.call('Unsubscribe', '', { as: `Unsubscribe${name}` })
+  }
+  await filtered('Filtered', 'tns1:RuleEngine/CellMotionDetector/Motion|tns1:VideoSource/MotionAlarm')
+  await filtered('UnknownTopic', 'tns1:onviftest/Missing')
 }
 
 const motionStates = (xml: string): string[] =>
