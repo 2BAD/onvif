@@ -1378,6 +1378,70 @@
     "media2.SetSynchronizationPoint": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetCompatibleConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTours": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.CreatePresetTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourCreated": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourOptionsForTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.ModifyPresetTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourModified": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetToursWithTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.OperatePresetTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourTouring": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.OperatePresetTourStop": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.RemovePresetTour": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourMissing": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GeoMove": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.MoveAndStartTracking": {
+      "status": 500,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }

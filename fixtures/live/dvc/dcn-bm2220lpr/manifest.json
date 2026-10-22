@@ -1342,6 +1342,30 @@
     "media2.SetSynchronizationPoint": {
       "status": 200,
       "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetCompatibleConfigurations": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTours": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GetPresetTourOptions": {
+      "status": 200,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.CreatePresetTour": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.GeoMove": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
+    },
+    "ptz.MoveAndStartTracking": {
+      "status": 400,
+      "contentType": "application/soap+xml; charset=utf-8"
     }
   }
 }
