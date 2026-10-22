@@ -993,6 +993,35 @@ const captureOsds = async (media: Client, configurationToken: string, { media1 =
   }
 }
 
+const capturePresetTours = async (ptz: Client, profile: string, presetToken?: string): Promise<void> => {
+  const tourToken = text(await ptz.call('CreatePresetTour', profile), 'PresetTourToken')
+  if (tourToken === undefined) return
+  const tour = `${profile}<PresetTourToken>${tourToken}</PresetTourToken>`
+  try {
+    await ptz.call('GetPresetTour', tour, { as: 'GetPresetTourCreated' })
+    await ptz.call('GetPresetTourOptions', tour, { as: 'GetPresetTourOptionsForTour' })
+    const detail =
+      presetToken === undefined ? '<tt:Home>true</tt:Home>' : `<tt:PresetToken>${presetToken}</tt:PresetToken>`
+    await ptz.call(
+      'ModifyPresetTour',
+      `${profile}<PresetTour xmlns:tt="${ns.tt}" token="${tourToken}"><tt:Name>onviftest</tt:Name>` +
+        '<tt:Status><tt:State>Idle</tt:State></tt:Status><tt:AutoStart>false</tt:AutoStart>' +
+        '<tt:StartingCondition RandomPresetOrder="false"/>' +
+        `<tt:TourSpot><tt:PresetDetail>${detail}</tt:PresetDetail><tt:StayTime>PT5S</tt:StayTime></tt:TourSpot>` +
+        '</PresetTour>'
+    )
+    await ptz.call('GetPresetTour', tour, { as: 'GetPresetTourModified' })
+    await ptz.call('GetPresetTours', profile, { as: 'GetPresetToursWithTour' })
+    await ptz.call('OperatePresetTour', `${tour}<Operation>Start</Operation>`)
+    await pause(1_000)
+    await ptz.call('GetPresetTour', tour, { as: 'GetPresetTourTouring' })
+    await ptz.call('OperatePresetTour', `${tour}<Operation>Stop</Operation>`, { as: 'OperatePresetTourStop' })
+  } finally {
+    await ptz.call('RemovePresetTour', tour)
+    await ptz.call('GetPresetTour', tour, { as: 'GetPresetTourMissing' })
+  }
+}
+
 const capturePtz = async (): Promise<void> => {
   const url = serviceUrl(ns.tptz)
   if (!url) return
@@ -1011,6 +1040,10 @@ const capturePtz = async (): Promise<void> => {
   const profile = `<ProfileToken>${token}</ProfileToken>`
   await ptz.call('GetStatus', profile)
   await ptz.call('GetPresets', profile)
+  await ptz.call('GetCompatibleConfigurations', profile)
+  const [tour] = tokenized(await ptz.call('GetPresetTours', profile), 'PresetTour')
+  if (tour) await ptz.call('GetPresetTour', `${profile}<PresetTourToken>${tour.token}</PresetTourToken>`)
+  await ptz.call('GetPresetTourOptions', profile)
   if (!write) return
 
   if (configuration) {
@@ -1046,6 +1079,10 @@ const capturePtz = async (): Promise<void> => {
     await ptz.call('SetHomePosition', profile)
     await ptz.call('SendAuxiliaryCommand', `${profile}<AuxiliaryData>tt:Wiper|On</AuxiliaryData>`)
     await ptz.call('GotoPreset', `${profile}<PresetToken>missing</PresetToken>`, { as: 'GotoPresetMissing' })
+    await capturePresetTours(ptz, profile, presetToken)
+    await ptz.call('GeoMove', `${profile}<Target ${tt} lon="0" lat="0" elevation="0"/>`)
+    await ptz.call('MoveAndStartTracking', `${profile}<PresetToken>${presetToken ?? 'missing'}</PresetToken>`)
+    await pause(3_000)
   } finally {
     if (presetToken !== undefined) {
       const preset = `${profile}<PresetToken>${presetToken}</PresetToken>`

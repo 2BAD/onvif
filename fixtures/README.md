@@ -27,7 +27,7 @@ Suites are `device`, `management`, `media`, `ptz`, `imaging`, `analytics`, `devi
 
 - `motion` waits up to five minutes for motion to start and stop. Walk through the camera's view while it runs.
 - `reset` resets the device to factory defaults and reboots it. Simulator only.
-- `--write` sends settings back as read and creates and deletes a test user, role, scope, geo location, storage configuration, certificate, 802.1X configuration, preset, profile, OSD, privacy mask, audio clip, analytics rule, recording, track and recording job named `onviftest`. Test cameras and simulators only.
+- `--write` sends settings back as read and creates and deletes a test user, role, scope, geo location, storage configuration, certificate, 802.1X configuration, preset, preset tour, profile, OSD, privacy mask, audio clip, analytics rule, recording, track and recording job named `onviftest`. Test cameras and simulators only.
 - `media --write` skips `SetVideoSourceMode` when the mode needs a reboot.
 - `deviceio --write` switches the first relay to active and back to inactive and sends a serial command with no data.
 - `--write` also sends an invalid hostname, time zone and date, and restores them. Some cameras rewrite their time zone when it is sent back.
