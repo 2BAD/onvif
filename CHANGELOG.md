@@ -25,11 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added video analytics, audio output, audio decoder, OSD and video source mode methods to `device.media.v1`
 - Added the remaining Media2 operations to `device.media.v2`, including OSDs, privacy masks, audio clips and WebRTC
 - Added preset tour, geo move, tracking and compatible configuration methods to `device.ptz`
+- Added `topics` to the `subscribe()` options for the topics the camera sends
+- Added `subscription.setSynchronizationPoint()` to get the current state of every topic again
+- Subscriptions pull again with the limits of a `PullMessagesFaultResponse` instead of rebuilding the pull point
+- Added `faultDetail()` and `prefixes` to `@2bad/onvif/soap`
+
+### Changed
+
+- `notification.topic.expression` has the prefix `tns1` for ONVIF topics, whatever prefix the camera sent
 
 ### Fixed
 
 - Fixed empty optional number, boolean and date elements failing the whole response, such as Hikvision recording times
 - Fixed `setMetadataConfiguration()` dropping the topic filter of the metadata event stream
+- Fixed event subscriptions failing on Hikvision cameras after the pull timeout was shortened
 
 ## [2.3.0] - 2026-10-12
 

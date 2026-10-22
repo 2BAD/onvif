@@ -1,5 +1,5 @@
 import { DecodeError, type ErrorContext } from '@2bad/onvif'
-import { decode, namespaceInfo, type XmlValue } from '@2bad/onvif/soap'
+import { decode, namespaceInfo, prefixes, type XmlValue } from '@2bad/onvif/soap'
 import {
   type ItemList,
   type Message,
@@ -12,7 +12,10 @@ import {
 export const ONVIF_TOPICS = 'http://www.onvif.org/ver10/topics'
 
 export type Topic = {
-  /** The expression as the device sent it, such as `tns1:RuleEngine/CellMotionDetector/Motion`. */
+  /**
+   * The expression with the prefix `tns1` for ONVIF topics, such as `tns1:RuleEngine/CellMotionDetector/Motion`,
+   * whatever prefix the device used. A topic in another namespace reads as `{namespace}Name`.
+   */
   expression: string
   dialect: string
   /** Namespace of the topic tree, from the prefix of the first segment; `undefined` if it is not declared. */
@@ -51,17 +54,26 @@ const items = (list: ItemList | undefined): Readonly<Record<string, string>> => 
   return record
 }
 
+// a segment ends at a slash outside of a {namespace}
+const segmentPattern = /(?:\{[^{}]*\}|[^/{])+/g
+const leadPattern = /^(?:\{([^{}]*)\}|([^:{}]*):)/
+
 const topicOf = (expression: TopicExpressionType): Topic => {
   const text = expression.value.trim()
-  const namespaces = namespaceInfo(expression)?.namespaces ?? {}
-  const colon = text.indexOf(':')
-  const slash = text.indexOf('/')
-  const prefix = colon > 0 && (slash === -1 || colon < slash) ? text.slice(0, colon) : undefined
+  const declared = namespaceInfo(expression)?.namespaces ?? {}
+  const segments = text.match(segmentPattern) ?? []
+  const [, clark, prefix] = leadPattern.exec(segments[0] ?? '') ?? []
+  const own = prefix !== undefined && Object.hasOwn(declared, prefix) ? declared[prefix] : undefined
+  const namespace =
+    clark ??
+    (own !== undefined && prefixes[own] === prefix
+      ? own
+      : Object.values(declared).find((candidate) => prefix !== undefined && prefixes[candidate] === prefix))
   return {
     expression: text,
     dialect: expression.dialect,
-    namespace: prefix !== undefined && Object.hasOwn(namespaces, prefix) ? namespaces[prefix] : undefined,
-    path: text.split('/').map((segment) => segment.slice(segment.indexOf(':') + 1))
+    namespace,
+    path: segments.map((segment) => segment.replace(leadPattern, ''))
   }
 }
 

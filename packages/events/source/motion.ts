@@ -31,7 +31,10 @@ const REFRESH_AFTER_MS = 60_000
  * @throws The errors of `subscribe()` and the errors that end the subscription. Motion events that cannot be read go
  *   to `onError`.
  */
-export async function* motion(device: Device, options: SubscribeOptions): AsyncGenerator<MotionState, void, undefined> {
+export async function* motion(
+  device: Device,
+  options: Omit<SubscribeOptions, 'topics'>
+): AsyncGenerator<MotionState, void, undefined> {
   const { onError } = options
   const context = { host: device.address.host, service: 'tev', action: 'PullMessages' }
   const states = new Map<string, boolean>()
@@ -75,7 +78,7 @@ export async function* motion(device: Device, options: SubscribeOptions): AsyncG
     return { videoSource, isMotion, initialized: initialized && previous === undefined, utcTime }
   }
 
-  for await (const notification of await Subscription.open(device, options)) {
+  for await (const notification of await Subscription.open(device, { ...options, topics: undefined })) {
     let state
     try {
       state = await read(notification)

@@ -68,6 +68,8 @@ export type EndpointReferenceType = {
 }
 
 export type FilterType = {
+  topicExpression?: TopicExpressionType[]
+  messageContent?: QueryExpressionType[]
   $any?: Record<string, unknown>
 }
 
@@ -171,6 +173,14 @@ export type NotificationMessageHolderTypeMessage = {
   $any?: Record<string, unknown>
 }
 
+export type PullMessagesFaultResponse = {
+  /** Maximum timeout supported by the device. */
+  maxTimeout: string
+  /** Maximum message limit supported by the device. */
+  maxMessageLimit: number
+  $any?: Record<string, unknown>
+}
+
 export type PullMessagesRequest = {
   /** Maximum time to block until this method returns. */
   timeout: string
@@ -189,6 +199,12 @@ export type PullMessagesResponse = {
   terminationTime: Date
   /** List of messages. This list shall be empty in case of a timeout. */
   notificationMessage?: NotificationMessageHolderType[]
+}
+
+export type QueryExpressionType = {
+  dialect: string
+  value: string
+  $any?: Record<string, unknown>
 }
 
 export type ReferenceParametersType = {
@@ -329,7 +345,27 @@ export const schema: Schema = {
     ],
     any: true
   },
-  FilterType: { fields: [], any: true },
+  FilterType: {
+    fields: [
+      {
+        name: 'TopicExpression',
+        property: 'topicExpression',
+        type: 'TopicExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      },
+      {
+        name: 'MessageContent',
+        property: 'messageContent',
+        type: 'QueryExpressionType',
+        namespace: wsnt,
+        optional: true,
+        array: true
+      }
+    ],
+    any: true
+  },
   GetEventPropertiesRequest: { fields: [] },
   GetEventPropertiesResponse: {
     fields: [
@@ -440,6 +476,13 @@ export const schema: Schema = {
     ]
   },
   NotificationMessageHolderTypeMessage: { fields: [], any: true },
+  PullMessagesFaultResponse: {
+    fields: [
+      { name: 'MaxTimeout', property: 'maxTimeout', type: 'string', namespace: tev },
+      { name: 'MaxMessageLimit', property: 'maxMessageLimit', type: 'integer', namespace: tev }
+    ],
+    any: true
+  },
   PullMessagesRequest: {
     fields: [
       { name: 'Timeout', property: 'timeout', type: 'string', namespace: tev },
@@ -461,6 +504,11 @@ export const schema: Schema = {
       }
     ]
   },
+  QueryExpressionType: {
+    fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
+    text: 'prefixed',
+    any: true
+  },
   ReferenceParametersType: { fields: [], any: true },
   RenewRequest: {
     fields: [{ name: 'TerminationTime', property: 'terminationTime', type: 'string', namespace: wsnt }],
@@ -477,7 +525,7 @@ export const schema: Schema = {
   SetSynchronizationPointResponse: { fields: [] },
   TopicExpressionType: {
     fields: [{ name: 'Dialect', property: 'dialect', type: 'string', attribute: true }],
-    text: 'string',
+    text: 'prefixed',
     any: true
   },
   TopicSetType: {

@@ -15,6 +15,8 @@ export type MockEventsOptions = {
   hostlessAddress?: boolean
   /** Fault CreatePullPointSubscription once this many pull points exist. */
   maxPullPoints?: number
+  /** Answer a PullMessages over these limits with a `PullMessagesFaultResponse`. */
+  pullLimits?: { maxTimeout: string; maxMessageLimit: number }
 }
 
 export type PullPointState = { id: number; address: string; terminationAt: number; pulls: number }
@@ -215,6 +217,18 @@ export class MockEvents {
     pullPoint.pulls++
     const timeoutMs = durationMs(text(child(request, 'Timeout')), now) ?? 60_000
     const limit = Number(text(child(request, 'MessageLimit')) ?? 1)
+    const { pullLimits } = this.#options
+    if (
+      pullLimits &&
+      (timeoutMs > (durationMs(pullLimits.maxTimeout, now) ?? Infinity) || limit > pullLimits.maxMessageLimit)
+    ) {
+      return this.#fault(
+        'ter:InvalidArgVal',
+        'The timeout or message limit is over the maximum.',
+        `<tev:PullMessagesFaultResponse><tev:MaxTimeout>${pullLimits.maxTimeout}</tev:MaxTimeout>` +
+          `<tev:MaxMessageLimit>${pullLimits.maxMessageLimit}</tev:MaxMessageLimit></tev:PullMessagesFaultResponse>`
+      )
+    }
     if (pullPoint.pending.length === 0) {
       await new Promise<void>((resolve) => {
         const timer = setTimeout(() => {
@@ -254,14 +268,16 @@ export class MockEvents {
     }
   }
 
-  #fault(subcode: string, reason: string): EventReply {
+  #fault(subcode: string, reason: string, detail?: string): EventReply {
     return {
       status: 400,
       body:
         `<?xml version="1.0" encoding="UTF-8"?>${this.#envelopeStart}<SOAP-ENV:Body><SOAP-ENV:Fault>` +
         `<SOAP-ENV:Code><SOAP-ENV:Value>SOAP-ENV:Receiver</SOAP-ENV:Value><SOAP-ENV:Subcode><SOAP-ENV:Value>${subcode}` +
         `</SOAP-ENV:Value></SOAP-ENV:Subcode></SOAP-ENV:Code><SOAP-ENV:Reason><SOAP-ENV:Text xml:lang="en">${reason}` +
-        '</SOAP-ENV:Text></SOAP-ENV:Reason></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>'
+        '</SOAP-ENV:Text></SOAP-ENV:Reason>' +
+        (detail === undefined ? '' : `<SOAP-ENV:Detail>${detail}</SOAP-ENV:Detail>`) +
+        '</SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>'
     }
   }
 }

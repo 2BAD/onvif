@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises'
 import {
   AuthError,
+  type CallOptions,
   DecodeError,
   type Device,
   OnvifError,
@@ -9,8 +10,17 @@ import {
   TimeoutError,
   TransportError
 } from '@2bad/onvif'
-import type { EndpointReference } from '@2bad/onvif/soap'
-import { CreatePullPointSubscription, PullMessages, Renew, Unsubscribe } from '#generated/events.ts'
+import { decode, type EndpointReference, faultDetail, type XmlValue } from '@2bad/onvif/soap'
+import {
+  CreatePullPointSubscription,
+  type FilterType,
+  PullMessages,
+  type PullMessagesFaultResponse,
+  Renew,
+  schema,
+  SetSynchronizationPoint,
+  Unsubscribe
+} from '#generated/events.ts'
 import { decodeNotification, type Notification } from '#notification.ts'
 
 export type SubscribeOptions = {
@@ -25,13 +35,18 @@ export type SubscribeOptions = {
   signal?: AbortSignal | undefined
   /**
    * How long one PullMessages waits on the device for events, 30 000 ms by default. Halved when the device keeps
-   * resetting long polls, and doubled back after 10 minutes without a reset.
+   * resetting long polls, and doubled back after 10 minutes without a reset. Sent rounded up to whole seconds.
    */
   pullTimeoutMs?: number | undefined
   /** Most notifications per PullMessages, 100 by default. */
   messageLimit?: number | undefined
-  /** Lifetime asked for when creating and renewing a pull point, 60 000 ms by default. */
+  /** Lifetime asked for when creating and renewing a pull point, 60 000 ms by default. Sent rounded up to whole seconds. */
   terminationMs?: number | undefined
+  /**
+   * Topics the device sends, such as `tns1:RuleEngine/CellMotionDetector/Motion` or `tns1:VideoSource//.` for a topic
+   * and everything below it. Every topic when left out or empty.
+   */
+  topics?: readonly string[] | undefined
 }
 
 const RESPONSE_MARGIN_MS = 10_000
@@ -41,7 +56,18 @@ const RESTORE_PULL_TIMEOUT_AFTER_MS = 10 * 60_000
 const MAX_BACKOFF_MS = 60_000
 const UNSUBSCRIBE_TIMEOUT_MS = 5_000
 
-const duration = (ms: number): string => `PT${Number((ms / 1000).toFixed(3))}S`
+const CONCRETE_SET = 'http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet'
+
+const duration = (ms: number): string => `PT${Math.max(1, Math.ceil(ms / 1000))}S`
+
+const durationPattern = /^P(?=\d|T\d)(?:(\d+)D)?(?:T(?=\d)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
+
+const durationMs = (value: string): number | undefined => {
+  const match = durationPattern.exec(value.trim())
+  if (!match) return undefined
+  const [, days = 0, hours = 0, minutes = 0, seconds = 0] = match
+  return (((Number(days) * 24 + Number(hours)) * 60 + Number(minutes)) * 60 + Number(seconds)) * 1000
+}
 
 const hasFault = (error: unknown, name: string): boolean =>
   error instanceof SoapFaultError && [error.code, ...error.subcodes].includes(name)
@@ -64,9 +90,10 @@ const isRecoverable = (error: unknown): error is OnvifError =>
 export class Subscription implements AsyncIterableIterator<Notification>, AsyncDisposable {
   readonly #device: Device
   readonly #onError: (error: OnvifError) => void
-  readonly #messageLimit: number
+  #messageLimit: number
   readonly #terminationMs: number
-  readonly #configuredPullTimeoutMs: number
+  #configuredPullTimeoutMs: number
+  readonly #filter: FilterType | undefined
   readonly #controller = new AbortController()
   readonly #buffer: Notification[] = []
   #pullTimeoutMs: number
@@ -114,6 +141,9 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     this.#configuredPullTimeoutMs = this.#pullTimeoutMs
     this.#messageLimit = options.messageLimit ?? 100
     this.#terminationMs = options.terminationMs ?? 60_000
+    const { topics = [] } = options
+    this.#filter =
+      topics.length > 0 ? { topicExpression: [{ dialect: CONCRETE_SET, value: topics.join('|') }] } : undefined
   }
 
   /** Address of the current pull point, `undefined` while it is being rebuilt. */
@@ -140,6 +170,32 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   async return(): Promise<IteratorResult<Notification>> {
     await this.close()
     return { value: undefined, done: true }
+  }
+
+  /**
+   * Ask the device to send the current state of every subscribed property again. Those notifications have
+   * `propertyOperation` `'Initialized'`. Does nothing while the pull point is rebuilt, which sends that state anyway.
+   *
+   * @param options - Abort signal and timeout of the request
+   * @throws {OnvifError} If the subscription is closed
+   * @throws {SoapFaultError} If the device refuses
+   */
+  async setSynchronizationPoint(options: Pick<CallOptions, 'signal' | 'timeoutMs'> = {}): Promise<void> {
+    if (this.#closed) {
+      throw new OnvifError('The subscription is closed', {
+        host: this.#device.address.host,
+        service: 'tev',
+        action: 'SetSynchronizationPoint'
+      })
+    }
+    const reference = this.#reference
+    if (!reference) return
+    const signal = options.signal ? AbortSignal.any([this.#controller.signal, options.signal]) : this.#controller.signal
+    await this.#device.call(
+      SetSynchronizationPoint,
+      {},
+      { to: reference, addressing: true, signal, timeoutMs: options.timeoutMs }
+    )
   }
 
   /** Stop pulling and unsubscribe. Safe to call more than once and from any state. */
@@ -175,7 +231,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
   async #create(signal?: AbortSignal): Promise<void> {
     const response = await this.#device.call(
       CreatePullPointSubscription,
-      { initialTerminationTime: duration(this.#terminationMs) },
+      { ...(this.#filter && { filter: this.#filter }), initialTerminationTime: duration(this.#terminationMs) },
       { signal }
     )
     this.#device.resolveAddress(response.subscriptionReference.address.value)
@@ -268,7 +324,43 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
     this.#pullTimeoutSince = performance.now()
   }
 
+  /**
+   * Lower the pull timeout and message limit to those of a `PullMessagesFaultResponse`.
+   *
+   * @param error - Why the pull failed
+   * @returns `true` when a limit went down, so the pull can be repeated at once
+   */
+  #adoptLimits(error: unknown): boolean {
+    if (!(error instanceof SoapFaultError) || error.action !== 'PullMessages') return false
+    const detail = faultDetail(error)?.['PullMessagesFaultResponse']
+    if (detail === undefined) return false
+    let limits: PullMessagesFaultResponse
+    try {
+      limits = decode(schema, 'PullMessagesFaultResponse', detail as XmlValue, {
+        host: this.#device.address.host,
+        service: 'tev',
+        action: 'PullMessages'
+      }) as PullMessagesFaultResponse
+    } catch (decodeError) {
+      if (!(decodeError instanceof DecodeError)) throw decodeError
+      this.#onError(decodeError)
+      return false
+    }
+    const maxTimeoutMs = durationMs(limits.maxTimeout) ?? this.#pullTimeoutMs
+    const pullTimeoutMs = Math.min(this.#pullTimeoutMs, Math.max(MIN_PULL_TIMEOUT_MS, maxTimeoutMs))
+    const messageLimit = Math.min(this.#messageLimit, Math.max(1, limits.maxMessageLimit))
+    if (pullTimeoutMs === this.#pullTimeoutMs && messageLimit === this.#messageLimit) return false
+    this.#pullTimeoutMs = pullTimeoutMs
+    this.#configuredPullTimeoutMs = Math.min(this.#configuredPullTimeoutMs, pullTimeoutMs)
+    this.#messageLimit = messageLimit
+    return true
+  }
+
   async #recover(error: unknown): Promise<void> {
+    if (this.#adoptLimits(error)) {
+      this.#onError(error as OnvifError)
+      return
+    }
     const rebuildForAuth = error instanceof AuthError && this.#reference !== undefined && !this.#rebuiltForAuth
     if (!rebuildForAuth && !isRecoverable(error)) {
       if (error instanceof OnvifError) {

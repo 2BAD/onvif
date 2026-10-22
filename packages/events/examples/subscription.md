@@ -12,6 +12,7 @@ const subscription = await camera.events.subscribe({
   terminationMs: 60_000, // how long the camera keeps the subscription between requests
 
   // optional, off by default
+  topics: ['tns1:RuleEngine/CellMotionDetector/Motion'], // the only topics the camera sends
   signal // closes the subscription
 })
 ```

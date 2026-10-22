@@ -78,7 +78,7 @@ describe('notifications', () => {
       message('<tt:SimpleItem Name="IsMotion" Value="1"/>')
     )
     expect(notification?.topic).toEqual({
-      expression: 'ns9:RuleEngine/CellMotionDetector/Motion',
+      expression: 'tns1:RuleEngine/CellMotionDetector/Motion',
       dialect: CONCRETE_SET,
       namespace: ONVIF_TOPICS,
       path: ['RuleEngine', 'CellMotionDetector', 'Motion']
@@ -93,8 +93,25 @@ describe('notifications', () => {
         `xmlns:tnssamsung="urn:samsung" Dialect="${CONCRETE_SET} xmlns:wsnt=http://docs.oasis-open.org/wsn/b-2"`
       )
     )
-    expect(notification?.topic).toMatchObject({ namespace: ONVIF_TOPICS, path: ['Device', 'Trigger', 'DigitalInput'] })
+    expect(notification?.topic).toMatchObject({
+      expression: 'tns1:Device/tns1:Trigger/{urn:samsung}DigitalInput',
+      namespace: ONVIF_TOPICS,
+      path: ['Device', 'Trigger', 'DigitalInput']
+    })
     expect(isTopic(notification?.topic, ['Device', 'Trigger', 'DigitalInput'])).toBe(true)
+  })
+
+  it('reads a vendor topic namespace with slashes as a {namespace} prefix', async () => {
+    const [notification] = await receive(
+      topic('acme:Door/Forced', `xmlns:acme="http://acme.example/topics/v1" Dialect="${CONCRETE_SET}"`)
+    )
+    expect(notification?.topic).toEqual({
+      expression: '{http://acme.example/topics/v1}Door/Forced',
+      dialect: CONCRETE_SET,
+      namespace: 'http://acme.example/topics/v1',
+      path: ['Door', 'Forced']
+    })
+    expect(isTopic(notification?.topic, ['Door', 'Forced'], 'http://acme.example/topics/v1')).toBe(true)
   })
 
   it('leaves undeclared prefixes unresolved so they never match an ONVIF topic', async () => {

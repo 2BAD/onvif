@@ -1,6 +1,8 @@
 import { AuthError, Device, OnvifError, SoapFaultError } from '@2bad/onvif'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fixture } from '../../../tools/fixtures/corpus.ts'
 import { motionNotification } from '../../../tools/mock-camera/events.ts'
+import { rejection } from '../../../tools/mock-camera/harness.ts'
 import {
   type ActionOverride,
   type MockCamera,
@@ -88,7 +90,7 @@ describe('subscribe', () => {
     const pull = requests(mock, 'PullMessages')[0]
     expect(pull?.body).toContain(`s:mustUnderstand="1">${subscription.address}</wsa:To>`)
     expect(pull?.body).toContain('>http://www.onvif.org/ver10/events/wsdl/PullPointSubscription/PullMessagesRequest<')
-    expect(pull?.body).toMatch(/<tev:Timeout>PT0\.2S<\/tev:Timeout><tev:MessageLimit>100<\/tev:MessageLimit>/)
+    expect(pull?.body).toMatch(/<tev:Timeout>PT1S<\/tev:Timeout><tev:MessageLimit>100<\/tev:MessageLimit>/)
     const create = requests(mock, 'CreatePullPointSubscription')[0]
     expect(create?.body).toContain('<tev:InitialTerminationTime>PT60S</tev:InitialTerminationTime>')
   })
@@ -137,16 +139,16 @@ describe('subscribe', () => {
   })
 
   it('renews before the pull point expires when pulls do not extend it (Axis, gSOAP)', async () => {
-    const mock = await camera({ events: { terminationMs: 600, extendOnPull: false } })
-    const { subscription, errors } = await open(await connect(mock), { terminationMs: 600 })
+    const mock = await camera({ events: { terminationMs: 1_500, extendOnPull: false } })
+    const { subscription, errors } = await open(await connect(mock), { terminationMs: 1_500 })
     await take(subscription, 7)
     const pending = subscription.next()
-    await wait(1_500)
+    await wait(3_000)
     await subscription.close()
     expect(await pending).toEqual({ value: undefined, done: true })
     expect(errors).toEqual([])
     expect(requests(mock, 'Renew').length).toBeGreaterThan(0)
-    expect(requests(mock, 'Renew')[0]?.body).toContain('<wsnt:TerminationTime>PT0.6S</wsnt:TerminationTime>')
+    expect(requests(mock, 'Renew')[0]?.body).toContain('<wsnt:TerminationTime>PT2S</wsnt:TerminationTime>')
     expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(1)
   })
 
@@ -170,12 +172,12 @@ describe('subscribe', () => {
   it('uses the measured clock when a RenewResponse has no CurrentTime', async () => {
     const mock = await camera({
       clockSkewMs: 7_200_000,
-      events: { terminationMs: 600, extendOnPull: false, renewCurrentTime: false }
+      events: { terminationMs: 1_500, extendOnPull: false, renewCurrentTime: false }
     })
-    const { subscription, errors } = await open(await connect(mock), { terminationMs: 600 })
+    const { subscription, errors } = await open(await connect(mock), { terminationMs: 1_500 })
     await take(subscription, 7)
     const pending = subscription.next()
-    await wait(1_500)
+    await wait(3_000)
     await subscription.close()
     await pending
     expect(errors).toEqual([])
@@ -554,5 +556,218 @@ describe('events', () => {
       'GetEventProperties',
       'GetServiceCapabilities'
     ])
+  })
+})
+
+describe('durations', () => {
+  it('sends a shortened pull timeout in whole seconds (DS-2DE2C400IG-W-W)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'destroy' } } })
+    const { subscription } = await open(await connect(mock), { pullTimeoutMs: 3_000, terminationMs: 90_500 })
+    const pending = subscription.next()
+    await wait(1_700)
+    await subscription.close()
+    await pending
+    const timeouts = requests(mock, 'PullMessages').map((request) => /<tev:Timeout>([^<]+)</.exec(request.body)?.[1])
+    expect(timeouts.every((timeout) => /^PT\d+S$/.test(timeout ?? ''))).toBe(true)
+    expect(timeouts.at(-1)).toBe('PT2S')
+    expect(requests(mock, 'CreatePullPointSubscription')[0]?.body).toContain(
+      '<tev:InitialTerminationTime>PT91S</tev:InitialTerminationTime>'
+    )
+  })
+})
+
+describe('topics', () => {
+  const filterOf = (body: string | undefined) => {
+    const prefix = /xmlns:(\w+)="http:\/\/www\.onvif\.org\/ver10\/topics"/.exec(body ?? '')?.[1] ?? ''
+    const expression = /<(?:\w+:)?TopicExpression\b([^>]*)>([^<]*)</.exec(body ?? '')
+    return { prefix, attributes: expression?.[1] ?? '', text: expression?.[2] }
+  }
+
+  it('sends the topics as one ConcreteSet expression with their namespace declared', async () => {
+    const mock = await camera()
+    const topics = ['tns1:RuleEngine/CellMotionDetector/Motion', 'tns1:VideoSource/MotionAlarm']
+    await open(await connect(mock), { topics })
+    const { prefix, attributes, text } = filterOf(requests(mock, 'CreatePullPointSubscription')[0]?.body)
+    expect(attributes).toContain('Dialect="http://www.onvif.org/ver10/tev/topicExpression/ConcreteSet"')
+    expect(text).toBe(`${prefix}:RuleEngine/CellMotionDetector/Motion|${prefix}:VideoSource/MotionAlarm`)
+  })
+
+  it('declares the namespace of a {namespace} topic', async () => {
+    const mock = await camera()
+    await open(await connect(mock), { topics: ['{http://acme.example/topics}Door//.'] })
+    const body = requests(mock, 'CreatePullPointSubscription')[0]?.body ?? ''
+    const prefix = /xmlns:(\w+)="http:\/\/acme\.example\/topics"/.exec(body)?.[1]
+    expect(filterOf(body).text).toBe(`${prefix}:Door//.`)
+  })
+
+  it('sends the filter again when it rebuilds the pull point', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'status', status: 500, times: 1 } } })
+    const { subscription } = await open(await connect(mock), { topics: ['tns1:VideoSource/MotionAlarm'] })
+    const pending = subscription.next()
+    await vi.waitFor(() => expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2), { timeout: 2_000 })
+    await subscription.close()
+    await pending
+    const [first, second] = requests(mock, 'CreatePullPointSubscription').map(({ body }) => filterOf(body).text)
+    expect(first).toMatch(/^\w+:VideoSource\/MotionAlarm$/)
+    expect(second).toBe(first)
+  })
+
+  it('sends no filter without topics', async () => {
+    const mock = await camera()
+    await open(await connect(mock), { topics: [] })
+    expect(requests(mock, 'CreatePullPointSubscription')[0]?.body).not.toContain('Filter')
+  })
+
+  it('rejects a topic with an unknown prefix before sending', async () => {
+    const mock = await camera()
+    await expect(open(await connect(mock), { topics: ['acme:Door/Forced'] })).rejects.toThrow(
+      'Unknown prefix acme at CreatePullPointSubscription.filter.topicExpression[0].value'
+    )
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(0)
+  })
+
+  it('throws the fault of a device that does not know a topic (DCN-BM2220LPR)', async () => {
+    const mock = await camera({
+      overrides: {
+        'events.CreatePullPointSubscription': {
+          kind: 'status',
+          status: 500,
+          body: fixture('live/dvc/dcn-bm2220lpr/events.CreatePullPointSubscriptionUnknownTopic.xml').xml
+        }
+      }
+    })
+    const device = await connect(mock)
+    const error = await rejection(() => open(device, { topics: ['tns1:onviftest/Missing'] }))
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({
+      subcodes: ['InvalidArgVal', 'InvalidTopicExpressionFault'],
+      action: 'CreatePullPointSubscription'
+    })
+  })
+})
+
+describe('setSynchronizationPoint()', () => {
+  it('makes a waiting pull return the current state again', async () => {
+    const mock = await camera()
+    const { subscription, errors } = await open(await connect(mock), { pullTimeoutMs: 5_000 })
+    await take(subscription, 7)
+    const pending = subscription.next()
+    await vi.waitFor(() => expect(requests(mock, 'PullMessages')).toHaveLength(2))
+    const started = performance.now()
+    await subscription.setSynchronizationPoint()
+    const { value } = await pending
+    expect(performance.now() - started).toBeLessThan(1_000)
+    expect(value?.propertyOperation).toBe('Initialized')
+    expect(await take(subscription, 6)).toHaveLength(6)
+    const [request] = requests(mock, 'SetSynchronizationPoint')
+    expect(request?.body).toContain(`s:mustUnderstand="1">${subscription.address}</wsa:To>`)
+    expect(request?.body).toContain(
+      '>http://www.onvif.org/ver10/events/wsdl/PullPointSubscription/SetSynchronizationPointRequest<'
+    )
+    expect(errors).toEqual([])
+  })
+
+  it('does nothing while the pull point is rebuilt', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const mock = await camera({ overrides: { 'events.PullMessages': { kind: 'status', status: 500, times: 1 } } })
+    const { subscription, errors } = await open(await connect(mock))
+    const pending = subscription.next()
+    await vi.waitFor(() => expect(errors).toHaveLength(1))
+    await vi.waitFor(() => expect(subscription.address).toBeUndefined())
+    await subscription.setSynchronizationPoint()
+    expect(requests(mock, 'SetSynchronizationPoint')).toHaveLength(0)
+    await subscription.close()
+    await pending
+  })
+
+  it('throws a fault of the device', async () => {
+    const mock = await camera({ overrides: { 'events.SetSynchronizationPoint': { kind: 'status', status: 500 } } })
+    const { subscription, errors } = await open(await connect(mock))
+    const error = await rejection(() => subscription.setSynchronizationPoint())
+    expect(error).toBeInstanceOf(SoapFaultError)
+    expect(error).toMatchObject({ action: 'SetSynchronizationPoint' })
+    expect(errors).toEqual([])
+  })
+
+  it('throws once the subscription is closed', async () => {
+    const mock = await camera()
+    const { subscription } = await open(await connect(mock))
+    await subscription.close()
+    const error = await rejection(() => subscription.setSynchronizationPoint())
+    expect(error).toBeInstanceOf(OnvifError)
+    expect(error).toMatchObject({ message: 'The subscription is closed', action: 'SetSynchronizationPoint' })
+    expect(requests(mock, 'SetSynchronizationPoint')).toHaveLength(0)
+  })
+
+  it('stops waiting when its signal aborts', async () => {
+    const mock = await camera({ overrides: { 'events.SetSynchronizationPoint': { kind: 'hang' } } })
+    const { subscription } = await open(await connect(mock))
+    const error = await rejection(() => subscription.setSynchronizationPoint({ signal: AbortSignal.timeout(100) }))
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).name).toMatch(/Abort|Timeout/)
+  })
+})
+
+describe('pull limits', () => {
+  const faultWith = (detail: string): ActionOverride => ({
+    kind: 'status',
+    status: 400,
+    times: 1,
+    body:
+      '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:tev="http://www.onvif.org/ver10/events/wsdl">' +
+      '<s:Body><s:Fault><s:Code><s:Value>s:Receiver</s:Value></s:Code><s:Reason><s:Text xml:lang="en">Limits' +
+      `</s:Text></s:Reason><s:Detail><tev:PullMessagesFaultResponse>${detail}</tev:PullMessagesFaultResponse>` +
+      '</s:Detail></s:Fault></s:Body></s:Envelope>'
+  })
+
+  it('pulls again with the limits of a PullMessagesFaultResponse without rebuilding', async () => {
+    const mock = await camera({ events: { pullLimits: { maxTimeout: 'PT2S', maxMessageLimit: 5 } } })
+    const { subscription, errors } = await open(await connect(mock), { pullTimeoutMs: 4_000 })
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(errors.map((error) => error.name)).toEqual(['SoapFaultError'])
+    const pulls = requests(mock, 'PullMessages').map(({ body }) => [
+      /<tev:Timeout>([^<]+)</.exec(body)?.[1],
+      /<tev:MessageLimit>([^<]+)</.exec(body)?.[1]
+    ])
+    expect(pulls.slice(0, 3)).toEqual([
+      ['PT4S', '100'],
+      ['PT2S', '5'],
+      ['PT2S', '5']
+    ])
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(1)
+    expect(requests(mock, 'Unsubscribe')).toHaveLength(0)
+  })
+
+  it('rebuilds as for any fault when the limits are not lower', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const fault = faultWith('<tev:MaxTimeout>PT1M</tev:MaxTimeout><tev:MaxMessageLimit>1000</tev:MaxMessageLimit>')
+    const mock = await camera({ overrides: { 'events.PullMessages': fault } })
+    const { subscription, errors } = await open(await connect(mock))
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(errors.map((error) => error.name)).toEqual(['SoapFaultError'])
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2)
+    expect(requests(mock, 'PullMessages')[1]?.body).toContain('<tev:MessageLimit>100</tev:MessageLimit>')
+  })
+
+  it('reports limits that do not match the schema and rebuilds', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const fault = faultWith('<tev:MaxTimeout>PT1S</tev:MaxTimeout><tev:MaxMessageLimit>many</tev:MaxMessageLimit>')
+    const mock = await camera({ overrides: { 'events.PullMessages': fault } })
+    const { subscription, errors } = await open(await connect(mock))
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(errors.map((error) => error.name)).toEqual(['DecodeError', 'SoapFaultError'])
+    expect(requests(mock, 'CreatePullPointSubscription')).toHaveLength(2)
+  })
+
+  it('ignores a MaxTimeout that is not a duration and keeps the pull timeout', async () => {
+    const fault = faultWith('<tev:MaxTimeout>soon</tev:MaxTimeout><tev:MaxMessageLimit>10</tev:MaxMessageLimit>')
+    const mock = await camera({ overrides: { 'events.PullMessages': fault } })
+    const { subscription } = await open(await connect(mock), { pullTimeoutMs: 3_000 })
+    expect(await take(subscription, 7)).toHaveLength(7)
+    expect(requests(mock, 'PullMessages')[1]?.body).toMatch(
+      /<tev:Timeout>PT3S<\/tev:Timeout><tev:MessageLimit>10<\/tev:MessageLimit>/
+    )
   })
 })

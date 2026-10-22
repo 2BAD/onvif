@@ -94,6 +94,40 @@ describe.skipIf(!hostname)('Subscription on a live camera', () => {
     }
   })
 
+  it('receives only the subscribed topic, and its state again after a synchronization point', async () => {
+    const device = await Device.connect({
+      hostname: hostname ?? '',
+      username: username ?? '',
+      password: password ?? ''
+    })
+    const errors: OnvifError[] = []
+    const options = { onError: (error: OnvifError) => errors.push(error), pullTimeoutMs: 2_000 }
+    try {
+      const expression = await (async () => {
+        await using all = await subscribe(device, options)
+        const { value } = await all.next()
+        return value?.topic?.expression
+      })()
+      if (expression === undefined) throw new Error('The first notification has no topic')
+      await using filtered = await subscribe(device, { ...options, topics: [expression] })
+      const { value: first } = await filtered.next()
+      expect(first?.topic?.expression).toBe(expression)
+      expect(first?.propertyOperation).toBe('Initialized')
+
+      const pending = filtered.next()
+      await filtered.setSynchronizationPoint()
+      const timeout = new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('No notification within 10 s of the synchronization point')), 10_000).unref()
+      })
+      const { value: again } = await Promise.race([pending, timeout])
+      expect(again?.topic?.expression).toBe(expression)
+      expect(again?.propertyOperation).toBe('Initialized')
+      expect(errors).toEqual([])
+    } finally {
+      device.close()
+    }
+  })
+
   it('waits for events across several long polls without errors', async () => {
     const device = await Device.connect({
       hostname: hostname ?? '',

@@ -181,9 +181,16 @@ const targets: Target[] = [
       SubscriptionManager: ['Renew']
     },
     elements: [
-      { schema: 'onvif/ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' }
+      { schema: 'onvif/ver10/schema/onvif.xsd', namespace: 'http://www.onvif.org/ver10/schema', local: 'Message' },
+      {
+        schema: 'onvif/ver10/events/wsdl/event.wsdl',
+        namespace: 'http://www.onvif.org/ver10/events/wsdl',
+        local: 'PullMessagesFaultResponse'
+      }
     ],
-    namespaces: ['CreatePullPointSubscription', 'PullMessages']
+    namespaces: ['CreatePullPointSubscription', 'PullMessages'],
+    substitutions: { FilterType: filters },
+    prefixed: topicExpressions
   },
   {
     output: 'packages/discovery/source/generated/discovery.ts',

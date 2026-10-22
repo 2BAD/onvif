@@ -43,11 +43,12 @@ function isTopic(topic: Topic | undefined, path: string[], namespace?: string): 
 
 class Subscription implements AsyncIterableIterator<Notification> {
   get address(): string | undefined
+  setSynchronizationPoint(options?: { signal?: AbortSignal; timeoutMs?: number }): Promise<void>
   close(): Promise<void>
 }
 
 type Notification = {
-  topic: Topic | undefined // { expression, path, namespace, dialect }
+  topic: Topic | undefined // { expression: 'tns1:VideoSource/MotionAlarm', path, namespace, dialect }
   utcTime: Date
   propertyOperation: 'Initialized' | 'Changed' | 'Deleted' | undefined
   source: Record<string, string> // { VideoSourceConfigurationToken: 'VideoSourceConfig_1' }

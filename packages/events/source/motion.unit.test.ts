@@ -55,6 +55,27 @@ const lookups = (mock: MockCamera) =>
   mock.requests.filter(({ action }) => action === 'GetVideoSourceConfigurations').length
 
 describe('motion', () => {
+  it('subscribes to every topic even when given topics', async () => {
+    const mock = await startMockCamera()
+    cleanups.push(() => mock.close())
+    const url = new URL(mock.url)
+    const device = await Device.connect({
+      hostname: url.hostname,
+      port: Number(url.port),
+      username: 'admin',
+      password: 'password'
+    })
+    cleanups.push(() => device.close())
+    const options = { onError: () => {}, pullTimeoutMs: 200, topics: ['tns1:Device//.'] }
+    const states = motion(device, options)
+    cleanups.push(async () => {
+      await states.return()
+    })
+    await states.next()
+    const create = mock.requests.find(({ action }) => action === 'CreatePullPointSubscription')
+    expect(create?.body).not.toContain('Filter')
+  })
+
   it('reads the EZVIZ state on subscribe from CellMotionDetector and changes from MotionAlarm', async () => {
     const { mock, states, errors } = await start({ fixtureDirectory: EZVIZ })
     expect(await next(states)).toEqual({
