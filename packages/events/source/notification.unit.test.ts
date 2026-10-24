@@ -122,6 +122,12 @@ describe('notifications', () => {
     }
   })
 
+  it('reads an empty topic as one without a namespace or path', async () => {
+    const [notification] = await receive(topic(' '), message('<tt:SimpleItem Name="IsMotion" Value="true"/>'))
+    expect(notification?.topic).toEqual({ expression: '', dialect: CONCRETE_SET, namespace: undefined, path: [] })
+    expect(notification && motionOf(notification)).toBeUndefined()
+  })
+
   it('accepts notifications without a topic', async () => {
     const [notification] = await receive('')
     expect(notification?.topic).toBeUndefined()

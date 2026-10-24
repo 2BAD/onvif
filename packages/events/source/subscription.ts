@@ -342,6 +342,7 @@ export class Subscription implements AsyncIterableIterator<Notification>, AsyncD
         action: 'PullMessages'
       }) as PullMessagesFaultResponse
     } catch (decodeError) {
+      /* v8 ignore if */
       if (!(decodeError instanceof DecodeError)) throw decodeError
       this.#onError(decodeError)
       return false
